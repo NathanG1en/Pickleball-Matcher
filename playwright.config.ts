@@ -22,9 +22,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npx next start -p 3000 -H 127.0.0.1",
+    command: "npx next dev -p 3000 -H 127.0.0.1",
     url: "http://127.0.0.1:3000",
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {
       DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres",

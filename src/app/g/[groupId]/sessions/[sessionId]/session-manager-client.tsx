@@ -48,6 +48,12 @@ export function SessionManagerClient({
   const router = useRouter();
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
   const activeProposal = regeneratedProposal ?? initialProposal;
+  const [prevAttendance, setPrevAttendance] = useState(attendance);
+  const [currentAttendance, setCurrentAttendance] = useState(attendance);
+  if (attendance !== prevAttendance) {
+    setPrevAttendance(attendance);
+    setCurrentAttendance(attendance);
+  }
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -266,8 +272,32 @@ export function SessionManagerClient({
         sessionId: session.id,
         playerId,
         present: !currentlyPresent,
+        sessionVersion: session.version,
+        idempotencyKey: createIdempotencyKey(`att_${playerId}`),
       });
       if (res.ok) {
+        setCurrentAttendance((prev) => {
+          const exists = prev.find((a) => a.playerId === playerId);
+          if (!exists) {
+            return [
+              ...prev,
+              {
+                sessionId: session.id,
+                playerId,
+                joinedRound: session.currentRoundNumber + 1,
+                leftRound: !currentlyPresent ? null : session.currentRoundNumber + 1,
+              },
+            ];
+          }
+          return prev.map((a) =>
+            a.playerId === playerId
+              ? {
+                  ...a,
+                  leftRound: !currentlyPresent ? null : session.currentRoundNumber + 1,
+                }
+              : a,
+          );
+        });
         router.refresh();
       } else {
         setError(res.error);
@@ -581,7 +611,7 @@ export function SessionManagerClient({
             </p>
             <div className="space-y-2">
               {players.map((p) => {
-                const rec = attendance.find((a) => a.playerId === p.id);
+                const rec = currentAttendance.find((a) => a.playerId === p.id);
                 const isPresent = rec ? rec.leftRound === null : false;
                 return (
                   <div
