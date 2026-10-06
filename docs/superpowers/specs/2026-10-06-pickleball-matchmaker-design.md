@@ -1,7 +1,9 @@
 # Pickleball Matchmaker MVP Design
 
-**Status:** Approved design pending written-spec review  
-**Source of truth:** [`PRD.md`](../../../PRD.md)  
+**Status:** Approved design
+
+**Source of truth:** [`PRD.md`](../../../PRD.md)
+
 **Target:** Mobile-first progressive web application for recurring casual pickleball groups
 
 ## 1. Product intent and scope
@@ -17,7 +19,7 @@ Use a single Next.js application deployed to Vercel:
 - Next.js App Router and TypeScript
 - Tailwind CSS for mobile-first styling
 - Next.js server actions or route handlers for mutations
-- Supabase-hosted PostgreSQL for durable storage
+- Supabase-hosted PostgreSQL for durable storage, accessed through its pooled connection by a server-only PostgreSQL client
 - A framework-independent TypeScript matchmaking engine
 
 The application has four boundaries:
@@ -156,9 +158,9 @@ For fewer than four eligible players, the engine returns a typed validation resu
 
 Team rating is the arithmetic mean of both players' pre-match ratings. Expected result uses the standard Elo formula from the PRD.
 
-- Each player's first ten rated games use `K = 40`.
-- Later games use `K = 20`.
-- Each teammate receives the same team performance delta, calculated with that player's applicable K-factor.
+- Each player's first ten rated games contribute `K = 40`.
+- Later games contribute `K = 20`.
+- The match uses the average of the two teammates' individual K-factors as the team K-factor, so both teammates receive the same rating delta even when one is provisional and the other is established.
 - Both teams' deltas use ratings captured before the match update.
 - Internal ratings retain full numeric precision; the UI rounds for display.
 - Cancelled or incomplete matches do not affect ratings.
@@ -186,7 +188,7 @@ Potentially destructive actions require confirmation. Draft score input should s
 - PIN verification is rate-limited and returns a generic failure response.
 - Mutations validate input on the server and verify group ownership.
 - Public share identifiers grant read-only access and are unguessable.
-- Supabase service credentials never enter the browser bundle.
+- The pooled Supabase PostgreSQL connection string never enters the browser bundle.
 - Player accounts are outside MVP scope.
 
 The application stores only the minimum personal information needed for MVP: player display names.
