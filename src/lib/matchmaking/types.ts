@@ -113,3 +113,15 @@ export interface RoundScoringContext {
   readonly sittingPenalty: SittingPenalty;
   readonly tieBreak: number;
 }
+
+export interface SittingSelectionInput {
+  readonly players: readonly MatchmakingPlayer[];
+  readonly sitCount: number;
+  readonly random: RandomSource;
+  readonly config: MatchmakingConfig;
+}
+
+export interface SittingChoiceInput {
+  readonly players: readonly MatchmakingPlayer[];
+  readonly sitting: readonly PlayerId[];
+}
