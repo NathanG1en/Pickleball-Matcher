@@ -8,11 +8,24 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Pickleball Matchmaker",
   description: "Fair rounds. Fresh partners. Better games.",
+  applicationName: "Pickleball Matchmaker",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Pickleball",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light",
-  themeColor: "#0d3432",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  colorScheme: "dark",
+  themeColor: "#17615c",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
