@@ -81,7 +81,7 @@ export function ResultsEntryView({
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
             Score Entry
           </span>
-          <h2 className="text-2xl font-black text-white">Round {roundNumber} Results</h2>
+          <h1 className="text-2xl font-black text-white">Round {roundNumber} Results</h1>
         </div>
         <p className="text-xs text-slate-400">
           Enter non-tied scores (e.g. 11–9)
@@ -98,6 +98,7 @@ export function ResultsEntryView({
           return (
             <div
               key={match.id}
+              data-testid={`court-match-${match.courtNumber}`}
               className={`bg-slate-900 border rounded-2xl p-5 shadow-sm space-y-4 ${
                 isCancelled
                   ? "border-slate-800 opacity-60"

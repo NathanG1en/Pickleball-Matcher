@@ -22,11 +22,12 @@ export default async function ActiveSessionPage({
   }
 
   const repository = getActionRepository();
-  const [group, sessionRecord, players, startedRounds] = await Promise.all([
+  const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
     repository.getGroup(groupId),
     repository.getSession(sessionId),
     repository.listPlayers(groupId),
     repository.listStartedRounds(sessionId),
+    repository.listAttendance(sessionId),
   ]);
 
   if (!group || !sessionRecord) {
@@ -58,6 +59,7 @@ export default async function ActiveSessionPage({
         groupId={groupId}
         session={sessionRecord}
         players={players}
+        attendance={attendance}
         startedRounds={startedRounds}
         initialProposal={initialProposal}
         shareId={group.publicShareId}

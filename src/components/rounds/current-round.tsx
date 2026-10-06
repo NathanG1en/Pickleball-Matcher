@@ -55,7 +55,7 @@ export function CurrentRoundView({
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
             {round.status === "proposed" ? "Round Proposal" : "Current Round"}
           </span>
-          <h2 className="text-2xl font-black text-white">Round {round.roundNumber}</h2>
+          <h1 className="text-2xl font-black text-white">Round {round.roundNumber}</h1>
         </div>
         <div>
           {round.status === "proposed" && (

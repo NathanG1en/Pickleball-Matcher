@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   getActionSessionService,
   requireOrganizer,
@@ -36,6 +37,7 @@ export async function startSessionAction(
       courtCount: parsed.data.courtCount,
       playerIds: parsed.data.playerIds,
     });
+    revalidatePath(`/g/${parsed.data.groupId}`);
     return { ok: true, data: session };
   } catch (err) {
     return {
@@ -63,6 +65,7 @@ export async function changeAttendanceAction(input: unknown): Promise<ActionResu
       playerId: parsed.data.playerId,
       present: parsed.data.present,
     });
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: undefined };
   } catch (err) {
     return {
@@ -121,6 +124,7 @@ export async function startRoundAction(
       parsed.data.seed,
     );
     const started = await service.startRound(parsed.data.sessionId, proposal);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: started };
   } catch (err) {
     return {
@@ -146,6 +150,7 @@ export async function completeRoundAction(
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
     const completed = await service.completeRound(parsed.data.roundId);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: completed };
   } catch (err) {
     return {
@@ -171,6 +176,7 @@ export async function undoLatestRoundAction(
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
     const undone = await service.undoLatestRound(parsed.data.sessionId);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: undone };
   } catch (err) {
     return {

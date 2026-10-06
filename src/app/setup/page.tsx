@@ -32,8 +32,8 @@ export default function SetupGroupPage() {
       }
 
       router.push(`/g/${res.data.groupId}`);
-    } catch {
-      setError("An unexpected error occurred while creating the group.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred while creating the group.");
       setIsPending(false);
     }
   };

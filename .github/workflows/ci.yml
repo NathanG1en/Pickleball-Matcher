@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - pickleball-mvp
+      - pickleball-mvp-gemini
+  pull_request:
+
+jobs:
+  verify:
+    name: Lint, Test, Simulation, and Release Gates
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
+      TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
+      ORGANIZER_SESSION_SECRET: ci-secret-that-is-at-least-thirty-two-bytes-long-now
+      ORGANIZER_FINGERPRINT_SECRET: ci-fingerprint-secret-at-least-thirty-two-bytes
+      SESSION_COOKIE_SECURE: "false"
+      SETUP_TOKEN: ci-setup-token
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Code Quality (ESLint)
+        run: npm run lint
+
+      - name: Typecheck (TypeScript)
+        run: npm run typecheck
+
+      - name: Unit & Component Tests (Vitest)
+        run: npm test
+
+      - name: Matchmaking Fairness & Simulation Suite
+        run: npm run test:simulation
+
+      - name: Run Database Migrations
+        run: npm run db:migrate
+
+      - name: Integration Tests (Database & Server Actions)
+        run: npm run test:integration
+
+      - name: Production Build (Next.js)
+        run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-End Acceptance & Accessibility Tests
+        run: npm run test:e2e

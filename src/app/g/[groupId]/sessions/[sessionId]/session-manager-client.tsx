@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import {
+  changeAttendanceAction,
   completeRoundAction,
   endSessionAction,
   proposeRoundAction,
@@ -15,7 +16,9 @@ import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/results-entry";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type {
+  AttendanceRecord,
   PlayerRecord,
   RoundProposal,
   SessionRecord,
@@ -27,6 +30,7 @@ export interface SessionManagerClientProps {
   readonly groupId: string;
   readonly session: SessionRecord;
   readonly players: readonly PlayerRecord[];
+  readonly attendance?: readonly AttendanceRecord[];
   readonly startedRounds: readonly StartedRoundRecord[];
   readonly initialProposal: RoundProposal | null;
   readonly shareId: string;
@@ -36,15 +40,20 @@ export function SessionManagerClient({
   groupId,
   session,
   players,
+  attendance = [],
   startedRounds,
   initialProposal,
   shareId,
 }: SessionManagerClientProps) {
   const router = useRouter();
-  const [proposal, setProposal] = useState<RoundProposal | null>(initialProposal);
+  const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
+  const activeProposal = regeneratedProposal ?? initialProposal;
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
+  const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
 
   const playerNames: Record<string, string> = {};
   for (const p of players) {
@@ -67,7 +76,7 @@ export function SessionManagerClient({
         seed: nextSeed,
       });
       if (res.ok) {
-        setProposal(res.data);
+        setRegeneratedProposal(res.data);
       } else {
         setError(res.error);
       }
@@ -79,7 +88,7 @@ export function SessionManagerClient({
   };
 
   const handleStartRound = async () => {
-    if (!proposal) return;
+    if (!activeProposal) return;
     setIsPending(true);
     setError(null);
     try {
@@ -87,11 +96,11 @@ export function SessionManagerClient({
         groupId,
         sessionId: session.id,
         sessionVersion: session.version,
-        seed: proposal.seed,
+        seed: activeProposal.seed,
         idempotencyKey: createIdempotencyKey("start_rd"),
       });
       if (res.ok) {
-        setProposal(null);
+        setRegeneratedProposal(null);
         router.refresh();
       } else {
         setError(res.error);
@@ -182,6 +191,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("next_rd"),
       });
       if (res.ok) {
+        setRegeneratedProposal(null);
         router.refresh();
       } else {
         setError(res.error);
@@ -210,6 +220,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("undo"),
       });
       if (res.ok) {
+        setRegeneratedProposal(null);
         router.refresh();
       } else {
         setError(res.error);
@@ -246,6 +257,80 @@ export function SessionManagerClient({
     }
   };
 
+  const handleToggleAttendance = async (playerId: string, currentlyPresent: boolean) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await changeAttendanceAction({
+        groupId,
+        sessionId: session.id,
+        playerId,
+        present: !currentlyPresent,
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to update attendance.");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleHistoricalSaveResult = async (matchId: string, matchVersion: number) => {
+    const t1 = parseInt(historicalScores.team1, 10);
+    const t2 = parseInt(historicalScores.team2, 10);
+    if (isNaN(t1) || isNaN(t2)) return;
+
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await recordResultAction({
+        groupId,
+        matchId,
+        team1Score: t1,
+        team2Score: t2,
+        matchVersion,
+        idempotencyKey: createIdempotencyKey(`hist_${matchId}`),
+      });
+      if (res.ok) {
+        setEditingHistoricalMatchId(null);
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to update historical score.");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleHistoricalCancelMatch = async (matchId: string, matchVersion: number) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await cancelMatchAction({
+        groupId,
+        matchId,
+        matchVersion,
+        idempotencyKey: createIdempotencyKey(`hist_cancel_${matchId}`),
+      });
+      if (res.ok) {
+        setEditingHistoricalMatchId(null);
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to cancel historical match.");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
   // Convert started round matches to MatchScoreEntry
   const scoreEntries: MatchScoreEntry[] = latestStarted
     ? latestStarted.matches.map((match) => {
@@ -269,6 +354,8 @@ export function SessionManagerClient({
       })
     : [];
 
+  const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
+
   return (
     <div className="space-y-6">
       {/* Top Header Controls */}
@@ -280,6 +367,14 @@ export function SessionManagerClient({
           ← Group Dashboard
         </Link>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowAttendanceModal(true)}
+            className="text-xs font-semibold text-slate-300 hover:text-white"
+          >
+            Attendance
+          </button>
+          <span className="text-slate-600">|</span>
           <Link
             href={`/s/${shareId}`}
             target="_blank"
@@ -329,20 +424,20 @@ export function SessionManagerClient({
             </button>
           </div>
         </div>
-      ) : proposal ? (
+      ) : activeProposal ? (
         <CurrentRoundView
           round={{
-            id: `proposal_${proposal.seed}`,
+            id: `proposal_${activeProposal.seed}`,
             roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
             status: "proposed",
-            seed: proposal.seed,
+            seed: activeProposal.seed,
           }}
-          courts={proposal.courts.map((c) => ({
+          courts={activeProposal.courts.map((c) => ({
             courtNumber: c.courtNumber,
             team1: [c.team1[0], c.team1[1]],
             team2: [c.team2[0], c.team2[1]],
           }))}
-          sittingPlayerIds={proposal.sitting}
+          sittingPlayerIds={activeProposal.sitting}
           playerNames={playerNames}
           canRegenerate={true}
           isPending={isPending}
@@ -355,6 +450,168 @@ export function SessionManagerClient({
           <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending}>
             Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
           </Button>
+        </div>
+      )}
+
+      {/* Past Rounds Accordion / List */}
+      {pastRounds.length > 0 && (
+        <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+            Past Rounds History
+          </h3>
+          <div className="space-y-4">
+            {pastRounds.map((past) => (
+              <div key={past.round.id} className="border border-slate-800 rounded-xl p-3 bg-slate-900/90 space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
+                  <span>Round {past.round.roundNumber}</span>
+                  <Badge variant="muted">Completed</Badge>
+                </div>
+                <div className="space-y-2 pt-1">
+                  {past.matches.map((m) => {
+                    const t1 = past.matchPlayers
+                      .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                    const t2 = past.matchPlayers
+                      .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                    const isEditing = editingHistoricalMatchId === m.id;
+
+                    return (
+                      <div key={m.id} className="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/60 text-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-emerald-400">Court {m.courtNumber}</span>
+                          <span className="text-slate-300 font-bold">
+                            {m.status === "cancelled" ? "Cancelled" : `${m.team1Score ?? 0} – ${m.team2Score ?? 0}`}
+                          </span>
+                        </div>
+                        <div className="text-slate-300">
+                          {t1.join(" & ")} vs {t2.join(" & ")}
+                        </div>
+
+                        {isEditing ? (
+                          <div className="pt-2 border-t border-slate-700 flex flex-wrap items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              value={historicalScores.team1}
+                              onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
+                              placeholder="T1"
+                              className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-bold"
+                            />
+                            <span className="text-slate-400">–</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={historicalScores.team2}
+                              onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
+                              placeholder="T2"
+                              className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-bold"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="primary"
+                              onClick={() => handleHistoricalSaveResult(m.id, m.version)}
+                              disabled={isPending}
+                            >
+                              Save Score
+                            </Button>
+                            {m.status !== "cancelled" && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
+                                disabled={isPending}
+                              >
+                                Cancel Match
+                              </Button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setEditingHistoricalMatchId(null)}
+                              className="text-xs text-slate-400 underline ml-auto"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingHistoricalMatchId(m.id);
+                                setHistoricalScores({
+                                  team1: m.team1Score !== null ? String(m.team1Score) : "",
+                                  team2: m.team2Score !== null ? String(m.team2Score) : "",
+                                });
+                              }}
+                              className="text-xs text-slate-400 hover:text-emerald-400 underline"
+                            >
+                              Edit Result
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Attendance Modal */}
+      {showAttendanceModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-lg font-bold text-white">Session Attendance</h3>
+              <button
+                type="button"
+                onClick={() => setShowAttendanceModal(false)}
+                className="text-slate-400 hover:text-white text-sm"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Manage player arrivals or early departures mid-session.
+            </p>
+            <div className="space-y-2">
+              {players.map((p) => {
+                const rec = attendance.find((a) => a.playerId === p.id);
+                const isPresent = rec ? rec.leftRound === null : false;
+                return (
+                  <div
+                    key={p.id}
+                    data-testid={`attendance-row-${p.name}`}
+                    className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700"
+                  >
+                    <div>
+                      <span className="font-semibold text-white text-sm block">{p.name}</span>
+                      <span className="text-xs text-slate-400">Rating: {Math.round(p.rating)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={isPresent ? "success" : "muted"}>
+                        {isPresent ? "Present" : "Away"}
+                      </Badge>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isPresent ? "outline" : "primary"}
+                        onClick={() => handleToggleAttendance(p.id, isPresent)}
+                        disabled={isPending}
+                      >
+                        {isPresent ? "Mark Left" : "Mark Present"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

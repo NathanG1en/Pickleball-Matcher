@@ -49,8 +49,10 @@ function secretKey(secret: string): Uint8Array {
 }
 
 function secureCookieDefault(): boolean {
-  if (process.env.NODE_ENV === "production") return true;
-  return process.env.SESSION_COOKIE_SECURE === "true";
+  if (process.env.SESSION_COOKIE_SECURE !== undefined) {
+    return process.env.SESSION_COOKIE_SECURE === "true";
+  }
+  return process.env.NODE_ENV === "production";
 }
 
 export async function createOrganizerSession(

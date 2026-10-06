@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   getActionSessionService,
   requireOrganizer,
@@ -33,6 +34,7 @@ export async function recordResultAction(
       team1Score: parsed.data.team1Score,
       team2Score: parsed.data.team2Score,
     });
+    revalidatePath(`/g/${parsed.data.groupId}`);
     return { ok: true, data: match };
   } catch (err) {
     return {
@@ -58,6 +60,7 @@ export async function cancelMatchAction(
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
     const match = await service.cancelMatch(parsed.data.matchId);
+    revalidatePath(`/g/${parsed.data.groupId}`);
     return { ok: true, data: match };
   } catch (err) {
     return {
