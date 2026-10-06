@@ -12,3 +12,16 @@ export function makePlayer(overrides: Partial<MatchmakingPlayer> = {}): Matchmak
     satPreviousRound: overrides.satPreviousRound ?? false,
   };
 }
+
+export function makePlayers(
+  count: number,
+  overrides: (index: number) => Partial<MatchmakingPlayer> = () => ({}),
+): MatchmakingPlayer[] {
+  return Array.from({ length: count }, (_, index) =>
+    makePlayer({
+      id: `player-${index + 1}`,
+      name: `Player ${index + 1}`,
+      ...overrides(index),
+    }),
+  );
+}

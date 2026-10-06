@@ -7,7 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.{ts,tsx}"],
-    exclude: ["tests/e2e/**", "tests/simulations/**"],
+    include: ["tests/simulations/**/*.test.ts"],
+    testTimeout: 30_000,
   },
 });

@@ -125,3 +125,11 @@ export interface SittingChoiceInput {
   readonly players: readonly MatchmakingPlayer[];
   readonly sitting: readonly PlayerId[];
 }
+
+export interface GenerateRoundInput {
+  readonly players: readonly MatchmakingPlayer[];
+  readonly courts: number;
+  readonly pairHistory: readonly PairHistory[];
+  readonly config?: MatchmakingConfig;
+  readonly seed?: number;
+}

@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:simulation": "vitest run tests/simulations",
+    "test:simulation": "vitest run --config vitest.simulation.config.ts",
     "test:e2e": "playwright test"
   },
   "keywords": [],
