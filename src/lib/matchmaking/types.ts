@@ -100,3 +100,16 @@ export interface MatchmakingConfig {
   readonly longTermOpponentFactor: number;
   readonly tieBreakMaximum: number;
 }
+
+export interface SittingPenalty {
+  readonly playingTime: number;
+  readonly consecutiveSit: number;
+}
+
+export interface RoundScoringContext {
+  readonly players: readonly MatchmakingPlayer[];
+  readonly pairHistory: readonly PairHistory[] | ReadonlyMap<string, PairHistory>;
+  readonly config: MatchmakingConfig;
+  readonly sittingPenalty: SittingPenalty;
+  readonly tieBreak: number;
+}
