@@ -48,14 +48,14 @@ export function CurrentRoundView({
   };
 
   return (
-    <div className="current-round-view space-y-6 pb-28">
+    <div className="current-round-view space-y-6 pb-28 text-black">
       {/* Round Header */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
             {round.status === "proposed" ? "Round Proposal" : "Current Round"}
           </span>
-          <h1 className="text-2xl font-black text-white">Round {round.roundNumber}</h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">Round {round.roundNumber}</h1>
         </div>
         <div>
           {round.status === "proposed" && (
@@ -75,42 +75,42 @@ export function CurrentRoundView({
         {courts.map((court) => (
           <div
             key={court.courtNumber}
-            className="court-card bg-slate-900 border-2 border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden"
+            className="court-card bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] relative text-black"
           >
-            <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
-              <span className="text-lg font-black text-emerald-400">
+            <div className="flex items-center justify-between mb-4 border-b-2 border-neutral-100 pb-3">
+              <span className="font-display text-2xl font-black uppercase text-black">
                 Court {court.courtNumber}
               </span>
-              <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Doubles Match
               </span>
             </div>
 
             <div className="space-y-3">
               {/* Team 1 */}
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <span className="text-xs font-semibold text-slate-400 block mb-1">
+              <div className="p-3 bg-[#e0f2fe] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <span className="text-xs uppercase font-black tracking-wider text-black block mb-1">
                   Team 1
                 </span>
-                <div className="text-base font-bold text-white flex items-center justify-between">
+                <div className="text-base font-black text-black flex items-center justify-between">
                   <span>{nameFor(court.team1[0])}</span>
-                  <span className="text-slate-500 font-normal">&amp;</span>
+                  <span className="font-bold text-neutral-600">&amp;</span>
                   <span>{nameFor(court.team1[1])}</span>
                 </div>
               </div>
 
-              <div className="text-center font-bold text-xs uppercase tracking-widest text-slate-500 my-1">
+              <div className="text-center font-display font-black text-sm uppercase tracking-widest text-black my-1">
                 VS
               </div>
 
               {/* Team 2 */}
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <span className="text-xs font-semibold text-slate-400 block mb-1">
+              <div className="p-3 bg-[#fef08a] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <span className="text-xs uppercase font-black tracking-wider text-black block mb-1">
                   Team 2
                 </span>
-                <div className="text-base font-bold text-white flex items-center justify-between">
+                <div className="text-base font-black text-black flex items-center justify-between">
                   <span>{nameFor(court.team2[0])}</span>
-                  <span className="text-slate-500 font-normal">&amp;</span>
+                  <span className="font-bold text-neutral-600">&amp;</span>
                   <span>{nameFor(court.team2[1])}</span>
                 </div>
               </div>
@@ -121,18 +121,18 @@ export function CurrentRoundView({
 
       {/* Sitting Players Section */}
       {sittingPlayerIds.length > 0 && (
-        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400 mb-2">
+        <section className="bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000]">
+          <h3 className="font-display text-xl font-black uppercase tracking-wider text-black mb-1">
             Sitting this round ({sittingPlayerIds.length})
           </h3>
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs font-bold text-neutral-600 mb-3">
             These players are taking a break and will have highest priority next round.
           </p>
           <div className="flex flex-wrap gap-2">
             {sittingPlayerIds.map((id) => (
               <span
                 key={id}
-                className="px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/50 text-amber-200 text-sm font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-[#fde047] border-2 border-black text-black text-sm font-black shadow-[2px_2px_0px_0px_#000]"
               >
                 {nameFor(id)}
               </span>
@@ -143,10 +143,12 @@ export function CurrentRoundView({
 
       {/* Confirmation Modal */}
       {showConfirmStart && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Start Round {round.roundNumber}?</h3>
-            <p className="text-sm text-slate-300">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
+            <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
+              Start Round {round.roundNumber}?
+            </h3>
+            <p className="text-sm font-bold text-neutral-700">
               Once started, court assignments and sitting players are locked in for tracking match results.
             </p>
             <div className="flex gap-3 justify-end pt-2">
@@ -154,6 +156,7 @@ export function CurrentRoundView({
                 type="button"
                 variant="outline"
                 onClick={() => setShowConfirmStart(false)}
+                className="font-display uppercase tracking-wider"
               >
                 Cancel
               </Button>
@@ -162,6 +165,7 @@ export function CurrentRoundView({
                 variant="primary"
                 onClick={handleStartConfirm}
                 disabled={isPending}
+                className="font-display uppercase tracking-wider"
               >
                 Confirm &amp; Start
               </Button>
@@ -171,7 +175,7 @@ export function CurrentRoundView({
       )}
 
       {/* Persistent Bottom Mobile Action Area */}
-      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-md border-t border-slate-800 z-30">
+      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-30 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center gap-3">
           {canRegenerate && (
             <Button
@@ -180,7 +184,7 @@ export function CurrentRoundView({
               size="lg"
               onClick={onRegenerate}
               disabled={isPending}
-              className="flex-1"
+              className="flex-1 font-display text-lg uppercase tracking-wider"
             >
               Regenerate Round
             </Button>
@@ -193,7 +197,7 @@ export function CurrentRoundView({
               size="lg"
               onClick={() => setShowConfirmStart(true)}
               disabled={isPending}
-              className="flex-1 shadow-lg shadow-emerald-950/50"
+              className="flex-1 font-display text-lg uppercase tracking-wider"
             >
               Start Round
             </Button>
@@ -206,7 +210,7 @@ export function CurrentRoundView({
               size="lg"
               onClick={onEnterResults}
               disabled={isPending}
-              className="flex-1 shadow-lg shadow-emerald-950/50"
+              className="flex-1 font-display text-lg uppercase tracking-wider"
             >
               Enter Scores
             </Button>

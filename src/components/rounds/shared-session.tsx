@@ -26,19 +26,19 @@ export function SharedSessionView({
   sittingPlayerNames,
 }: SharedSessionViewProps) {
   return (
-    <div className="shared-session-view space-y-6 max-w-xl mx-auto">
+    <div className="shared-session-view space-y-6 max-w-xl mx-auto text-black">
       {/* Header */}
-      <header className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-sm">
+      <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Live Court Board
           </span>
           <Badge variant={sessionStatus === "active" ? "success" : "default"}>
             {sessionStatus === "active" ? "Live" : "Finished"}
           </Badge>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">{groupName}</h1>
-        <p className="text-sm font-semibold text-slate-300 mt-1">
+        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight">{groupName}</h1>
+        <p className="font-display text-lg font-black uppercase text-neutral-800 mt-1">
           Round {currentRoundNumber}
         </p>
       </header>
@@ -52,16 +52,12 @@ export function SharedSessionView({
           return (
             <div
               key={court.courtNumber}
-              className={`court-card bg-slate-900 border-2 rounded-2xl p-5 shadow-sm space-y-3 ${
-                isCompleted
-                  ? "border-emerald-800/80 bg-slate-900/90"
-                  : isCancelled
-                  ? "border-slate-800 opacity-60"
-                  : "border-slate-800"
+              className={`court-card bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] space-y-3 relative text-black ${
+                isCancelled ? "opacity-60 border-neutral-400 bg-neutral-100" : ""
               }`}
             >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <span className="text-base font-black text-emerald-400">
+              <div className="flex items-center justify-between border-b-2 border-neutral-100 pb-2.5">
+                <span className="font-display text-2xl font-black uppercase text-black">
                   Court {court.courtNumber}
                 </span>
                 <div>
@@ -72,28 +68,28 @@ export function SharedSessionView({
               </div>
 
               {/* Team 1 */}
-              <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <span className="font-bold text-white text-base">
+              <div className="flex items-center justify-between p-3 bg-[#e0f2fe] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <span className="font-black text-black text-base">
                   {court.team1Names[0]} &amp; {court.team1Names[1]}
                 </span>
                 {isCompleted && (
-                  <span className="text-2xl font-black text-emerald-400 ml-3">
+                  <span className="font-display text-3xl font-black text-black ml-3 bg-white px-2.5 py-0.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                     {court.team1Score}
                   </span>
                 )}
               </div>
 
-              <div className="text-center font-bold text-xs uppercase tracking-widest text-slate-500 my-0.5">
+              <div className="text-center font-display font-black text-xs uppercase tracking-widest text-black my-0.5">
                 VS
               </div>
 
               {/* Team 2 */}
-              <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <span className="font-bold text-white text-base">
+              <div className="flex items-center justify-between p-3 bg-[#fef08a] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <span className="font-black text-black text-base">
                   {court.team2Names[0]} &amp; {court.team2Names[1]}
                 </span>
                 {isCompleted && (
-                  <span className="text-2xl font-black text-emerald-400 ml-3">
+                  <span className="font-display text-3xl font-black text-black ml-3 bg-white px-2.5 py-0.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                     {court.team2Score}
                   </span>
                 )}
@@ -105,15 +101,18 @@ export function SharedSessionView({
 
       {/* Sitting Players */}
       {sittingPlayerNames.length > 0 && (
-        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-amber-400 mb-2">
+        <section className="bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000]">
+          <h2 className="font-display text-xl font-black uppercase tracking-wider text-black mb-1">
             Sitting this round ({sittingPlayerNames.length})
           </h2>
+          <p className="text-xs font-bold text-neutral-600 mb-3">
+            Taking a breather for this round.
+          </p>
           <div className="flex flex-wrap gap-2">
             {sittingPlayerNames.map((name) => (
               <span
                 key={name}
-                className="px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/50 text-amber-200 text-sm font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-[#fde047] border-2 border-black text-black text-sm font-black shadow-[2px_2px_0px_0px_#000]"
               >
                 {name}
               </span>

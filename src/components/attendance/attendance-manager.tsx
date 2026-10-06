@@ -84,11 +84,11 @@ export function AttendanceManager({
   const neededCourts = Math.floor(count / 4);
 
   return (
-    <div className="attendance-manager space-y-6 pb-28">
+    <div className="attendance-manager space-y-6 pb-28 text-black">
       {/* Court Count Card */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-white mb-1">Available Courts</h2>
-        <p className="text-sm text-slate-400 mb-4">
+      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+        <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Available Courts</h2>
+        <p className="text-sm font-bold text-neutral-600 mb-4">
           Each court hosts 4 players per round.
         </p>
 
@@ -98,18 +98,18 @@ export function AttendanceManager({
             aria-label="Decrease courts"
             disabled={courts <= 1}
             onClick={decreaseCourts}
-            className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-bold text-white flex items-center justify-center border border-slate-700"
+            className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
           >
             -
           </button>
           <div className="text-center px-4">
             <span
               aria-label="Court count"
-              className="text-3xl font-extrabold text-emerald-400"
+              className="font-display text-4xl font-black text-black"
             >
               {courts}
             </span>
-            <span className="block text-xs uppercase tracking-wider text-slate-400 mt-0.5">
+            <span className="block text-xs uppercase font-black tracking-wider text-neutral-500 mt-0.5">
               {courts === 1 ? "Court" : "Courts"}
             </span>
           </div>
@@ -118,13 +118,13 @@ export function AttendanceManager({
             aria-label="Increase courts"
             disabled={courts >= maxCourts}
             onClick={increaseCourts}
-            className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-bold text-white flex items-center justify-center border border-slate-700"
+            className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
           >
             +
           </button>
 
           {neededCourts > 0 && neededCourts !== courts && (
-            <p className="text-xs text-amber-400/90 ml-auto">
+            <p className="text-xs font-black text-amber-800 ml-auto bg-[#fef08a] px-2.5 py-1 rounded-lg border border-black shadow-[2px_2px_0px_0px_#000]">
               Tip: {count} players can fill {neededCourts} court{neededCourts > 1 ? "s" : ""}
             </p>
           )}
@@ -132,27 +132,29 @@ export function AttendanceManager({
       </section>
 
       {/* Players Section */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-bold text-white">Who is Playing Today?</h2>
-            <p className="text-sm text-emerald-400 font-medium">
-              {count} players selected
+            <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
+            <p className="text-sm font-black text-black mt-1">
+              <span className="bg-[#ccff00] px-2.5 py-0.5 border border-black rounded-md shadow-[1px_1px_0px_0px_#000]">
+                {count} players selected
+              </span>
             </p>
           </div>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={selectAll}
-              className="text-xs text-slate-300 hover:text-white underline p-1"
+              className="text-xs font-black uppercase text-black hover:underline p-1 cursor-pointer"
             >
               Select All
             </button>
-            <span className="text-slate-600">|</span>
+            <span className="text-black font-bold">|</span>
             <button
               type="button"
               onClick={clearAll}
-              className="text-xs text-slate-400 hover:text-slate-200 underline p-1"
+              className="text-xs font-black uppercase text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -167,10 +169,10 @@ export function AttendanceManager({
               <label
                 key={player.id}
                 htmlFor={`player-check-${player.id}`}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                   isSelected
-                    ? "bg-emerald-950/40 border-emerald-600/80 text-white"
-                    : "bg-slate-800/40 border-slate-700/60 text-slate-300 hover:bg-slate-800"
+                    ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
+                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
                 }`}
               >
                 <input
@@ -178,36 +180,36 @@ export function AttendanceManager({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => togglePlayer(player.id)}
-                  className="w-5 h-5 rounded border-slate-600 text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
+                  className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer"
                 />
-                <span className="font-semibold text-base flex-1">{player.name}</span>
-                <span className="text-xs text-slate-400">{Math.round(player.rating)}</span>
+                <span className="font-black text-base flex-1">{player.name}</span>
+                <span className="text-xs font-bold text-neutral-600">{Math.round(player.rating)}</span>
               </label>
             );
           })}
         </div>
 
         {/* Add Guest / Quick Player Form */}
-        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t border-slate-800 flex gap-2">
+        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 flex gap-2">
           <input
             type="text"
             placeholder="Add guest or new player..."
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
+            className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
           />
-          <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()}>
+          <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider">
             + Add
           </Button>
         </form>
       </section>
 
       {/* Sticky Mobile Action Bar */}
-      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-md border-t border-slate-800 z-30">
+      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-30 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
-            <p className="text-xs uppercase text-slate-400">Ready</p>
-            <p className="text-sm font-bold text-white">
+            <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
+            <p className="font-display text-base font-black uppercase text-black tracking-tight">
               {count} players · {courts} court{courts > 1 ? "s" : ""}
             </p>
           </div>
@@ -217,7 +219,7 @@ export function AttendanceManager({
             size="lg"
             disabled={count < 4 || isPending}
             onClick={handleSubmit}
-            className="flex-1 max-w-xs shadow-lg shadow-emerald-950/50"
+            className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
           >
             {isPending
               ? "Saving..."

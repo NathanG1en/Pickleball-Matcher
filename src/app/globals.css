@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --court-dark: #071413;
-  --court-base: #0f2b29;
-  --court-accent: #17615c;
-  --court-lime: #d4f04d;
-  --court-emerald: #10b981;
-  --coral: #ff7356;
+  --canvas-bg: #f7f4ee;
+  --neo-black: #000000;
+  --neo-lime: #ccff00;
+  --neo-emerald: #10b981;
+  --neo-yellow: #fde047;
+  --neo-coral: #ff6b6b;
+  --neo-sky: #7dd3fc;
 }
 
 * {
@@ -14,14 +15,16 @@
 }
 
 html {
-  background: #071413;
-  color-scheme: dark;
+  background: var(--canvas-bg);
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  color: #f1f5f9;
-  background: #071413;
+  color: #000000;
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.12) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
   font-family: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   min-height: 100svh;
   -webkit-font-smoothing: antialiased;
@@ -29,7 +32,7 @@ body {
 
 .font-display {
   font-family: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
 }
 
@@ -37,7 +40,66 @@ body {
   font-family: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Neobrutalism utility classes */
+.neo-card {
+  background: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: 6px 6px 0px 0px #000000;
+  border-radius: 1rem;
+}
+
+.neo-card-sm {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  border-radius: 0.75rem;
+}
+
+.neo-btn {
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+.neo-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
+.neo-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+.neo-badge {
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px 0px #000000;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.neo-input {
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: 3px 3px 0px 0px #000000;
+  border-radius: 0.75rem;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.neo-input:focus {
+  outline: none;
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+
 .mobile-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
@@ -48,8 +110,8 @@ select {
 }
 
 :focus-visible {
-  outline: 3px solid #10b981;
-  outline-offset: 3px;
+  outline: 3px solid #000000;
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

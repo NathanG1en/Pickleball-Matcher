@@ -7,7 +7,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm text-slate-100 ${className}`}
+      className={`bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black ${className}`}
       {...props}
     >
       {children}
@@ -21,7 +21,7 @@ export function CardHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`mb-3 flex items-center justify-between ${className}`} {...props}>
+    <div className={`mb-4 flex items-center justify-between gap-3 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -33,7 +33,7 @@ export function CardTitle({
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-xl font-bold tracking-tight text-white ${className}`} {...props}>
+    <h3 className={`font-display text-2xl font-black uppercase tracking-tight text-black ${className}`} {...props}>
       {children}
     </h3>
   );

@@ -54,7 +54,7 @@ export default async function ActiveSessionPage({
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-slate-100">
+    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
       <SessionManagerClient
         groupId={groupId}
         session={sessionRecord}

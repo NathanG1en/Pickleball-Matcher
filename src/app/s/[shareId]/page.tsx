@@ -34,13 +34,13 @@ export default async function SharedSessionPage({
 
   if (!activeSession) {
     return (
-      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto flex items-center justify-center text-slate-100">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-3">
-          <span className="text-xs uppercase font-extrabold tracking-widest text-emerald-400">
+      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto flex items-center justify-center text-black">
+        <div className="bg-white border-[3px] border-black rounded-3xl p-8 text-center space-y-3 shadow-[8px_8px_0px_0px_#000]">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             {group.name}
           </span>
-          <h1 className="text-2xl font-black text-white">No Active Session</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="font-display text-3xl font-black uppercase tracking-tight text-black">No Active Session</h1>
+          <p className="text-sm font-bold text-neutral-700">
             The organizer has not started a session yet. Refresh when play begins!
           </p>
         </div>
@@ -76,7 +76,7 @@ export default async function SharedSessionPage({
     : [];
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 text-slate-100">
+    <main className="min-h-screen p-4 sm:p-6 text-black">
       <SharedSessionView
         groupName={group.name}
         sessionStatus={activeSession.status}

@@ -2,91 +2,78 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center bg-slate-950 text-slate-100 relative overflow-hidden">
-      {/* Subtle court background grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
-          backgroundSize: "48px 48px",
-        }}
+    <main className="min-h-screen p-4 sm:p-8 flex items-center justify-center relative overflow-hidden">
+      {/* Background decoration elements */}
+      <div
+        className="absolute top-8 left-8 w-24 h-24 rounded-full bg-[#fde047] border-2 border-black shadow-[4px_4px_0px_0px_#000] hidden md:block pointer-events-none -rotate-12"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute bottom-10 right-10 w-28 h-28 rounded-2xl bg-[#7dd3fc] border-2 border-black shadow-[5px_5px_0px_0px_#000] hidden md:block pointer-events-none rotate-6"
         aria-hidden="true"
       />
 
-      {/* Radial glow accent in background */}
-      <div 
-        className="absolute w-96 h-96 -top-24 -left-24 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" 
-        aria-hidden="true" 
-      />
-      <div 
-        className="absolute w-96 h-96 -bottom-24 -right-24 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" 
-        aria-hidden="true" 
-      />
-
-      <section 
-        className="relative max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-7 sm:p-9 shadow-2xl backdrop-blur-xl text-center space-y-7"
+      <section
+        className="relative max-w-lg w-full bg-white border-[3px] border-black rounded-3xl p-7 sm:p-10 shadow-[8px_8px_0px_0px_#000] text-center space-y-7 z-10"
         aria-labelledby="home-title"
       >
         {/* Eyebrow badge */}
         <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Courtside Organizer
+          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="w-2 h-2 rounded-full bg-black animate-ping" />
+            Pickleball Matchmaker
           </span>
         </div>
 
-        {/* Big Athletic Heading */}
-        <div className="space-y-1">
-          <h1 
-            id="home-title" 
-            className="font-display text-5xl sm:text-6xl font-black text-white tracking-tight leading-[0.92] uppercase"
+        {/* Big Bold Barlow Condensed Heading */}
+        <div className="space-y-3">
+          <h1
+            id="home-title"
+            className="font-display text-5xl sm:text-6xl font-black text-black tracking-tight leading-[0.9] uppercase"
           >
-            Fair Rounds.
+            FAIR ROUNDS.
             <br />
-            <span className="text-emerald-400">Fresh Partners.</span>
+            <span className="inline-block mt-1 bg-[#ccff00] text-black px-3 py-0.5 border-2 border-black shadow-[3px_3px_0px_0px_#000] -rotate-1">
+              FRESH PARTNERS.
+            </span>
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 pt-3 leading-relaxed max-w-xs mx-auto">
-            Build balanced pickleball rotations automatically — without keeping the math in your head.
+          <p className="text-base sm:text-lg text-neutral-800 pt-2 font-medium leading-relaxed max-w-sm mx-auto">
+            An elevated hands experienced.
           </p>
         </div>
 
-        {/* Athletic Court Element: Pickleball Court Mark */}
-        <div className="flex flex-col items-center justify-center gap-1.5 py-1" aria-hidden="true">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-16 h-1 rounded-full bg-emerald-500/80" />
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 bg-amber-400/20" />
-            <div className="w-16 h-1 rounded-full bg-emerald-500/80" />
-          </div>
-          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-            Smart Rotation Engine
-          </span>
+        {/* Neobrutalist Court Divider */}
+        <div className="flex items-center justify-center gap-3 py-1" aria-hidden="true">
+          <div className="h-1 flex-1 bg-black rounded-full" />
+          <div className="w-4 h-4 rounded-full bg-[#ccff00] border-2 border-black shadow-[1px_1px_0px_0px_#000]" />
+          <div className="h-1 flex-1 bg-black rounded-full" />
         </div>
 
-        {/* Feature Pills */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <div className="text-xs font-bold text-white">Equal Sits</div>
-            <div className="text-[10px] text-slate-400">Even play time</div>
+        {/* 3 Neobrutalist Feature Cards */}
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
+          <div className="p-3 rounded-xl bg-[#e0f2fe] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <div className="font-display text-base font-black text-black uppercase">Equal Sits</div>
+            <div className="text-[11px] font-bold text-neutral-700">Even court time</div>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <div className="text-xs font-bold text-white">New Pairs</div>
-            <div className="text-[10px] text-slate-400">Partner variety</div>
+          <div className="p-3 rounded-xl bg-[#fef08a] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <div className="font-display text-base font-black text-black uppercase">New Pairs</div>
+            <div className="text-[11px] font-bold text-neutral-700">Partner variety</div>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <div className="text-xs font-bold text-white">Competitive</div>
-            <div className="text-[10px] text-slate-400">Rating balance</div>
+          <div className="p-3 rounded-xl bg-[#dcfce7] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+            <div className="font-display text-base font-black text-black uppercase">Fair Games</div>
+            <div className="text-[11px] font-bold text-neutral-700">Rating balance</div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="space-y-3.5 pt-1">
+        <div className="space-y-4 pt-2">
           <Link
             href="/setup"
-            className="block w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 active:scale-[0.99] text-white font-bold text-base shadow-lg shadow-emerald-950/60 transition-all text-center tracking-wide"
+            className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display"
           >
             Create Your Group →
           </Link>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs font-bold text-neutral-600">
             Returning organizer? Open your group&apos;s private bookmark or link.
           </p>
         </div>

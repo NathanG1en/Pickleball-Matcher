@@ -38,13 +38,13 @@ export function LoginForm({ groupId }: { groupId: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-left">
       {error && (
-        <div role="alert" className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs text-center">
+        <div role="alert" className="p-3 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-xs text-center">
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="login-pin" className="block text-xs uppercase font-bold text-slate-400 mb-1.5">
+        <label htmlFor="login-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
           Organizer PIN
         </label>
         <input
@@ -57,7 +57,7 @@ export function LoginForm({ groupId }: { groupId: string }) {
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           placeholder="••••"
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-center text-2xl font-mono tracking-widest focus:outline-none focus:border-emerald-500"
+          className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black text-center text-3xl font-mono font-bold tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
         />
       </div>
 
@@ -66,7 +66,7 @@ export function LoginForm({ groupId }: { groupId: string }) {
         variant="primary"
         size="lg"
         disabled={isPending || pin.length < 4}
-        className="w-full mt-2"
+        className="w-full mt-3 font-display text-lg tracking-wide uppercase"
       >
         {isPending ? "Signing In..." : "Unlock"}
       </Button>

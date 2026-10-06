@@ -39,27 +39,29 @@ export default function SetupGroupPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center bg-slate-950 text-slate-100">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-        <div className="mb-6 text-center">
-          <p className="text-xs uppercase font-extrabold tracking-widest text-emerald-400 mb-1">
+    <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white border-[3px] border-black rounded-3xl p-6 sm:p-8 shadow-[8px_8px_0px_0px_#000] text-black">
+        <div className="mb-6 text-center space-y-2">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Pickleball Matchmaker
-          </p>
-          <h1 className="text-2xl font-black text-white">Create Group</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          </span>
+          <h1 className="font-display text-4xl font-black uppercase tracking-tight text-black">
+            Create Group
+          </h1>
+          <p className="text-sm font-bold text-neutral-700">
             Set up your recurring group and organizer PIN.
           </p>
         </div>
 
         {error && (
-          <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-sm">
+          <div role="alert" className="mb-6 p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="group-name" className="block text-xs uppercase font-bold text-slate-400 mb-1.5">
+            <label htmlFor="group-name" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Group Name
             </label>
             <input
@@ -69,12 +71,12 @@ export default function SetupGroupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Tuesday Morning Doubles"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
             />
           </div>
 
           <div>
-            <label htmlFor="organizer-pin" className="block text-xs uppercase font-bold text-slate-400 mb-1.5">
+            <label htmlFor="organizer-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Organizer PIN (4–12 digits)
             </label>
             <input
@@ -86,15 +88,15 @@ export default function SetupGroupPage() {
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 font-mono tracking-widest focus:outline-none focus:border-emerald-500"
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-mono font-bold placeholder-neutral-400 tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs font-bold text-neutral-600 mt-1.5">
               You will use this PIN to start rounds and enter scores.
             </p>
           </div>
 
           <div>
-            <label htmlFor="setup-token" className="block text-xs uppercase font-bold text-slate-400 mb-1.5">
+            <label htmlFor="setup-token" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Setup Token
             </label>
             <input
@@ -104,7 +106,7 @@ export default function SetupGroupPage() {
               value={setupToken}
               onChange={(e) => setSetupToken(e.target.value)}
               placeholder="Secret operator setup token"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
             />
           </div>
 
@@ -113,9 +115,9 @@ export default function SetupGroupPage() {
             variant="primary"
             size="lg"
             disabled={isPending}
-            className="w-full mt-2"
+            className="w-full mt-3 font-display text-lg tracking-wide uppercase"
           >
-            {isPending ? "Creating..." : "Create Group &amp; Start"}
+            {isPending ? "Creating..." : "Create Group & Start"}
           </Button>
         </form>
       </div>
