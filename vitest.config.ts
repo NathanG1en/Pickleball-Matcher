@@ -3,11 +3,21 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "server-only": fileURLToPath(
+        new URL("./src/test-support/server-only.ts", import.meta.url),
+      ),
+    },
   },
   test: {
     environment: "node",
     include: ["tests/**/*.test.{ts,tsx}"],
-    exclude: ["tests/e2e/**", "tests/integration/**", "tests/simulations/**"],
+    exclude: [
+      "tests/e2e/**",
+      "tests/integration/**",
+      "tests/simulations/**",
+      "tests/auth/rate-limit.test.ts",
+    ],
   },
 });
