@@ -64,6 +64,25 @@ export interface RandomSource {
   shuffle<T>(values: readonly T[]): T[];
 }
 
+export interface RatedPlayer {
+  readonly id: PlayerId;
+  readonly rating: number;
+  readonly ratedGames: number;
+}
+
+export interface RatedMatchInput {
+  readonly team1: readonly [RatedPlayer, RatedPlayer];
+  readonly team2: readonly [RatedPlayer, RatedPlayer];
+  readonly winner: 1 | 2;
+}
+
+export interface PlayerRatingUpdate {
+  readonly playerId: PlayerId;
+  readonly ratingBefore: number;
+  readonly ratingAfter: number;
+  readonly delta: number;
+}
+
 export interface MatchmakingWeights {
   readonly consecutiveSit: number;
   readonly playingTime: number;
