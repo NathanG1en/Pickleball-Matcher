@@ -7,7 +7,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.{ts,tsx}"],
-    exclude: ["tests/e2e/**", "tests/integration/**", "tests/simulations/**"],
+    include: ["tests/integration/**/*.test.ts"],
+    fileParallelism: false,
+    maxWorkers: 1,
+    testTimeout: 30_000,
   },
 });

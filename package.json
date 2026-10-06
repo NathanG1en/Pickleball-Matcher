@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:simulation": "vitest run --config vitest.simulation.config.ts",
     "test:e2e": "playwright test"
   },
@@ -24,8 +25,10 @@
     "@fontsource/atkinson-hyperlegible": "^5.2.8",
     "@fontsource/barlow-condensed": "^5.2.8",
     "next": "^16.3.8",
+    "postgres": "^3.4.8",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
