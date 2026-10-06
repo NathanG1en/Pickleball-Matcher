@@ -205,7 +205,7 @@ export function AttendanceManager({
       </section>
 
       {/* Sticky Mobile Action Bar */}
-      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-30 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
             <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>

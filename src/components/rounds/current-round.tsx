@@ -75,7 +75,7 @@ export function CurrentRoundView({
         {courts.map((court) => (
           <div
             key={court.courtNumber}
-            className="court-card bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] relative text-black"
+            className="court-card bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] text-black"
           >
             <div className="flex items-center justify-between mb-4 border-b-2 border-neutral-100 pb-3">
               <span className="font-display text-2xl font-black uppercase text-black">
@@ -175,7 +175,7 @@ export function CurrentRoundView({
       )}
 
       {/* Persistent Bottom Mobile Action Area */}
-      <div className="mobile-action-bar fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-30 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center gap-3">
           {canRegenerate && (
             <Button

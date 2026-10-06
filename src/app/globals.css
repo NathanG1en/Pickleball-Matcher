@@ -64,7 +64,6 @@ body {
 }
 
 .neo-btn:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
   box-shadow: 5px 5px 0px 0px #000000;
 }
 
@@ -95,7 +94,7 @@ body {
 }
 
 .mobile-action-bar {
-  position: fixed;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;

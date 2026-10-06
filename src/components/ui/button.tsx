@@ -18,13 +18,13 @@ export function Button({
 
   const variants = {
     primary:
-      "bg-[#ccff00] text-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
+      "bg-[#ccff00] text-black shadow-[4px_4px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
     secondary:
-      "bg-white text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
+      "bg-white text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
     danger:
-      "bg-[#ff6b6b] text-black shadow-[4px_4px_0px_0px_#000] hover:bg-[#ff5252] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
+      "bg-[#ff6b6b] text-black shadow-[4px_4px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
     outline:
-      "bg-transparent text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neutral-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
+      "bg-transparent text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]",
     ghost:
       "bg-transparent text-black border-transparent shadow-none hover:bg-black/5 hover:border-black hover:shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5",
   };
