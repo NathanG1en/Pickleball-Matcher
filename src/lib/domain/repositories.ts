@@ -1,5 +1,6 @@
 import type {
   AttendanceRecord,
+  GroupRecord,
   MatchRecord,
   PlayerRecord,
   RatingSnapshot,
@@ -11,8 +12,14 @@ import type {
 
 export interface DomainRepository {
   transaction<T>(operation: (repository: DomainRepository) => Promise<T>): Promise<T>;
+  getGroup(groupId: string): Promise<GroupRecord | null>;
+  getGroupByShareId(shareId: string): Promise<GroupRecord | null>;
+  insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
+  listSessions(groupId: string): Promise<readonly SessionRecord[]>;
   listPlayers(groupId: string): Promise<readonly PlayerRecord[]>;
+  createPlayer(player: PlayerRecord): Promise<void>;
+  updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;

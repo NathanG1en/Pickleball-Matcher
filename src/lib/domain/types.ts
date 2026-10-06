@@ -1,5 +1,13 @@
 import type { GeneratedRound, ScoreBreakdown } from "@/lib/matchmaking/types";
 
+export interface GroupRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly organizerPinHash: string;
+  readonly publicShareId: string;
+  readonly createdAt: Date;
+}
+
 export interface PlayerRecord {
   readonly id: string;
   readonly groupId: string;

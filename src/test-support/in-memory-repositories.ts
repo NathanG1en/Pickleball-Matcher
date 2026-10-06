@@ -1,6 +1,7 @@
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  GroupRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -13,6 +14,7 @@ import type {
 } from "@/lib/domain/types";
 
 interface InMemoryState {
+  groups: GroupRecord[];
   players: PlayerRecord[];
   sessions: SessionRecord[];
   attendance: AttendanceRecord[];
@@ -35,6 +37,7 @@ export class InMemoryRepositories implements DomainRepository {
 
   constructor(seed: InMemorySeed = {}) {
     this.state = {
+      groups: structuredClone(seed.groups ?? []),
       players: structuredClone(seed.players ?? []),
       sessions: structuredClone(seed.sessions ?? []),
       attendance: structuredClone(seed.attendance ?? []),
@@ -58,6 +61,42 @@ export class InMemoryRepositories implements DomainRepository {
       this.state = before;
       this.writeCount = writesBefore;
       throw error;
+    }
+  }
+
+  async getGroup(groupId: string) {
+    return this.state.groups.find((group) => group.id === groupId) ?? null;
+  }
+
+  async getGroupByShareId(shareId: string) {
+    return this.state.groups.find((group) => group.publicShareId === shareId) ?? null;
+  }
+
+  async insertGroup(group: GroupRecord) {
+    this.state.groups.push(structuredClone(group));
+    this.writeCount += 1;
+  }
+
+  async listSessions(groupId: string) {
+    return this.state.sessions
+      .filter((session) => session.groupId === groupId)
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+  }
+
+  async createPlayer(player: PlayerRecord) {
+    this.state.players.push(structuredClone(player));
+    this.writeCount += 1;
+  }
+
+  async updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }) {
+    const existing = this.state.players.find(
+      (p) => p.id === player.id && p.groupId === player.groupId,
+    );
+    if (existing) {
+      if (player.name !== undefined) Object.assign(existing, { name: player.name });
+      if (player.active !== undefined) Object.assign(existing, { active: player.active });
+      if (player.initialRating !== undefined) Object.assign(existing, { initialRating: player.initialRating });
+      this.writeCount += 1;
     }
   }
 

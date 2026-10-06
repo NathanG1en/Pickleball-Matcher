@@ -14,14 +14,20 @@
 }
 
 html {
-  background: var(--mist);
+  background: #071317;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
-  color: var(--ink);
-  background: var(--mist);
+  color: #f1f5f9;
+  background: #071317;
   font-family: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  min-height: 100svh;
+}
+
+.mobile-action-bar {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 button,

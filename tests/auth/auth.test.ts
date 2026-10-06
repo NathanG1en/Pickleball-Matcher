@@ -87,7 +87,7 @@ describe("organizer sessions", () => {
       }),
     ).resolves.toBeNull();
 
-    const tampered = `${session.token.slice(0, -1)}${session.token.endsWith("a") ? "b" : "a"}`;
+    const tampered = `${session.token.slice(0, -4)}xxxx`;
     await expect(
       readOrganizerSession(tampered, { secret: sessionSecret, now }),
     ).resolves.toBeNull();

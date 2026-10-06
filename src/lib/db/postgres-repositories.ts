@@ -3,6 +3,7 @@ import type postgres from "postgres";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  GroupRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -21,6 +22,14 @@ export class RepositoryConflictError extends Error {
     this.name = "RepositoryConflictError";
   }
 }
+
+type GroupRow = {
+  id: string;
+  name: string;
+  organizer_pin_hash: string;
+  public_share_id: string;
+  created_at: Date;
+};
 
 type SessionRow = {
   id: string;
@@ -83,6 +92,14 @@ type MatchPlayerRow = {
 };
 
 type SitRow = { round_id: string; player_id: string };
+
+const mapGroup = (row: GroupRow): GroupRecord => ({
+  id: row.id,
+  name: row.name,
+  organizerPinHash: row.organizer_pin_hash,
+  publicShareId: row.public_share_id,
+  createdAt: row.created_at,
+});
 
 const mapSession = (row: SessionRow): SessionRecord => ({
   id: row.id,
@@ -163,6 +180,67 @@ export class PostgresRepositories implements DomainRepository {
     return (await this.database.begin((transaction) =>
       operation(new PostgresRepositories(this.database, transaction)),
     )) as unknown as T;
+  }
+
+  async getGroup(groupId: string): Promise<GroupRecord | null> {
+    const rows = await this.query<GroupRow[]>`
+      select id, name, organizer_pin_hash, public_share_id, created_at
+      from groups where id = ${groupId}
+    `;
+    return rows[0] ? mapGroup(rows[0]) : null;
+  }
+
+  async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
+    const rows = await this.query<GroupRow[]>`
+      select id, name, organizer_pin_hash, public_share_id, created_at
+      from groups where public_share_id = ${shareId}
+    `;
+    return rows[0] ? mapGroup(rows[0]) : null;
+  }
+
+  async insertGroup(group: GroupRecord): Promise<void> {
+    await this.query`
+      insert into groups (id, name, organizer_pin_hash, public_share_id, created_at)
+      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.publicShareId}, ${group.createdAt})
+    `;
+  }
+
+  async listSessions(groupId: string): Promise<readonly SessionRecord[]> {
+    const rows = await this.query<SessionRow[]>`
+      select id, group_id, court_count, status, current_round_number,
+             started_at, ended_at, version
+      from sessions where group_id = ${groupId}
+      order by started_at desc
+    `;
+    return rows.map(mapSession);
+  }
+
+  async createPlayer(player: PlayerRecord): Promise<void> {
+    await this.query`
+      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active)
+      values (${player.id}, ${player.groupId}, ${player.name}, ${player.initialRating}, ${player.rating}, ${player.ratedGamesPlayed}, ${player.active})
+    `;
+  }
+
+  async updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void> {
+    if (player.name !== undefined) {
+      await this.query`
+        update players set name = ${player.name}
+        where id = ${player.id} and group_id = ${player.groupId}
+      `;
+    }
+    if (player.active !== undefined) {
+      await this.query`
+        update players set active = ${player.active}
+        where id = ${player.id} and group_id = ${player.groupId}
+      `;
+    }
+    if (player.initialRating !== undefined) {
+      await this.query`
+        update players set initial_rating = ${player.initialRating}
+        where id = ${player.id} and group_id = ${player.groupId}
+      `;
+    }
   }
 
   async getSession(sessionId: string): Promise<SessionRecord | null> {
