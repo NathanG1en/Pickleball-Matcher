@@ -1,0 +1,6 @@
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  SECRETS_SCAN_OMIT_KEYS = "NEON_BRANCH,SESSION_COOKIE_SECURE"

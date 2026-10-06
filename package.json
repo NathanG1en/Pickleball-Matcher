@@ -26,6 +26,8 @@
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^5.2.8",
     "@fontsource/barlow-condensed": "^5.2.8",
+    "@neon/config": "^1.8.4",
+    "@neon/env": "^1.5.1",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",
     "next": "^16.3.8",
