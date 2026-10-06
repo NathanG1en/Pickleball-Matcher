@@ -5,6 +5,8 @@ out/
 coverage/
 playwright-report/
 test-results/
+supabase/.branches/
+supabase/.temp/
 .env
 .env.local
 .env.*.local
