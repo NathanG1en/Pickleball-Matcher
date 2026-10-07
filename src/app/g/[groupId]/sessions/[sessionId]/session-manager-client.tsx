@@ -93,7 +93,10 @@ export function SessionManagerClient({
     }
   };
 
-  const handleStartRound = async () => {
+  const handleStartRound = async (customProposal?: {
+    courts: readonly { courtNumber: number; team1: readonly string[]; team2: readonly string[] }[];
+    sitting: readonly string[];
+  }) => {
     if (!activeProposal) return;
     setIsPending(true);
     setError(null);
@@ -104,6 +107,12 @@ export function SessionManagerClient({
         sessionVersion: session.version,
         seed: activeProposal.seed,
         idempotencyKey: createIdempotencyKey("start_rd"),
+        manualCourts: customProposal?.courts.map((c) => ({
+          courtNumber: c.courtNumber,
+          team1: [...c.team1],
+          team2: [...c.team2],
+        })),
+        manualSitting: customProposal ? [...customProposal.sitting] : undefined,
       });
       if (res.ok) {
         setRegeneratedProposal(null);
