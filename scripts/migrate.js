@@ -27,7 +27,7 @@ async function run() {
     create table if not exists _migrations (name text primary key, applied_at timestamptz default now());
   `);
 
-  const migrationsDir = path.resolve(process.cwd(), "supabase/migrations");
+  const migrationsDir = path.resolve(process.cwd(), "migrations");
   const files = fs
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))

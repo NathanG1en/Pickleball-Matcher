@@ -100,6 +100,22 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
+  async deletePlayer(playerId: string, groupId: string) {
+    this.state.players = this.state.players.filter(
+      (p) => !(p.id === playerId && p.groupId === groupId),
+    );
+    this.state.attendance = this.state.attendance.filter(
+      (a) => a.playerId !== playerId,
+    );
+    this.state.matchPlayers = this.state.matchPlayers.filter(
+      (mp) => mp.playerId !== playerId,
+    );
+    this.state.roundSits = this.state.roundSits.filter(
+      (rs) => rs.playerId !== playerId,
+    );
+    this.writeCount += 1;
+  }
+
   async getSession(sessionId: string) {
     return this.state.sessions.find((session) => session.id === sessionId) ?? null;
   }

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 export interface MatchScoreEntry {
   readonly id: string;
   readonly courtNumber: number;
-  readonly team1Names: readonly [string, string];
-  readonly team2Names: readonly [string, string];
+  readonly team1Names: readonly string[];
+  readonly team2Names: readonly string[];
   readonly team1Score: number | null;
   readonly team2Score: number | null;
   readonly status: "pending" | "completed" | "cancelled";
@@ -97,6 +97,8 @@ export function ResultsEntryView({
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
 
+          const isSingles = match.team1Names.length === 1 && match.team2Names.length === 1;
+
           return (
             <div
               key={match.id}
@@ -110,11 +112,18 @@ export function ResultsEntryView({
               }`}
             >
               <div className="flex items-center justify-between border-b-2 border-neutral-100 pb-2">
-                <span className="font-display text-2xl font-black uppercase text-black">
-                  Court {match.courtNumber}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-2xl font-black uppercase text-black">
+                    Court {match.courtNumber}
+                  </span>
+                  {isSingles && (
+                    <span className="text-xs font-black uppercase text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded-md">
+                      Singles (Optional)
+                    </span>
+                  )}
+                </div>
                 <div>
-                  {isCancelled && <Badge variant="muted">Cancelled</Badge>}
+                  {isCancelled && <Badge variant="muted">{isSingles ? "Unrecorded" : "Cancelled"}</Badge>}
                   {isCompleted && <Badge variant="success">Final</Badge>}
                   {match.status === "pending" && <Badge variant="warning">In Play</Badge>}
                 </div>
@@ -125,7 +134,7 @@ export function ResultsEntryView({
                 {/* Team 1 */}
                 <div className="space-y-2 p-3 bg-white rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                   <div className="text-sm font-black text-black">
-                    {match.team1Names[0]} &amp; {match.team1Names[1]}
+                    {match.team1Names.join(" & ")}
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -147,7 +156,7 @@ export function ResultsEntryView({
                 {/* Team 2 */}
                 <div className="space-y-2 p-3 bg-white rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                   <div className="text-sm font-black text-black">
-                    {match.team2Names[0]} &amp; {match.team2Names[1]}
+                    {match.team2Names.join(" & ")}
                   </div>
                   <div className="flex items-center gap-2">
                     <input

@@ -23,6 +23,9 @@ export async function replayRatings(
   const snapshots = new Map<string, readonly RatingSnapshot[]>();
 
   for (const match of matches) {
+    if (match.team1.length !== 2 || match.team2.length !== 2) {
+      continue;
+    }
     const team1 = match.team1.map((playerId) => ({
       id: playerId,
       rating: current.get(playerId)!.rating,

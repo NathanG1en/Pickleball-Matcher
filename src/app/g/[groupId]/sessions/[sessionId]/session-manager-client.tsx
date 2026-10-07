@@ -374,8 +374,8 @@ export function SessionManagerClient({
         return {
           id: match.id,
           courtNumber: match.courtNumber,
-          team1Names: [team1Players[0] ?? "Player 1", team1Players[1] ?? "Player 2"],
-          team2Names: [team2Players[0] ?? "Player 3", team2Players[1] ?? "Player 4"],
+          team1Names: team1Players.length > 0 ? team1Players : ["Player 1"],
+          team2Names: team2Players.length > 0 ? team2Players : ["Player 2"],
           team1Score: match.team1Score,
           team2Score: match.team2Score,
           status: match.status,
@@ -462,8 +462,8 @@ export function SessionManagerClient({
           }}
           courts={activeProposal.courts.map((c) => ({
             courtNumber: c.courtNumber,
-            team1: [c.team1[0], c.team1[1]],
-            team2: [c.team2[0], c.team2[1]],
+            team1: c.team1,
+            team2: c.team2,
           }))}
           sittingPlayerIds={activeProposal.sitting}
           playerNames={playerNames}
@@ -601,7 +601,7 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={() => setShowAttendanceModal(false)}
-                className="text-black font-black text-sm p-1 hover:rotate-90 transition-transform cursor-pointer"
+                className="text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
               >
                 ✕ Close
               </button>

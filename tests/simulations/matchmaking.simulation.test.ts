@@ -55,8 +55,10 @@ function advanceHistory(history: Map<string, PairHistory>, candidate: RoundCandi
     });
   }
   for (const court of candidate.courts) {
-    addPairHistory(history, court.team1[0], court.team1[1], "partner");
-    addPairHistory(history, court.team2[0], court.team2[1], "partner");
+    if (court.team1.length === 2 && court.team2.length === 2) {
+      addPairHistory(history, court.team1[0], court.team1[1], "partner");
+      addPairHistory(history, court.team2[0], court.team2[1], "partner");
+    }
     for (const first of court.team1) {
       for (const second of court.team2) addPairHistory(history, first, second, "opponent");
     }
@@ -115,8 +117,14 @@ function totalSkillDifference(
 ): number {
   const ratings = new Map(players.map((player) => [player.id, player.rating]));
   return candidate.courts.reduce((total, court) => {
-    const team1 = (ratings.get(court.team1[0])! + ratings.get(court.team1[1])!) / 2;
-    const team2 = (ratings.get(court.team2[0])! + ratings.get(court.team2[1])!) / 2;
+    const team1 =
+      court.team1.length === 1
+        ? ratings.get(court.team1[0])!
+        : (ratings.get(court.team1[0])! + ratings.get(court.team1[1])!) / 2;
+    const team2 =
+      court.team2.length === 1
+        ? ratings.get(court.team2[0])!
+        : (ratings.get(court.team2[0])! + ratings.get(court.team2[1])!) / 2;
     return total + Math.abs(team1 - team2);
   }, 0);
 }

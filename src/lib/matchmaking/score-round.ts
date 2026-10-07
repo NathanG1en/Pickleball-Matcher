@@ -34,13 +34,17 @@ export function scoreSkillBalance(
 ): number {
   const indexed = playerIndex(players);
   const team1 =
-    (requiredPlayer(indexed, court.team1[0]).rating +
-      requiredPlayer(indexed, court.team1[1]).rating) /
-    2;
+    court.team1.length === 1
+      ? requiredPlayer(indexed, court.team1[0]).rating
+      : (requiredPlayer(indexed, court.team1[0]).rating +
+          requiredPlayer(indexed, court.team1[1]).rating) /
+        2;
   const team2 =
-    (requiredPlayer(indexed, court.team2[0]).rating +
-      requiredPlayer(indexed, court.team2[1]).rating) /
-    2;
+    court.team2.length === 1
+      ? requiredPlayer(indexed, court.team2[0]).rating
+      : (requiredPlayer(indexed, court.team2[0]).rating +
+          requiredPlayer(indexed, court.team2[1]).rating) /
+        2;
   return Math.abs(team1 - team2);
 }
 
@@ -63,14 +67,20 @@ function candidatePairPenalties(
   let opponent = 0;
 
   for (const court of candidate.courts) {
-    partner += scorePartnerPair(
-      historyFor(indexedHistory, court.team1[0], court.team1[1]),
-      context.config,
-    );
-    partner += scorePartnerPair(
-      historyFor(indexedHistory, court.team2[0], court.team2[1]),
-      context.config,
-    );
+    if (court.team1.length === 2) {
+      const [p1, p2] = court.team1;
+      partner += scorePartnerPair(
+        historyFor(indexedHistory, p1, p2),
+        context.config,
+      );
+    }
+    if (court.team2.length === 2) {
+      const [p1, p2] = court.team2;
+      partner += scorePartnerPair(
+        historyFor(indexedHistory, p1, p2),
+        context.config,
+      );
+    }
 
     for (const team1Player of court.team1) {
       for (const team2Player of court.team2) {

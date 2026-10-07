@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { createPlayerAction, updatePlayerAction } from "@/app/actions/players";
+import { createPlayerAction, deletePlayerAction, updatePlayerAction } from "@/app/actions/players";
 import { PlayerRoster } from "@/components/players/player-roster";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
@@ -68,6 +68,28 @@ export function PlayersClient({
     }
   };
 
+  const handleDeletePlayer = async (player: PlayerRecord) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await deletePlayerAction({
+        groupId,
+        playerId: player.id,
+        idempotencyKey: createIdempotencyKey(`p_del_${player.id}`),
+      });
+      if (res.ok) {
+        setPlayers((prev) => prev.filter((p) => p.id !== player.id));
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to delete player.");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {error && (
@@ -82,6 +104,7 @@ export function PlayersClient({
         isPending={isPending}
         onAddPlayer={handleAddPlayer}
         onToggleActive={handleToggleActive}
+        onDeletePlayer={handleDeletePlayer}
       />
     </div>
   );

@@ -62,8 +62,8 @@ export default async function SharedSessionPage({
 
         return {
           courtNumber: m.courtNumber,
-          team1Names: [team1[0] ?? "Player 1", team1[1] ?? "Player 2"],
-          team2Names: [team2[0] ?? "Player 3", team2[1] ?? "Player 4"],
+          team1Names: team1.length > 0 ? team1 : ["Player 1"],
+          team2Names: team2.length > 0 ? team2 : ["Player 2"],
           team1Score: m.team1Score,
           team2Score: m.team2Score,
           status: m.status,

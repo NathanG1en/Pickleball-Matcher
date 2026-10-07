@@ -20,6 +20,7 @@ export interface DomainRepository {
   listPlayers(groupId: string): Promise<readonly PlayerRecord[]>;
   createPlayer(player: PlayerRecord): Promise<void>;
   updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;
+  deletePlayer(playerId: string, groupId: string): Promise<void>;
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;
