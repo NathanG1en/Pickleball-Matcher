@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createGroupAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 
@@ -40,7 +41,14 @@ export default function SetupGroupPage() {
 
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white border-[3px] border-black rounded-3xl p-6 sm:p-8 shadow-[8px_8px_0px_0px_#000] text-black">
+      <div className="relative w-full max-w-md bg-white border-[3px] border-black rounded-3xl p-6 sm:p-8 shadow-[8px_8px_0px_0px_#000] text-black">
+        <Link
+          href="/"
+          aria-label="Close group creation and return home"
+          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-xl font-black leading-none hover:bg-[#fde047]"
+        >
+          ×
+        </Link>
         <div className="mb-6 text-center space-y-2">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Pickleball Matchmaker

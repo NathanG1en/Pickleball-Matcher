@@ -1,14 +1,7 @@
-import React from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 
-export default async function GroupLoginPage({
-  params,
-}: {
-  params: Promise<{ groupId: string }>;
-}) {
-  const { groupId } = await params;
-
+export default function LoginPage() {
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
       <div className="relative w-full max-w-sm bg-white border-[3px] border-black rounded-3xl p-6 sm:p-8 shadow-[8px_8px_0px_0px_#000] text-center">
@@ -26,10 +19,10 @@ export default async function GroupLoginPage({
           Organizer Sign In
         </h1>
         <p className="text-sm font-bold text-neutral-700 mb-6">
-          Enter your organizer PIN to manage sessions.
+          Enter your group ID and organizer PIN to manage sessions.
         </p>
 
-        <LoginForm groupId={groupId} />
+        <LoginForm />
       </div>
     </main>
   );
