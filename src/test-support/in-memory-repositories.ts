@@ -68,6 +68,11 @@ export class InMemoryRepositories implements DomainRepository {
     return this.state.groups.find((group) => group.id === groupId) ?? null;
   }
 
+  async getGroupsByName(name: string) {
+    const exactName = name.trim();
+    return this.state.groups.filter((group) => group.name === exactName);
+  }
+
   async getGroupByShareId(shareId: string) {
     return this.state.groups.find((group) => group.publicShareId === shareId) ?? null;
   }

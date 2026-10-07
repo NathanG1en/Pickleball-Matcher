@@ -57,7 +57,7 @@ export default function SetupGroupPage() {
             Create Group
           </h1>
           <p className="text-sm font-bold text-neutral-700">
-            Set up your recurring group and organizer PIN.
+            Set up your recurring group and organizer PIN. Group names are case-sensitive and must be unique.
           </p>
         </div>
 

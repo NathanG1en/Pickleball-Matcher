@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createGroupAction, organizerLoginAction } from "@/app/actions/auth";
+import { createGroupAction, organizerLoginAction, organizerLogoutAction } from "@/app/actions/auth";
 import { startSessionAction } from "@/app/actions/sessions";
 import { recordResultAction } from "@/app/actions/results";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
@@ -49,14 +49,33 @@ describe("Server Actions Security and Validation", () => {
 
   it("validates PIN and enforces generic failure message on login", async () => {
     const failedResult = await organizerLoginAction({
-      groupId: "group-1",
+      groupName: "Tuesday Group",
       pin: "0000",
     });
 
     expect(failedResult.ok).toBe(false);
     if (!failedResult.ok) {
-      expect(failedResult.error).toContain("Invalid PIN");
+      expect(failedResult.error).toContain("group name and PIN");
     }
+  });
+
+  it("preserves saved session history when an organizer logs out", async () => {
+    const savedSession = {
+      id: "session-history-1",
+      groupId: "group-1",
+      courtCount: 2,
+      status: "completed" as const,
+      currentRoundNumber: 4,
+      startedAt: new Date("2026-10-01T12:00:00.000Z"),
+      endedAt: new Date("2026-10-01T14:00:00.000Z"),
+      version: 1,
+    };
+    repository.state.sessions.push(savedSession);
+
+    const logoutResult = await organizerLogoutAction();
+
+    expect(logoutResult.ok).toBe(true);
+    expect(await repository.listSessions("group-1")).toEqual([savedSession]);
   });
 
   it("rejects unauthorized organizer mutations without session cookie", async () => {

@@ -19,7 +19,7 @@ export default function LoginPage() {
           Organizer Sign In
         </h1>
         <p className="text-sm font-bold text-neutral-700 mb-6">
-          Enter your group ID and organizer PIN to manage sessions.
+          Enter your group name and organizer PIN to manage sessions.
         </p>
 
         <LoginForm />

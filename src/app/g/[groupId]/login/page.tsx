@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { getActionRepository } from "@/app/actions/action-context";
 import { LoginForm } from "@/components/auth/login-form";
 
 export default async function GroupLoginPage({
@@ -8,6 +9,7 @@ export default async function GroupLoginPage({
   params: Promise<{ groupId: string }>;
 }) {
   const { groupId } = await params;
+  const group = await getActionRepository().getGroup(groupId);
 
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
@@ -29,7 +31,7 @@ export default async function GroupLoginPage({
           Enter your organizer PIN to manage sessions.
         </p>
 
-        <LoginForm groupId={groupId} />
+        <LoginForm initialGroupName={group?.name ?? ""} />
       </div>
     </main>
   );

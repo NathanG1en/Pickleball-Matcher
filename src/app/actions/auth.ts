@@ -33,6 +33,9 @@ export async function createGroupAction(input: unknown): Promise<ActionResult<{ 
 
   try {
     const repository = getActionRepository();
+    if ((await repository.getGroupsByName(parsed.data.name)).length > 0) {
+      return { ok: false, error: "A group with this exact name already exists." };
+    }
     const groupId = `grp_${randomUUID().slice(0, 10)}`;
     const publicShareId = `shr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
     const pinHash = await hashPin(parsed.data.pin);
@@ -67,6 +70,12 @@ export async function createGroupAction(input: unknown): Promise<ActionResult<{ 
       },
     };
   } catch (error) {
+    if (
+      error && typeof error === "object" && "code" in error &&
+      (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")
+    ) {
+      return { ok: false, error: "A group with this exact name already exists." };
+    }
     return {
       ok: false,
       error: error instanceof Error ? error.message : "Failed to create group",
@@ -79,27 +88,32 @@ export async function organizerLoginAction(input: unknown): Promise<ActionResult
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Please enter a valid Group ID and PIN",
+      error: "Please enter a valid group name and PIN",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
 
   try {
     const repository = getActionRepository();
-    const group = await repository.getGroup(parsed.data.groupId);
-
-    const authResult = await authenticateOrganizerPin(
-      parsed.data.pin,
-      group?.organizerPinHash ?? null,
+    const groups = await repository.getGroupsByName(parsed.data.groupName);
+    const matches = await Promise.all(
+      groups.map(async (group) => ({
+        group,
+        auth: await authenticateOrganizerPin(parsed.data.pin, group.organizerPinHash),
+      })),
     );
+    const matchingGroups = matches.filter(({ auth }) => auth.ok);
 
-    if (!authResult.ok) {
-      return { ok: false, error: "Unable to sign in. Invalid PIN or group ID." };
+    if (matchingGroups.length !== 1) {
+      if (groups.length === 0) await authenticateOrganizerPin(parsed.data.pin, null);
+      return { ok: false, error: "Unable to sign in. Check your group name and PIN." };
     }
+
+    const groupId = matchingGroups[0].group.id;
 
     const sessionSecret = process.env.ORGANIZER_SESSION_SECRET ?? process.env.SESSION_SECRET ?? "fallback-development-session-secret-32-chars!!";
     const session = await createOrganizerSession({
-      groupId: parsed.data.groupId,
+      groupId,
       secret: sessionSecret,
     });
 
@@ -110,9 +124,9 @@ export async function organizerLoginAction(input: unknown): Promise<ActionResult
       // Non-request test contexts
     }
 
-    return { ok: true, data: { groupId: parsed.data.groupId } };
+    return { ok: true, data: { groupId } };
   } catch {
-    return { ok: false, error: "Unable to sign in. Invalid PIN or group ID." };
+    return { ok: false, error: "Unable to sign in. Check your group name and PIN." };
   }
 }
 

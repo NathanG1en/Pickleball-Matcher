@@ -103,7 +103,7 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS groups (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         organizer_pin_hash TEXT NOT NULL,
         public_share_id TEXT NOT NULL UNIQUE,
         created_at TEXT NOT NULL
@@ -259,6 +259,19 @@ export class SqliteDomainRepository implements DomainRepository {
       publicShareId: row.public_share_id,
       createdAt: new Date(row.created_at),
     };
+  }
+
+  async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
+    const rows = this.db
+      .prepare("SELECT * FROM groups WHERE name = ?")
+      .all(name.trim()) as unknown as GroupRow[];
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      organizerPinHash: row.organizer_pin_hash,
+      publicShareId: row.public_share_id,
+      createdAt: new Date(row.created_at),
+    }));
   }
 
   async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
