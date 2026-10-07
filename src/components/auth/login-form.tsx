@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { organizerLoginAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 
-export function LoginForm({ groupId }: { groupId: string }) {
+export function LoginForm({ groupId: initialGroupId = "" }: { groupId?: string }) {
   const router = useRouter();
+  const [groupId, setGroupId] = useState(initialGroupId);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -44,6 +45,22 @@ export function LoginForm({ groupId }: { groupId: string }) {
       )}
 
       <div>
+        <label htmlFor="login-group-id" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+          Group ID
+        </label>
+        <input
+          id="login-group-id"
+          type="text"
+          required
+          autoComplete="off"
+          value={groupId}
+          onChange={(e) => setGroupId(e.target.value)}
+          placeholder="e.g. grp_..."
+          className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+        />
+      </div>
+
+      <div>
         <label htmlFor="login-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
           Organizer PIN
         </label>
@@ -65,7 +82,7 @@ export function LoginForm({ groupId }: { groupId: string }) {
         type="submit"
         variant="primary"
         size="lg"
-        disabled={isPending || pin.length < 4}
+        disabled={isPending || pin.length < 4 || !groupId.trim()}
         className="w-full mt-3 font-display text-lg tracking-wide uppercase"
       >
         {isPending ? "Signing In..." : "Unlock"}

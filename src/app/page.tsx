@@ -73,8 +73,14 @@ export default function HomePage() {
           >
             Create Your Group →
           </Link>
+          <Link
+            href="/login"
+            className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display"
+          >
+            Sign In to Your Group
+          </Link>
           <p className="text-xs font-bold text-neutral-600">
-            Returning organizer? Open your group&apos;s private bookmark or link.
+            Sign in with your group ID and organizer PIN.
           </p>
         </div>
       </section>
