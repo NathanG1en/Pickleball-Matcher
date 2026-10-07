@@ -13,6 +13,7 @@ import type {
 export interface DomainRepository {
   transaction<T>(operation: (repository: DomainRepository) => Promise<T>): Promise<T>;
   getGroup(groupId: string): Promise<GroupRecord | null>;
+  getGroupsByName(name: string): Promise<readonly GroupRecord[]>;
   getGroupByShareId(shareId: string): Promise<GroupRecord | null>;
   insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;

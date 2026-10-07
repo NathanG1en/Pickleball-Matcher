@@ -22,7 +22,7 @@ export const createGroupSchema = z
 
 export const organizerLoginSchema = z
   .object({
-    groupId: entityIdSchema,
+    groupName: z.string().trim().min(1).max(80),
     pin: organizerPinSchema,
   })
   .strict();
@@ -59,4 +59,3 @@ export const deletePlayerSchema = z
     idempotencyKey: entityIdSchema.optional(),
   })
   .strict();
-

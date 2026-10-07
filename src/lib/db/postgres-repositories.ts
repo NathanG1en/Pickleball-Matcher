@@ -190,6 +190,14 @@ export class PostgresRepositories implements DomainRepository {
     return rows[0] ? mapGroup(rows[0]) : null;
   }
 
+  async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
+    const rows = await this.query<GroupRow[]>`
+      select id, name, organizer_pin_hash, public_share_id, created_at
+      from groups where name = ${name.trim()}
+    `;
+    return rows.map(mapGroup);
+  }
+
   async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
       select id, name, organizer_pin_hash, public_share_id, created_at
