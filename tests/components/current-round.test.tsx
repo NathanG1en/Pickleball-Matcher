@@ -63,4 +63,11 @@ describe("CurrentRoundView Component", () => {
     expect(html).toContain("mobile-action-bar");
     expect(html).toContain("Start Round");
   });
+
+  it("renders lineup customization friction button in proposal draft", () => {
+    const html = renderToStaticMarkup(<CurrentRoundView {...sampleProps} />);
+
+    expect(html).toContain("Customize Lineup");
+    expect(html).toContain("Proposal Draft");
+  });
 });
