@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 
 export interface RoundCourtData {
   readonly courtNumber: number;
-  readonly team1: readonly [string, string];
-  readonly team2: readonly [string, string];
+  readonly team1: readonly string[];
+  readonly team2: readonly string[];
 }
 
 export interface CurrentRoundViewProps {
@@ -82,7 +82,7 @@ export function CurrentRoundView({
                 Court {court.courtNumber}
               </span>
               <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                Doubles Match
+                {court.team1.length === 1 ? "Singles • Unrated" : "Doubles Match"}
               </span>
             </div>
 
@@ -90,12 +90,16 @@ export function CurrentRoundView({
               {/* Team 1 */}
               <div className="p-3 bg-[#e0f2fe] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                 <span className="text-xs uppercase font-black tracking-wider text-black block mb-1">
-                  Team 1
+                  {court.team1.length === 1 ? "Player 1" : "Team 1"}
                 </span>
                 <div className="text-base font-black text-black flex items-center justify-between">
                   <span>{nameFor(court.team1[0])}</span>
-                  <span className="font-bold text-neutral-600">&amp;</span>
-                  <span>{nameFor(court.team1[1])}</span>
+                  {court.team1.length > 1 && (
+                    <>
+                      <span className="font-bold text-neutral-600">&amp;</span>
+                      <span>{nameFor(court.team1[1])}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -106,12 +110,16 @@ export function CurrentRoundView({
               {/* Team 2 */}
               <div className="p-3 bg-[#fef08a] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                 <span className="text-xs uppercase font-black tracking-wider text-black block mb-1">
-                  Team 2
+                  {court.team2.length === 1 ? "Player 2" : "Team 2"}
                 </span>
                 <div className="text-base font-black text-black flex items-center justify-between">
                   <span>{nameFor(court.team2[0])}</span>
-                  <span className="font-bold text-neutral-600">&amp;</span>
-                  <span>{nameFor(court.team2[1])}</span>
+                  {court.team2.length > 1 && (
+                    <>
+                      <span className="font-bold text-neutral-600">&amp;</span>
+                      <span>{nameFor(court.team2[1])}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

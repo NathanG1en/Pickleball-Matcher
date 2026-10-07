@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { getActionRepository, requireOrganizer } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
 import type { PlayerRecord } from "@/lib/domain/types";
-import { createPlayerSchema, updatePlayerSchema } from "@/lib/validation/group";
+import { createPlayerSchema, deletePlayerSchema, updatePlayerSchema } from "@/lib/validation/group";
 
 export async function createPlayerAction(input: unknown): Promise<ActionResult<PlayerRecord>> {
   const parsed = createPlayerSchema.safeParse(input);
@@ -60,6 +60,27 @@ export async function updatePlayerAction(input: unknown): Promise<ActionResult> 
     return { ok: true, data: undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update player";
+    return { ok: false, error: message };
+  }
+}
+
+export async function deletePlayerAction(input: unknown): Promise<ActionResult> {
+  const parsed = deletePlayerSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid player delete data",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const repository = getActionRepository();
+    await repository.deletePlayer(parsed.data.playerId, parsed.data.groupId);
+    return { ok: true, data: undefined };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to delete player";
     return { ok: false, error: message };
   }
 }

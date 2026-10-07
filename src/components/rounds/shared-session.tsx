@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 
 export interface SharedCourtData {
   readonly courtNumber: number;
-  readonly team1Names: readonly [string, string];
-  readonly team2Names: readonly [string, string];
+  readonly team1Names: readonly string[];
+  readonly team2Names: readonly string[];
   readonly team1Score: number | null;
   readonly team2Score: number | null;
   readonly status: "pending" | "completed" | "cancelled";
@@ -70,7 +70,7 @@ export function SharedSessionView({
               {/* Team 1 */}
               <div className="flex items-center justify-between p-3 bg-[#e0f2fe] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                 <span className="font-black text-black text-base">
-                  {court.team1Names[0]} &amp; {court.team1Names[1]}
+                  {court.team1Names.join(" & ")}
                 </span>
                 {isCompleted && (
                   <span className="font-display text-3xl font-black text-black ml-3 bg-white px-2.5 py-0.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000]">
@@ -86,7 +86,7 @@ export function SharedSessionView({
               {/* Team 2 */}
               <div className="flex items-center justify-between p-3 bg-[#fef08a] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                 <span className="font-black text-black text-base">
-                  {court.team2Names[0]} &amp; {court.team2Names[1]}
+                  {court.team2Names.join(" & ")}
                 </span>
                 {isCompleted && (
                   <span className="font-display text-3xl font-black text-black ml-3 bg-white px-2.5 py-0.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000]">

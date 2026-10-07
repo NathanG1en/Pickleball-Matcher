@@ -51,3 +51,12 @@ export const updatePlayerSchema = z
       name !== undefined || active !== undefined || initialRating !== undefined,
     { message: "At least one player field must change" },
   );
+
+export const deletePlayerSchema = z
+  .object({
+    groupId: entityIdSchema,
+    playerId: entityIdSchema,
+    idempotencyKey: entityIdSchema.optional(),
+  })
+  .strict();
+

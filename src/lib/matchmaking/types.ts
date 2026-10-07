@@ -1,6 +1,6 @@
 export type PlayerId = string;
 
-export type Team = readonly [PlayerId, PlayerId];
+export type Team = readonly [PlayerId, PlayerId] | readonly [PlayerId];
 
 export interface MatchmakingPlayer {
   readonly id: PlayerId;
@@ -26,6 +26,7 @@ export interface CourtAssignment {
   readonly courtNumber: number;
   readonly team1: Team;
   readonly team2: Team;
+  readonly matchType?: "doubles" | "singles";
 }
 
 export interface RoundCandidate {
@@ -132,4 +133,5 @@ export interface GenerateRoundInput {
   readonly pairHistory: readonly PairHistory[];
   readonly config?: MatchmakingConfig;
   readonly seed?: number;
+  readonly allowSingles?: boolean;
 }
