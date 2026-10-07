@@ -118,11 +118,35 @@ export async function startRoundAction(
   try {
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
-    // Re-generate deterministic proposal using seed
-    const proposal = await service.proposeRound(
-      parsed.data.sessionId,
-      parsed.data.seed,
-    );
+    let proposal: RoundProposal;
+    if (parsed.data.manualCourts && parsed.data.manualSitting) {
+      proposal = {
+        courts: parsed.data.manualCourts.map((c) => ({
+          courtNumber: c.courtNumber,
+          team1: c.team1.length === 2 ? ([c.team1[0], c.team1[1]] as const) : ([c.team1[0]] as const),
+          team2: c.team2.length === 2 ? ([c.team2[0], c.team2[1]] as const) : ([c.team2[0]] as const),
+          matchType: c.team1.length === 2 ? "doubles" : "singles",
+        })),
+        sitting: parsed.data.manualSitting,
+        seed: parsed.data.seed,
+        score: 0,
+        scoreBreakdown: {
+          playingTime: 0,
+          consecutiveSit: 0,
+          partnerRepeat: 0,
+          skillBalance: 0,
+          opponentRepeat: 0,
+          tieBreak: 0,
+          total: 0,
+        },
+      };
+    } else {
+      // Re-generate deterministic proposal using seed
+      proposal = await service.proposeRound(
+        parsed.data.sessionId,
+        parsed.data.seed,
+      );
+    }
     const started = await service.startRound(parsed.data.sessionId, proposal);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: started };
