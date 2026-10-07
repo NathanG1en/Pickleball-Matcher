@@ -10,3 +10,11 @@ test-results/
 .env.*.local
 !.env.example
 *.tsbuildinfo
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+*.pyc
+.marimo/
+analysis/*.db
+analysis/*.sqlite

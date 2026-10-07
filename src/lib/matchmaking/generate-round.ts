@@ -53,7 +53,7 @@ function bestCourtPairing(
   let bestScore = Number.POSITIVE_INFINITY;
 
   for (const [team1, team2] of pairingOptions(group)) {
-    const court = { courtNumber, team1, team2 };
+    const court: CourtAssignment = { courtNumber, team1, team2, matchType: "doubles" };
     const score = scoreRound(
       { courts: [court], sitting: [] },
       { ...candidateContext, tieBreak: 0 },
@@ -74,12 +74,16 @@ function betterScore(candidate: ScoreBreakdown, current: ScoreBreakdown | null):
 }
 
 export function generateRound(input: GenerateRoundInput): GenerationResult {
-  if (input.players.length < 4) {
+  const allowSingles = input.allowSingles ?? true;
+  const minPlayers = allowSingles ? 2 : 4;
+  if (input.players.length < minPlayers) {
     return {
       ok: false,
       error: {
         code: "INSUFFICIENT_PLAYERS",
-        message: "At least 4 players are required for doubles.",
+        message: allowSingles
+          ? "At least 2 players are required."
+          : "At least 4 players are required for doubles.",
       },
     };
   }
@@ -96,8 +100,13 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
   const config = input.config ?? DEFAULT_MATCHMAKING_CONFIG;
   const seed = input.seed ?? stableInputSeed(input.players, input.courts);
   const random = createSeededRandom(seed);
-  const courtCount = Math.min(Math.floor(input.players.length / 4), input.courts);
-  const sitCount = input.players.length - courtCount * 4;
+  const doublesCourtCount = Math.min(Math.floor(input.players.length / 4), input.courts);
+  const leftoverPlayers = input.players.length - doublesCourtCount * 4;
+  const remainingCourts = input.courts - doublesCourtCount;
+  const singlesCourtCount =
+    allowSingles && leftoverPlayers >= 2 && remainingCourts >= 1 ? 1 : 0;
+  const totalActivePlayers = doublesCourtCount * 4 + singlesCourtCount * 2;
+  const sitCount = input.players.length - totalActivePlayers;
   const pairHistory = buildPairHistoryIndex(input.pairHistory);
   let bestCandidate: RoundCandidate | null = null;
   let bestBreakdown: ScoreBreakdown | null = null;
@@ -121,8 +130,9 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
       sittingPenalty,
     };
     const courts: CourtAssignment[] = [];
+    const doublesPlayerCount = doublesCourtCount * 4;
 
-    for (let index = 0; index < activePlayers.length; index += 4) {
+    for (let index = 0; index < doublesPlayerCount; index += 4) {
       courts.push(
         bestCourtPairing(
           activePlayers.slice(index, index + 4).map((player) => player.id),
@@ -130,6 +140,16 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
           context,
         ),
       );
+    }
+
+    if (singlesCourtCount === 1) {
+      const singlesPair = activePlayers.slice(doublesPlayerCount, doublesPlayerCount + 2);
+      courts.push({
+        courtNumber: courts.length + 1,
+        team1: [singlesPair[0].id],
+        team2: [singlesPair[1].id],
+        matchType: "singles",
+      });
     }
 
     const candidate = { courts, sitting };

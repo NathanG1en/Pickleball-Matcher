@@ -75,10 +75,13 @@ function sessionPairHistory(rounds: readonly StartedRoundRecord[]): PairHistory[
       const members = record.matchPlayers.filter((item) => item.matchId === match.id);
       const team1 = members.filter((item) => item.team === 1).map((item) => item.playerId);
       const team2 = members.filter((item) => item.team === 2).map((item) => item.playerId);
-      if (team1.length !== 2 || team2.length !== 2) continue;
-      touch(team1[0], team1[1], "partner");
-      touch(team2[0], team2[1], "partner");
-      for (const first of team1) for (const second of team2) touch(first, second, "opponent");
+      if (team1.length === 2 && team2.length === 2) {
+        touch(team1[0], team1[1], "partner");
+        touch(team2[0], team2[1], "partner");
+        for (const first of team1) for (const second of team2) touch(first, second, "opponent");
+      } else if (team1.length === 1 && team2.length === 1) {
+        touch(team1[0], team2[0], "opponent");
+      }
     }
   }
   return [...history.values()];
@@ -311,8 +314,20 @@ export class SessionService {
       const round = await requiredRound(repository, roundId);
       const records = await repository.listStartedRounds(round.sessionId);
       const record = records.find((item) => item.round.id === roundId)!;
-      if (record.matches.some((match) => match.status === "pending")) {
-        throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
+      for (const match of record.matches) {
+        if (match.status === "pending") {
+          const playersForMatch = record.matchPlayers.filter((item) => item.matchId === match.id);
+          const isSingles = playersForMatch.length === 2;
+          if (isSingles) {
+            await repository.updateMatch({
+              ...match,
+              status: "cancelled",
+              version: match.version + 1,
+            });
+          } else {
+            throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
+          }
+        }
       }
       const updated = {
         ...round,

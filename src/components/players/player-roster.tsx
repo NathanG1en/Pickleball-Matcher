@@ -11,6 +11,7 @@ export interface PlayerRosterProps {
   readonly isPending?: boolean;
   readonly onAddPlayer?: (name: string, initialRating: number) => void;
   readonly onToggleActive?: (player: PlayerRecord) => void;
+  readonly onDeletePlayer?: (player: PlayerRecord) => void;
 }
 
 export function PlayerRoster({
@@ -18,9 +19,11 @@ export function PlayerRoster({
   isPending = false,
   onAddPlayer,
   onToggleActive,
+  onDeletePlayer,
 }: PlayerRosterProps) {
   const [name, setName] = useState("");
   const [initialRating, setInitialRating] = useState(1000);
+  const [playerToDelete, setPlayerToDelete] = useState<PlayerRecord | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,11 +110,60 @@ export function PlayerRoster({
                     {player.active ? "Deactivate" : "Activate"}
                   </button>
                 )}
+                {onDeletePlayer && (
+                  <button
+                    type="button"
+                    onClick={() => setPlayerToDelete(player)}
+                    disabled={isPending}
+                    className="text-xs font-black uppercase text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       </section>
+
+      {/* Delete Confirmation Modal */}
+      {playerToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
+            <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
+              Are you sure?
+            </h3>
+            <p className="text-sm font-bold text-neutral-700">
+              Are you sure you want to delete <span className="font-black text-black">{playerToDelete.name}</span> from the roster?
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPlayerToDelete(null)}
+                disabled={isPending}
+                className="font-display uppercase tracking-wider text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  if (playerToDelete && onDeletePlayer) {
+                    onDeletePlayer(playerToDelete);
+                    setPlayerToDelete(null);
+                  }
+                }}
+                disabled={isPending}
+                className="font-display uppercase tracking-wider text-sm"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

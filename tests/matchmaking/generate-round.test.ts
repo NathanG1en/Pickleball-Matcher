@@ -23,9 +23,16 @@ describe("generateRound", () => {
       expect(result.ok).toBe(true);
       if (!result.ok) return;
 
-      const expectedCourts = Math.min(Math.floor(playerCount / 4), courts);
+      const expectedDoublesCourts = Math.min(Math.floor(playerCount / 4), courts);
+      const leftovers = playerCount - expectedDoublesCourts * 4;
+      const expectedSinglesCourts =
+        leftovers >= 2 && courts - expectedDoublesCourts >= 1 ? 1 : 0;
+      const expectedCourts = expectedDoublesCourts + expectedSinglesCourts;
+      const expectedSitting =
+        playerCount - (expectedDoublesCourts * 4 + expectedSinglesCourts * 2);
+
       expect(result.value.courts).toHaveLength(expectedCourts);
-      expect(result.value.sitting).toHaveLength(playerCount - expectedCourts * 4);
+      expect(result.value.sitting).toHaveLength(expectedSitting);
       const assigned = result.value.courts.flatMap((court) => [
         ...court.team1,
         ...court.team2,
@@ -35,7 +42,11 @@ describe("generateRound", () => {
       expect(new Set(allIds).size).toBe(playerCount);
       expect(new Set(allIds)).toEqual(new Set(players.map((player) => player.id)));
       for (const court of result.value.courts) {
-        expect(new Set([...court.team1, ...court.team2]).size).toBe(4);
+        if (court.matchType === "singles") {
+          expect(new Set([...court.team1, ...court.team2]).size).toBe(2);
+        } else {
+          expect(new Set([...court.team1, ...court.team2]).size).toBe(4);
+        }
       }
     },
   );
@@ -52,6 +63,23 @@ describe("generateRound", () => {
     expect(result.ok && result.value.courts).toHaveLength(2);
   });
 
+  it("creates a singles match on leftover court when 6 players on 2 courts", () => {
+    const result = generateRound({
+      players: makePlayers(6),
+      courts: 2,
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 42,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.courts).toHaveLength(2);
+    expect(result.value.courts[0].matchType).toBe("doubles");
+    expect(result.value.courts[1].matchType).toBe("singles");
+    expect(result.value.sitting).toHaveLength(0);
+  });
+
   it("reproduces a round from the same input and seed", () => {
     const input = {
       players: makePlayers(14),
@@ -64,13 +92,32 @@ describe("generateRound", () => {
     expect(generateRound(input)).toEqual(generateRound(input));
   });
 
-  it("returns a typed error when fewer than four players are present", () => {
+  it("returns a typed error when fewer than two players are present", () => {
+    const result = generateRound({
+      players: makePlayers(1),
+      courts: 1,
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 1,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "INSUFFICIENT_PLAYERS",
+        message: "At least 2 players are required.",
+      },
+    });
+  });
+
+  it("returns a typed error when fewer than four players are present and singles is disabled", () => {
     const result = generateRound({
       players: makePlayers(3),
       courts: 1,
       pairHistory: [],
       config: TEST_CONFIG,
       seed: 3,
+      allowSingles: false,
     });
 
     expect(result).toEqual({

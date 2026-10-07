@@ -121,15 +121,15 @@ describe("SessionService", () => {
     await expect(service.completeRound(round.id)).resolves.toMatchObject({ status: "completed" });
   });
 
-  it("returns a domain validation error when fewer than four players are present", async () => {
+  it("returns a domain validation error when fewer than two players are present", async () => {
     const session = await service.startSession({
       groupId: "group-1",
       courtCount: 1,
-      playerIds: players.slice(0, 3).map((player) => player.id),
+      playerIds: players.slice(0, 1).map((player) => player.id),
     });
 
     await expect(service.proposeRound(session.id, 1)).rejects.toEqual(
-      new DomainError("INSUFFICIENT_PLAYERS", "At least 4 players are required for doubles."),
+      new DomainError("INSUFFICIENT_PLAYERS", "At least 2 players are required."),
     );
   });
 
@@ -158,5 +158,47 @@ describe("SessionService", () => {
     expect(repository.state.matchPlayers.some((item) => secondMatchIds.has(item.matchId))).toBe(false);
     expect(repository.state.roundSits.some((sit) => sit.roundId === second.id)).toBe(false);
     expect(repository.state.players.every((player) => player.ratedGamesPlayed === 0)).toBe(true);
+  });
+
+  it("allows completing a round when a singles match has no score entered", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 2,
+      playerIds: players.slice(0, 6).map((player) => player.id),
+    });
+    const round = await service.startRound(session.id, await service.proposeRound(session.id, 5));
+    const roundMatches = repository.state.matches.filter((m) => m.roundId === round.id);
+    const doublesMatch = roundMatches.find((m) => m.courtNumber === 1)!;
+    const singlesMatch = roundMatches.find((m) => m.courtNumber === 2)!;
+
+    // Record only doubles score
+    await service.recordResult({ matchId: doublesMatch.id, team1Score: 11, team2Score: 7 });
+
+    // Round should complete successfully without needing singles score
+    await expect(service.completeRound(round.id)).resolves.toMatchObject({ status: "completed" });
+
+    // Singles match should be closed as cancelled (unrecorded)
+    const updatedSingles = repository.state.matches.find((m) => m.id === singlesMatch.id)!;
+    expect(updatedSingles.status).toBe("cancelled");
+  });
+
+  it("does not change elo when a singles match score is recorded", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 1,
+      playerIds: players.slice(0, 2).map((player) => player.id),
+    });
+    const round = await service.startRound(session.id, await service.proposeRound(session.id, 1));
+    const [singlesMatch] = repository.state.matches.filter((m) => m.roundId === round.id);
+
+    await service.recordResult({ matchId: singlesMatch.id, team1Score: 11, team2Score: 4 });
+    await service.completeRound(round.id);
+
+    const player1 = repository.state.players.find((p) => p.id === players[0].id)!;
+    const player2 = repository.state.players.find((p) => p.id === players[1].id)!;
+    expect(player1.rating).toBe(1000);
+    expect(player2.rating).toBe(1000);
+    expect(player1.ratedGamesPlayed).toBe(0);
+    expect(player2.ratedGamesPlayed).toBe(0);
   });
 });
