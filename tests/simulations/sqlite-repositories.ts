@@ -13,7 +13,82 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
+import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
+
+interface GroupRow {
+  id: string;
+  name: string;
+  organizer_pin_hash: string;
+  public_share_id: string;
+  created_at: string;
+}
+
+interface SessionRow {
+  id: string;
+  group_id: string;
+  court_count: number;
+  status: "active" | "completed";
+  current_round_number: number;
+  started_at: string;
+  ended_at: string | null;
+  version: number;
+}
+
+interface PlayerRow {
+  id: string;
+  group_id: string;
+  name: string;
+  initial_rating: number;
+  rating: number;
+  rated_games_played: number;
+  active: number;
+  created_at: string;
+}
+
+interface AttendanceRow {
+  session_id: string;
+  player_id: string;
+  joined_round: number;
+  left_round: number | null;
+}
+
+interface RoundRow {
+  id: string;
+  session_id: string;
+  round_number: number;
+  status: "started" | "completed" | "cancelled";
+  seed: number;
+  score_breakdown: string;
+  created_at: string;
+  started_at: string;
+  completed_at: string | null;
+  version: number;
+}
+
+interface MatchRow {
+  id: string;
+  round_id: string;
+  court_number: number;
+  status: "pending" | "completed" | "cancelled";
+  team1_score: number | null;
+  team2_score: number | null;
+  completed_at: string | null;
+  version: number;
+}
+
+interface MatchPlayerRow {
+  match_id: string;
+  player_id: string;
+  team: 1 | 2;
+  rating_before: number | null;
+  rating_after: number | null;
+}
+
+interface RoundSitRow {
+  round_id: string;
+  player_id: string;
+}
 
 export class SqliteDomainRepository implements DomainRepository {
   public readonly db: DatabaseSync;
@@ -175,7 +250,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async getGroup(groupId: string): Promise<GroupRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM groups WHERE id = ?")
-      .get(groupId) as any;
+      .get(groupId) as GroupRow | undefined;
     if (!row) return null;
     return {
       id: row.id,
@@ -189,7 +264,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM groups WHERE public_share_id = ?")
-      .get(shareId) as any;
+      .get(shareId) as GroupRow | undefined;
     if (!row) return null;
     return {
       id: row.id,
@@ -217,7 +292,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM sessions WHERE id = ?")
-      .get(sessionId) as any;
+      .get(sessionId) as SessionRow | undefined;
     if (!row) return null;
     return {
       id: row.id,
@@ -234,7 +309,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async listSessions(groupId: string): Promise<readonly SessionRecord[]> {
     const rows = this.db
       .prepare("SELECT * FROM sessions WHERE group_id = ? ORDER BY started_at DESC")
-      .all(groupId) as any[];
+      .all(groupId) as unknown as SessionRow[];
     return rows.map((row) => ({
       id: row.id,
       groupId: row.group_id,
@@ -250,7 +325,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
     const rows = this.db
       .prepare("SELECT * FROM players WHERE group_id = ?")
-      .all(groupId) as any[];
+      .all(groupId) as unknown as PlayerRow[];
     return rows.map((row) => ({
       id: row.id,
       groupId: row.group_id,
@@ -306,7 +381,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]> {
     const rows = this.db
       .prepare("SELECT * FROM session_attendance WHERE session_id = ?")
-      .all(sessionId) as any[];
+      .all(sessionId) as unknown as AttendanceRow[];
     return rows.map((row) => ({
       sessionId: row.session_id,
       playerId: row.player_id,
@@ -318,13 +393,13 @@ export class SqliteDomainRepository implements DomainRepository {
   async listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]> {
     const rounds = (this.db
       .prepare("SELECT * FROM rounds WHERE session_id = ? ORDER BY round_number ASC")
-      .all(sessionId) as any[]).map((row): RoundRecord => ({
+      .all(sessionId) as unknown as RoundRow[]).map((row): RoundRecord => ({
       id: row.id,
       sessionId: row.session_id,
       roundNumber: row.round_number,
       status: row.status,
       seed: row.seed,
-      scoreBreakdown: JSON.parse(row.score_breakdown),
+      scoreBreakdown: JSON.parse(row.score_breakdown) as ScoreBreakdown,
       createdAt: new Date(row.created_at),
       startedAt: new Date(row.started_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -334,7 +409,7 @@ export class SqliteDomainRepository implements DomainRepository {
     return rounds.map((round) => {
       const matchRows = this.db
         .prepare("SELECT * FROM matches WHERE round_id = ? ORDER BY court_number ASC")
-        .all(round.id) as any[];
+        .all(round.id) as unknown as MatchRow[];
       const matches: MatchRecord[] = matchRows.map((row) => ({
         id: row.id,
         roundId: row.round_id,
@@ -352,11 +427,11 @@ export class SqliteDomainRepository implements DomainRepository {
         const placeholders = matchIds.map(() => "?").join(",");
         const mpRows = this.db
           .prepare(`SELECT * FROM match_players WHERE match_id IN (${placeholders})`)
-          .all(...matchIds) as any[];
+          .all(...matchIds) as unknown as MatchPlayerRow[];
         matchPlayers = mpRows.map((row) => ({
           matchId: row.match_id,
           playerId: row.player_id,
-          team: row.team as 1 | 2,
+          team: row.team,
           ratingBefore: row.rating_before,
           ratingAfter: row.rating_after,
         }));
@@ -364,7 +439,7 @@ export class SqliteDomainRepository implements DomainRepository {
 
       const sitRows = this.db
         .prepare("SELECT * FROM round_sits WHERE round_id = ?")
-        .all(round.id) as any[];
+        .all(round.id) as unknown as RoundSitRow[];
       const sits: RoundSitRecord[] = sitRows.map((row) => ({
         roundId: row.round_id,
         playerId: row.player_id,
@@ -382,7 +457,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async getRound(roundId: string): Promise<RoundRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM rounds WHERE id = ?")
-      .get(roundId) as any;
+      .get(roundId) as RoundRow | undefined;
     if (!row) return null;
     return {
       id: row.id,
@@ -390,7 +465,7 @@ export class SqliteDomainRepository implements DomainRepository {
       roundNumber: row.round_number,
       status: row.status,
       seed: row.seed,
-      scoreBreakdown: JSON.parse(row.score_breakdown),
+      scoreBreakdown: JSON.parse(row.score_breakdown) as ScoreBreakdown,
       createdAt: new Date(row.created_at),
       startedAt: new Date(row.started_at),
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
@@ -401,7 +476,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async getMatch(matchId: string): Promise<MatchRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM matches WHERE id = ?")
-      .get(matchId) as any;
+      .get(matchId) as MatchRow | undefined;
     if (!row) return null;
     return {
       id: row.id,
