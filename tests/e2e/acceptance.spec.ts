@@ -14,14 +14,15 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     expect(setupA11y.violations).toEqual([]);
 
     // 2. Submit setup form
-    await page.fill("#group-name", "Acceptance Test League");
+    const groupName = `Acceptance Test League ${Date.now()}`;
+    await page.fill("#group-name", groupName);
     await page.fill("#organizer-pin", "1234");
     await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
     await page.click("button[type='submit']");
 
     // Should navigate to group dashboard
     await expect(page).toHaveURL(/\/g\/grp_/);
-    await expect(page.locator("h1")).toContainText("Acceptance Test League");
+    await expect(page.locator("h1")).toContainText(groupName);
 
     // 3. Add players to roster until we have 14 players
     await page.click("a[href*='/players']");
