@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
+import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 
 export default async function GroupDashboardPage({
   params,
@@ -77,6 +78,9 @@ export default async function GroupDashboardPage({
           </Link>
         </div>
       </header>
+
+      {/* Mobile Add to Home Screen Tip */}
+      <HomeScreenTip />
 
       {/* Primary Action Card */}
       {activeSession ? (

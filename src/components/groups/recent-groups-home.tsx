@@ -9,7 +9,7 @@ import {
   type RecentGroup,
 } from "@/lib/storage/recent-groups";
 
-export function RecentGroupsHome() {
+export function RecentGroupsHome({ excludeGroupId }: { excludeGroupId?: string } = {}) {
   const json = useSyncExternalStore(
     subscribeRecentGroups,
     getRecentGroupsSnapshot,
@@ -18,11 +18,13 @@ export function RecentGroupsHome() {
 
   const groups: RecentGroup[] = useMemo(() => {
     try {
-      return JSON.parse(json);
+      const parsed: RecentGroup[] = JSON.parse(json);
+      if (!excludeGroupId) return parsed;
+      return parsed.filter((g) => g.id !== excludeGroupId);
     } catch {
       return [];
     }
-  }, [json]);
+  }, [json, excludeGroupId]);
 
   if (!groups || groups.length === 0) {
     return null;
