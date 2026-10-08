@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerSignupAction } from "@/app/actions/player-account";
 import { Button } from "@/components/ui/button";
+import { VisibilityToggle } from "@/components/ui/visibility-toggle";
 
 const ratings = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
 const skillDescriptions = {
@@ -18,6 +19,7 @@ export function PlayerSignupForm() {
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [skillLevel, setSkillLevel] = useState<keyof typeof ratings>("intermediate");
   const [customRating, setCustomRating] = useState(false);
   const [initialRating, setInitialRating] = useState(1_000);
@@ -48,7 +50,7 @@ export function PlayerSignupForm() {
         <input id="player-name" required maxLength={80} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Name shown to your groups" className={inputClass} />
       </Field>
       <Field label="Password" id="player-password">
-        <input id="player-password" required minLength={10} maxLength={72} type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} />
+        <div className="relative"><input id="player-password" required minLength={10} maxLength={72} type={passwordVisible ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className={`${inputClass} pr-14`} /><VisibilityToggle visible={passwordVisible} onToggle={() => setPasswordVisible((visible) => !visible)} label="password" /></div>
         <p className="mt-1 text-xs font-semibold text-neutral-600">At least 10 characters.</p>
       </Field>
       <Field label="Starting skill level" id="player-skill">

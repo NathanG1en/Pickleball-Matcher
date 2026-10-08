@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createGroupAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { VisibilityToggle } from "@/components/ui/visibility-toggle";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
 
 export default function SetupGroupPage() {
@@ -12,6 +13,8 @@ export default function SetupGroupPage() {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [setupToken, setSetupToken] = useState("");
+  const [pinVisible, setPinVisible] = useState(false);
+  const [setupTokenVisible, setSetupTokenVisible] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -91,17 +94,20 @@ export default function SetupGroupPage() {
             <label htmlFor="organizer-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Organizer PIN (4–12 digits)
             </label>
-            <input
-              id="organizer-pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              required
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="••••"
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-mono font-bold placeholder-neutral-400 tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
-            />
+            <div className="relative">
+              <input
+                id="organizer-pin"
+                type={pinVisible ? "text" : "password"}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                required
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="••••"
+                className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black font-mono font-bold placeholder-neutral-400 tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+              />
+              <VisibilityToggle visible={pinVisible} onToggle={() => setPinVisible((visible) => !visible)} label="organizer PIN" />
+            </div>
             <p className="text-xs font-bold text-neutral-600 mt-1.5">
               You will use this PIN to start rounds and enter scores.
             </p>
@@ -128,15 +134,18 @@ export default function SetupGroupPage() {
             <label htmlFor="setup-token" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Setup Token
             </label>
-            <input
-              id="setup-token"
-              type="password"
-              required
-              value={setupToken}
-              onChange={(e) => setSetupToken(e.target.value)}
-              placeholder="Secret operator setup token"
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
-            />
+            <div className="relative">
+              <input
+                id="setup-token"
+                type={setupTokenVisible ? "text" : "password"}
+                required
+                value={setupToken}
+                onChange={(e) => setSetupToken(e.target.value)}
+                placeholder="Secret operator setup token"
+                className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+              />
+              <VisibilityToggle visible={setupTokenVisible} onToggle={() => setSetupTokenVisible((visible) => !visible)} label="setup token" />
+            </div>
           </div>
 
           <Button

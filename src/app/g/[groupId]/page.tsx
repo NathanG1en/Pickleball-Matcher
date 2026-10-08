@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
+import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 
@@ -43,19 +44,12 @@ export default async function GroupDashboardPage({
       <RecentGroupTracker groupId={groupId} groupName={group.name} />
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="flex items-center justify-between mb-2 gap-2">
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-            Courtside Organizer
-          </span>
-          <div className="flex items-center gap-2">
-            <Badge variant="success">Unlocked</Badge>
-            <LogoutButton />
-          </div>
-        </div>
+        <div className="mb-2 flex justify-end"><LogoutButton /></div>
         <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight">{group.name}</h1>
         <p className="text-xs font-bold text-neutral-600 mt-1">
           {players.filter((p) => p.active).length} active players on roster
         </p>
+        <GroupIdReveal groupId={groupId} />
 
         <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
 
