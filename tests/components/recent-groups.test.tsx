@@ -111,4 +111,17 @@ describe("Recent Groups Storage & Components", () => {
     );
     expect(html).toBe("");
   });
+
+  it("excludes specified group in RecentGroupsHome when excludeGroupId matches", () => {
+    saveRecentGroup({ id: "grp-active", name: "Active Group" });
+
+    const html = renderToStaticMarkup(<RecentGroupsHome excludeGroupId="grp-active" />);
+    expect(html).toBe("");
+  });
+
+  it("renders HomeScreenTip safely", async () => {
+    const { HomeScreenTip } = await import("@/components/groups/home-screen-tip");
+    const html = renderToStaticMarkup(<HomeScreenTip />);
+    expect(typeof html).toBe("string");
+  });
 });

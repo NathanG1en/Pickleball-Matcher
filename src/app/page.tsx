@@ -1,7 +1,21 @@
 import Link from "next/link";
+import { getActiveOrganizerSession, getActionRepository } from "@/app/actions/action-context";
 import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
+import { LogoutButton } from "@/components/auth/logout-button";
+import type { GroupRecord } from "@/lib/domain/types";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getActiveOrganizerSession();
+  let activeGroup: GroupRecord | null = null;
+
+  if (session?.groupId) {
+    try {
+      const repo = getActionRepository();
+      activeGroup = await repo.getGroup(session.groupId);
+    } catch {
+      // Fallback in non-db environments
+    }
+  }
   return (
     <main className="min-h-screen p-4 sm:p-8 flex items-center justify-center relative overflow-hidden">
       {/* Background decoration elements */}
@@ -68,7 +82,35 @@ export default function HomePage() {
 
         {/* Actions */}
         <div className="space-y-4 pt-2">
-          <RecentGroupsHome />
+          {activeGroup && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#dcfce7] border-[3px] border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
+                  Active Session Unlocked
+                </span>
+                <LogoutButton />
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl font-black uppercase text-black leading-tight truncate">
+                  {activeGroup.name}
+                </h2>
+                <p className="text-xs font-bold text-neutral-700 mt-0.5">
+                  You are currently signed in on this device.
+                </p>
+              </div>
+
+              <Link
+                href={`/g/${activeGroup.id}`}
+                className="block w-full py-3 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-black text-center text-sm uppercase tracking-wide border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] active:translate-x-0.5 active:translate-y-0.5 transition-all font-display"
+              >
+                Resume Group Dashboard →
+              </Link>
+            </div>
+          )}
+
+          <RecentGroupsHome excludeGroupId={activeGroup?.id} />
 
           <Link
             href="/setup"
