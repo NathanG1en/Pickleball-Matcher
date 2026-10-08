@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/action-context";
 import { Badge } from "@/components/ui/badge";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
 
 export default async function GroupDashboardPage({
   params,
@@ -52,6 +53,8 @@ export default async function GroupDashboardPage({
         <p className="text-xs font-bold text-neutral-600 mt-1">
           {players.filter((p) => p.active).length} active players on roster
         </p>
+
+        <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
 
         {/* Share Link Banner */}
         <div className="mt-5 p-3.5 bg-[#fef08a] rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] flex items-center justify-between gap-3">

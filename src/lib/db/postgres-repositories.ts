@@ -7,6 +7,9 @@ import type {
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
+  PlayerAccountRecord,
+  PlayerSessionHistoryRecord,
+  PublicGroupRecord,
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
@@ -29,6 +32,7 @@ type GroupRow = {
   organizer_pin_hash: string;
   public_share_id: string;
   created_at: Date;
+  is_public: boolean;
 };
 
 type SessionRow = {
@@ -50,6 +54,20 @@ type PlayerRow = {
   rating: number;
   rated_games_played: number;
   active: boolean;
+  account_id: string | null;
+  username?: string | null;
+  password_hash?: string | null;
+  skill_level?: "beginner" | "intermediate" | "advanced" | null;
+};
+
+type PlayerAccountRow = {
+  id: string;
+  username: string;
+  name: string;
+  password_hash: string;
+  skill_level: "beginner" | "intermediate" | "advanced";
+  initial_rating: number;
+  created_at: Date;
 };
 
 type AttendanceRow = {
@@ -99,6 +117,7 @@ const mapGroup = (row: GroupRow): GroupRecord => ({
   organizerPinHash: row.organizer_pin_hash,
   publicShareId: row.public_share_id,
   createdAt: row.created_at,
+  isPublic: row.is_public,
 });
 
 const mapSession = (row: SessionRow): SessionRecord => ({
@@ -120,6 +139,17 @@ const mapPlayer = (row: PlayerRow): PlayerRecord => ({
   rating: row.rating,
   ratedGamesPlayed: row.rated_games_played,
   active: row.active,
+  accountId: row.account_id,
+});
+
+const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
+  id: row.id,
+  username: row.username,
+  name: row.name,
+  passwordHash: row.password_hash,
+  skillLevel: row.skill_level,
+  initialRating: row.initial_rating,
+  createdAt: row.created_at,
 });
 
 const mapAttendance = (row: AttendanceRow): AttendanceRecord => ({
@@ -184,7 +214,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroup(groupId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at
+      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
       from groups where id = ${groupId}
     `;
     return rows[0] ? mapGroup(rows[0]) : null;
@@ -192,7 +222,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at
+      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
       from groups where name = ${name.trim()}
     `;
     return rows.map(mapGroup);
@@ -200,16 +230,159 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at
+      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
       from groups where public_share_id = ${shareId}
     `;
     return rows[0] ? mapGroup(rows[0]) : null;
   }
 
+  async listPublicGroups(search: string, accountId?: string): Promise<readonly PublicGroupRecord[]> {
+    const term = search.trim();
+    const rows = await this.query<{
+      id: string;
+      name: string;
+      player_count: number;
+      is_member: boolean;
+    }[]>`
+      select g.id, g.name, count(distinct p.id)::int as player_count,
+        coalesce(bool_or(mine.id is not null), false) as is_member
+      from groups g
+      left join players p on p.group_id = g.id and p.active = true
+      left join players mine on mine.group_id = g.id and mine.account_id = ${accountId ?? ""} and mine.active = true
+      where g.is_public = true
+        and (${term} = '' or strpos(lower(g.name), lower(${term})) > 0)
+      group by g.id, g.name
+      order by g.name
+      limit 50
+    `;
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      playerCount: row.player_count,
+      isMember: row.is_member,
+    }));
+  }
+
+  async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, password_hash, skill_level, initial_rating, created_at
+      from players where id = ${accountId} and username is not null
+    `;
+    return rows[0] ? mapPlayerAccount(rows[0]) : null;
+  }
+
+  async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, password_hash, skill_level, initial_rating, created_at
+      from players where username = ${username.trim().toLowerCase()}
+    `;
+    return rows[0] ? mapPlayerAccount(rows[0]) : null;
+  }
+
+  async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
+    await this.query`
+      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, username, password_hash, skill_level, created_at)
+      values (${account.id}, null, ${account.name}, ${account.initialRating}, ${account.initialRating}, 0, true, ${account.username}, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+    `;
+  }
+
+  async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
+    await this.query.begin(async (transaction) => {
+      const transactionQuery = transaction as unknown as postgres.Sql;
+      await transactionQuery`update players set name = ${name} where id = ${accountId} and username is not null`;
+      await transactionQuery`update players set name = ${name} where account_id = ${accountId}`;
+    });
+  }
+
+  async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
+    const rows = await this.query<PlayerRow[]>`
+      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id)
+      select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
+             g.id, a.name, a.initial_rating, a.initial_rating, 0, true, a.id
+      from groups g cross join players a
+      where g.id = ${groupId} and g.is_public = true and a.id = ${accountId} and a.username is not null
+      on conflict (group_id, account_id) where account_id is not null do update set active = true
+      returning id, group_id, name, initial_rating, rating, rated_games_played, active, account_id
+    `;
+    if (rows[0]) return mapPlayer(rows[0]);
+
+    const existing = await this.query<PlayerRow[]>`
+      select id, group_id, name, initial_rating, rating, rated_games_played, active, account_id
+      from players where account_id = ${accountId} and group_id = ${groupId}
+    `;
+    return existing[0] ? mapPlayer(existing[0]) : null;
+  }
+
+  async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
+    const rows = await this.query<{ id: string }[]>`
+      update players set active = false
+      where group_id = ${groupId} and account_id = ${accountId} and active = true
+      returning id
+    `;
+    return rows.length > 0;
+  }
+
+  async updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void> {
+    await this.query`update groups set is_public = ${isPublic} where id = ${groupId}`;
+  }
+
+  async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
+    const rows = await this.query<{
+      session_id: string;
+      group_id: string;
+      group_name: string;
+      started_at: Date;
+      wins: number;
+      losses: number;
+      rating: number;
+    }[]>`
+      with memberships as (
+        select id, group_id, initial_rating from players where account_id = ${accountId}
+      ), results as (
+        select mp.player_id, s.id as session_id,
+          count(*) filter (where
+            (mp.team = 1 and m.team1_score > m.team2_score) or
+            (mp.team = 2 and m.team2_score > m.team1_score)
+          )::int as wins,
+          count(*) filter (where
+            (mp.team = 1 and m.team1_score < m.team2_score) or
+            (mp.team = 2 and m.team2_score < m.team1_score)
+          )::int as losses,
+          (array_agg(mp.rating_after order by m.completed_at desc)
+            filter (where mp.rating_after is not null))[1] as rating
+        from memberships p
+        join match_players mp on mp.player_id = p.id
+        join matches m on m.id = mp.match_id and m.status = 'completed'
+        join rounds r on r.id = m.round_id
+        join sessions s on s.id = r.session_id
+        group by mp.player_id, s.id
+      )
+      select s.id as session_id, g.id as group_id, g.name as group_name,
+        s.started_at, coalesce(res.wins, 0)::int as wins,
+        coalesce(res.losses, 0)::int as losses,
+        coalesce(res.rating, membership.initial_rating)::float8 as rating
+      from memberships membership
+      join groups g on g.id = membership.group_id
+      join session_attendance sa on sa.player_id = membership.id
+      join sessions s on s.id = sa.session_id
+      left join results res on res.player_id = membership.id and res.session_id = s.id
+      order by s.started_at desc, g.name
+    `;
+    return rows.map((row) => ({
+      sessionId: row.session_id,
+      groupId: row.group_id,
+      groupName: row.group_name,
+      startedAt: row.started_at,
+      wins: row.wins,
+      losses: row.losses,
+      rating: row.rating,
+    }));
+  }
+
   async insertGroup(group: GroupRecord): Promise<void> {
     await this.query`
-      insert into groups (id, name, organizer_pin_hash, public_share_id, created_at)
-      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.publicShareId}, ${group.createdAt})
+      insert into groups (id, name, organizer_pin_hash, public_share_id, created_at, is_public)
+      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.publicShareId}, ${group.createdAt}, ${group.isPublic ?? false})
     `;
   }
 
@@ -225,8 +398,8 @@ export class PostgresRepositories implements DomainRepository {
 
   async createPlayer(player: PlayerRecord): Promise<void> {
     await this.query`
-      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active)
-      values (${player.id}, ${player.groupId}, ${player.name}, ${player.initialRating}, ${player.rating}, ${player.ratedGamesPlayed}, ${player.active})
+      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id)
+      values (${player.id}, ${player.groupId}, ${player.name}, ${player.initialRating}, ${player.rating}, ${player.ratedGamesPlayed}, ${player.active}, ${player.accountId ?? null})
     `;
   }
 

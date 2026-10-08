@@ -7,6 +7,7 @@ import { getActionRepository } from "@/app/actions/action-context";
 import { authenticateOrganizerPin, hashPin } from "@/lib/auth/pin";
 import {
   createOrganizerSession,
+  getOrganizerSessionSecret,
   ORGANIZER_SESSION_COOKIE,
 } from "@/lib/auth/session";
 import { createGroupSchema, organizerLoginSchema } from "@/lib/validation/group";
@@ -46,12 +47,12 @@ export async function createGroupAction(input: unknown): Promise<ActionResult<{ 
       organizerPinHash: pinHash,
       publicShareId,
       createdAt: new Date(),
+      isPublic: parsed.data.isPublic,
     });
 
-    const sessionSecret = process.env.ORGANIZER_SESSION_SECRET ?? process.env.SESSION_SECRET ?? "fallback-development-session-secret-32-chars!!";
     const session = await createOrganizerSession({
       groupId,
-      secret: sessionSecret,
+      secret: getOrganizerSessionSecret(),
     });
 
     try {
@@ -111,10 +112,9 @@ export async function organizerLoginAction(input: unknown): Promise<ActionResult
 
     const groupId = matchingGroups[0].group.id;
 
-    const sessionSecret = process.env.ORGANIZER_SESSION_SECRET ?? process.env.SESSION_SECRET ?? "fallback-development-session-secret-32-chars!!";
     const session = await createOrganizerSession({
       groupId,
-      secret: sessionSecret,
+      secret: getOrganizerSessionSecret(),
     });
 
     try {
