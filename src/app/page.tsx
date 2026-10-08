@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 
 export default function HomePage() {
   return (
@@ -67,6 +68,8 @@ export default function HomePage() {
 
         {/* Actions */}
         <div className="space-y-4 pt-2">
+          <RecentGroupsHome />
+
           <Link
             href="/setup"
             className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display"
@@ -88,7 +91,7 @@ export default function HomePage() {
             <Link href="/players/groups" className="mt-3 block text-xs font-black uppercase underline">Browse public groups</Link>
           </div>
           <p className="text-xs font-bold text-neutral-600">
-            Sign in with your group ID and organizer PIN.
+            Sign in with your group name and organizer PIN.
           </p>
         </div>
       </section>
