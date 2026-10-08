@@ -7,7 +7,8 @@ test.describe("Permissions and Security Workflow", () => {
   }) => {
     // 1. Create a test group
     await page.goto("/setup");
-    await page.fill("#group-name", "Security Test League");
+    const groupName = `Security Test League ${Date.now()}`;
+    await page.fill("#group-name", groupName);
     await page.fill("#organizer-pin", "9876");
     await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
     await page.click("button[type='submit']");
@@ -42,7 +43,7 @@ test.describe("Permissions and Security Workflow", () => {
     await spectatorPage.goto(spectatorLink!);
 
     // Verify spectator page renders read-only assignments
-    await expect(spectatorPage.locator("h1")).toContainText("Security Test League");
+    await expect(spectatorPage.locator("h1")).toContainText(groupName);
     await expect(spectatorPage.locator("text=Live Court Board")).toBeVisible();
 
     // Verify ABSOLUTELY NO mutation or organizer controls exist
@@ -61,7 +62,9 @@ test.describe("Permissions and Security Workflow", () => {
     // Attempt invalid PIN
     await spectatorPage.fill("#login-pin", "0000");
     await spectatorPage.click("button[type='submit']");
-    await expect(spectatorPage.locator("text=Invalid PIN")).toBeVisible();
+    await expect(
+      spectatorPage.locator("text=Unable to sign in").or(spectatorPage.locator("text=Check your group name and PIN")),
+    ).toBeVisible();
 
     // Verify user is not logged in / cannot access protected dashboard
     await spectatorPage.goto(`/g/${groupId}`);
@@ -74,7 +77,10 @@ test.describe("Permissions and Security Workflow", () => {
     }
     // Should display rate limit or invalid message
     await expect(
-      spectatorPage.locator("text=Too many attempts").or(spectatorPage.locator("text=Invalid PIN")),
+      spectatorPage
+        .locator("text=Too many attempts")
+        .or(spectatorPage.locator("text=Unable to sign in"))
+        .or(spectatorPage.locator("text=Check your group name and PIN")),
     ).toBeVisible();
 
     await spectatorContext.close();

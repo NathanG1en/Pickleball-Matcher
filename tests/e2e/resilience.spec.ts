@@ -8,7 +8,8 @@ test.describe("Resilience and Safe Drafts", () => {
   }) => {
     // 1. Create group
     await page.goto("/setup");
-    await page.fill("#group-name", "Resilience League");
+    const groupName = `Resilience League ${Date.now()}`;
+    await page.fill("#group-name", groupName);
     await page.fill("#organizer-pin", "3456");
     await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
     await page.click("button[type='submit']");
