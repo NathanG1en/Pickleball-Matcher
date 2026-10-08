@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createGroupAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { saveRecentGroup } from "@/lib/storage/recent-groups";
 
 export default function SetupGroupPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function SetupGroupPage() {
         return;
       }
 
+      saveRecentGroup({ id: res.data.groupId, name: res.data.name });
       router.push(`/g/${res.data.groupId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred while creating the group.");
