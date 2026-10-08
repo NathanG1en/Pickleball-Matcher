@@ -415,7 +415,6 @@ export function CurrentRoundView({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {localCourts.map((court) => {
           const totalPlayers = court.team1.length + court.team2.length;
-          const isDoubles = court.team1.length === 2 && court.team2.length === 2;
           const isSingles = court.team1.length === 1 && court.team2.length === 1;
           const isUnbalanced = totalPlayers > 0 && court.team1.length !== court.team2.length;
           const isEmpty = totalPlayers === 0;

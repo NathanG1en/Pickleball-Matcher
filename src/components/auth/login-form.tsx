@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { organizerLoginAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import {
+  getRecentGroupsSnapshot,
+  saveRecentGroup,
+  subscribeRecentGroups,
+  type RecentGroup,
+} from "@/lib/storage/recent-groups";
 
 export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string }) {
   const router = useRouter();
@@ -12,14 +18,29 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
+  const recentGroupsJson = useSyncExternalStore(
+    subscribeRecentGroups,
+    getRecentGroupsSnapshot,
+    getRecentGroupsSnapshot
+  );
+
+  const recentGroups: RecentGroup[] = useMemo(() => {
+    try {
+      return JSON.parse(recentGroupsJson);
+    } catch {
+      return [];
+    }
+  }, [recentGroupsJson]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsPending(true);
 
     try {
+      const trimmedName = groupName.trim();
       const res = await organizerLoginAction({
-        groupName: groupName.trim(),
+        groupName: trimmedName,
         pin: pin.trim(),
       });
 
@@ -29,6 +50,7 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
         return;
       }
 
+      saveRecentGroup({ id: res.data.groupId, name: trimmedName });
       router.push(`/g/${res.data.groupId}`);
     } catch {
       setError("Unable to sign in. Please try again.");
@@ -58,6 +80,23 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
           placeholder="Enter your group name"
           className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
         />
+        {recentGroups.length > 0 && !groupName && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+              Recent:
+            </span>
+            {recentGroups.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => setGroupName(g.name)}
+                className="px-2 py-0.5 text-xs font-bold rounded-lg border border-black bg-[#fef08a] hover:bg-[#fde047] shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              >
+                {g.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
