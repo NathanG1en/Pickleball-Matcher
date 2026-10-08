@@ -9,6 +9,14 @@ export const DEFAULT_ORGANIZER_SESSION_TTL_SECONDS = 8 * 60 * 60;
 
 const SESSION_ISSUER = "pickleball-matchmaker";
 const SESSION_AUDIENCE = "pickleball-organizer";
+const DEVELOPMENT_SESSION_SECRET = "fallback-development-session-secret-32-chars!!";
+
+export function getOrganizerSessionSecret(): string {
+  const configuredSecret = process.env.ORGANIZER_SESSION_SECRET ?? process.env.SESSION_SECRET;
+  if (configuredSecret) return configuredSecret;
+  if (process.env.NODE_ENV !== "production") return DEVELOPMENT_SESSION_SECRET;
+  throw new Error("ORGANIZER_SESSION_SECRET is required in production");
+}
 
 export interface OrganizerSession {
   readonly groupId: string;

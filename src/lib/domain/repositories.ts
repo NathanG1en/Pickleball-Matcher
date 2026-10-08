@@ -1,8 +1,11 @@
 import type {
   AttendanceRecord,
   GroupRecord,
+  PublicGroupRecord,
   MatchRecord,
   PlayerRecord,
+  PlayerAccountRecord,
+  PlayerSessionHistoryRecord,
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
@@ -15,6 +18,15 @@ export interface DomainRepository {
   getGroup(groupId: string): Promise<GroupRecord | null>;
   getGroupsByName(name: string): Promise<readonly GroupRecord[]>;
   getGroupByShareId(shareId: string): Promise<GroupRecord | null>;
+  listPublicGroups(search: string, accountId?: string): Promise<readonly PublicGroupRecord[]>;
+  getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null>;
+  getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;
+  createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
+  updatePlayerAccountName(accountId: string, name: string): Promise<void>;
+  joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
+  leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
+  updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;
+  listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]>;
   insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;

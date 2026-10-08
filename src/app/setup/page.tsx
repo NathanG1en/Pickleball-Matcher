@@ -11,6 +11,7 @@ export default function SetupGroupPage() {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [setupToken, setSetupToken] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -24,6 +25,7 @@ export default function SetupGroupPage() {
         name: name.trim(),
         pin: pin.trim(),
         setupToken: setupToken.trim(),
+        isPublic,
       });
 
       if (!res.ok) {
@@ -101,6 +103,23 @@ export default function SetupGroupPage() {
             <p className="text-xs font-bold text-neutral-600 mt-1.5">
               You will use this PIN to start rounds and enter scores.
             </p>
+          </div>
+
+          <div>
+            <label className="flex items-start gap-3 rounded-xl border-2 border-black bg-neutral-50 p-4 text-sm font-bold text-black">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(event) => setIsPublic(event.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-black"
+              />
+              <span>
+                Make this group public so players can find and join it.
+                <span className="block text-xs font-medium text-neutral-600 mt-1">
+                  Private groups can still be opened with their group link.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div>

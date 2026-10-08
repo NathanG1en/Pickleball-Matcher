@@ -2,6 +2,8 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  PlayerAccountRecord,
+  PlayerSessionHistoryRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -15,6 +17,7 @@ import type {
 
 interface InMemoryState {
   groups: GroupRecord[];
+  playerAccounts: PlayerAccountRecord[];
   players: PlayerRecord[];
   sessions: SessionRecord[];
   attendance: AttendanceRecord[];
@@ -38,6 +41,7 @@ export class InMemoryRepositories implements DomainRepository {
   constructor(seed: InMemorySeed = {}) {
     this.state = {
       groups: structuredClone(seed.groups ?? []),
+      playerAccounts: structuredClone(seed.playerAccounts ?? []),
       players: structuredClone(seed.players ?? []),
       sessions: structuredClone(seed.sessions ?? []),
       attendance: structuredClone(seed.attendance ?? []),
@@ -75,6 +79,116 @@ export class InMemoryRepositories implements DomainRepository {
 
   async getGroupByShareId(shareId: string) {
     return this.state.groups.find((group) => group.publicShareId === shareId) ?? null;
+  }
+
+  async listPublicGroups(search: string, accountId?: string) {
+    const term = search.trim().toLocaleLowerCase();
+    return this.state.groups
+      .filter((group) => group.isPublic === true && (!term || group.name.toLocaleLowerCase().includes(term)))
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .slice(0, 50)
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+        playerCount: this.state.players.filter((player) => player.groupId === group.id && player.active).length,
+        isMember: accountId ? this.state.players.some((player) => player.groupId === group.id && player.accountId === accountId && player.active) : false,
+      }));
+  }
+
+  async getPlayerAccount(accountId: string) {
+    return this.state.playerAccounts.find((account) => account.id === accountId) ?? null;
+  }
+
+  async getPlayerAccountByUsername(username: string) {
+    const normalized = username.trim().toLowerCase();
+    return this.state.playerAccounts.find((account) => account.username === normalized) ?? null;
+  }
+
+  async createPlayerAccount(account: PlayerAccountRecord) {
+    if (this.state.playerAccounts.some((item) => item.username === account.username)) {
+      throw new Error("Username already exists");
+    }
+    this.state.playerAccounts.push(structuredClone(account));
+  }
+
+  async updatePlayerAccountName(accountId: string, name: string) {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return;
+    account.name = name;
+    this.state.players = this.state.players.map((player) =>
+      player.accountId === accountId ? { ...player, name } : player,
+    );
+  }
+
+  async joinPublicGroup(accountId: string, groupId: string) {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    const group = this.state.groups.find((item) => item.id === groupId && item.isPublic === true);
+    if (!account || !group) return null;
+    const existing = this.state.players.find((player) => player.groupId === groupId && player.accountId === accountId);
+    if (existing) {
+      const reactivated = { ...existing, active: true };
+      this.state.players = this.state.players.map((player) => player.id === existing.id ? reactivated : player);
+      return reactivated;
+    }
+    const player: PlayerRecord = {
+      id: `ply_${this.state.players.length + 1}`,
+      groupId,
+      name: account.name,
+      initialRating: account.initialRating,
+      rating: account.initialRating,
+      ratedGamesPlayed: 0,
+      active: true,
+      accountId,
+    };
+    this.state.players.push(player);
+    return player;
+  }
+
+  async leavePublicGroup(accountId: string, groupId: string) {
+    const membership = this.state.players.find(
+      (player) => player.groupId === groupId && player.accountId === accountId && player.active,
+    );
+    if (!membership) return false;
+    this.state.players = this.state.players.map((player) =>
+      player.id === membership.id ? { ...player, active: false } : player,
+    );
+    return true;
+  }
+
+  async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
+    const memberships = this.state.players.filter((player) => player.accountId === accountId);
+    const history: PlayerSessionHistoryRecord[] = [];
+    for (const player of memberships) {
+      const group = this.state.groups.find((item) => item.id === player.groupId);
+      for (const attendance of this.state.attendance.filter((entry) => entry.playerId === player.id)) {
+        const session = this.state.sessions.find((item) => item.id === attendance.sessionId);
+        if (!session || !group) continue;
+        const rounds = this.state.rounds.filter((round) => round.sessionId === session.id);
+        const roundIds = new Set(rounds.map((round) => round.id));
+        const matchIds = new Set(this.state.matches.filter((match) => roundIds.has(match.roundId) && match.status === "completed").map((match) => match.id));
+        let wins = 0;
+        let losses = 0;
+        let rating = player.initialRating;
+        const playerMatches = this.state.matchPlayers
+          .filter((membership) => membership.playerId === player.id && matchIds.has(membership.matchId))
+          .sort((first, second) => (this.state.matches.find((match) => match.id === first.matchId)?.completedAt?.getTime() ?? 0) - (this.state.matches.find((match) => match.id === second.matchId)?.completedAt?.getTime() ?? 0));
+        for (const matchPlayer of playerMatches) {
+          const match = this.state.matches.find((item) => item.id === matchPlayer.matchId);
+          if (!match || match.team1Score === null || match.team2Score === null) continue;
+          const won = (matchPlayer.team === 1 && match.team1Score > match.team2Score) || (matchPlayer.team === 2 && match.team2Score > match.team1Score);
+          if (won) wins += 1;
+          else losses += 1;
+          if (matchPlayer.ratingAfter !== null) rating = matchPlayer.ratingAfter ?? rating;
+        }
+        history.push({ sessionId: session.id, groupId: group.id, groupName: group.name, startedAt: session.startedAt, wins, losses, rating });
+      }
+    }
+    return history.sort((first, second) => second.startedAt.getTime() - first.startedAt.getTime());
+  }
+
+  async updateGroupVisibility(groupId: string, isPublic: boolean) {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    if (group) this.state.groups = this.state.groups.map((item) => item.id === groupId ? { ...item, isPublic } : item);
   }
 
   async insertGroup(group: GroupRecord) {

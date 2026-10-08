@@ -79,6 +79,14 @@ export default function HomePage() {
           >
             Sign In to Your Group
           </Link>
+          <div className="border-t-2 border-dashed border-neutral-300 pt-4">
+            <p className="mb-3 text-xs font-black uppercase tracking-wider text-neutral-600">Playing with a group?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/player-signup" className="rounded-xl border-2 border-black bg-[#7dd3fc] px-3 py-3 text-sm font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-sky-300">Player Sign Up</Link>
+              <Link href="/player-login" className="rounded-xl border-2 border-black bg-white px-3 py-3 text-sm font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100">Player Sign In</Link>
+            </div>
+            <Link href="/players/groups" className="mt-3 block text-xs font-black uppercase underline">Browse public groups</Link>
+          </div>
           <p className="text-xs font-bold text-neutral-600">
             Sign in with your group ID and organizer PIN.
           </p>

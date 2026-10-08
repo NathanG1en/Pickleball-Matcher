@@ -2,9 +2,11 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
+import { PLAYER_SESSION_COOKIE, readPlayerSession } from "@/lib/auth/player-session";
 
 import { requireGroupOrganizer } from "@/lib/auth/authorize";
 import {
+  getOrganizerSessionSecret,
   ORGANIZER_SESSION_COOKIE,
   readOrganizerSession,
   type OrganizerSession,
@@ -37,10 +39,8 @@ export function getActionSessionService(): SessionService {
 }
 
 export async function getActiveOrganizerSession(): Promise<OrganizerSession | null> {
-  const secret = process.env.ORGANIZER_SESSION_SECRET ?? process.env.SESSION_SECRET;
-  if (!secret) return null;
-
   try {
+    const secret = getOrganizerSessionSecret();
     const cookieStore = await cookies();
     const token = cookieStore.get(ORGANIZER_SESSION_COOKIE)?.value;
     if (!token) return null;
@@ -53,4 +53,20 @@ export async function getActiveOrganizerSession(): Promise<OrganizerSession | nu
 export async function requireOrganizer(groupId: string): Promise<OrganizerSession> {
   const session = await getActiveOrganizerSession();
   return requireGroupOrganizer(groupId, session);
+}
+
+export async function getActivePlayerAccountId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const session = await readPlayerSession(cookieStore.get(PLAYER_SESSION_COOKIE)?.value);
+    return session?.accountId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function requirePlayer(): Promise<string> {
+  const accountId = await getActivePlayerAccountId();
+  if (!accountId) throw new Error("Not signed in");
+  return accountId;
 }
