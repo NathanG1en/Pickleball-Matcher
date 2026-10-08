@@ -9,6 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
+import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
+import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 
 export default async function GroupDashboardPage({
   params,
@@ -38,6 +40,7 @@ export default async function GroupDashboardPage({
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 pb-24 text-black">
+      <RecentGroupTracker groupId={groupId} groupName={group.name} />
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="flex items-center justify-between mb-2 gap-2">
@@ -75,6 +78,9 @@ export default async function GroupDashboardPage({
           </Link>
         </div>
       </header>
+
+      {/* Mobile Add to Home Screen Tip */}
+      <HomeScreenTip />
 
       {/* Primary Action Card */}
       {activeSession ? (

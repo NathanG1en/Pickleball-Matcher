@@ -6,7 +6,8 @@ test.describe("Corrections and Replay Workflow", () => {
   }) => {
     // 1. Create a group
     await page.goto("/setup");
-    await page.fill("#group-name", "Corrections League");
+    const groupName = `Corrections League ${Date.now()}`;
+    await page.fill("#group-name", groupName);
     await page.fill("#organizer-pin", "2345");
     await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
     await page.click("button[type='submit']");
