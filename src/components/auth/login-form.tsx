@@ -4,6 +4,7 @@ import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { organizerLoginAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { VisibilityToggle } from "@/components/ui/visibility-toggle";
 import {
   getRecentGroupsSnapshot,
   saveRecentGroup,
@@ -15,6 +16,7 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
   const router = useRouter();
   const [groupName, setGroupName] = useState(initialGroupName);
   const [pin, setPin] = useState("");
+  const [pinVisible, setPinVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -67,7 +69,7 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
       )}
 
       <div>
-        <label htmlFor="login-group-id" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+        <label htmlFor="login-group-name" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
           Group Name
         </label>
         <input
@@ -103,18 +105,21 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
         <label htmlFor="login-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
           Organizer PIN
         </label>
-        <input
-          id="login-pin"
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          required
-          autoFocus
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          placeholder="••••"
-          className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black text-center text-3xl font-mono font-bold tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
-        />
+        <div className="relative">
+          <input
+            id="login-pin"
+            type={pinVisible ? "text" : "password"}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            required
+            autoFocus
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="••••"
+            className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black text-center text-3xl font-mono font-bold tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+          />
+          <VisibilityToggle visible={pinVisible} onToggle={() => setPinVisible((visible) => !visible)} label="organizer PIN" />
+        </div>
       </div>
 
       <Button

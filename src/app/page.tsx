@@ -87,7 +87,7 @@ export default async function HomePage() {
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
-                  Active Session Unlocked
+                  Organizer Session
                 </span>
                 <LogoutButton />
               </div>
