@@ -17,7 +17,6 @@ export interface DomainRepository {
   transaction<T>(operation: (repository: DomainRepository) => Promise<T>): Promise<T>;
   getGroup(groupId: string): Promise<GroupRecord | null>;
   getGroupsByName(name: string): Promise<readonly GroupRecord[]>;
-  getGroupByShareId(shareId: string): Promise<GroupRecord | null>;
   listPublicGroups(search: string, accountId?: string): Promise<readonly PublicGroupRecord[]>;
   getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null>;
   getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;

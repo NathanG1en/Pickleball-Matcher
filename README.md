@@ -14,7 +14,6 @@ A mobile-first, high-contrast web application designed for recurring recreationa
   5. Competitive balance (even matches based on dynamic skill ratings).
 - **Outdoor-Optimized Mobile UI**: High-contrast, large tap targets, dark surface theme (`slate-950`), sticky action bar within thumb reach, and Atkinson Hyperlegible typography.
 - **PIN-Based Group Security**: Lightweight 4-digit PIN for group organizers; no email or OAuth required on court. Protected by bcrypt, rate limiting, and signed JWT cookies.
-- **Read-Only Spectator Mode**: Live shareable link (`/s/[shareId]`) for players to view court assignments and scores on their own devices without mutation access.
 - **Safe Corrections & Rating Replay**: Edit past scores, cancel matches, or undo rounds at any point. When a historical score changes, ratings are deterministically recomputed from the beginning.
 - **Installable PWA**: Web manifest and icons support "Add to Home Screen" on iOS and Android.
 
@@ -44,9 +43,6 @@ A mobile-first, high-contrast web application designed for recurring recreationa
 3. **Session Cookies**:
    - Organizers receive an `organizer_session` HTTP-only, SameSite=Lax JWT cookie signed with HS256 (`ORGANIZER_SESSION_SECRET`).
    - The token payload binds the group ID, expiration, and a hash of the client's user-agent fingerprint (`ORGANIZER_FINGERPRINT_SECRET`).
-4. **Public Spectator Sharing**:
-   - Each group has an unguessable high-entropy `public_share_id`.
-   - The route `/s/[shareId]` provides a read-only spectator view. Server actions strictly check organizer authorization to prevent unauthenticated mutations.
 
 ---
 

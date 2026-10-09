@@ -92,7 +92,6 @@ describe("Pickleball Elo Simulation Test", () => {
       id: groupId,
       name: "Pickleball Simulation League",
       organizerPinHash: "sim-pin-hash",
-      publicShareId: "sim-league-share",
       createdAt: new Date("2026-10-06T09:00:00Z"),
     });
 

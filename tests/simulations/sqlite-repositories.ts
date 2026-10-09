@@ -23,7 +23,6 @@ interface GroupRow {
   id: string;
   name: string;
   organizer_pin_hash: string;
-  public_share_id: string;
   created_at: string;
   is_public: number;
 }
@@ -53,6 +52,7 @@ interface SessionRow {
   id: string;
   group_id: string;
   court_count: number;
+  court_player_counts: string;
   status: "active" | "completed";
   current_round_number: number;
   started_at: string;
@@ -100,6 +100,7 @@ interface MatchRow {
   team2_score: number | null;
   completed_at: string | null;
   version: number;
+  rated: number;
 }
 
 interface MatchPlayerRow {
@@ -130,7 +131,6 @@ export class SqliteDomainRepository implements DomainRepository {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
         organizer_pin_hash TEXT NOT NULL,
-        public_share_id TEXT NOT NULL UNIQUE,
         created_at TEXT NOT NULL,
         is_public INTEGER NOT NULL DEFAULT 0
       );
@@ -144,18 +144,21 @@ export class SqliteDomainRepository implements DomainRepository {
         rated_games_played INTEGER NOT NULL,
         active INTEGER NOT NULL,
         account_id TEXT REFERENCES players(id) ON DELETE SET NULL,
-        username TEXT UNIQUE,
+        username TEXT,
         password_hash TEXT,
         skill_level TEXT,
         created_at TEXT NOT NULL
       );
       CREATE UNIQUE INDEX IF NOT EXISTS players_group_account_unique_idx
         ON players(group_id, account_id) WHERE account_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS players_username_case_insensitive_unique_idx
+        ON players(lower(username)) WHERE username IS NOT NULL;
 
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
         court_count INTEGER NOT NULL,
+        court_player_counts TEXT NOT NULL DEFAULT '[]',
         status TEXT NOT NULL,
         current_round_number INTEGER NOT NULL,
         started_at TEXT NOT NULL,
@@ -194,6 +197,7 @@ export class SqliteDomainRepository implements DomainRepository {
         team2_score INTEGER,
         completed_at TEXT,
         version INTEGER NOT NULL,
+        rated INTEGER NOT NULL DEFAULT 1,
         UNIQUE (round_id, court_number)
       );
 
@@ -288,7 +292,6 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       name: row.name,
       organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
     };
@@ -302,25 +305,9 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       name: row.name,
       organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
     }));
-  }
-
-  async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
-    const row = this.db
-      .prepare("SELECT * FROM groups WHERE public_share_id = ?")
-      .get(shareId) as GroupRow | undefined;
-    if (!row) return null;
-    return {
-      id: row.id,
-      name: row.name,
-      organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
-      createdAt: new Date(row.created_at),
-      isPublic: Boolean(row.is_public),
-    };
   }
 
   async listPublicGroups(search: string, accountId?: string) {
@@ -363,7 +350,7 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare(`
       INSERT INTO players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id, username, password_hash, skill_level, created_at)
       VALUES (?, NULL, ?, ?, ?, 0, 1, NULL, ?, ?, ?, ?)
-    `).run(account.id, account.name, account.initialRating, account.initialRating, account.username, account.passwordHash, account.skillLevel, account.createdAt.toISOString());
+    `).run(account.id, account.name, account.initialRating, account.initialRating, account.username.trim().toLowerCase(), account.passwordHash, account.skillLevel, account.createdAt.toISOString());
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
@@ -460,13 +447,12 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertGroup(group: GroupRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO groups (id, name, organizer_pin_hash, public_share_id, created_at, is_public) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public) VALUES (?, ?, ?, ?, ?)",
       )
       .run(
         group.id,
         group.name,
         group.organizerPinHash,
-        group.publicShareId,
         group.createdAt.toISOString(),
         group.isPublic ? 1 : 0,
       );
@@ -481,6 +467,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
       startedAt: new Date(row.started_at),
@@ -497,6 +484,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
       startedAt: new Date(row.started_at),
@@ -595,6 +583,7 @@ export class SqliteDomainRepository implements DomainRepository {
         team2Score: row.team2_score,
         completedAt: row.completed_at ? new Date(row.completed_at) : null,
         version: row.version,
+        rated: row.rated === 1,
       }));
 
       const matchIds = matches.map((m) => m.id);
@@ -663,18 +652,20 @@ export class SqliteDomainRepository implements DomainRepository {
       team2Score: row.team2_score,
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
       version: row.version,
+      rated: row.rated === 1,
     };
   }
 
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO sessions (id, group_id, court_count, status, current_round_number, started_at, ended_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         session.id,
         session.groupId,
         session.courtCount,
+        JSON.stringify(session.courtPlayerCounts ?? []),
         session.status,
         session.currentRoundNumber,
         session.startedAt.toISOString(),
@@ -689,10 +680,11 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateSession(session: SessionRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE sessions SET court_count = ?, status = ?, current_round_number = ?, ended_at = ?, version = ? WHERE id = ? AND version = ?",
+        "UPDATE sessions SET court_count = ?, court_player_counts = ?, status = ?, current_round_number = ?, ended_at = ?, version = ? WHERE id = ? AND version = ?",
       )
       .run(
         session.courtCount,
+        JSON.stringify(session.courtPlayerCounts ?? []),
         session.status,
         session.currentRoundNumber,
         session.endedAt ? session.endedAt.toISOString() : null,
@@ -744,7 +736,7 @@ export class SqliteDomainRepository implements DomainRepository {
       );
 
     const insertMatch = this.db.prepare(
-      "INSERT INTO matches (id, round_id, court_number, status, team1_score, team2_score, completed_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO matches (id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const match of record.matches) {
       insertMatch.run(
@@ -756,6 +748,7 @@ export class SqliteDomainRepository implements DomainRepository {
         match.team2Score,
         match.completedAt ? match.completedAt.toISOString() : null,
         match.version,
+        match.rated === false ? 0 : 1,
       );
     }
 
@@ -783,7 +776,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateMatch(match: MatchRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE matches SET status = ?, team1_score = ?, team2_score = ?, completed_at = ?, version = ? WHERE id = ? AND version = ?",
+        "UPDATE matches SET status = ?, team1_score = ?, team2_score = ?, completed_at = ?, version = ?, rated = ? WHERE id = ? AND version = ?",
       )
       .run(
         match.status,
@@ -791,6 +784,7 @@ export class SqliteDomainRepository implements DomainRepository {
         match.team2Score,
         match.completedAt ? match.completedAt.toISOString() : null,
         match.version,
+        match.rated === false ? 0 : 1,
         match.id,
         match.version - 1,
       );
@@ -838,6 +832,7 @@ export class SqliteDomainRepository implements DomainRepository {
          JOIN match_players mp ON mp.match_id = m.id
          WHERE s.group_id = ?
            AND m.status IN ('completed', 'cancelled')
+           AND m.rated = 1
            AND m.completed_at IS NOT NULL
          ORDER BY m.completed_at ASC, m.id ASC, mp.team ASC, mp.player_id ASC`,
       )
