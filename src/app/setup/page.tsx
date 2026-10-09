@@ -17,11 +17,13 @@ export default function SetupGroupPage() {
   const [setupTokenVisible, setSetupTokenVisible] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isPending, setIsPending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setIsPending(true);
 
     try {
@@ -34,6 +36,7 @@ export default function SetupGroupPage() {
 
       if (!res.ok) {
         setError(res.error);
+        setFieldErrors(res.fieldErrors ?? {});
         setIsPending(false);
         return;
       }
@@ -69,12 +72,12 @@ export default function SetupGroupPage() {
         </div>
 
         {error && (
-          <div role="alert" className="mb-6 p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
+          <div role="alert" className="mb-6 rounded-xl border-2 border-red-600 bg-red-50 p-4 text-sm font-black text-red-700 shadow-[3px_3px_0px_0px_#000]">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           <div>
             <label htmlFor="group-name" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Group Name
@@ -86,8 +89,11 @@ export default function SetupGroupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Tuesday Morning Doubles"
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+              aria-invalid={Boolean(fieldErrors.name?.length)}
+              aria-describedby={fieldErrors.name?.length ? "group-name-error" : undefined}
+              className={`w-full rounded-xl border-2 px-4 py-3 font-bold text-black placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow ${fieldErrors.name?.length ? "border-red-600 bg-red-50" : "border-black bg-white"}`}
             />
+            {fieldErrors.name?.[0] && <p id="group-name-error" className="mt-1 text-xs font-bold text-red-700">{fieldErrors.name[0]}</p>}
           </div>
 
           <div>
@@ -104,10 +110,13 @@ export default function SetupGroupPage() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="••••"
-                className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black font-mono font-bold placeholder-neutral-400 tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+                aria-invalid={Boolean(fieldErrors.pin?.length)}
+                aria-describedby={fieldErrors.pin?.length ? "organizer-pin-error" : undefined}
+                className={`w-full rounded-xl border-2 px-4 py-3 pr-14 font-mono font-bold tracking-widest text-black placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow ${fieldErrors.pin?.length ? "border-red-600 bg-red-50" : "border-black bg-white"}`}
               />
               <VisibilityToggle visible={pinVisible} onToggle={() => setPinVisible((visible) => !visible)} label="organizer PIN" />
             </div>
+            {fieldErrors.pin?.[0] && <p id="organizer-pin-error" className="mt-1 text-xs font-bold text-red-700">{fieldErrors.pin[0]}</p>}
             <p className="text-xs font-bold text-neutral-600 mt-1.5">
               You will use this PIN to start rounds and enter scores.
             </p>
@@ -142,10 +151,13 @@ export default function SetupGroupPage() {
                 value={setupToken}
                 onChange={(e) => setSetupToken(e.target.value)}
                 placeholder="Secret operator setup token"
-                className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+                aria-invalid={Boolean(fieldErrors.setupToken?.length)}
+                aria-describedby={fieldErrors.setupToken?.length ? "setup-token-error" : undefined}
+                className={`w-full rounded-xl border-2 px-4 py-3 pr-14 font-bold text-black placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow ${fieldErrors.setupToken?.length ? "border-red-600 bg-red-50" : "border-black bg-white"}`}
               />
               <VisibilityToggle visible={setupTokenVisible} onToggle={() => setSetupTokenVisible((visible) => !visible)} label="setup token" />
             </div>
+            {fieldErrors.setupToken?.[0] && <p id="setup-token-error" className="mt-1 text-xs font-bold text-red-700">{fieldErrors.setupToken[0]}</p>}
           </div>
 
           <Button

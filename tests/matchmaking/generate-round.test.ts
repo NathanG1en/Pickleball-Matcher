@@ -80,6 +80,44 @@ describe("generateRound", () => {
     expect(result.value.sitting).toHaveLength(0);
   });
 
+  it("plays configured 2v1 courts and sits out unassigned players", () => {
+    const players = makePlayers(7);
+    const result = generateRound({
+      players,
+      courts: 2,
+      courtPlayerCounts: [4, 2],
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 42,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.courts.map((court) => court.team1.length + court.team2.length)).toEqual([4, 2]);
+    expect(result.value.courts[1].matchType).toBe("singles");
+    expect(result.value.sitting).toHaveLength(1);
+    expect(new Set([
+      ...result.value.courts.flatMap((court) => [...court.team1, ...court.team2]),
+      ...result.value.sitting,
+    ])).toEqual(new Set(players.map((player) => player.id)));
+  });
+
+  it("marks three-player courts as scored team-vs-one assignments", () => {
+    const result = generateRound({
+      players: makePlayers(3),
+      courts: 1,
+      courtPlayerCounts: [3],
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 43,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.courts[0].matchType).toBe("team-vs-one");
+    expect(result.value.courts[0].team1.length + result.value.courts[0].team2.length).toBe(3);
+  });
+
   it("reproduces a round from the same input and seed", () => {
     const input = {
       players: makePlayers(14),

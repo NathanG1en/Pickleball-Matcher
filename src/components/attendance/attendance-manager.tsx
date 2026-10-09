@@ -18,7 +18,7 @@ export interface AttendanceManagerProps {
   readonly maxCourts?: number;
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
-  readonly onSubmit?: (data: { courtCount: number; selectedPlayerIds: string[] }) => void;
+  readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[] }) => void;
   readonly onAddGuest?: (name: string) => void;
 }
 
@@ -32,10 +32,20 @@ export function AttendanceManager({
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
+  const initialSelectedCount = initialSelected.length || players.filter((player) => player.active).length;
+  const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(initialSelected.length > 0 ? initialSelected : players.filter((p) => p.active).map((p) => p.id)),
   );
-  const [courts, setCourts] = useState<number>(initialCourts);
+  const [courts, setCourts] = useState<number>(defaultCourtCount);
+  const [courtPlayerCounts, setCourtPlayerCounts] = useState<(2 | 3 | 4)[]>(() => {
+    let remaining = initialSelectedCount;
+    return Array.from({ length: defaultCourtCount }, () => {
+      const size = Math.min(4, Math.max(2, remaining)) as 2 | 3 | 4;
+      remaining -= size;
+      return size;
+    });
+  });
   const [guestName, setGuestName] = useState<string>("");
 
   const togglePlayer = (id: string) => {
@@ -60,7 +70,11 @@ export function AttendanceManager({
   };
 
   const increaseCourts = () => {
-    if (courts < maxCourts) setCourts((c) => c + 1);
+    if (courts < Math.min(maxCourts, Math.floor(count / 2))) {
+      const nextSize: 2 | 3 | 4 = count >= (courts + 1) * 4 ? 4 : count >= (courts + 1) * 3 ? 3 : 2;
+      setCourts((c) => c + 1);
+      setCourtPlayerCounts((previous) => [...previous.slice(0, courts), nextSize]);
+    }
   };
 
   const handleAddGuest = (e: React.FormEvent) => {
@@ -75,13 +89,15 @@ export function AttendanceManager({
     if (onSubmit) {
       onSubmit({
         courtCount: courts,
+        courtPlayerCounts: courtPlayerCounts.slice(0, courts),
         selectedPlayerIds: Array.from(selectedIds),
       });
     }
   };
 
   const count = selectedIds.size;
-  const neededCourts = Math.floor(count / 4);
+  const capacity = courtPlayerCounts.slice(0, courts).reduce((sum, size) => sum + size, 0);
+  const sittingCount = Math.max(0, count - capacity);
 
   return (
     <div className="attendance-manager space-y-6 pb-28 text-black">
@@ -89,7 +105,7 @@ export function AttendanceManager({
       <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
         <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Available Courts</h2>
         <p className="text-sm font-bold text-neutral-600 mb-4">
-          Each court hosts 4 players per round.
+          Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
         </p>
 
         <div className="flex items-center gap-4">
@@ -97,7 +113,7 @@ export function AttendanceManager({
             type="button"
             aria-label="Decrease courts"
             disabled={courts <= 1}
-            onClick={decreaseCourts}
+            onClick={() => { decreaseCourts(); setCourtPlayerCounts((previous) => previous.slice(0, -1)); }}
             className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
           >
             -
@@ -116,19 +132,30 @@ export function AttendanceManager({
           <button
             type="button"
             aria-label="Increase courts"
-            disabled={courts >= maxCourts}
+            disabled={courts >= Math.min(maxCourts, Math.floor(count / 2))}
             onClick={increaseCourts}
             className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
           >
             +
           </button>
 
-          {neededCourts > 0 && neededCourts !== courts && (
-            <p className="text-xs font-black text-amber-800 ml-auto bg-[#fef08a] px-2.5 py-1 rounded-lg border border-black shadow-[2px_2px_0px_0px_#000]">
-              Tip: {count} players can fill {neededCourts} court{neededCourts > 1 ? "s" : ""}
-            </p>
-          )}
         </div>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {courtPlayerCounts.slice(0, courts).map((size, index) => (
+            <label key={index} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black p-3 font-bold">
+              <span>Court {index + 1}</span>
+              <select
+                aria-label={`Players on court ${index + 1}`}
+                value={size}
+                onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
+                className="rounded-lg border-2 border-black px-2 py-1"
+              >
+                {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt}>{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+        {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
       </section>
 
       {/* Players Section */}
@@ -217,7 +244,7 @@ export function AttendanceManager({
             type="button"
             variant="primary"
             size="lg"
-            disabled={count < 4 || isPending}
+            disabled={count < 2 || capacity > count || isPending}
             onClick={handleSubmit}
             className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
           >

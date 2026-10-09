@@ -77,10 +77,6 @@ export class InMemoryRepositories implements DomainRepository {
     return this.state.groups.filter((group) => group.name === exactName);
   }
 
-  async getGroupByShareId(shareId: string) {
-    return this.state.groups.find((group) => group.publicShareId === shareId) ?? null;
-  }
-
   async listPublicGroups(search: string, accountId?: string) {
     const term = search.trim().toLocaleLowerCase();
     return this.state.groups
@@ -105,10 +101,11 @@ export class InMemoryRepositories implements DomainRepository {
   }
 
   async createPlayerAccount(account: PlayerAccountRecord) {
-    if (this.state.playerAccounts.some((item) => item.username === account.username)) {
+    const username = account.username.trim().toLowerCase();
+    if (this.state.playerAccounts.some((item) => item.username.trim().toLowerCase() === username)) {
       throw new Error("Username already exists");
     }
-    this.state.playerAccounts.push(structuredClone(account));
+    this.state.playerAccounts.push(structuredClone({ ...account, username }));
   }
 
   async updatePlayerAccountName(accountId: string, name: string) {

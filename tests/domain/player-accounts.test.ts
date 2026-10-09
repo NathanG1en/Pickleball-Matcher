@@ -15,8 +15,8 @@ describe("player account group membership and history", () => {
   it("lets accounts join public groups with their starting rating, and rejects private groups", async () => {
     const repository = new InMemoryRepositories({
       groups: [
-        { id: "public", name: "Public Group", organizerPinHash: "hash", publicShareId: "share-public", createdAt: new Date(), isPublic: true },
-        { id: "private", name: "Private Group", organizerPinHash: "hash", publicShareId: "share-private", createdAt: new Date(), isPublic: false },
+        { id: "public", name: "Public Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        { id: "private", name: "Private Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: false },
       ],
       playerAccounts: [account],
     });
@@ -30,7 +30,7 @@ describe("player account group membership and history", () => {
 
   it("updates a player name across memberships and retains per-session results", async () => {
     const repository = new InMemoryRepositories({
-      groups: [{ id: "public", name: "Public Group", organizerPinHash: "hash", publicShareId: "share-public", createdAt: new Date(), isPublic: true }],
+      groups: [{ id: "public", name: "Public Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true }],
       playerAccounts: [account],
     });
     const player = await repository.joinPublicGroup(account.id, "public");

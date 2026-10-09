@@ -13,20 +13,39 @@ const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } a
 
 export type PlayerActionResult<T = void> =
   | { ok: true; data: T }
-  | { ok: false; error: string };
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export async function playerSignupAction(input: unknown): Promise<PlayerActionResult<{ accountId: string }>> {
   const parsed = playerSignupSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Please check your player details and try again." };
+  const submittedUsername =
+    input && typeof input === "object" && "username" in input && typeof input.username === "string"
+      ? input.username.trim().toLowerCase()
+      : "";
+  const usernameValidation = playerSignupSchema.shape.username.safeParse(submittedUsername);
+  const repository = getActionRepository();
+  let usernameTaken = false;
+  if (usernameValidation.success) {
+    try {
+      usernameTaken = Boolean(await repository.getPlayerAccountByUsername(submittedUsername));
+    } catch {
+      return { ok: false, error: "Unable to check username availability. Please try again." };
+    }
+  }
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    if (usernameTaken) fieldErrors.username = ["That username is already taken."];
+    return { ok: false, error: "Please check your player details and try again.", fieldErrors };
+  }
   if (Buffer.byteLength(parsed.data.password, "utf8") > 72) {
-    return { ok: false, error: "Password must be 72 bytes or fewer." };
+    const fieldErrors: Record<string, string[]> = { password: ["Password must be 72 bytes or fewer."] };
+    if (usernameTaken) fieldErrors.username = ["That username is already taken."];
+    return { ok: false, error: "Please check your player details and try again.", fieldErrors };
   }
 
   const username = parsed.data.username.toLowerCase();
-  const repository = getActionRepository();
   try {
-    if (await repository.getPlayerAccountByUsername(username)) {
-      return { ok: false, error: "That username is already taken." };
+    if (usernameTaken) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
     }
     const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
     const account = {
@@ -47,8 +66,8 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
     }
     return { ok: true, data: { accountId } };
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
-      return { ok: false, error: "That username is already taken." };
+    if (error && typeof error === "object" && "code" in error && (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
     }
     return { ok: false, error: error instanceof Error ? error.message : "Unable to create player account." };
   }

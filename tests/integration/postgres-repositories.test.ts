@@ -22,8 +22,8 @@ const scoreBreakdown = {
 };
 
 async function seedPlayers() {
-  await sql`insert into groups (id, name, organizer_pin_hash, public_share_id)
-            values ('group-1', 'Tuesday Pickleball', 'hash', 'share-1')`;
+  await sql`insert into groups (id, name, organizer_pin_hash)
+            values ('group-1', 'Tuesday Pickleball', 'hash')`;
   await sql`insert into players (id, group_id, name) values
             ('a', 'group-1', 'A'), ('b', 'group-1', 'B'),
             ('c', 'group-1', 'C'), ('d', 'group-1', 'D')`;

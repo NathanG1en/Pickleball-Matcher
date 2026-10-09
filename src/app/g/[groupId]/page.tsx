@@ -53,24 +53,6 @@ export default async function GroupDashboardPage({
 
         <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
 
-        {/* Share Link Banner */}
-        <div className="mt-5 p-3.5 bg-[#fef08a] rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <span className="text-xs uppercase font-black text-black block tracking-wider">
-              Player Spectator Link
-            </span>
-            <span className="text-xs text-neutral-800 truncate font-mono font-bold block">
-              /s/{group.publicShareId}
-            </span>
-          </div>
-          <Link
-            href={`/s/${group.publicShareId}`}
-            target="_blank"
-            className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-100 text-xs font-black text-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000] whitespace-nowrap transition-transform active:translate-x-0.5 active:translate-y-0.5"
-          >
-            View Live
-          </Link>
-        </div>
       </header>
 
       {/* Mobile Add to Home Screen Tip */}

@@ -43,6 +43,7 @@ export function NewSessionClient({
 
   const handleStartSession = async (data: {
     courtCount: number;
+    courtPlayerCounts: (2 | 3 | 4)[];
     selectedPlayerIds: string[];
   }) => {
     setError(null);
@@ -52,6 +53,7 @@ export function NewSessionClient({
       const res = await startSessionAction({
         groupId,
         courtCount: data.courtCount,
+        courtPlayerCounts: data.courtPlayerCounts,
         playerIds: data.selectedPlayerIds,
         idempotencyKey: createIdempotencyKey("session"),
       });

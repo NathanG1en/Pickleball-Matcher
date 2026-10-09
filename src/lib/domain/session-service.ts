@@ -75,13 +75,9 @@ function sessionPairHistory(rounds: readonly StartedRoundRecord[]): PairHistory[
       const members = record.matchPlayers.filter((item) => item.matchId === match.id);
       const team1 = members.filter((item) => item.team === 1).map((item) => item.playerId);
       const team2 = members.filter((item) => item.team === 2).map((item) => item.playerId);
-      if (team1.length === 2 && team2.length === 2) {
-        touch(team1[0], team1[1], "partner");
-        touch(team2[0], team2[1], "partner");
-        for (const first of team1) for (const second of team2) touch(first, second, "opponent");
-      } else if (team1.length === 1 && team2.length === 1) {
-        touch(team1[0], team2[0], "opponent");
-      }
+      if (team1.length === 2) touch(team1[0], team1[1], "partner");
+      if (team2.length === 2) touch(team2[0], team2[1], "partner");
+      for (const first of team1) for (const second of team2) touch(first, second, "opponent");
     }
   }
   return [...history.values()];
@@ -132,11 +128,19 @@ export class SessionService {
     if (!Number.isSafeInteger(input.courtCount) || input.courtCount <= 0) {
       throw new DomainError("INVALID_STATE", "At least one court is required.");
     }
+    if (input.courtPlayerCounts && (
+      input.courtPlayerCounts.length !== input.courtCount ||
+      input.courtPlayerCounts.some((count) => ![2, 3, 4].includes(count)) ||
+      input.courtPlayerCounts.reduce((sum, count) => sum + count, 0) > input.playerIds.length
+    )) {
+      throw new DomainError("INVALID_STATE", "Court sizes must be 2, 3, or 4 and fit the selected players.");
+    }
     const now = this.dependencies.now();
     const session: SessionRecord = {
       id: this.dependencies.nextId("session"),
       groupId: input.groupId,
       courtCount: input.courtCount,
+      courtPlayerCounts: input.courtPlayerCounts,
       status: "active",
       currentRoundNumber: 0,
       startedAt: now,
@@ -189,6 +193,7 @@ export class SessionService {
     const result = generateRound({
       players: matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber),
       courts: session.courtCount,
+      courtPlayerCounts: session.courtPlayerCounts,
       pairHistory: sessionPairHistory(rounds),
       config: DEFAULT_MATCHMAKING_CONFIG,
       seed,
@@ -223,6 +228,7 @@ export class SessionService {
           id: this.dependencies.nextId("match"),
           roundId: round.id,
           courtNumber: court.courtNumber,
+          rated: court.team1.length === 2 && court.team2.length === 2,
           status: "pending",
           team1Score: null,
           team2Score: null,

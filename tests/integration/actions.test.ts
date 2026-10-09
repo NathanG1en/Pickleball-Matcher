@@ -16,7 +16,6 @@ describe("Server Actions Security and Validation", () => {
           id: "group-1",
           name: "Tuesday Group",
           organizerPinHash: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890", // placeholder
-          publicShareId: "share-token-123",
           createdAt: new Date(),
         },
       ],

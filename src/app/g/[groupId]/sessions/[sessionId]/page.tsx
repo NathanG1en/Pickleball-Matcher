@@ -62,7 +62,6 @@ export default async function ActiveSessionPage({
         attendance={attendance}
         startedRounds={startedRounds}
         initialProposal={initialProposal}
-        shareId={group.publicShareId}
       />
     </main>
   );

@@ -119,16 +119,18 @@ export function CurrentRoundView({
     return diff;
   }, [localCourts, localSitting, courts, sittingPlayerIds]);
 
-  // Validation: Each active court must have equal teams (1v1 or 2v2)
+  // Valid play is 1v1, 2v2, or 2v1. A single unassigned player belongs in sitting.
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
     for (const c of localCourts) {
       const total = c.team1.length + c.team2.length;
       if (total === 0) continue; // Inactive court
-      if (c.team1.length !== c.team2.length) {
-        errors.push(
-          `Court ${c.courtNumber} is unbalanced (${c.team1.length} vs ${c.team2.length}). Both teams must have equal players.`
-        );
+      const valid = (c.team1.length === 1 && c.team2.length === 1) ||
+        (c.team1.length === 2 && c.team2.length === 2) ||
+        (c.team1.length === 2 && c.team2.length === 1) ||
+        (c.team1.length === 1 && c.team2.length === 2);
+      if (!valid) {
+        errors.push(`Court ${c.courtNumber} must be 1v1, 2v2, or 2v1.`);
       }
     }
     return errors;
@@ -302,9 +304,6 @@ export function CurrentRoundView({
       {/* Round Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
-            {round.status === "proposed" ? "Round Proposal" : "Current Round"}
-          </span>
           <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
             Round {round.roundNumber}
           </h1>
@@ -330,7 +329,6 @@ export function CurrentRoundView({
                   ✏️ Customize Lineup
                 </button>
               )}
-              <Badge variant="warning">Proposal Draft</Badge>
             </>
           )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
@@ -416,7 +414,8 @@ export function CurrentRoundView({
         {localCourts.map((court) => {
           const totalPlayers = court.team1.length + court.team2.length;
           const isSingles = court.team1.length === 1 && court.team2.length === 1;
-          const isUnbalanced = totalPlayers > 0 && court.team1.length !== court.team2.length;
+          const isTeamVsOne = totalPlayers === 3;
+          const isUnbalanced = totalPlayers > 0 && !isSingles && totalPlayers !== 4 && !isTeamVsOne;
           const isEmpty = totalPlayers === 0;
 
           return (
@@ -434,7 +433,7 @@ export function CurrentRoundView({
                   className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] ${
                     isUnbalanced
                       ? "bg-[#ff6b6b]"
-                      : isSingles
+                    : isSingles || isTeamVsOne
                       ? "bg-[#ccff00]"
                       : isEmpty
                       ? "bg-neutral-200"
@@ -443,6 +442,8 @@ export function CurrentRoundView({
                 >
                   {isUnbalanced
                     ? `Unbalanced (${court.team1.length} vs ${court.team2.length})`
+                    : isTeamVsOne
+                    ? "2v1 · Scored, unrated"
                     : isSingles
                     ? "Singles • Unrated"
                     : isEmpty
