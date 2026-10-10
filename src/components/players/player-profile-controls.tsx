@@ -10,6 +10,7 @@ import {
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
+import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups } from "@/lib/storage/recent-groups";
 import { Button } from "@/components/ui/button";
 
@@ -37,12 +38,14 @@ export function PlayerProfileHeader({
   initialGender,
   skillLevel,
   initialRating,
+  initialIsPublic = true,
 }: {
   initialName: string;
   initialUsername: string;
   initialGender?: "male" | "female" | null;
   skillLevel: string;
   initialRating: number;
+  initialIsPublic?: boolean;
 }) {
   const router = useRouter();
 
@@ -66,6 +69,21 @@ export function PlayerProfileHeader({
   );
   const [genderSaving, setGenderSaving] = useState(false);
   const [genderError, setGenderError] = useState<string | null>(null);
+
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [privacySaving, setPrivacySaving] = useState(false);
+
+  const handleTogglePrivacy = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
+    const nextVal = !isPublic;
+    const res = await updatePlayerPrivacyAction(nextVal);
+    if (res.ok) {
+      setIsPublic(nextVal);
+      router.refresh();
+    }
+    setPrivacySaving(false);
+  };
 
   const cleanUsername = usernameInput.replace(/^@/, "").trim().toLowerCase();
   const isUsernameTaken =
@@ -375,9 +393,27 @@ export function PlayerProfileHeader({
         </div>
       )}
 
-      <p className="pt-1 text-xs font-bold uppercase text-neutral-600">
-        {skillLevel} · starting rating {initialRating}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-neutral-100">
+        <p className="text-xs font-bold uppercase text-neutral-600">
+          {skillLevel} · starting rating {initialRating}
+        </p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase text-neutral-500">Profile:</span>
+          <button
+            type="button"
+            onClick={handleTogglePrivacy}
+            disabled={privacySaving}
+            className={`inline-flex items-center gap-1 rounded-full border-2 border-black px-2.5 py-0.5 text-xs font-black uppercase shadow-[1px_1px_0px_0px_#000] cursor-pointer transition-all disabled:opacity-60 ${
+              isPublic
+                ? "bg-[#ccff00] text-black hover:bg-[#b8e600]"
+                : "bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
+            }`}
+            title="Click to toggle Public / Private profile"
+          >
+            {isPublic ? "🌐 Public" : "🔒 Private"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

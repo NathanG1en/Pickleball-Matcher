@@ -10,10 +10,11 @@ export default async function PlayerProfilePage() {
   const accountId = await getActivePlayerAccountId();
   if (!accountId) redirect("/player-login");
   const repository = getActionRepository();
-  const [account, history, groups] = await Promise.all([
+  const [account, history, groups, bestPartner] = await Promise.all([
     repository.getPlayerAccount(accountId),
     repository.listPlayerSessionHistory(accountId),
     repository.listAccountGroups(accountId),
+    repository.getBestPartner(accountId),
   ]);
   if (!account) redirect("/player-login");
   const wins = history.reduce((total, session) => total + session.wins, 0);
@@ -34,8 +35,29 @@ export default async function PlayerProfilePage() {
           initialGender={account.gender}
           skillLevel={account.skillLevel}
           initialRating={account.initialRating}
+          initialIsPublic={account.isPublic ?? true}
         />
       </header>
+
+      {bestPartner && (
+        <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5 shadow-[5px_5px_0px_0px_#000]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
+              <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
+              <p className="text-sm font-bold text-neutral-800">@{bestPartner.username}</p>
+            </div>
+            <div className="text-right">
+              <span className="inline-block rounded-xl border-2 border-black bg-white px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000]">
+                {Math.round(bestPartner.synergyScore * 100)}% Synergy
+              </span>
+              <p className="mt-1 text-[11px] font-bold text-neutral-800">
+                {bestPartner.matchesPlayed} matches together
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-3 gap-3 text-center">
         <Stat label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
