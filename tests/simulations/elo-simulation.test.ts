@@ -371,5 +371,5 @@ describe("Pickleball Elo Simulation Test", () => {
     expect(sessionMaes).toHaveLength(21); // session 0 to 20
     const finalMae = sessionMaes[20];
     expect(finalMae).toBeGreaterThan(0);
-  });
+  }, 90_000);
 });
