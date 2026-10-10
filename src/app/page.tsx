@@ -63,7 +63,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-base sm:text-lg text-neutral-800 pt-2 font-medium leading-relaxed max-w-sm mx-auto">
-            An elevated hands experienced.
+            An elevated pickleball experience.
           </p>
         </div>
 

@@ -320,29 +320,36 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
-  async deletePlayer(playerId: string, groupId: string) {
-    this.state.players = this.state.players.filter(
-      (p) => !(p.id === playerId && p.groupId === groupId),
-    );
-    this.state.attendance = this.state.attendance.filter(
-      (a) => a.playerId !== playerId,
-    );
-    this.state.matchPlayers = this.state.matchPlayers.filter(
-      (mp) => mp.playerId !== playerId,
-    );
-    this.state.roundSits = this.state.roundSits.filter(
-      (rs) => rs.playerId !== playerId,
+  async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
+    const player = this.state.players.find((p) => p.id === playerId && p.groupId === groupId);
+    if (!player) return false;
+    const group = this.state.groups.find((g) => g.id === groupId);
+    if (group && player.accountId && group.ownerAccountId === player.accountId) {
+      return false;
+    }
+    if (player.accountId) {
+      this.state.groupOrganizers = this.state.groupOrganizers.filter(
+        (o) => !(o.groupId === groupId && o.accountId === player.accountId),
+      );
+    }
+    this.state.players = this.state.players.map((p) =>
+      p.id === playerId && p.groupId === groupId ? { ...p, active: false } : p,
     );
     this.writeCount += 1;
+    return true;
+  }
+
+  async deletePlayer(playerId: string, groupId: string) {
+    await this.removePlayerFromGroup(playerId, groupId);
   }
 
   async getSession(sessionId: string) {
     return this.state.sessions.find((session) => session.id === sessionId) ?? null;
   }
 
-  async listPlayers(groupId: string) {
+  async listPlayers(groupId: string, options?: { includeInactive?: boolean }) {
     return this.state.players
-      .filter((player) => player.groupId === groupId)
+      .filter((player) => player.groupId === groupId && (options?.includeInactive ? true : player.active))
       .map((player) => {
         if (player.username) return player;
         if (player.accountId) {

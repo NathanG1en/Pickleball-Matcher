@@ -584,16 +584,26 @@ export class SqliteDomainRepository implements DomainRepository {
     }));
   }
 
-  async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
-    const rows = this.db
-      .prepare(`
-        SELECT p.*, COALESCE(a.username, p.username) AS username
-        FROM players p
-        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
-        WHERE p.group_id = ?
-        ORDER BY p.created_at, p.id
-      `)
-      .all(groupId) as unknown as PlayerRow[];
+  async listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
+    const rows = (options?.includeInactive
+      ? this.db
+          .prepare(`
+            SELECT p.*, COALESCE(a.username, p.username) AS username
+            FROM players p
+            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+            WHERE p.group_id = ?
+            ORDER BY p.created_at, p.id
+          `)
+          .all(groupId)
+      : this.db
+          .prepare(`
+            SELECT p.*, COALESCE(a.username, p.username) AS username
+            FROM players p
+            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+            WHERE p.group_id = ? AND p.active = 1
+            ORDER BY p.created_at, p.id
+          `)
+          .all(groupId)) as unknown as PlayerRow[];
     return rows.map((row) => this.mapPlayerRecord(row));
   }
 
@@ -633,10 +643,29 @@ export class SqliteDomainRepository implements DomainRepository {
     }
   }
 
-  async deletePlayer(playerId: string, groupId: string): Promise<void> {
-    this.db
-      .prepare("DELETE FROM players WHERE id = ? AND group_id = ?")
+  async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
+    const player = this.db
+      .prepare("SELECT account_id FROM players WHERE id = ? AND group_id = ?")
+      .get(playerId, groupId) as { account_id: string | null } | undefined;
+    if (!player) return false;
+    const accountId = player.account_id;
+    if (accountId) {
+      const isOwner = this.db
+        .prepare("SELECT 1 FROM groups WHERE id = ? AND owner_account_id = ?")
+        .get(groupId, accountId);
+      if (isOwner) return false;
+      this.db
+        .prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?")
+        .run(groupId, accountId);
+    }
+    const result = this.db
+      .prepare("UPDATE players SET active = 0 WHERE id = ? AND group_id = ?")
       .run(playerId, groupId);
+    return result.changes > 0;
+  }
+
+  async deletePlayer(playerId: string, groupId: string): Promise<void> {
+    await this.removePlayerFromGroup(playerId, groupId);
   }
 
   async listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]> {

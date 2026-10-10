@@ -523,11 +523,35 @@ export class PostgresRepositories implements DomainRepository {
     }
   }
 
-  async deletePlayer(playerId: string, groupId: string): Promise<void> {
-    await this.query`
-      delete from players
-      where id = ${playerId} and group_id = ${groupId}
+  async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
+    const playerRows = await this.query<{ account_id: string | null }[]>`
+      select account_id from players where id = ${playerId} and group_id = ${groupId}
     `;
+    if (!playerRows[0]) return false;
+    const accountId = playerRows[0].account_id;
+
+    if (accountId) {
+      const isOwner = await this.query<{ is_owner: boolean }[]>`
+        select exists (select 1 from groups where id = ${groupId} and owner_account_id = ${accountId}) as is_owner
+      `;
+      if (isOwner[0]?.is_owner) return false;
+
+      await this.query`
+        delete from group_organizers
+        where group_id = ${groupId} and account_id = ${accountId}
+      `;
+    }
+
+    const updated = await this.query<{ id: string }[]>`
+      update players set active = false
+      where id = ${playerId} and group_id = ${groupId}
+      returning id
+    `;
+    return updated.length > 0;
+  }
+
+  async deletePlayer(playerId: string, groupId: string): Promise<void> {
+    await this.removePlayerFromGroup(playerId, groupId);
   }
 
   async getSession(sessionId: string): Promise<SessionRecord | null> {
@@ -539,14 +563,22 @@ export class PostgresRepositories implements DomainRepository {
     return rows[0] ? mapSession(rows[0]) : null;
   }
 
-  async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
-    const rows = await this.query<PlayerRow[]>`
-      select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
-             coalesce(a.username, p.username) as username
-      from players p
-      left join players a on a.id = p.account_id and a.username is not null
-      where p.group_id = ${groupId} order by p.created_at, p.id
-    `;
+  async listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
+    const rows = options?.includeInactive
+      ? await this.query<PlayerRow[]>`
+          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+                 coalesce(a.username, p.username) as username
+          from players p
+          left join players a on a.id = p.account_id and a.username is not null
+          where p.group_id = ${groupId} order by p.created_at, p.id
+        `
+      : await this.query<PlayerRow[]>`
+          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+                 coalesce(a.username, p.username) as username
+          from players p
+          left join players a on a.id = p.account_id and a.username is not null
+          where p.group_id = ${groupId} and p.active = true order by p.created_at, p.id
+        `;
     return rows.map(mapPlayer);
   }
 

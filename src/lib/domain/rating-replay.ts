@@ -6,7 +6,7 @@ export async function replayRatings(
   groupId: string,
   repository: DomainRepository,
 ): Promise<RatingReplayResult> {
-  const players = await repository.listPlayers(groupId);
+  const players = await repository.listPlayers(groupId, { includeInactive: true });
   const current = new Map(
     players.map((player) => [
       player.id,
