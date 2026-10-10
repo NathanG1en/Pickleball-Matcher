@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import {
   getActionRepository,
+  getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
 import { NewSessionClient } from "./new-session-client";
@@ -17,6 +18,10 @@ export default async function NewSessionPage({
   try {
     await requireOrganizer(groupId);
   } catch {
+    const accountId = await getActivePlayerAccountId();
+    if (accountId) {
+      redirect(`/g/${groupId}`);
+    }
     redirect(`/g/${groupId}/login`);
   }
 
