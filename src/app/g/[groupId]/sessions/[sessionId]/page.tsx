@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import {
   getActionRepository,
   getActionSessionService,
+  getActiveOrganizerSession,
   getActivePlayerAccountId,
-  requireOrganizer,
 } from "@/app/actions/action-context";
 import { SessionManagerClient } from "./session-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
@@ -17,12 +17,6 @@ export default async function ActiveSessionPage({
   params: Promise<{ groupId: string; sessionId: string }>;
 }) {
   const { groupId, sessionId } = await params;
-  try {
-    await requireOrganizer(groupId);
-  } catch {
-    redirect(`/g/${groupId}/login`);
-  }
-
   const repository = getActionRepository();
   const accountId = await getActivePlayerAccountId();
   const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
@@ -42,17 +36,25 @@ export default async function ActiveSessionPage({
     redirect(`/g/${groupId}`);
   }
 
-  const viewerPlayer = players.find((p) => p.accountId === accountId);
-  const isOrganizer = Boolean(
-    (accountId && (await repository.isGroupOrganizer(groupId, accountId))) ||
-    accountId === group.ownerAccountId,
-  );
+  const accountId = await getActivePlayerAccountId();
+  const organizerSession = await getActiveOrganizerSession();
+  const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
+  const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const isOrganizer = isAccountOrganizer || isSessionOrganizer;
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+
+  if (!isOrganizer && !isMember) {
+    if (!accountId) {
+      redirect(`/g/${groupId}/login`);
+    }
+    redirect("/players");
+  }
 
   let initialProposal: RoundProposal | null = null;
   const latestStarted = startedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  if (!isRoundInProgress) {
+  if (!isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
       initialProposal = await sessionService.proposeRound(sessionId);
@@ -113,6 +115,7 @@ export default async function ActiveSessionPage({
         attendance={attendance}
         startedRounds={startedRounds}
         initialProposal={initialProposal}
+        canManage={isOrganizer}
         currentViewerPlayerId={viewerPlayer?.id ?? null}
         partnerSynergy={partnerSynergy}
         courtSynergies={courtSynergies}

@@ -6,7 +6,6 @@ import {
   getActionRepository,
   getActiveOrganizerSession,
   getActivePlayerAccountId,
-  requireOrganizer,
 } from "@/app/actions/action-context";
 import { Badge } from "@/components/ui/badge";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
@@ -17,6 +16,7 @@ import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
+import type { MatchRecord } from "@/lib/domain/types";
 
 export default async function GroupDashboardPage({
   params,
@@ -24,12 +24,6 @@ export default async function GroupDashboardPage({
   params: Promise<{ groupId: string }>;
 }) {
   const { groupId } = await params;
-  try {
-    await requireOrganizer(groupId);
-  } catch {
-    redirect(`/g/${groupId}/login`);
-  }
-
   const repository = getActionRepository();
   const group = await repository.getGroup(groupId);
   if (!group) {
@@ -51,10 +45,36 @@ export default async function GroupDashboardPage({
     await repository.joinPublicGroup(accountId, groupId);
     players = await repository.listPlayers(groupId);
   }
-  const organizers = isOrganizer ? await repository.listGroupOrganizers(groupId) : [];
+
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+
+  if (!isOrganizer && !isMember) {
+    if (!accountId) {
+      redirect(`/g/${groupId}/login`);
+    }
+    redirect("/players");
+  }
+
+  const organizers = await repository.listGroupOrganizers(groupId);
 
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.slice(0, 10);
+
+  let currentRoundMatches: readonly MatchRecord[] = [];
+  let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
+  if (activeSession) {
+    const startedRounds = await repository.listStartedRounds(activeSession.id);
+    const latestStarted = startedRounds.at(-1);
+    if (latestStarted && latestStarted.round.status === "started") {
+      currentRoundMatches = latestStarted.matches;
+      currentMatchPlayers = latestStarted.matchPlayers;
+    }
+  }
+
+  const playerNameMap: Record<string, string> = {};
+  for (const p of players) {
+    playerNameMap[p.id] = p.name;
+  }
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 pb-24 text-black">
@@ -62,20 +82,24 @@ export default async function GroupDashboardPage({
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref={isAccountOrganizer ? "/players" : "/"} />
-          <GroupOptionsMenu
-            groupId={groupId}
-            groupName={group.name}
-            isAccountOrganizer={isAccountOrganizer}
-          />
+          <BackButton fallbackHref={accountId ? "/players" : "/"} />
+          {isOrganizer && (
+            <GroupOptionsMenu
+              groupId={groupId}
+              groupName={group.name}
+              isAccountOrganizer={isAccountOrganizer}
+            />
+          )}
         </div>
-        <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={true} />
+        <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
         <p className="text-xs font-bold text-neutral-600 mt-1">
           {players.length} players on roster
         </p>
-        <GroupIdReveal groupId={groupId} />
+        {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
-        <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
+        {isOrganizer && (
+          <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
+        )}
 
       </header>
 
@@ -86,25 +110,55 @@ export default async function GroupDashboardPage({
 
       {/* Primary Action Card */}
       {activeSession ? (
-        <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-          <div className="flex items-center justify-between mb-2">
+        <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+          <div className="flex items-center justify-between">
             <Badge variant="default" className="bg-black text-[#ccff00]">Active Game</Badge>
             <span className="text-xs font-black uppercase tracking-wider text-black">
               Round {activeSession.currentRoundNumber}
             </span>
           </div>
-          <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Session In Progress</h2>
-          <p className="text-sm font-bold text-neutral-900 mb-5">
-            Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
-          </p>
+          <div>
+            <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Session In Progress</h2>
+            <p className="text-sm font-bold text-neutral-900">
+              Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
+            </p>
+          </div>
+
+          {currentRoundMatches.length > 0 && (
+            <div className="space-y-2 pt-2 border-t-2 border-black/20">
+              <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
+              <div className="grid grid-cols-1 gap-2">
+                {currentRoundMatches.map((m) => {
+                  const t1 = currentMatchPlayers
+                    .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                  const t2 = currentMatchPlayers
+                    .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                  return (
+                    <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
+                      <div>
+                        <span className="font-black text-black block">Court {m.courtNumber}</span>
+                        <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
+                      </div>
+                      <Badge variant={m.status === "completed" ? "success" : m.status === "cancelled" ? "muted" : "warning"}>
+                        {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : m.status === "cancelled" ? "Cancelled" : "In Play"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <Link
             href={`/g/${groupId}/sessions/${activeSession.id}`}
             className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
           >
-            Resume Session →
+            {isOrganizer ? "Resume Session →" : "View Live Session →"}
           </Link>
         </section>
-      ) : (
+      ) : isOrganizer ? (
         <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
           <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
           <p className="text-sm font-bold text-neutral-700 mb-5">
@@ -116,6 +170,13 @@ export default async function GroupDashboardPage({
           >
             Start New Session
           </Link>
+        </section>
+      ) : (
+        <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
+          <h2 className="font-display text-2xl font-black uppercase text-black mb-1">No Active Session</h2>
+          <p className="text-sm font-bold text-neutral-700">
+            There are no games in progress right now. Live matchups will appear here when an organizer starts a session.
+          </p>
         </section>
       )}
 

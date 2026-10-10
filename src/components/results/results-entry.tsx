@@ -24,6 +24,7 @@ export interface ResultsEntryViewProps {
   readonly onSubmitResult?: (matchId: string, team1Score: number, team2Score: number) => void;
   readonly onCancelMatch?: (matchId: string) => void;
   readonly onNextRound?: () => void;
+  readonly canManage?: boolean;
 }
 
 export function ResultsEntryView({
@@ -34,6 +35,7 @@ export function ResultsEntryView({
   onSubmitResult,
   onCancelMatch,
   onNextRound,
+  canManage = true,
 }: ResultsEntryViewProps) {
   const [scores, setScores] = useState<
     Record<string, { team1: string; team2: string }>
@@ -79,14 +81,14 @@ export function ResultsEntryView({
       <div className="flex items-center justify-between">
         <div>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
-            Score Entry
+            {canManage ? "Score Entry" : "Live Games"}
           </span>
           <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
-            Round {roundNumber} Results
+            Round {roundNumber} {canManage ? "Results" : "Matchups"}
           </h1>
         </div>
         <p className="text-xs font-bold text-neutral-600">
-          Enter non-tied scores (e.g. 11–9)
+          {canManage ? "Enter non-tied scores (e.g. 11–9)" : "Current games and live scores"}
         </p>
       </div>
 
@@ -137,19 +139,31 @@ export function ResultsEntryView({
                     {match.team1Names.join(" & ")}
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      max={99}
-                      aria-label={`Court ${match.courtNumber} Team 1 score`}
-                      disabled={isCancelled || isPending}
-                      value={matchScores.team1}
-                      onChange={(e) =>
-                        handleScoreChange(match.id, "team1", e.target.value)
-                      }
-                      placeholder="Score"
-                      className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
-                    />
+                    {canManage ? (
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        aria-label={`Court ${match.courtNumber} Team 1 score`}
+                        disabled={isCancelled || isPending}
+                        value={matchScores.team1}
+                        onChange={(e) =>
+                          handleScoreChange(match.id, "team1", e.target.value)
+                        }
+                        placeholder="Score"
+                        className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
+                      />
+                    ) : (
+                      matchScores.team1 !== "" ? (
+                        <span className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] inline-block">
+                          {matchScores.team1}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                          In Play
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
 
@@ -159,19 +173,31 @@ export function ResultsEntryView({
                     {match.team2Names.join(" & ")}
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      max={99}
-                      aria-label={`Court ${match.courtNumber} Team 2 score`}
-                      disabled={isCancelled || isPending}
-                      value={matchScores.team2}
-                      onChange={(e) =>
-                        handleScoreChange(match.id, "team2", e.target.value)
-                      }
-                      placeholder="Score"
-                      className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
-                    />
+                    {canManage ? (
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        aria-label={`Court ${match.courtNumber} Team 2 score`}
+                        disabled={isCancelled || isPending}
+                        value={matchScores.team2}
+                        onChange={(e) =>
+                          handleScoreChange(match.id, "team2", e.target.value)
+                        }
+                        placeholder="Score"
+                        className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
+                      />
+                    ) : (
+                      matchScores.team2 !== "" ? (
+                        <span className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] inline-block">
+                          {matchScores.team2}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                          In Play
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -184,7 +210,7 @@ export function ResultsEntryView({
               )}
 
               {/* Court Actions */}
-              {!isCancelled && (
+              {canManage && !isCancelled && (
                 <div className="flex items-center justify-between pt-2 border-t-2 border-neutral-100">
                   {onCancelMatch && (
                     <button
@@ -216,26 +242,28 @@ export function ResultsEntryView({
       </div>
 
       {/* Persistent Bottom Mobile Action Area */}
-      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-        <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-          <div className="text-left">
-            <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Round Progress</p>
-            <p className="font-display text-base font-black uppercase text-black tracking-tight">
-              {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
-            </p>
+      {canManage && (
+        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+            <div className="text-left">
+              <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Round Progress</p>
+              <p className="font-display text-base font-black uppercase text-black tracking-tight">
+                {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              disabled={!allResolved || isPending}
+              onClick={onNextRound}
+              className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+            >
+              Next Round
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            disabled={!allResolved || isPending}
-            onClick={onNextRound}
-            className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
-          >
-            Next Round
-          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

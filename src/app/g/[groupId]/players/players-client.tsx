@@ -12,9 +12,11 @@ import { createIdempotencyKey } from "@/lib/utils/idempotency";
 export function PlayersClient({
   groupId,
   initialPlayers,
+  canManage = true,
 }: {
   groupId: string;
   initialPlayers: readonly PlayerRecord[];
+  canManage?: boolean;
 }) {
   const router = useRouter();
   const [players, setPlayers] = useState<readonly PlayerRecord[]>(initialPlayers);
@@ -85,8 +87,9 @@ export function PlayersClient({
         groupId={groupId}
         players={players}
         isPending={isPending}
-        onAddPlayer={handleAddPlayer}
-        onDeletePlayer={handleDeletePlayer}
+        onAddPlayer={canManage ? handleAddPlayer : undefined}
+        onDeletePlayer={canManage ? handleDeletePlayer : undefined}
+        canManage={canManage}
       />
     </div>
   );

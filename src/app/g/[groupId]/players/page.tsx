@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 
 import {
   getActionRepository,
-  requireOrganizer,
+  getActiveOrganizerSession,
+  getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import { PlayersClient } from "./players-client";
 
@@ -14,12 +15,6 @@ export default async function GroupPlayersPage({
   params: Promise<{ groupId: string }>;
 }) {
   const { groupId } = await params;
-  try {
-    await requireOrganizer(groupId);
-  } catch {
-    redirect(`/g/${groupId}/login`);
-  }
-
   const repository = getActionRepository();
   const [group, players] = await Promise.all([
     repository.getGroup(groupId),
@@ -27,6 +22,20 @@ export default async function GroupPlayersPage({
   ]);
 
   if (!group) redirect("/setup");
+
+  const accountId = await getActivePlayerAccountId();
+  const organizerSession = await getActiveOrganizerSession();
+  const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
+  const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const isOrganizer = isAccountOrganizer || isSessionOrganizer;
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+
+  if (!isOrganizer && !isMember) {
+    if (!accountId) {
+      redirect(`/g/${groupId}/login`);
+    }
+    redirect("/players");
+  }
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
@@ -47,11 +56,11 @@ export default async function GroupPlayersPage({
           {group.name} Roster
         </h1>
         <p className="text-sm font-bold text-neutral-700 mt-1">
-          Manage regular players and initial skill ratings.
+          {isOrganizer ? "Manage regular players and initial skill ratings." : "Group regular players and skill ratings."}
         </p>
       </header>
 
-      <PlayersClient groupId={groupId} initialPlayers={players} />
+      <PlayersClient groupId={groupId} initialPlayers={players} canManage={isOrganizer} />
     </main>
   );
 }

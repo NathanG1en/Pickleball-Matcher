@@ -10,6 +10,7 @@ export interface PlayerRosterProps {
   readonly isPending?: boolean;
   readonly onAddPlayer?: (name: string, initialRating: number) => void;
   readonly onDeletePlayer?: (player: PlayerRecord) => void;
+  readonly canManage?: boolean;
 }
 
 export function PlayerRoster({
@@ -17,6 +18,7 @@ export function PlayerRoster({
   isPending = false,
   onAddPlayer,
   onDeletePlayer,
+  canManage = true,
 }: PlayerRosterProps) {
   const [name, setName] = useState("");
   const [initialRating, setInitialRating] = useState(1000);
@@ -31,14 +33,18 @@ export function PlayerRoster({
     }
   };
 
+  const showAddForm = canManage && Boolean(onAddPlayer);
+  const showDelete = canManage && Boolean(onDeletePlayer);
+
   return (
     <div className="player-roster space-y-6">
       {/* Add Player Form */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black">
-        <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Add Player</h2>
-        <p className="text-xs font-bold text-neutral-600 mb-4">
-          Add a regular player to your group&apos;s roster.
-        </p>
+      {showAddForm && (
+        <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black">
+          <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Add Player</h2>
+          <p className="text-xs font-bold text-neutral-600 mb-4">
+            Add a regular player to your group&apos;s roster.
+          </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -77,6 +83,7 @@ export function PlayerRoster({
           </Button>
         </form>
       </section>
+      )}
 
       {/* Roster List */}
       <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black">
@@ -97,7 +104,7 @@ export function PlayerRoster({
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                {onDeletePlayer && (
+                {showDelete && (
                   <button
                     type="button"
                     onClick={() => setPlayerToDelete(player)}
@@ -114,7 +121,7 @@ export function PlayerRoster({
       </section>
 
       {/* Delete Confirmation Modal */}
-      {playerToDelete && (
+      {showDelete && playerToDelete && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
             <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
