@@ -38,9 +38,10 @@ export default async function ActiveSessionPage({
 
   const organizerSession = await getActiveOrganizerSession();
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
-  const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const isAccountOrganizer = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
   const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+  const viewerPlayer = players.find((p) => p.accountId === accountId);
 
   if (!isOrganizer && !isMember) {
     if (!accountId) {
