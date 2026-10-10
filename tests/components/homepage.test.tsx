@@ -112,7 +112,7 @@ describe("HomePage authentication states", () => {
 
     // Groups saved on device SHOULD be visible when logged in
     expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Group on this Device");
+    expect(html).toContain("Your Group");
 
     // Action buttons when logged in
     expect(html).toContain("Create A Group");

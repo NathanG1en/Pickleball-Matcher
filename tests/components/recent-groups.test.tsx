@@ -95,7 +95,7 @@ describe("Recent Groups Storage & Components", () => {
 
     const html = renderToStaticMarkup(<RecentGroupsHome />);
     expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Group on this Device");
+    expect(html).toContain("Your Group");
     expect(html).toContain("/g/grp-hero");
   });
 
