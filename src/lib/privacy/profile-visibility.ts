@@ -44,7 +44,7 @@ export function resolveProfileVisibility(
     accountId: targetAccount.id,
     username: targetAccount.username,
     name: targetAccount.name,
-    isPublic: targetAccount.isPublic,
+    isPublic: targetAccount.isPublic ?? true,
     isRestricted: false,
     skillLevel: targetAccount.skillLevel,
     rating: targetAccount.initialRating,
