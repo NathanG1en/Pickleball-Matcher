@@ -72,15 +72,19 @@ export function PlayerProfileHeader({
 
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [privacySaving, setPrivacySaving] = useState(false);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
 
   const handleTogglePrivacy = async () => {
     if (privacySaving) return;
     setPrivacySaving(true);
+    setPrivacyError(null);
     const nextVal = !isPublic;
-    const res = await updatePlayerPrivacyAction(nextVal);
+    const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
     if (res.ok) {
       setIsPublic(nextVal);
       router.refresh();
+    } else {
+      setPrivacyError(res.error ?? "Failed to update privacy");
     }
     setPrivacySaving(false);
   };
@@ -393,27 +397,113 @@ export function PlayerProfileHeader({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-neutral-100">
+      <div className="pt-2 border-t-2 border-neutral-100">
         <p className="text-xs font-bold uppercase text-neutral-600">
           {skillLevel} · starting rating {initialRating}
         </p>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold uppercase text-neutral-500">Profile:</span>
+      </div>
+
+      <div className="mt-2 rounded-2xl border-2 border-black bg-neutral-50 p-3 shadow-[2px_2px_0px_0px_#000]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-black uppercase tracking-wider">Account Visibility</p>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${
+                  isPublic
+                    ? "bg-[#ccff00] text-black"
+                    : "bg-neutral-200 text-neutral-700"
+                }`}
+              >
+                {isPublic ? "🌐 Public" : "🔒 Private"}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs font-bold text-neutral-600">
+              {isPublic
+                ? "Your profile and stats are discoverable by @username search."
+                : "Your profile is private (🔒); stats are hidden from public search."}
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleTogglePrivacy}
             disabled={privacySaving}
-            className={`inline-flex items-center gap-1 rounded-full border-2 border-black px-2.5 py-0.5 text-xs font-black uppercase shadow-[1px_1px_0px_0px_#000] cursor-pointer transition-all disabled:opacity-60 ${
-              isPublic
-                ? "bg-[#ccff00] text-black hover:bg-[#b8e600]"
-                : "bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
-            }`}
-            title="Click to toggle Public / Private profile"
+            className="shrink-0 rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
           >
-            {isPublic ? "🌐 Public" : "🔒 Private"}
+            {privacySaving ? "Saving…" : isPublic ? "Make private" : "Make public"}
           </button>
         </div>
+        {privacyError && (
+          <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
+            {privacyError}
+          </p>
+        )}
       </div>
+    </div>
+  );
+}
+
+export function PlayerVisibilityControl({
+  initialIsPublic = true,
+}: {
+  initialIsPublic?: boolean;
+}) {
+  const router = useRouter();
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = async () => {
+    if (pending) return;
+    setPending(true);
+    setError(null);
+    const nextVal = !isPublic;
+    const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
+    if (res.ok) {
+      setIsPublic(nextVal);
+      router.refresh();
+    } else {
+      setError(res.error ?? "Failed to update visibility.");
+    }
+    setPending(false);
+  };
+
+  return (
+    <div className="mt-2 rounded-2xl border-2 border-black bg-neutral-50 p-3 shadow-[2px_2px_0px_0px_#000]">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-black uppercase tracking-wider">Account Visibility</p>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${
+                isPublic
+                  ? "bg-[#ccff00] text-black"
+                  : "bg-neutral-200 text-neutral-700"
+              }`}
+            >
+              {isPublic ? "🌐 Public" : "🔒 Private"}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs font-bold text-neutral-600">
+            {isPublic
+              ? "Your profile and stats are discoverable by @username search."
+              : "Your profile is private (🔒); stats are hidden from public search."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={pending}
+          className="shrink-0 rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
+        >
+          {pending ? "Saving…" : isPublic ? "Make private" : "Make public"}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

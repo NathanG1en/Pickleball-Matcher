@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   searchPlayersByUsernameAction,
   updatePlayerPrivacyAction,
@@ -6,8 +6,21 @@ import {
 } from "@/app/actions/players";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";
+import * as actionContext from "@/app/actions/action-context";
 
-describe("searchPlayersByUsernameAction", () => {
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/app/actions/action-context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
+  return {
+    ...actual,
+    getActivePlayerAccountId: vi.fn(),
+  };
+});
+
+describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
   let repository: InMemoryRepositories;
 
   beforeEach(() => {
@@ -51,6 +64,11 @@ describe("searchPlayersByUsernameAction", () => {
     setActionRepository(repository);
   });
 
+  afterEach(() => {
+    setActionRepository(null);
+    vi.clearAllMocks();
+  });
+
   it("rejects search queries shorter than 2 characters", async () => {
     const res = await searchPlayersByUsernameAction({ query: "a", groupId: "grp_1" });
     expect(res.ok).toBe(false);
@@ -78,4 +96,47 @@ describe("searchPlayersByUsernameAction", () => {
       expect(res.data[0].rating).toBe(1400);
     }
   });
+
+  describe("updatePlayerPrivacyAction", () => {
+    it("updates player privacy when given an object input { isPublic: false }", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerPrivacyAction({ isPublic: false });
+      expect(res.ok).toBe(true);
+
+      const updated = await repository.getPlayerAccount("acc_pub");
+      expect(updated?.isPublic).toBe(false);
+    });
+
+    it("updates player privacy when given a boolean input directly", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_priv");
+
+      const res = await updatePlayerPrivacyAction(true);
+      expect(res.ok).toBe(true);
+
+      const updated = await repository.getPlayerAccount("acc_priv");
+      expect(updated?.isPublic).toBe(true);
+    });
+
+    it("rejects updating privacy when player is not signed in", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
+
+      const res = await updatePlayerPrivacyAction({ isPublic: false });
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toContain("must be signed in");
+      }
+    });
+
+    it("rejects invalid privacy inputs", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerPrivacyAction({ isPublic: "invalid" as unknown as boolean });
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toBe("Invalid privacy setting");
+      }
+    });
+  });
 });
+
