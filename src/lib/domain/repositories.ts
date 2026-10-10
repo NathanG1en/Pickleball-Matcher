@@ -8,6 +8,7 @@ import type {
   PlayerAccountRecord,
   PlayerGender,
   PlayerSessionHistoryRecord,
+  PlayerSynergyRecord,
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
@@ -31,6 +32,11 @@ export interface DomainRepository {
   updatePlayerAccountName(accountId: string, name: string): Promise<void>;
   updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
   updatePlayerAccountGender(accountId: string, gender: PlayerGender): Promise<void>;
+  updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void>;
+  getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;
+  getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null>;
+  recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void>;
+  searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;

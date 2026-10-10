@@ -17,10 +17,20 @@ export interface PlayerAccountRecord {
   readonly username: string;
   name: string;
   gender?: PlayerGender;
+  readonly isPublic?: boolean;
   readonly passwordHash: string;
   readonly skillLevel: PlayerSkillLevel;
   readonly initialRating: number;
   readonly createdAt: Date;
+}
+
+export interface PlayerSynergyRecord {
+  readonly accountId1: string;
+  readonly accountId2: string;
+  readonly matchesPlayed: number;
+  readonly wins: number;
+  readonly synergyScore: number;
+  readonly updatedAt: Date;
 }
 
 export interface PublicGroupRecord {

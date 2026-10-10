@@ -7,6 +7,7 @@ import type {
   GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerSessionHistoryRecord,
+  PlayerSynergyRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -1021,5 +1022,31 @@ export class SqliteDomainRepository implements DomainRepository {
         updateMP.run(entry.ratingBefore, entry.ratingAfter, matchId, entry.playerId);
       }
     }
+  }
+
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
+    void accountId;
+    void isPublic;
+  }
+
+  async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
+    void accountIdA;
+    void accountIdB;
+    return null;
+  }
+
+  async getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null> {
+    void accountId;
+    return null;
+  }
+
+  async recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void> {
+    void pairResults;
+  }
+
+  async searchPlayerAccounts(query: string, limit: number = 10): Promise<readonly PlayerAccountRecord[]> {
+    void query;
+    void limit;
+    return [];
   }
 }
