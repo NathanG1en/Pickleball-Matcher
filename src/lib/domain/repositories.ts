@@ -6,6 +6,7 @@ import type {
   MatchRecord,
   PlayerRecord,
   PlayerAccountRecord,
+  PlayerGender,
   PlayerSessionHistoryRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -29,6 +30,7 @@ export interface DomainRepository {
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
   updatePlayerAccountName(accountId: string, name: string): Promise<void>;
   updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
+  updatePlayerAccountGender(accountId: string, gender: PlayerGender): Promise<void>;
   joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;
@@ -38,10 +40,11 @@ export interface DomainRepository {
   insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;
-  listPlayers(groupId: string): Promise<readonly PlayerRecord[]>;
+  listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]>;
   createPlayer(player: PlayerRecord): Promise<void>;
   updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;
   deletePlayer(playerId: string, groupId: string): Promise<void>;
+  removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean>;
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;

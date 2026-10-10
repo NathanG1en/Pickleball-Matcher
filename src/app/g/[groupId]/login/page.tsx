@@ -21,9 +21,6 @@ export default async function GroupLoginPage({
         >
           ×
         </Link>
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-3">
-          Pickleball Matchmaker
-        </span>
         <h1 className="font-display text-3xl font-black uppercase tracking-tight text-black mb-2">
           Organizer Sign In
         </h1>

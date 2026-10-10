@@ -33,6 +33,7 @@ interface PlayerAccountRow {
   id: string;
   username: string;
   name: string;
+  gender?: "male" | "female" | null;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
@@ -43,6 +44,7 @@ interface PlayerRow {
   id: string;
   group_id: string;
   name: string;
+  gender?: "male" | "female" | null;
   initial_rating: number;
   rating: number;
   ratedGamesPlayed?: number;
@@ -144,6 +146,7 @@ export class SqliteDomainRepository implements DomainRepository {
         id TEXT PRIMARY KEY,
         group_id TEXT REFERENCES groups(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
+        gender TEXT,
         initial_rating REAL NOT NULL,
         rating REAL NOT NULL,
         rated_games_played INTEGER NOT NULL,
@@ -387,12 +390,12 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, password_hash, skill_level, initial_rating, created_at FROM players WHERE id = ? AND username IS NOT NULL").get(accountId) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, password_hash, skill_level, initial_rating, created_at FROM players WHERE id = ? AND username IS NOT NULL").get(accountId) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, password_hash, skill_level, initial_rating, created_at FROM players WHERE username = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, password_hash, skill_level, initial_rating, created_at FROM players WHERE username = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
@@ -401,6 +404,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       username: row.username,
       name: row.name,
+      gender: (row.gender as "male" | "female") ?? undefined,
       passwordHash: row.password_hash,
       skillLevel: row.skill_level,
       initialRating: row.initial_rating,
@@ -410,9 +414,9 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     this.db.prepare(`
-      INSERT INTO players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id, username, password_hash, skill_level, created_at)
-      VALUES (?, NULL, ?, ?, ?, 0, 1, NULL, ?, ?, ?, ?)
-    `).run(account.id, account.name, account.initialRating, account.initialRating, account.username.trim().toLowerCase(), account.passwordHash, account.skillLevel, account.createdAt.toISOString());
+      INSERT INTO players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id, username, password_hash, skill_level, created_at)
+      VALUES (?, NULL, ?, ?, ?, ?, 0, 1, NULL, ?, ?, ?, ?)
+    `).run(account.id, account.name, account.gender ?? null, account.initialRating, account.initialRating, account.username.trim().toLowerCase(), account.passwordHash, account.skillLevel, account.createdAt.toISOString());
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
@@ -422,6 +426,11 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
     this.db.prepare("UPDATE players SET username = ? WHERE id = ? AND username IS NOT NULL").run(username.trim().toLowerCase(), accountId);
+  }
+
+  async updatePlayerAccountGender(accountId: string, gender: "male" | "female"): Promise<void> {
+    this.db.prepare("UPDATE players SET gender = ? WHERE id = ? AND username IS NOT NULL").run(gender, accountId);
+    this.db.prepare("UPDATE players SET gender = ? WHERE account_id = ?").run(gender, accountId);
   }
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
@@ -575,16 +584,26 @@ export class SqliteDomainRepository implements DomainRepository {
     }));
   }
 
-  async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
-    const rows = this.db
-      .prepare(`
-        SELECT p.*, COALESCE(a.username, p.username) AS username
-        FROM players p
-        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
-        WHERE p.group_id = ?
-        ORDER BY p.created_at, p.id
-      `)
-      .all(groupId) as unknown as PlayerRow[];
+  async listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
+    const rows = (options?.includeInactive
+      ? this.db
+          .prepare(`
+            SELECT p.*, COALESCE(a.username, p.username) AS username
+            FROM players p
+            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+            WHERE p.group_id = ?
+            ORDER BY p.created_at, p.id
+          `)
+          .all(groupId)
+      : this.db
+          .prepare(`
+            SELECT p.*, COALESCE(a.username, p.username) AS username
+            FROM players p
+            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+            WHERE p.group_id = ? AND p.active = 1
+            ORDER BY p.created_at, p.id
+          `)
+          .all(groupId)) as unknown as PlayerRow[];
     return rows.map((row) => this.mapPlayerRecord(row));
   }
 
@@ -624,10 +643,29 @@ export class SqliteDomainRepository implements DomainRepository {
     }
   }
 
-  async deletePlayer(playerId: string, groupId: string): Promise<void> {
-    this.db
-      .prepare("DELETE FROM players WHERE id = ? AND group_id = ?")
+  async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
+    const player = this.db
+      .prepare("SELECT account_id FROM players WHERE id = ? AND group_id = ?")
+      .get(playerId, groupId) as { account_id: string | null } | undefined;
+    if (!player) return false;
+    const accountId = player.account_id;
+    if (accountId) {
+      const isOwner = this.db
+        .prepare("SELECT 1 FROM groups WHERE id = ? AND owner_account_id = ?")
+        .get(groupId, accountId);
+      if (isOwner) return false;
+      this.db
+        .prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?")
+        .run(groupId, accountId);
+    }
+    const result = this.db
+      .prepare("UPDATE players SET active = 0 WHERE id = ? AND group_id = ?")
       .run(playerId, groupId);
+    return result.changes > 0;
+  }
+
+  async deletePlayer(playerId: string, groupId: string): Promise<void> {
+    await this.removePlayerFromGroup(playerId, groupId);
   }
 
   async listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]> {

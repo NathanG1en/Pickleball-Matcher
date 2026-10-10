@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getActionRepository, requirePlayer } from "@/app/actions/action-context";
+import {
+  getActionRepository,
+  getActiveOrganizerSession,
+  getActivePlayerAccountId,
+  requirePlayer,
+} from "@/app/actions/action-context";
 import {
   addGroupOrganizerSchema,
   addGroupPlayerSchema,
   removeGroupOrganizerSchema,
+  removeGroupPlayerSchema,
 } from "@/lib/validation/group";
 
 export async function addGroupPlayerByUsernameAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
@@ -68,5 +74,54 @@ export async function removeGroupOrganizerAction(input: unknown): Promise<{ ok: 
     return { ok: true };
   } catch {
     return { ok: false, error: "Unable to remove this organizer." };
+  }
+}
+
+export async function removeGroupPlayerAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
+  const parsed = removeGroupPlayerSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid request." };
+  try {
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "Group not found." };
+
+    const accountId = await getActivePlayerAccountId();
+    const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+    const isAccountOrganizer = Boolean(accountId && (await repository.isGroupOrganizer(parsed.data.groupId, accountId)));
+    const organizerSession = await getActiveOrganizerSession();
+    const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === parsed.data.groupId);
+
+    if (!isHost && !isAccountOrganizer && !isSessionOrganizer) {
+      return { ok: false, error: "Only the host or a group organizer can remove players." };
+    }
+
+    const player = (await repository.listPlayers(parsed.data.groupId, { includeInactive: true })).find(
+      ({ id }) => id === parsed.data.playerId,
+    );
+    if (!player) return { ok: false, error: "Player not found." };
+
+    if (player.accountId && player.accountId === group.ownerAccountId) {
+      return { ok: false, error: "The host cannot be removed from the group." };
+    }
+
+    if (!isHost) {
+      const isTargetOrganizer = Boolean(
+        player.accountId && (await repository.isGroupOrganizer(parsed.data.groupId, player.accountId)),
+      );
+      if (isTargetOrganizer) {
+        return { ok: false, error: "Only the host can remove organizers." };
+      }
+    }
+
+    const removed = await repository.removePlayerFromGroup(parsed.data.playerId, parsed.data.groupId);
+    if (!removed) return { ok: false, error: "Unable to remove this player." };
+
+    revalidatePath(`/g/${group.id}`);
+    revalidatePath(`/g/${group.id}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Unable to remove this player." };
   }
 }

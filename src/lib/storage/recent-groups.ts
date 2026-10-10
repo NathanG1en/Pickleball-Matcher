@@ -52,6 +52,17 @@ export function removeRecentGroup(groupId: string): void {
   }
 }
 
+export function clearRecentGroups(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new Event("pickleball_recent_groups_changed"));
+  } catch {
+    // Ignore errors
+  }
+}
+
 export function subscribeRecentGroups(callback: () => void): () => void {
   if (typeof window === "undefined") return () => {};
 
