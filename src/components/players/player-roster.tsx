@@ -91,7 +91,10 @@ export function PlayerRoster({
           {players.map((player) => (
             <div key={player.id} className="py-3 flex items-center justify-between">
               <div>
-                <span className="font-black text-black text-base block">{player.name}</span>
+                <span className="font-black text-black text-base block">
+                  {player.name}
+                  {player.username ? ` (@${player.username})` : ""}
+                </span>
                 <span className="text-xs font-bold text-neutral-600">
                   Rating: {Math.round(player.rating)} · {player.ratedGamesPlayed} games played
                 </span>

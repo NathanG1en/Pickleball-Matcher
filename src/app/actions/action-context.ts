@@ -50,7 +50,9 @@ export async function getActiveOrganizerSession(): Promise<OrganizerSession | nu
   }
 }
 
-export async function requireOrganizer(groupId: string): Promise<OrganizerSession> {
+export async function requireOrganizer(groupId: string): Promise<OrganizerSession | null> {
+  const accountId = await getActivePlayerAccountId();
+  if (accountId && await getActionRepository().isGroupOrganizer(groupId, accountId)) return null;
   const session = await getActiveOrganizerSession();
   return requireGroupOrganizer(groupId, session);
 }

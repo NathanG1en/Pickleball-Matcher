@@ -14,9 +14,9 @@ import type {
   Team,
 } from "@/lib/matchmaking/types";
 
-function stableInputSeed(players: readonly MatchmakingPlayer[], courts: number): number {
+function stableInputSeed(players: readonly MatchmakingPlayer[], courts: number, courtPlayerCounts?: readonly number[]): number {
   let hash = 0x811c9dc5;
-  const value = `${courts}|${players
+  const value = `${courts}|${courtPlayerCounts?.join(",") ?? "default"}|${players
     .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}`)
     .join("|")}`;
   for (let index = 0; index < value.length; index += 1) {
@@ -97,9 +97,56 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
     };
   }
 
+  if (input.courtPlayerCounts && (
+    input.courtPlayerCounts.length !== input.courts ||
+    input.courtPlayerCounts.some((count) => ![2, 3, 4].includes(count)) ||
+    input.courtPlayerCounts.reduce((sum, count) => sum + count, 0) > input.players.length
+  )) {
+    return { ok: false, error: { code: "INVALID_COURT_COUNT", message: "Court sizes must be 2, 3, or 4 and fit the selected players." } };
+  }
+
   const config = input.config ?? DEFAULT_MATCHMAKING_CONFIG;
-  const seed = input.seed ?? stableInputSeed(input.players, input.courts);
+  const seed = input.seed ?? stableInputSeed(input.players, input.courts, input.courtPlayerCounts);
   const random = createSeededRandom(seed);
+  if (input.courtPlayerCounts) {
+    const totalActivePlayers = input.courtPlayerCounts.reduce((sum, size) => sum + size, 0);
+    const sitCount = input.players.length - totalActivePlayers;
+    const pairHistory = buildPairHistoryIndex(input.pairHistory);
+    let bestCandidate: RoundCandidate | null = null;
+    let bestBreakdown: ScoreBreakdown | null = null;
+    for (let iteration = 0; iteration < config.iterations; iteration += 1) {
+      const sitting = chooseSittingPlayers({ players: input.players, sitCount, random, config });
+      const sittingSet = new Set(sitting);
+      const active = random.shuffle(input.players.filter((player) => !sittingSet.has(player.id)));
+      const context = { players: input.players, pairHistory, config, sittingPenalty: scoreSittingChoice({ players: input.players, sitting }) };
+      const courts: CourtAssignment[] = [];
+      let offset = 0;
+      for (const size of input.courtPlayerCounts) {
+        const ids = active.slice(offset, offset + size).map((player) => player.id);
+        offset += size;
+        if (size === 4) courts.push(bestCourtPairing(ids, courts.length + 1, context));
+        else if (size === 2) courts.push({ courtNumber: courts.length + 1, team1: [ids[0]], team2: [ids[1]], matchType: "singles" });
+        else {
+          const options: readonly [Team, Team][] = [
+            [[ids[0], ids[1]], [ids[2]]], [[ids[0], ids[2]], [ids[1]]], [[ids[1], ids[2]], [ids[0]]],
+          ];
+          let best: CourtAssignment | null = null;
+          let score = Number.POSITIVE_INFINITY;
+          for (const [team1, team2] of options) {
+            const court: CourtAssignment = { courtNumber: courts.length + 1, team1, team2, matchType: "team-vs-one" };
+            const current = scoreRound({ courts: [court], sitting: [] }, { ...context, tieBreak: 0 }).total;
+            if (current < score) { best = court; score = current; }
+          }
+          if (best) courts.push(best);
+        }
+      }
+      const candidate = { courts, sitting };
+      const breakdown = scoreRound(candidate, { ...context, tieBreak: random.next() * config.tieBreakMaximum });
+      if (betterScore(breakdown, bestBreakdown)) { bestCandidate = candidate; bestBreakdown = breakdown; }
+    }
+    if (!bestCandidate || !bestBreakdown) throw new Error("Matchmaking configuration must evaluate at least one candidate");
+    return { ok: true, value: { ...bestCandidate, seed, score: bestBreakdown.total, scoreBreakdown: bestBreakdown } };
+  }
   const doublesCourtCount = Math.min(Math.floor(input.players.length / 4), input.courts);
   const leftoverPlayers = input.players.length - doublesCourtCount * 4;
   const remainingCourts = input.courts - doublesCourtCount;

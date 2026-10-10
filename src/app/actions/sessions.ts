@@ -24,7 +24,7 @@ export async function startSessionAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Please select between 4 and 24 players and 1 to 6 courts.",
+      error: "Please select between 2 and 24 players and choose court sizes that fit.",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -35,6 +35,7 @@ export async function startSessionAction(
     const session = await service.startSession({
       groupId: parsed.data.groupId,
       courtCount: parsed.data.courtCount,
+      courtPlayerCounts: parsed.data.courtPlayerCounts as (2 | 3 | 4)[] | undefined,
       playerIds: parsed.data.playerIds,
     });
     revalidatePath(`/g/${parsed.data.groupId}`);
@@ -125,7 +126,7 @@ export async function startRoundAction(
           courtNumber: c.courtNumber,
           team1: c.team1.length === 2 ? ([c.team1[0], c.team1[1]] as const) : ([c.team1[0]] as const),
           team2: c.team2.length === 2 ? ([c.team2[0], c.team2[1]] as const) : ([c.team2[0]] as const),
-          matchType: c.team1.length === 2 ? "doubles" : "singles",
+          matchType: c.team1.length + c.team2.length === 3 ? "team-vs-one" : c.team1.length === 2 ? "doubles" : "singles",
         })),
         sitting: parsed.data.manualSitting,
         seed: parsed.data.seed,

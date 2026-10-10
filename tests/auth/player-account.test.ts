@@ -49,4 +49,35 @@ describe("player account authentication", () => {
     expect(failure).toMatchObject({ ok: false, error: "Unable to sign in. Check your username and password." });
     expect((await repository.getPlayerAccountByUsername("rally_player"))?.initialRating).toBe(975);
   });
+
+  it("reports a duplicate username alongside other signup field errors", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+    await playerSignupAction({
+      username: "court_player",
+      name: "Court Player",
+      password: "valid-password-123",
+      skillLevel: "beginner",
+      customRating: false,
+      initialRating: 900,
+    });
+
+    const result = await playerSignupAction({
+      username: "COURT_PLAYER",
+      name: "Another Player",
+      password: "short",
+      skillLevel: "beginner",
+      customRating: false,
+      initialRating: 900,
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      fieldErrors: {
+        username: ["That username is already taken."],
+        password: [expect.any(String)],
+      },
+    });
+  });
 });

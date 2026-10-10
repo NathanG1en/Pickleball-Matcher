@@ -21,13 +21,13 @@ describe("manualCourtSchema", () => {
     expect(res.success).toBe(true);
   });
 
-  it("rejects unbalanced court (2 vs 1)", () => {
+  it("accepts a scored team-vs-one court (2 vs 1)", () => {
     const res = manualCourtSchema.safeParse({
       courtNumber: 1,
       team1: ["p1", "p2"],
       team2: ["p3"],
     });
-    expect(res.success).toBe(false);
+    expect(res.success).toBe(true);
   });
 });
 
