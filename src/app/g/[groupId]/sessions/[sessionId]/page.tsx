@@ -36,7 +36,6 @@ export default async function ActiveSessionPage({
     redirect(`/g/${groupId}`);
   }
 
-  const accountId = await getActivePlayerAccountId();
   const organizerSession = await getActiveOrganizerSession();
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
@@ -49,6 +48,8 @@ export default async function ActiveSessionPage({
     }
     redirect("/players");
   }
+
+  const viewerPlayer = players.find((p) => p.accountId === accountId);
 
   let initialProposal: RoundProposal | null = null;
   const latestStarted = startedRounds.at(-1);
