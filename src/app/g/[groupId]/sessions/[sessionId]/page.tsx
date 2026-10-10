@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import {
   getActionRepository,
   getActionSessionService,
-  requireOrganizer,
+  getActiveOrganizerSession,
+  getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import { SessionManagerClient } from "./session-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
@@ -15,12 +16,6 @@ export default async function ActiveSessionPage({
   params: Promise<{ groupId: string; sessionId: string }>;
 }) {
   const { groupId, sessionId } = await params;
-  try {
-    await requireOrganizer(groupId);
-  } catch {
-    redirect(`/g/${groupId}/login`);
-  }
-
   const repository = getActionRepository();
   const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
     repository.getGroup(groupId),
@@ -39,11 +34,25 @@ export default async function ActiveSessionPage({
     redirect(`/g/${groupId}`);
   }
 
+  const accountId = await getActivePlayerAccountId();
+  const organizerSession = await getActiveOrganizerSession();
+  const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
+  const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const isOrganizer = isAccountOrganizer || isSessionOrganizer;
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+
+  if (!isOrganizer && !isMember) {
+    if (!accountId) {
+      redirect(`/g/${groupId}/login`);
+    }
+    redirect("/players");
+  }
+
   let initialProposal: RoundProposal | null = null;
   const latestStarted = startedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  if (!isRoundInProgress) {
+  if (!isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
       initialProposal = await sessionService.proposeRound(sessionId);
@@ -62,6 +71,7 @@ export default async function ActiveSessionPage({
         attendance={attendance}
         startedRounds={startedRounds}
         initialProposal={initialProposal}
+        canManage={isOrganizer}
       />
     </main>
   );

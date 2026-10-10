@@ -28,6 +28,7 @@ export interface CurrentRoundViewProps {
   }) => void;
   readonly onRegenerate?: () => void;
   readonly onEnterResults?: () => void;
+  readonly canManage?: boolean;
 }
 
 export function CurrentRoundView({
@@ -40,6 +41,7 @@ export function CurrentRoundView({
   onStartRound,
   onRegenerate,
   onEnterResults,
+  canManage = true,
 }: CurrentRoundViewProps) {
   // Local editable state for manual lineup modifications
   const [localCourts, setLocalCourts] = useState<RoundCourtData[]>(() =>
@@ -311,25 +313,29 @@ export function CurrentRoundView({
 
         <div className="flex items-center gap-2">
           {round.status === "proposed" && (
-            <>
-              {isUnlocked ? (
-                <button
-                  type="button"
-                  onClick={() => setIsUnlocked(false)}
-                  className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
-                >
-                  🔒 Lock Lineup
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowUnlockModal(true)}
-                  className="px-3 py-1 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
-                >
-                  ✏️ Customize Lineup
-                </button>
-              )}
-            </>
+            canManage ? (
+              <>
+                {isUnlocked ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsUnlocked(false)}
+                    className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+                  >
+                    🔒 Lock Lineup
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowUnlockModal(true)}
+                    className="px-3 py-1 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+                  >
+                    ✏️ Customize Lineup
+                  </button>
+                )}
+              </>
+            ) : (
+              <Badge variant="warning">Upcoming Round</Badge>
+            )
           )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
           {round.status === "completed" && <Badge variant="default">Completed</Badge>}
@@ -938,51 +944,53 @@ export function CurrentRoundView({
       )}
 
       {/* Persistent Bottom Mobile Action Area */}
-      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-        <div className="max-w-xl mx-auto flex items-center gap-3">
-          {canRegenerate && (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={onRegenerate}
-              disabled={isPending}
-              className="flex-1 font-display text-lg uppercase tracking-wider"
-            >
-              Regenerate Round
-            </Button>
-          )}
+      {canManage && (
+        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+          <div className="max-w-xl mx-auto flex items-center gap-3">
+            {canRegenerate && (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={onRegenerate}
+                disabled={isPending}
+                className="flex-1 font-display text-lg uppercase tracking-wider"
+              >
+                Regenerate Round
+              </Button>
+            )}
 
-          {round.status === "proposed" && (
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              onClick={() => {
-                setAcknowledgedOverride(false);
-                setShowConfirmStart(true);
-              }}
-              disabled={isPending || !isValidLineup}
-              className="flex-1 font-display text-lg uppercase tracking-wider"
-            >
-              Start Round
-            </Button>
-          )}
+            {round.status === "proposed" && (
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                onClick={() => {
+                  setAcknowledgedOverride(false);
+                  setShowConfirmStart(true);
+                }}
+                disabled={isPending || !isValidLineup}
+                className="flex-1 font-display text-lg uppercase tracking-wider"
+              >
+                Start Round
+              </Button>
+            )}
 
-          {round.status === "started" && (
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              onClick={onEnterResults}
-              disabled={isPending}
-              className="flex-1 font-display text-lg uppercase tracking-wider"
-            >
-              Enter Scores
-            </Button>
-          )}
+            {round.status === "started" && (
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                onClick={onEnterResults}
+                disabled={isPending}
+                className="flex-1 font-display text-lg uppercase tracking-wider"
+              >
+                Enter Scores
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
