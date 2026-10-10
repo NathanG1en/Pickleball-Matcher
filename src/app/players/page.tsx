@@ -12,12 +12,11 @@ export default async function PlayerProfilePage() {
   const [account, history, groups] = await Promise.all([
     repository.getPlayerAccount(accountId),
     repository.listPlayerSessionHistory(accountId),
-    repository.listPublicGroups("", accountId),
+    repository.listAccountGroups(accountId),
   ]);
   if (!account) redirect("/player-login");
   const wins = history.reduce((total, session) => total + session.wins, 0);
   const losses = history.reduce((total, session) => total + session.losses, 0);
-  const joinedGroups = groups.filter((group) => group.isMember);
   const byGroup = new Map<string, typeof history[number][]>();
   for (const item of history) byGroup.set(item.groupId, [...(byGroup.get(item.groupId) ?? []), item]);
 
@@ -40,8 +39,8 @@ export default async function PlayerProfilePage() {
       </section>
 
       <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 shadow-[5px_5px_0px_0px_#000]">
-        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase">Find groups</Link></div>
-        {joinedGroups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any public groups yet.</p> : <ul className="space-y-2">{joinedGroups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><span className="block">{group.name}</span><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><LeaveGroupButton groupId={group.id} /></li>)}</ul>}
+        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><div className="flex gap-2"><Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase">Create</Link><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase">Find groups</Link></div></div>
+        {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && <LeaveGroupButton groupId={group.id} />}</div></li>)}</ul>}
       </section>
 
       <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">

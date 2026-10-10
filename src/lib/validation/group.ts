@@ -21,6 +21,21 @@ export const createGroupSchema = z
   })
   .strict();
 
+export const createAccountGroupSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  isPublic: z.boolean().default(false),
+}).strict();
+
+export const addGroupOrganizerSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+}).strict();
+
+export const addGroupPlayerSchema = z.object({
+  groupId: entityIdSchema,
+  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/),
+}).strict();
+
 export const organizerLoginSchema = z
   .object({
     groupName: z.string().trim().min(1).max(80),

@@ -6,6 +6,7 @@ export interface GroupRecord {
   readonly organizerPinHash: string;
   readonly createdAt: Date;
   readonly isPublic?: boolean;
+  readonly ownerAccountId?: string | null;
 }
 
 export type PlayerSkillLevel = "beginner" | "intermediate" | "advanced";
@@ -25,6 +26,15 @@ export interface PublicGroupRecord {
   readonly name: string;
   readonly playerCount: number;
   readonly isMember?: boolean;
+  readonly isHost?: boolean;
+  readonly isOrganizer?: boolean;
+}
+
+export interface GroupOrganizerRecord {
+  readonly accountId: string;
+  readonly username: string;
+  readonly name: string;
+  readonly isHost: boolean;
 }
 
 export interface PlayerRecord {

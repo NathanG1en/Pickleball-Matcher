@@ -4,6 +4,7 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -32,6 +33,7 @@ type GroupRow = {
   organizer_pin_hash: string;
   created_at: Date;
   is_public: boolean;
+  owner_account_id: string | null;
 };
 
 type SessionRow = {
@@ -118,6 +120,7 @@ const mapGroup = (row: GroupRow): GroupRecord => ({
   organizerPinHash: row.organizer_pin_hash,
   createdAt: row.created_at,
   isPublic: row.is_public,
+  ownerAccountId: row.owner_account_id,
 });
 
 const mapSession = (row: SessionRow): SessionRecord => ({
@@ -216,7 +219,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroup(groupId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, created_at, is_public
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
       from groups where id = ${groupId}
     `;
     return rows[0] ? mapGroup(rows[0]) : null;
@@ -224,7 +227,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, created_at, is_public
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
       from groups where name = ${name.trim()}
     `;
     return rows.map(mapGroup);
@@ -255,6 +258,63 @@ export class PostgresRepositories implements DomainRepository {
       playerCount: row.player_count,
       isMember: row.is_member,
     }));
+  }
+
+  async listAccountGroups(accountId: string): Promise<readonly PublicGroupRecord[]> {
+    const rows = await this.query<{
+      id: string; name: string; player_count: number; is_member: boolean; is_host: boolean; is_organizer: boolean;
+    }[]>`
+      select g.id, g.name, count(distinct roster.id)::int as player_count,
+        coalesce(bool_or(mine.id is not null), false) as is_member,
+        coalesce(g.owner_account_id = ${accountId}, false) as is_host,
+        (coalesce(g.owner_account_id = ${accountId}, false) or coalesce(bool_or(org.account_id is not null), false)) as is_organizer
+      from groups g
+      left join players roster on roster.group_id = g.id and roster.active = true
+      left join players mine on mine.group_id = g.id and mine.account_id = ${accountId} and mine.active = true
+      left join group_organizers org on org.group_id = g.id and org.account_id = ${accountId}
+      where g.owner_account_id = ${accountId} or org.account_id = ${accountId} or mine.id is not null
+      group by g.id, g.name, g.owner_account_id
+      order by g.name
+    `;
+    return rows.map((row) => ({
+      id: row.id, name: row.name, playerCount: row.player_count,
+      isMember: row.is_member, isHost: row.is_host, isOrganizer: row.is_organizer,
+    }));
+  }
+
+  async isGroupOrganizer(groupId: string, accountId: string): Promise<boolean> {
+    const rows = await this.query<{ allowed: boolean }[]>`
+      select exists (
+        select 1 from groups where id = ${groupId} and owner_account_id = ${accountId}
+        union all
+        select 1 from group_organizers where group_id = ${groupId} and account_id = ${accountId}
+      ) as allowed
+    `;
+    return rows[0]?.allowed === true;
+  }
+
+  async addGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    await this.query`
+      insert into group_organizers (group_id, account_id)
+      select ${groupId}, ${accountId}
+      where exists (select 1 from groups where id = ${groupId})
+        and exists (select 1 from players where id = ${accountId} and username is not null)
+      on conflict (group_id, account_id) do nothing
+    `;
+  }
+
+  async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
+    const rows = await this.query<{ account_id: string; username: string; name: string; is_host: boolean }[]>`
+      select p.id as account_id, p.username, p.name, true as is_host
+      from groups g join players p on p.id = g.owner_account_id
+      where g.id = ${groupId} and p.username is not null
+      union all
+      select p.id as account_id, p.username, p.name, false as is_host
+      from group_organizers o join players p on p.id = o.account_id
+      where o.group_id = ${groupId} and p.username is not null
+      order by is_host desc, name
+    `;
+    return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: row.is_host }));
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
@@ -294,7 +354,7 @@ export class PostgresRepositories implements DomainRepository {
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.initial_rating, a.initial_rating, 0, true, a.id
       from groups g cross join players a
-      where g.id = ${groupId} and g.is_public = true and a.id = ${accountId} and a.username is not null
+      where g.id = ${groupId} and (g.is_public = true or g.owner_account_id = ${accountId}) and a.id = ${accountId} and a.username is not null
       on conflict (group_id, account_id) where account_id is not null do update set active = true
       returning id, group_id, name, initial_rating, rating, rated_games_played, active, account_id
     `;
@@ -375,8 +435,8 @@ export class PostgresRepositories implements DomainRepository {
 
   async insertGroup(group: GroupRecord): Promise<void> {
     await this.query`
-      insert into groups (id, name, organizer_pin_hash, created_at, is_public)
-      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.createdAt}, ${group.isPublic ?? false})
+      insert into groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id)
+      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.createdAt}, ${group.isPublic ?? false}, ${group.ownerAccountId ?? null})
     `;
   }
 

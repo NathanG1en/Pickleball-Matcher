@@ -2,6 +2,7 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerSessionHistoryRecord,
   MatchPlayerRecord,
@@ -18,6 +19,7 @@ import type {
 interface InMemoryState {
   groups: GroupRecord[];
   playerAccounts: PlayerAccountRecord[];
+  groupOrganizers: { groupId: string; accountId: string }[];
   players: PlayerRecord[];
   sessions: SessionRecord[];
   attendance: AttendanceRecord[];
@@ -42,6 +44,7 @@ export class InMemoryRepositories implements DomainRepository {
     this.state = {
       groups: structuredClone(seed.groups ?? []),
       playerAccounts: structuredClone(seed.playerAccounts ?? []),
+      groupOrganizers: structuredClone(seed.groupOrganizers ?? []),
       players: structuredClone(seed.players ?? []),
       sessions: structuredClone(seed.sessions ?? []),
       attendance: structuredClone(seed.attendance ?? []),
@@ -91,6 +94,46 @@ export class InMemoryRepositories implements DomainRepository {
       }));
   }
 
+  async listAccountGroups(accountId: string) {
+    return this.state.groups
+      .filter((group) => group.ownerAccountId === accountId ||
+        this.state.groupOrganizers.some((item) => item.groupId === group.id && item.accountId === accountId) ||
+        this.state.players.some((player) => player.groupId === group.id && player.accountId === accountId && player.active))
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+        playerCount: this.state.players.filter((player) => player.groupId === group.id && player.active).length,
+        isMember: this.state.players.some((player) => player.groupId === group.id && player.accountId === accountId && player.active),
+        isHost: group.ownerAccountId === accountId,
+        isOrganizer: group.ownerAccountId === accountId || this.state.groupOrganizers.some((item) => item.groupId === group.id && item.accountId === accountId),
+      }));
+  }
+
+  async isGroupOrganizer(groupId: string, accountId: string) {
+    return this.state.groups.some((group) => group.id === groupId && group.ownerAccountId === accountId) ||
+      this.state.groupOrganizers.some((item) => item.groupId === groupId && item.accountId === accountId);
+  }
+
+  async addGroupOrganizer(groupId: string, accountId: string) {
+    if (!this.state.groupOrganizers.some((item) => item.groupId === groupId && item.accountId === accountId)) {
+      this.state.groupOrganizers.push({ groupId, accountId });
+      this.writeCount += 1;
+    }
+  }
+
+  async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    const entries = [
+      ...(group?.ownerAccountId ? [{ accountId: group.ownerAccountId, isHost: true }] : []),
+      ...this.state.groupOrganizers.filter((item) => item.groupId === groupId && item.accountId !== group?.ownerAccountId).map((item) => ({ accountId: item.accountId, isHost: false })),
+    ];
+    return entries.flatMap(({ accountId, isHost }) => {
+      const account = this.state.playerAccounts.find((item) => item.id === accountId);
+      return account ? [{ accountId, username: account.username, name: account.name, isHost }] : [];
+    });
+  }
+
   async getPlayerAccount(accountId: string) {
     return this.state.playerAccounts.find((account) => account.id === accountId) ?? null;
   }
@@ -119,7 +162,7 @@ export class InMemoryRepositories implements DomainRepository {
 
   async joinPublicGroup(accountId: string, groupId: string) {
     const account = this.state.playerAccounts.find((item) => item.id === accountId);
-    const group = this.state.groups.find((item) => item.id === groupId && item.isPublic === true);
+    const group = this.state.groups.find((item) => item.id === groupId && (item.isPublic === true || item.ownerAccountId === accountId));
     if (!account || !group) return null;
     const existing = this.state.players.find((player) => player.groupId === groupId && player.accountId === accountId);
     if (existing) {
