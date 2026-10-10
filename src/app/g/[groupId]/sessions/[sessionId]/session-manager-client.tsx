@@ -33,6 +33,7 @@ export interface SessionManagerClientProps {
   readonly attendance?: readonly AttendanceRecord[];
   readonly startedRounds: readonly StartedRoundRecord[];
   readonly initialProposal: RoundProposal | null;
+  readonly canManage?: boolean;
 }
 
 export function SessionManagerClient({
@@ -42,6 +43,7 @@ export function SessionManagerClient({
   attendance = [],
   startedRounds,
   initialProposal,
+  canManage = true,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
@@ -403,23 +405,25 @@ export function SessionManagerClient({
         >
           ← Group Dashboard
         </Link>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => setShowAttendanceModal(true)}
-            className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-          >
-            Attendance
-          </button>
-          <button
-            type="button"
-            onClick={handleEndSession}
-            disabled={isPending}
-            className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-          >
-            End Session
-          </button>
-        </div>
+        {canManage && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAttendanceModal(true)}
+              className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            >
+              Attendance
+            </button>
+            <button
+              type="button"
+              onClick={handleEndSession}
+              disabled={isPending}
+              className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            >
+              End Session
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -437,20 +441,23 @@ export function SessionManagerClient({
             matches={scoreEntries}
             fieldErrors={fieldErrors}
             isPending={isPending}
-            onSubmitResult={handleSaveResult}
-            onCancelMatch={handleCancelMatch}
-            onNextRound={handleNextRound}
+            onSubmitResult={canManage ? handleSaveResult : undefined}
+            onCancelMatch={canManage ? handleCancelMatch : undefined}
+            onNextRound={canManage ? handleNextRound : undefined}
+            canManage={canManage}
           />
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={handleUndo}
-              disabled={isPending}
-              className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black underline cursor-pointer"
-            >
-              Undo Round {latestStarted.round.roundNumber}
-            </button>
-          </div>
+          {canManage && (
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={isPending}
+                className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black underline cursor-pointer"
+              >
+                Undo Round {latestStarted.round.roundNumber}
+              </button>
+            </div>
+          )}
         </div>
       ) : activeProposal ? (
         <CurrentRoundView
@@ -467,17 +474,26 @@ export function SessionManagerClient({
           }))}
           sittingPlayerIds={activeProposal.sitting}
           playerNames={playerNames}
-          canRegenerate={true}
+          canRegenerate={canManage}
           isPending={isPending}
-          onRegenerate={handleRegenerate}
-          onStartRound={handleStartRound}
+          onRegenerate={canManage ? handleRegenerate : undefined}
+          onStartRound={canManage ? handleStartRound : undefined}
+          canManage={canManage}
         />
       ) : (
         <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
-          <p className="font-display text-xl font-black uppercase text-black">Ready for the next round?</p>
-          <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-            Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
-          </Button>
+          <p className="font-display text-xl font-black uppercase text-black">
+            {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
+          </p>
+          {canManage ? (
+            <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+              Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
+            </Button>
+          ) : (
+            <p className="text-sm font-bold text-neutral-600">
+              The organizer has not started the next round yet.
+            </p>
+          )}
         </div>
       )}
 
@@ -565,7 +581,7 @@ export function SessionManagerClient({
                               Close
                             </button>
                           </div>
-                        ) : (
+                        ) : canManage ? (
                           <div className="flex justify-end pt-1">
                             <button
                               type="button"
@@ -581,7 +597,7 @@ export function SessionManagerClient({
                               Edit Result
                             </button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}
@@ -593,7 +609,7 @@ export function SessionManagerClient({
       )}
 
       {/* Attendance Modal */}
-      {showAttendanceModal && (
+      {canManage && showAttendanceModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] max-h-[85vh] overflow-y-auto text-black">
             <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">

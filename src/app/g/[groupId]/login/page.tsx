@@ -29,6 +29,13 @@ export default async function GroupLoginPage({
         </p>
 
         <LoginForm initialGroupName={group?.name ?? ""} />
+
+        <div className="mt-6 pt-4 border-t-2 border-neutral-100 text-xs font-bold text-neutral-600">
+          <span>Are you a player? </span>
+          <Link href="/player-login" className="font-black text-black underline">
+            Sign in here
+          </Link>
+        </div>
       </div>
     </main>
   );
