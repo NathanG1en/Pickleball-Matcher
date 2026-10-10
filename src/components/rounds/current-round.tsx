@@ -356,15 +356,6 @@ export function CurrentRoundView({
               ⚡ Reveal Synergy
             </button>
           )}
-          {isOrganizer && courtSynergies && Object.keys(courtSynergies).length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowSynergyModal(true)}
-              className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
-            >
-              ⚡ Reveal Synergy
-            </button>
-          )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
           {round.status === "completed" && <Badge variant="default">Completed</Badge>}
         </div>
