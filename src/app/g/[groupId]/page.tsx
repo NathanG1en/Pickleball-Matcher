@@ -16,6 +16,7 @@ import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
+import { GroupJoinCard } from "@/components/groups/group-join-card";
 import type { MatchRecord } from "@/lib/domain/types";
 
 export default async function GroupDashboardPage({
@@ -47,8 +48,9 @@ export default async function GroupDashboardPage({
   }
 
   const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+  const isPartOfGroup = isOrganizer || isMember;
 
-  if (!isOrganizer && !isMember) {
+  if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
       redirect(`/g/${groupId}/login`);
     }
@@ -82,7 +84,7 @@ export default async function GroupDashboardPage({
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref={accountId ? "/players" : "/"} />
+          <BackButton fallbackHref={accountId && isMember ? "/players" : "/players/groups"} />
           {isOrganizer && (
             <GroupOptionsMenu
               groupId={groupId}
@@ -108,107 +110,117 @@ export default async function GroupDashboardPage({
       {/* Mobile Add to Home Screen Tip */}
       <HomeScreenTip />
 
-      {/* Primary Action Card */}
-      {activeSession ? (
-        <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-          <div className="flex items-center justify-between">
-            <Badge variant="default" className="bg-black text-[#ccff00]">Active Game</Badge>
-            <span className="text-xs font-black uppercase tracking-wider text-black">
-              Round {activeSession.currentRoundNumber}
-            </span>
-          </div>
-          <div>
-            <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Session In Progress</h2>
-            <p className="text-sm font-bold text-neutral-900">
-              Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
-            </p>
-          </div>
-
-          {currentRoundMatches.length > 0 && (
-            <div className="space-y-2 pt-2 border-t-2 border-black/20">
-              <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-              <div className="grid grid-cols-1 gap-2">
-                {currentRoundMatches.map((m) => {
-                  const t1 = currentMatchPlayers
-                    .filter((mp) => mp.matchId === m.id && mp.team === 1)
-                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                  const t2 = currentMatchPlayers
-                    .filter((mp) => mp.matchId === m.id && mp.team === 2)
-                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                  return (
-                    <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
-                      <div>
-                        <span className="font-black text-black block">Court {m.courtNumber}</span>
-                        <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
-                      </div>
-                      <Badge variant={m.status === "completed" ? "success" : m.status === "cancelled" ? "muted" : "warning"}>
-                        {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : m.status === "cancelled" ? "Cancelled" : "In Play"}
-                      </Badge>
-                    </div>
-                  );
-                })}
+      {!isPartOfGroup ? (
+        <GroupJoinCard
+          groupId={groupId}
+          groupName={group.name}
+          isSignedIn={Boolean(accountId)}
+        />
+      ) : (
+        <>
+          {/* Primary Action Card */}
+          {activeSession ? (
+            <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge variant="default" className="bg-black text-[#ccff00]">Active Game</Badge>
+                <span className="text-xs font-black uppercase tracking-wider text-black">
+                  Round {activeSession.currentRoundNumber}
+                </span>
               </div>
-            </div>
+              <div>
+                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Session In Progress</h2>
+                <p className="text-sm font-bold text-neutral-900">
+                  Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
+                </p>
+              </div>
+
+              {currentRoundMatches.length > 0 && (
+                <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    {currentRoundMatches.map((m) => {
+                      const t1 = currentMatchPlayers
+                        .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                        .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                      const t2 = currentMatchPlayers
+                        .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                        .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                      return (
+                        <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
+                          <div>
+                            <span className="font-black text-black block">Court {m.courtNumber}</span>
+                            <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
+                          </div>
+                          <Badge variant={m.status === "completed" ? "success" : m.status === "cancelled" ? "muted" : "warning"}>
+                            {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : m.status === "cancelled" ? "Cancelled" : "In Play"}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <Link
+                href={`/g/${groupId}/sessions/${activeSession.id}`}
+                className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+              >
+                {isOrganizer ? "Resume Session →" : "View Live Session →"}
+              </Link>
+            </section>
+          ) : isOrganizer ? (
+            <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
+              <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
+              <p className="text-sm font-bold text-neutral-700 mb-5">
+                Check attendance and let the matchmaker generate fair courts.
+              </p>
+              <Link
+                href={`/g/${groupId}/sessions/new`}
+                className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+              >
+                Start New Session
+              </Link>
+            </section>
+          ) : (
+            <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
+              <h2 className="font-display text-2xl font-black uppercase text-black mb-1">No Active Session</h2>
+              <p className="text-sm font-bold text-neutral-700">
+                There are no games in progress right now. Live matchups will appear here when an organizer starts a session.
+              </p>
+            </section>
           )}
 
-          <Link
-            href={`/g/${groupId}/sessions/${activeSession.id}`}
-            className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
-          >
-            {isOrganizer ? "Resume Session →" : "View Live Session →"}
-          </Link>
-        </section>
-      ) : isOrganizer ? (
-        <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-          <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
-          <p className="text-sm font-bold text-neutral-700 mb-5">
-            Check attendance and let the matchmaker generate fair courts.
-          </p>
-          <Link
-            href={`/g/${groupId}/sessions/new`}
-            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
-          >
-            Start New Session
-          </Link>
-        </section>
-      ) : (
-        <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-          <h2 className="font-display text-2xl font-black uppercase text-black mb-1">No Active Session</h2>
-          <p className="text-sm font-bold text-neutral-700">
-            There are no games in progress right now. Live matchups will appear here when an organizer starts a session.
-          </p>
-        </section>
-      )}
-
-      {/* Recent Sessions */}
-      <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-        <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
-        {recentSessions.length === 0 ? (
-          <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
-        ) : (
-          <div className="divide-y-2 divide-neutral-100">
-            {recentSessions.map((s) => (
-              <div key={s.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-black text-sm block">
-                    {new Date(s.startedAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="text-xs font-bold text-neutral-500">
-                    {s.courtCount} court{s.courtCount > 1 ? "s" : ""} · {s.currentRoundNumber} rounds
-                  </span>
-                </div>
-                <Badge variant={s.status === "active" ? "warning" : "muted"}>
-                  {s.status === "active" ? "Active" : "Completed"}
-                </Badge>
+          {/* Recent Sessions */}
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
+            <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
+            {recentSessions.length === 0 ? (
+              <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
+            ) : (
+              <div className="divide-y-2 divide-neutral-100">
+                {recentSessions.map((s) => (
+                  <div key={s.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-black text-sm block">
+                        {new Date(s.startedAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span className="text-xs font-bold text-neutral-500">
+                        {s.courtCount} court{s.courtCount > 1 ? "s" : ""} · {s.currentRoundNumber} rounds
+                      </span>
+                    </div>
+                    <Badge variant={s.status === "active" ? "warning" : "muted"}>
+                      {s.status === "active" ? "Active" : "Completed"}
+                    </Badge>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }
