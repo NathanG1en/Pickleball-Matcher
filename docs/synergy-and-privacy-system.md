@@ -130,10 +130,27 @@ The check constraint `account_id_1 < account_id_2` ensures:
 | `addPlayerByAccountIdAction` | `src/app/actions/players.ts` | Adds an existing player account to a group roster by their account ID. |
 | `completeRound` | `src/lib/domain/session-service.ts` | Automatically extracts doubles pairs from completed matches, determines winners/losers, and records updated synergy via `repository.recordMatchesSynergy`. |
 | `getBestPartner` | `src/lib/domain/repositories.ts` | Queries the highest-synergy partner for a player who has played at least 1 match together. |
+| `createPlayerAction` | `src/app/actions/players.ts` | Creates non-account temporary/guest players on the roster with custom initial skill rating. |
 
 ---
 
-## 7. Verification & Test Suite
+## 7. Roster Integration & Temporary Players
+
+### Real-Time Live Search (Typeahead)
+The Roster management card in [`src/components/groups/group-organizers-panel.tsx`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/groups/group-organizers-panel.tsx) features automatic live search:
+- As soon as an organizer types **2 or more characters**, a debounced live search queries registered accounts.
+- Matching public accounts display their `@username`, name, rating, and public chemistry preview.
+- Organizers can click **"+ Add"** to immediately add the player to the roster without needing to know or type their exact full username.
+
+### Temporary & Guest Players
+Pickleball Matcher fully supports guest players who do not have registered accounts (`accountId: null`):
+- **Inline Guest Creation**: Organizers can switch to the **"👤 + Add Guest"** tab directly in the Roster card.
+- **Skill Rating**: Organizers specify a name (e.g., *"Jordan Smith"*) and an initial skill level (Beginner ~900, Intermediate ~1000, Advanced ~1100).
+- **Matchmaking & Ratings**: Guest players are included in matchmaking, court rotations, round generation, and earn dynamic ratings throughout active sessions without requiring user credentials.
+
+---
+
+## 8. Verification & Test Suite
 
 The feature is comprehensively verified by unit and integration tests:
 - `tests/synergy/calculator.test.ts`: Mathematical Laplace smoothing calculations.
@@ -141,6 +158,7 @@ The feature is comprehensively verified by unit and integration tests:
 - `tests/domain/synergy-repository.test.ts`: Database bidirectional queries, upserts, and best partner resolution.
 - `tests/domain/session-synergy.test.ts`: Automatic synergy recording upon session round completion.
 - `tests/actions/player-search-and-privacy.test.ts`: Server action validation, search, and privacy toggling.
-- `tests/components/player-search-drawer.test.tsx`: Search drawer input, results rendering, and roster integration.
+- `tests/components/group-organizers-panel.test.tsx`: Roster mode tabs, live search, and guest addition options.
+- `tests/components/player-search-drawer.test.tsx`: Standalone search drawer input, results rendering, and roster integration.
 - `tests/components/current-round-synergy.test.tsx`: Partner-only badge display and organizer modal.
 - `tests/components/player-profile-synergy.test.tsx`: Profile privacy toggle and "Best Partner" spotlight card.
