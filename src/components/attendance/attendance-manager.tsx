@@ -32,10 +32,10 @@ export function AttendanceManager({
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
-  const initialSelectedCount = initialSelected.length || players.filter((player) => player.active).length;
+  const initialSelectedCount = initialSelected.length || players.length;
   const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(initialSelected.length > 0 ? initialSelected : players.filter((p) => p.active).map((p) => p.id)),
+    new Set(initialSelected.length > 0 ? initialSelected : players.map((p) => p.id)),
   );
   const [courts, setCourts] = useState<number>(defaultCourtCount);
   const [courtPlayerCounts, setCourtPlayerCounts] = useState<(2 | 3 | 4)[]>(() => {

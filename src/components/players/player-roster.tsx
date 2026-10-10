@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PlayerRecord } from "@/lib/domain/types";
 
@@ -10,7 +9,6 @@ export interface PlayerRosterProps {
   readonly players: readonly PlayerRecord[];
   readonly isPending?: boolean;
   readonly onAddPlayer?: (name: string, initialRating: number) => void;
-  readonly onToggleActive?: (player: PlayerRecord) => void;
   readonly onDeletePlayer?: (player: PlayerRecord) => void;
 }
 
@@ -18,7 +16,6 @@ export function PlayerRoster({
   players,
   isPending = false,
   onAddPlayer,
-  onToggleActive,
   onDeletePlayer,
 }: PlayerRosterProps) {
   const [name, setName] = useState("");
@@ -100,19 +97,6 @@ export function PlayerRoster({
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant={player.active ? "success" : "muted"}>
-                  {player.active ? "Active" : "Inactive"}
-                </Badge>
-                {onToggleActive && (
-                  <button
-                    type="button"
-                    onClick={() => onToggleActive(player)}
-                    disabled={isPending}
-                    className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
-                  >
-                    {player.active ? "Deactivate" : "Activate"}
-                  </button>
-                )}
                 {onDeletePlayer && (
                   <button
                     type="button"
