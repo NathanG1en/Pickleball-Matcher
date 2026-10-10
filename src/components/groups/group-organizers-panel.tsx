@@ -8,6 +8,13 @@ import {
   removeGroupOrganizerAction,
   removeGroupPlayerAction,
 } from "@/app/actions/group-organizers";
+import {
+  searchPlayersByUsernameAction,
+  addPlayerByAccountIdAction,
+  createPlayerAction,
+  type SearchPlayerResult,
+} from "@/app/actions/players";
+import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 
 export function GroupOrganizersPanel({
@@ -25,9 +32,66 @@ export function GroupOrganizersPanel({
 }) {
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
+
+  // Mode switch: "search" | "guest"
+  const [addMode, setAddMode] = useState<"search" | "guest">("search");
+
+  // Search mode state
   const [username, setUsername] = useState("");
+  const [searchResults, setSearchResults] = useState<readonly SearchPlayerResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchHasRun, setSearchHasRun] = useState(false);
+  const [addingAccountId, setAddingAccountId] = useState<string | null>(null);
   const [lookupPending, setLookupPending] = useState(false);
+
+  // Guest mode state
+  const [guestName, setGuestName] = useState("");
+  const [guestRating, setGuestRating] = useState<number>(1000);
+  const [guestSaving, setGuestSaving] = useState(false);
+
   const [message, setMessage] = useState<string | null>(null);
+
+  // Live search for public users as user types
+  useEffect(() => {
+    const trimmed = username.replace(/^@/, "").trim();
+    if (trimmed.length < 2) {
+      setSearchResults([]);
+      setSearchHasRun(false);
+      setIsSearching(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearching(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await searchPlayersByUsernameAction({ query: trimmed, groupId });
+        if (!cancelled) {
+          if (res.ok) {
+            setSearchResults(res.data);
+          } else {
+            setSearchResults([]);
+          }
+          setSearchHasRun(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchHasRun(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSearching(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username, groupId]);
 
   const closeAllMenus = () => {
     document.querySelectorAll<HTMLDetailsElement>("details[data-player-menu][open]").forEach((el) => {
@@ -59,14 +123,81 @@ export function GroupOrganizersPanel({
     };
   }, []);
 
+  const handleAddSearchedPlayer = async (accountId: string) => {
+    setAddingAccountId(accountId);
+    setMessage(null);
+    try {
+      const res = await addPlayerByAccountIdAction({ groupId, accountId });
+      if (res.ok) {
+        setMessage("Player added to the roster.");
+        setUsername("");
+        setSearchResults([]);
+        router.refresh();
+      } else {
+        setMessage(res.error ?? "Failed to add player.");
+      }
+    } catch {
+      setMessage("Failed to add player.");
+    } finally {
+      setAddingAccountId(null);
+    }
+  };
+
+  const handleAddGuest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = guestName.trim();
+    if (!trimmed || guestSaving) return;
+    setGuestSaving(true);
+    setMessage(null);
+    try {
+      const res = await createPlayerAction({
+        groupId,
+        name: trimmed,
+        initialRating: guestRating,
+        idempotencyKey: createIdempotencyKey("guest_add"),
+      });
+      if (res.ok) {
+        setMessage(`Guest player "${trimmed}" added to the roster.`);
+        setGuestName("");
+        setGuestRating(1000);
+        router.refresh();
+      } else {
+        setMessage(res.error ?? "Failed to add guest player.");
+      }
+    } catch {
+      setMessage("Failed to add guest player.");
+    } finally {
+      setGuestSaving(false);
+    }
+  };
+
   const addPlayerByUsername = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const clean = username.replace(/^@/, "").trim();
+    if (!clean) return;
+
     setLookupPending(true);
     setMessage(null);
-    const result = await addGroupPlayerByUsernameAction({ groupId, username });
+
+    const matching = searchResults.find(
+      (r) => r.username.toLowerCase() === clean.toLowerCase()
+    );
+    if (matching) {
+      if (matching.alreadyInGroup) {
+        setMessage("Player is already on the roster.");
+        setLookupPending(false);
+        return;
+      }
+      await handleAddSearchedPlayer(matching.accountId);
+      setLookupPending(false);
+      return;
+    }
+
+    const result = await addGroupPlayerByUsernameAction({ groupId, username: clean });
     setMessage(result.ok ? "Player added to the roster." : result.error ?? "Unable to find that player.");
     if (result.ok) {
       setUsername("");
+      setSearchResults([]);
       router.refresh();
     }
     setLookupPending(false);
@@ -109,23 +240,177 @@ export function GroupOrganizersPanel({
         <p className="text-xs font-semibold text-neutral-700">Players and group organizers.</p>
       </div>
       {isHost && (
-        <form onSubmit={addPlayerByUsername} className="flex gap-2">
-          <label htmlFor="roster-player-username" className="sr-only">Look up player by username</label>
-          <input
-            id="roster-player-username"
-            required
-            minLength={3}
-            maxLength={24}
-            pattern="[A-Za-z0-9_]+"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="Find player by username"
-            className="min-w-0 flex-1 rounded-lg border-2 border-black bg-white px-3 py-2 text-sm font-bold"
-          />
-          <button disabled={lookupPending} className="rounded-lg border-2 border-black bg-black px-3 py-2 text-xs font-black uppercase text-white disabled:opacity-60">
-            {lookupPending ? "Adding…" : "Find & Add"}
-          </button>
-        </form>
+        <div className="space-y-2">
+          {/* Mode Switch Tabs */}
+          <div className="flex items-center gap-1.5 p-1 bg-black/10 rounded-xl w-fit">
+            <button
+              type="button"
+              onClick={() => {
+                setAddMode("search");
+                setMessage(null);
+              }}
+              className={`px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                addMode === "search"
+                  ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                  : "text-neutral-800 hover:bg-black/10"
+              }`}
+            >
+              🔍 Find Player
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAddMode("guest");
+                setMessage(null);
+              }}
+              className={`px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                addMode === "guest"
+                  ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                  : "text-neutral-800 hover:bg-black/10"
+              }`}
+            >
+              👤 + Add Guest
+            </button>
+          </div>
+
+          {addMode === "search" ? (
+            <div className="relative">
+              <form onSubmit={addPlayerByUsername} className="flex gap-2">
+                <label htmlFor="roster-player-username" className="sr-only">Look up player by username</label>
+                <div className="relative flex-1">
+                  <input
+                    id="roster-player-username"
+                    required
+                    minLength={2}
+                    maxLength={24}
+                    value={username}
+                    onChange={(event) => {
+                      setUsername(event.target.value);
+                      if (message) setMessage(null);
+                    }}
+                    placeholder="Find player by username"
+                    autoComplete="off"
+                    className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                  />
+                  {isSearching && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-neutral-500 animate-pulse">
+                      Searching…
+                    </span>
+                  )}
+                </div>
+                <button
+                  disabled={lookupPending}
+                  className="rounded-lg border-2 border-black bg-black px-3 py-2 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
+                >
+                  {lookupPending ? "Adding…" : "Find & Add"}
+                </button>
+              </form>
+
+              {/* Live Search Results Dropdown */}
+              {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
+                <div className="mt-2 rounded-xl border-2 border-black bg-white p-2 shadow-[3px_3px_0px_0px_#000] space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                      Public Accounts ({searchResults.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchResults([])}
+                      className="text-[10px] font-bold text-neutral-400 hover:text-black cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  {searchResults.length === 0 ? (
+                    <p className="px-2 py-1 text-xs font-bold text-neutral-500">
+                      No registered players found matching &ldquo;{username}&rdquo;.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-neutral-100 max-h-56 overflow-y-auto">
+                      {searchResults.map((result) => (
+                        <li key={result.accountId} className="flex items-center justify-between gap-2 py-2 px-1">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-black truncate">{result.name}</span>
+                              <span className="rounded bg-neutral-100 border border-neutral-300 px-1 py-0.5 text-[10px] font-bold text-neutral-700">
+                                @{result.username}
+                              </span>
+                              {result.isRestricted && (
+                                <span className="text-[10px] font-bold text-neutral-500">🔒 Private</span>
+                              )}
+                            </div>
+                            {!result.isRestricted && (
+                              <div className="flex items-center gap-2 text-[11px] font-bold text-neutral-600 mt-0.5">
+                                {result.rating !== undefined && (
+                                  <span>Rating {Math.round(result.rating)}</span>
+                                )}
+                                {result.bestPartner && (
+                                  <span className="text-amber-700">
+                                    · 🤝 Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore}%)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            disabled={result.alreadyInGroup || addingAccountId === result.accountId}
+                            onClick={() => handleAddSearchedPlayer(result.accountId)}
+                            className={`shrink-0 rounded-lg border-2 border-black px-2.5 py-1 text-[11px] font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
+                              result.alreadyInGroup
+                                ? "bg-neutral-200 text-neutral-500 cursor-default"
+                                : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
+                            }`}
+                          >
+                            {result.alreadyInGroup
+                              ? "In Roster ✓"
+                              : addingAccountId === result.accountId
+                              ? "Adding…"
+                              : "+ Add"}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Add Guest Mode Form */
+            <form onSubmit={handleAddGuest} className="space-y-2 rounded-xl border-2 border-black bg-white/70 p-3 shadow-[2px_2px_0px_0px_#000]">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="guest-player-name"
+                  required
+                  maxLength={60}
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Guest / temporary name (e.g. Jordan)"
+                  className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
+                />
+                <select
+                  value={guestRating}
+                  onChange={(e) => setGuestRating(Number(e.target.value))}
+                  className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
+                >
+                  <option value={900}>Beginner (~900)</option>
+                  <option value={1000}>Intermediate (~1000)</option>
+                  <option value={1100}>Advanced (~1100)</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={guestSaving || !guestName.trim()}
+                  className="rounded-lg border-2 border-black bg-[#ccff00] px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
+                >
+                  {guestSaving ? "Adding…" : "+ Add Guest"}
+                </button>
+              </div>
+              <p className="text-[11px] font-bold text-neutral-600">
+                Temporary players don&apos;t need an account. They can play and earn game ratings right away.
+              </p>
+            </form>
+          )}
+        </div>
       )}
       {players.length === 0 ? (
         <p className="rounded-lg border border-black bg-white px-3 py-3 text-sm font-bold text-neutral-700">No players on the roster yet.</p>

@@ -128,6 +128,11 @@ describe("GroupOrganizersPanel and Actions", () => {
       // Verify "Remove player" button exists in the dropdown
       expect(html).toContain("Remove player");
       expect(html).toContain("data-player-menu");
+
+      // Verify Find Player and Add Guest options exist for host
+      expect(html).toContain("Find Player");
+      expect(html).toContain("+ Add Guest");
+      expect(html).toContain("Find player by username");
     });
 
     it("renders remove player option for group organizers, but not make organizer", () => {
