@@ -29,8 +29,9 @@ export default async function GroupPlayersPage({
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
   const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+  const isPartOfGroup = isOrganizer || isMember;
 
-  if (!isOrganizer && !isMember) {
+  if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
       redirect(`/g/${groupId}/login`);
     }

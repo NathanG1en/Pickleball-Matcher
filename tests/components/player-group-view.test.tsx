@@ -4,6 +4,7 @@ import GroupDashboardPage from "@/app/g/[groupId]/page";
 import GroupPlayersPage from "@/app/g/[groupId]/players/page";
 import ActiveSessionPage from "@/app/g/[groupId]/sessions/[sessionId]/page";
 import NewSessionPage from "@/app/g/[groupId]/sessions/new/page";
+import { PublicGroupList } from "@/components/players/public-group-list";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -48,7 +49,7 @@ describe("Player View for Groups and Sessions", () => {
     vi.clearAllMocks();
   });
 
-  function createTestRepository(options?: { activeSession?: boolean; activeRound?: boolean }) {
+  function createTestRepository(options?: { activeSession?: boolean; activeRound?: boolean; isPublic?: boolean }) {
     return new InMemoryRepositories({
       groups: [
         {
@@ -56,7 +57,7 @@ describe("Player View for Groups and Sessions", () => {
           name: "Pickleball Squad",
           organizerPinHash: "hash",
           createdAt: new Date(),
-          isPublic: true,
+          isPublic: options?.isPublic ?? true,
           ownerAccountId: hostAccountId,
         },
       ],
@@ -265,9 +266,47 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).not.toContain("Resume Session →");
     });
 
-    it("redirects non-members to /players", async () => {
+    it("allows non-members to view a public group but hides active/past sessions and shows join card", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
-      const repo = createTestRepository();
+      const repo = createTestRepository({ activeSession: true, activeRound: true, isPublic: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      // Can see group info and roster
+      expect(html).toContain("Pickleball Squad");
+      expect(html).toContain("Member Joe");
+      expect(html).toContain("Host Pro");
+
+      // Cannot see active session or matchups
+      expect(html).not.toContain("Session In Progress");
+      expect(html).not.toContain("Current Matchups");
+      expect(html).not.toContain("Court 1");
+      expect(html).not.toContain("Past Sessions");
+
+      // Shows join card
+      expect(html).toContain("Join Pickleball Squad");
+      expect(html).toContain("Join Group Now");
+    });
+
+    it("allows unauthenticated visitors to view a public group with sign in prompt", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
+      const repo = createTestRepository({ activeSession: true, isPublic: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain("Pickleball Squad");
+      expect(html).toContain("Member Joe");
+      expect(html).not.toContain("Session In Progress");
+      expect(html).toContain("Sign In to Join Group");
+    });
+
+    it("redirects non-members of private groups to /players", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
+      const repo = createTestRepository({ isPublic: false });
       setActionRepository(repo);
 
       await expect(
@@ -275,9 +314,9 @@ describe("Player View for Groups and Sessions", () => {
       ).rejects.toThrow("REDIRECT:/players");
     });
 
-    it("redirects unauthenticated visitors to /g/[groupId]/login", async () => {
+    it("redirects unauthenticated visitors of private groups to /g/[groupId]/login", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
-      const repo = createTestRepository();
+      const repo = createTestRepository({ isPublic: false });
       setActionRepository(repo);
 
       await expect(
@@ -347,6 +386,28 @@ describe("Player View for Groups and Sessions", () => {
       // No Delete button
       expect(html).not.toContain("Delete");
     });
+    it("allows non-members to view the roster of a public group in read-only mode", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
+      const repo = createTestRepository({ isPublic: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupPlayersPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain("Pickleball Squad Roster");
+      expect(html).toContain("Member Joe");
+      expect(html).not.toContain("Add Player");
+    });
+
+    it("redirects non-members of private groups trying to view roster", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
+      const repo = createTestRepository({ isPublic: false });
+      setActionRepository(repo);
+
+      await expect(
+        GroupPlayersPage({ params: Promise.resolve({ groupId }) })
+      ).rejects.toThrow("REDIRECT:/players");
+    });
   });
 
   describe("NewSessionPage", () => {
@@ -360,4 +421,40 @@ describe("Player View for Groups and Sessions", () => {
       ).rejects.toThrow(`REDIRECT:/g/${groupId}`);
     });
   });
+
+  describe("PublicGroupList", () => {
+    it("renders View Group link and Join button with cursor-pointer", () => {
+      const groups = [
+        {
+          id: "grp_1",
+          name: "Open Play Pickleball",
+          playerCount: 12,
+          isMember: false,
+        },
+        {
+          id: "grp_2",
+          name: "Competitive Club",
+          playerCount: 8,
+          isMember: true,
+        },
+      ];
+
+      const html = renderToStaticMarkup(
+        <PublicGroupList groups={groups} isSignedIn={true} />
+      );
+
+      // View Group buttons exist and link to group page
+      expect(html).toContain('href="/g/grp_1"');
+      expect(html).toContain('href="/g/grp_2"');
+      expect(html).toContain("View Group");
+
+      // Join button rendered for non-members and contains cursor-pointer
+      expect(html).toContain("Join");
+      expect(html).toContain("cursor-pointer");
+
+      // Joined badge rendered for members
+      expect(html).toContain("Joined");
+    });
+  });
 });
+
