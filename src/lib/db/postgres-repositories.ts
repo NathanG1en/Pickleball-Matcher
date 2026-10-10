@@ -144,6 +144,7 @@ const mapPlayer = (row: PlayerRow): PlayerRecord => ({
   ratedGamesPlayed: row.rated_games_played,
   active: row.active,
   accountId: row.account_id,
+  username: row.username ?? null,
 });
 
 const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
@@ -303,6 +304,13 @@ export class PostgresRepositories implements DomainRepository {
     `;
   }
 
+  async removeGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    await this.query`
+      delete from group_organizers
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
+  }
+
   async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
     const rows = await this.query<{ account_id: string; username: string; name: string; is_host: boolean }[]>`
       select p.id as account_id, p.username, p.name, true as is_host
@@ -375,6 +383,10 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
+    await this.query`
+      delete from group_organizers
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
     const rows = await this.query<{ id: string }[]>`
       update players set active = false
       where group_id = ${groupId}
@@ -390,6 +402,10 @@ export class PostgresRepositories implements DomainRepository {
 
   async updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void> {
     await this.query`update groups set is_public = ${isPublic} where id = ${groupId}`;
+  }
+
+  async updateGroupName(groupId: string, name: string): Promise<void> {
+    await this.query`update groups set name = ${name} where id = ${groupId}`;
   }
 
   async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
@@ -508,8 +524,11 @@ export class PostgresRepositories implements DomainRepository {
 
   async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
     const rows = await this.query<PlayerRow[]>`
-      select id, group_id, name, initial_rating, rating, rated_games_played, active
-      from players where group_id = ${groupId} order by created_at, id
+      select p.id, p.group_id, p.name, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+             coalesce(a.username, p.username) as username
+      from players p
+      left join players a on a.id = p.account_id and a.username is not null
+      where p.group_id = ${groupId} order by p.created_at, p.id
     `;
     return rows.map(mapPlayer);
   }

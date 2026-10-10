@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getActionRepository, requirePlayer } from "@/app/actions/action-context";
-import { addGroupOrganizerSchema, addGroupPlayerSchema } from "@/lib/validation/group";
+import {
+  addGroupOrganizerSchema,
+  addGroupPlayerSchema,
+  removeGroupOrganizerSchema,
+} from "@/lib/validation/group";
 
 export async function addGroupPlayerByUsernameAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
   const parsed = addGroupPlayerSchema.safeParse(input);
@@ -44,5 +48,25 @@ export async function addGroupOrganizerAction(input: unknown): Promise<{ ok: boo
     return { ok: true };
   } catch {
     return { ok: false, error: "Unable to add this organizer." };
+  }
+}
+
+export async function removeGroupOrganizerAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
+  const parsed = removeGroupOrganizerSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid request." };
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group || group.ownerAccountId !== accountId) return { ok: false, error: "Only the host can remove organizers." };
+    const player = (await repository.listPlayers(group.id)).find(({ id }) => id === parsed.data.playerId);
+    if (!player?.accountId) return { ok: false, error: "This player does not have an organizer account." };
+    if (player.accountId === accountId) return { ok: false, error: "The host cannot be removed as an organizer." };
+    await repository.removeGroupOrganizer(group.id, player.accountId);
+    revalidatePath(`/g/${group.id}`);
+    revalidatePath("/players");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Unable to remove this organizer." };
   }
 }

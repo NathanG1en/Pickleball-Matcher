@@ -46,6 +46,7 @@ export interface PlayerRecord {
   ratedGamesPlayed: number;
   readonly active: boolean;
   readonly accountId?: string | null;
+  readonly username?: string | null;
 }
 
 export interface PlayerSessionHistoryRecord {

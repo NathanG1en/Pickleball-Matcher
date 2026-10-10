@@ -45,9 +45,11 @@ interface PlayerRow {
   name: string;
   initial_rating: number;
   rating: number;
+  ratedGamesPlayed?: number;
   rated_games_played: number;
   active: number;
   account_id: string | null;
+  username?: string | null;
 }
 
 interface SessionRow {
@@ -366,6 +368,10 @@ export class SqliteDomainRepository implements DomainRepository {
       .run(groupId, accountId, groupId, accountId);
   }
 
+  async removeGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?").run(groupId, accountId);
+  }
+
   async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
     const rows = this.db.prepare(`
       SELECT p.id AS account_id, p.username, p.name, 1 AS is_host
@@ -444,6 +450,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
     const group = await this.getGroup(groupId);
     if (group?.ownerAccountId === accountId) return false;
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?").run(groupId, accountId);
     const result = this.db.prepare(
       "UPDATE players SET active = 0 WHERE group_id = ? AND account_id = ? AND active = 1",
     ).run(groupId, accountId);
@@ -460,6 +467,7 @@ export class SqliteDomainRepository implements DomainRepository {
       ratedGamesPlayed: row.rated_games_played,
       active: Boolean(row.active),
       accountId: row.account_id,
+      username: row.username ?? null,
     };
   }
 
@@ -504,6 +512,10 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void> {
     this.db.prepare("UPDATE groups SET is_public = ? WHERE id = ?").run(isPublic ? 1 : 0, groupId);
+  }
+
+  async updateGroupName(groupId: string, name: string): Promise<void> {
+    this.db.prepare("UPDATE groups SET name = ? WHERE id = ?").run(name, groupId);
   }
 
   async insertGroup(group: GroupRecord): Promise<void> {
@@ -558,7 +570,13 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
     const rows = this.db
-      .prepare("SELECT * FROM players WHERE group_id = ?")
+      .prepare(`
+        SELECT p.*, COALESCE(a.username, p.username) AS username
+        FROM players p
+        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+        WHERE p.group_id = ?
+        ORDER BY p.created_at, p.id
+      `)
       .all(groupId) as unknown as PlayerRow[];
     return rows.map((row) => this.mapPlayerRecord(row));
   }
