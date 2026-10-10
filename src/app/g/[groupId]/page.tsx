@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import {
   getActionRepository,
+  getActiveOrganizerSession,
   getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
@@ -42,12 +43,15 @@ export default async function GroupDashboardPage({
   let players = initialPlayers;
   const accountId = await getActivePlayerAccountId();
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const organizerSession = await getActiveOrganizerSession();
+  const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
+  const isOrganizer = isAccountOrganizer || isSessionOrganizer;
   const isHost = accountId === group.ownerAccountId;
   if (isHost && accountId && !players.some((player) => player.accountId === accountId)) {
     await repository.joinPublicGroup(accountId, groupId);
     players = await repository.listPlayers(groupId);
   }
-  const organizers = isAccountOrganizer ? await repository.listGroupOrganizers(groupId) : [];
+  const organizers = isOrganizer ? await repository.listGroupOrganizers(groupId) : [];
 
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.slice(0, 10);
@@ -67,7 +71,7 @@ export default async function GroupDashboardPage({
         </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={true} />
         <p className="text-xs font-bold text-neutral-600 mt-1">
-          {players.filter((p) => p.active).length} active players on roster
+          {players.length} players on roster
         </p>
         <GroupIdReveal groupId={groupId} />
 
@@ -75,7 +79,7 @@ export default async function GroupDashboardPage({
 
       </header>
 
-      <GroupOrganizersPanel groupId={groupId} players={players} organizers={organizers} isHost={isHost} />
+      <GroupOrganizersPanel groupId={groupId} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
 
       {/* Mobile Add to Home Screen Tip */}
       <HomeScreenTip />

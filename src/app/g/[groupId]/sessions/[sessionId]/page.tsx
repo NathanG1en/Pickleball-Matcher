@@ -25,7 +25,7 @@ export default async function ActiveSessionPage({
   const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
     repository.getGroup(groupId),
     repository.getSession(sessionId),
-    repository.listPlayers(groupId),
+    repository.listPlayers(groupId, { includeInactive: true }),
     repository.listStartedRounds(sessionId),
     repository.listAttendance(sessionId),
   ]);

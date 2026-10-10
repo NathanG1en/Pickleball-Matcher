@@ -36,6 +36,11 @@ export const removeGroupOrganizerSchema = z.object({
   playerId: entityIdSchema,
 }).strict();
 
+export const removeGroupPlayerSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+}).strict();
+
 export const addGroupPlayerSchema = z.object({
   groupId: entityIdSchema,
   username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/),
@@ -51,6 +56,7 @@ export const organizerLoginSchema = z
 export const playerSignupSchema = z.object({
   username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
   name: z.string().trim().min(1).max(80),
+  gender: z.enum(["male", "female"], { message: "Select your gender (male or female)." }).default("male"),
   password: z.string().min(10).max(72),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
   customRating: z.boolean().default(false),
@@ -63,7 +69,14 @@ export const playerLoginSchema = z.object({
 }).strict();
 
 export const updatePlayerProfileSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(80).optional(),
+  gender: z.enum(["male", "female"]).optional(),
+}).strict().refine((data) => data.name !== undefined || data.gender !== undefined, {
+  message: "At least one profile field must be provided.",
+});
+
+export const updatePlayerGenderSchema = z.object({
+  gender: z.enum(["male", "female"], { message: "Select a valid gender." }),
 }).strict();
 
 export const updatePlayerUsernameSchema = z.object({

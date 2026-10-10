@@ -6,9 +6,11 @@ import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
   playerLogoutAction,
+  updatePlayerGenderAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
+import { clearRecentGroups } from "@/lib/storage/recent-groups";
 import { Button } from "@/components/ui/button";
 
 function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -32,11 +34,13 @@ function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
 export function PlayerProfileHeader({
   initialName,
   initialUsername,
+  initialGender,
   skillLevel,
   initialRating,
 }: {
   initialName: string;
   initialUsername: string;
+  initialGender?: "male" | "female" | null;
   skillLevel: string;
   initialRating: number;
 }) {
@@ -54,6 +58,14 @@ export function PlayerProfileHeader({
   const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
   const [usernameSaving, setUsernameSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
+  const [isEditingGender, setIsEditingGender] = useState(false);
+  const [genderInput, setGenderInput] = useState<"male" | "female">(
+    initialGender === "female" ? "female" : "male"
+  );
+  const [genderSaving, setGenderSaving] = useState(false);
+  const [genderError, setGenderError] = useState<string | null>(null);
 
   const cleanUsername = usernameInput.replace(/^@/, "").trim().toLowerCase();
   const isUsernameTaken =
@@ -156,10 +168,40 @@ export function PlayerProfileHeader({
     setUsernameSaving(false);
   };
 
+  const handleStartEditGender = () => {
+    setGenderInput(gender === "female" ? "female" : "male");
+    setGenderError(null);
+    setIsEditingGender(true);
+  };
+
+  const handleCancelEditGender = () => {
+    setGenderInput(gender === "female" ? "female" : "male");
+    setGenderError(null);
+    setIsEditingGender(false);
+  };
+
+  const handleSaveGender = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (genderSaving) return;
+    if (genderInput === gender) {
+      setIsEditingGender(false);
+      return;
+    }
+    setGenderSaving(true);
+    setGenderError(null);
+    const result = await updatePlayerGenderAction({ gender: genderInput });
+    if (result.ok) {
+      setGender(genderInput);
+      setIsEditingGender(false);
+      router.refresh();
+    } else {
+      setGenderError(result.error);
+    }
+    setGenderSaving(false);
+  };
+
   return (
     <div className="min-w-0 flex-1 space-y-2">
-      <p className="text-xs font-black uppercase tracking-wider text-neutral-600">Player profile</p>
-
       {/* Display name row */}
       {isEditingName ? (
         <form onSubmit={handleSaveName} className="space-y-1">
@@ -282,6 +324,57 @@ export function PlayerProfileHeader({
         </div>
       )}
 
+      {/* Gender row */}
+      {isEditingGender ? (
+        <form onSubmit={handleSaveGender} className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              id="profile-gender-input"
+              aria-label="Gender"
+              value={genderInput}
+              onChange={(event) => setGenderInput(event.target.value as "male" | "female")}
+              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+              autoFocus
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={genderSaving}
+              className="font-bold uppercase"
+            >
+              {genderSaving ? "Saving…" : "Save"}
+            </Button>
+            <button
+              type="button"
+              onClick={handleCancelEditGender}
+              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+            >
+              Cancel
+            </button>
+          </div>
+          {genderError && (
+            <p role="alert" className="text-xs font-bold text-red-600">{genderError}</p>
+          )}
+        </form>
+      ) : (
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-bold text-neutral-600">{gender === "male" ? "Male" : gender === "female" ? "Female" : "Select gender"}</p>
+          <button
+            type="button"
+            onClick={handleStartEditGender}
+            aria-label="Edit gender"
+            title="Edit gender"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
+          >
+            <PencilIcon className="h-2 w-2" />
+          </button>
+        </div>
+      )}
+
       <p className="pt-1 text-xs font-bold uppercase text-neutral-600">
         {skillLevel} · starting rating {initialRating}
       </p>
@@ -316,16 +409,29 @@ export function PlayerNameEditor({ initialName }: { initialName: string }) {
   </form>;
 }
 
-export function PlayerLogoutButton() {
+export function PlayerLogoutButton({ className }: { className?: string } = {}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const logout = async () => {
     setPending(true);
+    clearRecentGroups();
     await playerLogoutAction();
     router.replace("/");
     router.refresh();
   };
-  return <button type="button" onClick={logout} disabled={pending} className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047]">{pending ? "Signing out…" : "Log Out"}</button>;
+  return (
+    <button
+      type="button"
+      onClick={logout}
+      disabled={pending}
+      className={
+        className ??
+        "rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60 cursor-pointer"
+      }
+    >
+      {pending ? "Signing out…" : "Log Out"}
+    </button>
+  );
 }
 
 export function LeaveGroupButton({ groupId }: { groupId: string }) {

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { createPlayerAction, deletePlayerAction, updatePlayerAction } from "@/app/actions/players";
+import { createPlayerAction, deletePlayerAction } from "@/app/actions/players";
 import { PlayerRoster } from "@/components/players/player-roster";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
@@ -38,31 +38,6 @@ export function PlayersClient({
       }
     } catch {
       setError("Failed to add player.");
-    } finally {
-      setIsPending(false);
-    }
-  };
-
-  const handleToggleActive = async (player: PlayerRecord) => {
-    setIsPending(true);
-    setError(null);
-    try {
-      const res = await updatePlayerAction({
-        groupId,
-        playerId: player.id,
-        active: !player.active,
-        idempotencyKey: createIdempotencyKey(`p_toggle_${player.id}`),
-      });
-      if (res.ok) {
-        setPlayers((prev) =>
-          prev.map((p) => (p.id === player.id ? { ...p, active: !p.active } : p)),
-        );
-        router.refresh();
-      } else {
-        setError(res.error);
-      }
-    } catch {
-      setError("Failed to update player status.");
     } finally {
       setIsPending(false);
     }
@@ -103,7 +78,6 @@ export function PlayersClient({
         players={players}
         isPending={isPending}
         onAddPlayer={handleAddPlayer}
-        onToggleActive={handleToggleActive}
         onDeletePlayer={handleDeletePlayer}
       />
     </div>

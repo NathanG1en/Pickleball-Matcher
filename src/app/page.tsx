@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getActiveOrganizerSession, getActivePlayerAccountId, getActionRepository } from "@/app/actions/action-context";
 import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
 import type { GroupRecord, PlayerAccountRecord, PublicGroupRecord } from "@/lib/domain/types";
 
 export default async function HomePage() {
@@ -62,7 +63,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-base sm:text-lg text-neutral-800 pt-2 font-medium leading-relaxed max-w-sm mx-auto">
-            An elevated hands experienced.
+            An elevated pickleball experience.
           </p>
         </div>
 
@@ -119,12 +120,13 @@ export default async function HomePage() {
             </div>
           )}
 
-          <RecentGroupsHome excludeGroupId={activeGroup?.id} />
+          {playerAccount && <RecentGroupsHome excludeGroupId={activeGroup?.id} />}
 
           {playerAccount ? (
             <>
-              <Link href="/setup" className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create Your Group →</Link>
-              <Link href="/players" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">My Groups ({accountGroups.length})</Link>
+              <Link href="/setup" className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create A Group →</Link>
+              <Link href="/players" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">View Profile</Link>
+              <PlayerLogoutButton className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display cursor-pointer" />
             </>
           ) : (
             <>
@@ -132,11 +134,17 @@ export default async function HomePage() {
               <Link href="/player-signup?next=%2Fsetup" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create an Account</Link>
             </>
           )}
-          <div className="border-t-2 border-dashed border-neutral-300 pt-4">
-            <p className="mb-3 text-xs font-black uppercase tracking-wider text-neutral-600">In a rush?</p>
-            <Link href="/temporary" className="block w-full py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Make a Temporary Group</Link>
-            <Link href="/login" className="mt-3 block text-xs font-black uppercase underline">Legacy organizer PIN sign in</Link>
-          </div>
+          {!playerAccount ? (
+            <div className="border-t-2 border-dashed border-neutral-300 pt-4">
+              <p className="mb-3 text-xs font-black uppercase tracking-wider text-neutral-600">In a rush?</p>
+              <Link href="/temporary" className="block w-full py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Make a Temporary Group</Link>
+              <Link href="/login" className="mt-3 block text-xs font-black uppercase underline">Legacy organizer PIN sign in</Link>
+            </div>
+          ) : (
+            <div className="border-t-2 border-dashed border-neutral-300 pt-4">
+              <Link href="/login" className="block text-xs font-black uppercase underline">Legacy organizer PIN sign in</Link>
+            </div>
+          )}
         </div>
       </section>
     </main>

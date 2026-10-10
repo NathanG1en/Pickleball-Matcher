@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   addGroupOrganizerAction,
   addGroupPlayerByUsernameAction,
   removeGroupOrganizerAction,
+  removeGroupPlayerAction,
 } from "@/app/actions/group-organizers";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 
@@ -14,17 +15,49 @@ export function GroupOrganizersPanel({
   players,
   organizers,
   isHost,
+  isOrganizer = false,
 }: {
   groupId: string;
   players: readonly PlayerRecord[];
   organizers: readonly GroupOrganizerRecord[];
   isHost: boolean;
+  isOrganizer?: boolean;
 }) {
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [lookupPending, setLookupPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const closeAllMenus = () => {
+    document.querySelectorAll<HTMLDetailsElement>("details[data-player-menu][open]").forEach((el) => {
+      el.removeAttribute("open");
+    });
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const openDetails = document.querySelectorAll<HTMLDetailsElement>("details[data-player-menu][open]");
+      openDetails.forEach((el) => {
+        if (!el.contains(event.target as Node)) {
+          el.removeAttribute("open");
+        }
+      });
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeAllMenus();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const addPlayerByUsername = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +73,7 @@ export function GroupOrganizersPanel({
   };
 
   const makeOrganizer = async (playerId: string) => {
+    closeAllMenus();
     setPendingPlayerId(playerId);
     setMessage(null);
     const result = await addGroupOrganizerAction({ groupId, playerId });
@@ -49,10 +83,21 @@ export function GroupOrganizersPanel({
   };
 
   const removeOrganizer = async (playerId: string) => {
+    closeAllMenus();
     setPendingPlayerId(playerId);
     setMessage(null);
     const result = await removeGroupOrganizerAction({ groupId, playerId });
     setMessage(result.ok ? "Player is no longer a group organizer." : result.error ?? "Unable to remove organizer.");
+    if (result.ok) router.refresh();
+    setPendingPlayerId(null);
+  };
+
+  const removePlayer = async (playerId: string) => {
+    closeAllMenus();
+    setPendingPlayerId(playerId);
+    setMessage(null);
+    const result = await removeGroupPlayerAction({ groupId, playerId });
+    setMessage(result.ok ? "Player removed from the group." : result.error ?? "Unable to remove player.");
     if (result.ok) router.refresh();
     setPendingPlayerId(null);
   };
@@ -108,12 +153,12 @@ export function GroupOrganizersPanel({
                     )}
                   </div>
                   <span className="block text-xs font-bold text-neutral-600">
-                    Rating: {Math.round(player.rating)} · {player.ratedGamesPlayed} games · {player.active ? "Active" : "Inactive"}
+                    Rating: {Math.round(player.rating)} · {player.ratedGamesPlayed} games
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {isHost && (
-                    <details className="relative">
+                  {(isHost || isOrganizer) && (
+                    <details className="relative" data-player-menu>
                       <summary aria-label={`Options for ${player.name}`} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 [&::-webkit-details-marker]:hidden">···</summary>
                       <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#000]">
                         {organizer?.isHost ? (
@@ -124,25 +169,52 @@ export function GroupOrganizersPanel({
                           >
                             Group host
                           </button>
-                        ) : organizer ? (
-                          <button
-                            type="button"
-                            disabled={pendingPlayerId === player.id}
-                            onClick={() => void removeOrganizer(player.id)}
-                            className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
-                          </button>
                         ) : (
-                          <button
-                            type="button"
-                            disabled={!player.accountId || pendingPlayerId === player.id}
-                            onClick={() => void makeOrganizer(player.id)}
-                            title={!player.accountId ? "This player needs a linked account to become an organizer." : undefined}
-                            className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
-                          </button>
+                          <>
+                            {isHost && (
+                              <>
+                                {organizer ? (
+                                  <button
+                                    type="button"
+                                    disabled={pendingPlayerId === player.id}
+                                    onClick={() => void removeOrganizer(player.id)}
+                                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    disabled={!player.accountId || pendingPlayerId === player.id}
+                                    onClick={() => void makeOrganizer(player.id)}
+                                    title={!player.accountId ? "This player needs a linked account to become an organizer." : undefined}
+                                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
+                                  </button>
+                                )}
+                                <div className="my-1 border-t border-neutral-200" />
+                              </>
+                            )}
+                            {(!organizer || isHost) ? (
+                              <button
+                                type="button"
+                                disabled={pendingPlayerId === player.id}
+                                onClick={() => void removePlayer(player.id)}
+                                className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {pendingPlayerId === player.id ? "Removing…" : "Remove player"}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled
+                                className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Group organizer
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </details>
