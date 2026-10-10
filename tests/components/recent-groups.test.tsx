@@ -4,6 +4,7 @@ import {
   saveRecentGroup,
   getRecentGroups,
   removeRecentGroup,
+  clearRecentGroups,
 } from "@/lib/storage/recent-groups";
 import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
@@ -80,6 +81,15 @@ describe("Recent Groups Storage & Components", () => {
     expect(recents[0].id).toBe("grp-2");
   });
 
+  it("clears all recent groups on device", () => {
+    saveRecentGroup({ id: "grp-1", name: "Tuesday Morning" });
+    saveRecentGroup({ id: "grp-2", name: "Thursday Nights" });
+
+    clearRecentGroups();
+    const recents = getRecentGroups();
+    expect(recents).toHaveLength(0);
+  });
+
   it("renders RecentGroupsHome hero card when 1 group is stored", () => {
     saveRecentGroup({ id: "grp-hero", name: "Sunset Pickleballers" });
 
@@ -96,7 +106,7 @@ describe("Recent Groups Storage & Components", () => {
     const html = renderToStaticMarkup(<RecentGroupsHome />);
     expect(html).toContain("Alpha League");
     expect(html).toContain("Beta League");
-    expect(html).toContain("Your Groups on this Device (2)");
+    expect(html).toContain("Your Groups (2)");
   });
 
   it("renders nothing when storage is empty", () => {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { organizerLogoutAction } from "@/app/actions/auth";
+import { clearRecentGroups } from "@/lib/storage/recent-groups";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     setIsPending(true);
+    clearRecentGroups();
     await organizerLogoutAction();
     router.replace("/");
     router.refresh();
