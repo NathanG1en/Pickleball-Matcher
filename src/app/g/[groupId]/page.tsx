@@ -34,10 +34,11 @@ export default async function GroupDashboardPage({
     redirect("/setup");
   }
 
-  let [players, sessions] = await Promise.all([
+  const [initialPlayers, sessions] = await Promise.all([
     repository.listPlayers(groupId),
     repository.listSessions(groupId),
   ]);
+  let players = initialPlayers;
   const accountId = await getActivePlayerAccountId();
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
   const isHost = accountId === group.ownerAccountId;

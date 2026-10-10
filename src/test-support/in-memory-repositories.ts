@@ -185,6 +185,8 @@ export class InMemoryRepositories implements DomainRepository {
   }
 
   async leavePublicGroup(accountId: string, groupId: string) {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    if (group?.ownerAccountId === accountId) return false;
     const membership = this.state.players.find(
       (player) => player.groupId === groupId && player.accountId === accountId && player.active,
     );
