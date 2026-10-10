@@ -76,12 +76,14 @@ export function PlayersClient({
         </div>
       )}
 
-      <PlayerSearchDrawer
-        groupId={groupId}
-        onPlayerAdded={(newP) => {
-          router.refresh();
-        }}
-      />
+      {canManage && (
+        <PlayerSearchDrawer
+          groupId={groupId}
+          onPlayerAdded={(newP) => {
+            router.refresh();
+          }}
+        />
+      )}
 
       <PlayerRoster
         groupId={groupId}
