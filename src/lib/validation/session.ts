@@ -9,14 +9,20 @@ export const startSessionSchema = z
   .object({
     groupId: entityIdSchema,
     courtCount: z.coerce.number().int().min(1).max(6),
-    playerIds: z.array(entityIdSchema).min(4).max(24),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    playerIds: z.array(entityIdSchema).min(2).max(24),
     idempotencyKey: idempotencyKeySchema,
   })
   .strict()
   .refine(({ playerIds }) => new Set(playerIds).size === playerIds.length, {
     path: ["playerIds"],
     message: "Players must be unique",
-  });
+  })
+  .refine(({ courtCount, courtPlayerCounts, playerIds }) =>
+    !courtPlayerCounts || (courtPlayerCounts.length === courtCount && courtPlayerCounts.reduce((sum, size) => sum + size, 0) <= playerIds.length), {
+      path: ["courtPlayerCounts"],
+      message: "Court sizes must match the court count and cannot exceed the selected players.",
+    });
 
 export const changeAttendanceSchema = z
   .object({
@@ -45,8 +51,8 @@ export const manualCourtSchema = z
     team2: z.array(entityIdSchema).min(1).max(2),
   })
   .strict()
-  .refine(({ team1, team2 }) => team1.length === team2.length, {
-    message: "Both teams on a court must have the same number of players (1v1 or 2v2)",
+  .refine(({ team1, team2 }) => team1.length + team2.length !== 3 || (team1.length === 2 || team2.length === 2), {
+    message: "A court must be 1v1, 2v2, or 2v1.",
   });
 
 export const startRoundSchema = z

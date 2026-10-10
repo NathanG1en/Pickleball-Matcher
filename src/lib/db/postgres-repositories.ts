@@ -4,6 +4,7 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -30,15 +31,16 @@ type GroupRow = {
   id: string;
   name: string;
   organizer_pin_hash: string;
-  public_share_id: string;
   created_at: Date;
   is_public: boolean;
+  owner_account_id: string | null;
 };
 
 type SessionRow = {
   id: string;
   group_id: string;
   court_count: number;
+  court_player_counts: number[] | null;
   status: "active" | "completed";
   current_round_number: number;
   started_at: Date;
@@ -99,6 +101,7 @@ type MatchRow = {
   team2_score: number | null;
   completed_at: Date | null;
   version: number;
+  rated: boolean;
 };
 
 type MatchPlayerRow = {
@@ -115,15 +118,16 @@ const mapGroup = (row: GroupRow): GroupRecord => ({
   id: row.id,
   name: row.name,
   organizerPinHash: row.organizer_pin_hash,
-  publicShareId: row.public_share_id,
   createdAt: row.created_at,
   isPublic: row.is_public,
+  ownerAccountId: row.owner_account_id,
 });
 
 const mapSession = (row: SessionRow): SessionRecord => ({
   id: row.id,
   groupId: row.group_id,
   courtCount: row.court_count,
+  courtPlayerCounts: row.court_player_counts?.length ? row.court_player_counts as (2 | 3 | 4)[] : undefined,
   status: row.status,
   currentRoundNumber: row.current_round_number,
   startedAt: row.started_at,
@@ -140,6 +144,7 @@ const mapPlayer = (row: PlayerRow): PlayerRecord => ({
   ratedGamesPlayed: row.rated_games_played,
   active: row.active,
   accountId: row.account_id,
+  username: row.username ?? null,
 });
 
 const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
@@ -181,6 +186,7 @@ const mapMatch = (row: MatchRow): MatchRecord => ({
   team2Score: row.team2_score,
   completedAt: row.completed_at,
   version: row.version,
+  rated: row.rated,
 });
 
 const mapMatchPlayer = (row: MatchPlayerRow): MatchPlayerRecord => ({
@@ -214,7 +220,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroup(groupId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
       from groups where id = ${groupId}
     `;
     return rows[0] ? mapGroup(rows[0]) : null;
@@ -222,18 +228,10 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
       from groups where name = ${name.trim()}
     `;
     return rows.map(mapGroup);
-  }
-
-  async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
-    const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, public_share_id, created_at, is_public
-      from groups where public_share_id = ${shareId}
-    `;
-    return rows[0] ? mapGroup(rows[0]) : null;
   }
 
   async listPublicGroups(search: string, accountId?: string): Promise<readonly PublicGroupRecord[]> {
@@ -263,6 +261,70 @@ export class PostgresRepositories implements DomainRepository {
     }));
   }
 
+  async listAccountGroups(accountId: string): Promise<readonly PublicGroupRecord[]> {
+    const rows = await this.query<{
+      id: string; name: string; player_count: number; is_member: boolean; is_host: boolean; is_organizer: boolean;
+    }[]>`
+      select g.id, g.name, count(distinct roster.id)::int as player_count,
+        coalesce(bool_or(mine.id is not null), false) as is_member,
+        coalesce(g.owner_account_id = ${accountId}, false) as is_host,
+        (coalesce(g.owner_account_id = ${accountId}, false) or coalesce(bool_or(org.account_id is not null), false)) as is_organizer
+      from groups g
+      left join players roster on roster.group_id = g.id and roster.active = true
+      left join players mine on mine.group_id = g.id and mine.account_id = ${accountId} and mine.active = true
+      left join group_organizers org on org.group_id = g.id and org.account_id = ${accountId}
+      where g.owner_account_id = ${accountId} or org.account_id = ${accountId} or mine.id is not null
+      group by g.id, g.name, g.owner_account_id
+      order by g.name
+    `;
+    return rows.map((row) => ({
+      id: row.id, name: row.name, playerCount: row.player_count,
+      isMember: row.is_member, isHost: row.is_host, isOrganizer: row.is_organizer,
+    }));
+  }
+
+  async isGroupOrganizer(groupId: string, accountId: string): Promise<boolean> {
+    const rows = await this.query<{ allowed: boolean }[]>`
+      select exists (
+        select 1 from groups where id = ${groupId} and owner_account_id = ${accountId}
+        union all
+        select 1 from group_organizers where group_id = ${groupId} and account_id = ${accountId}
+      ) as allowed
+    `;
+    return rows[0]?.allowed === true;
+  }
+
+  async addGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    await this.query`
+      insert into group_organizers (group_id, account_id)
+      select ${groupId}, ${accountId}
+      where exists (select 1 from groups where id = ${groupId})
+        and exists (select 1 from players where id = ${accountId} and username is not null)
+      on conflict (group_id, account_id) do nothing
+    `;
+  }
+
+  async removeGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    await this.query`
+      delete from group_organizers
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
+  }
+
+  async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
+    const rows = await this.query<{ account_id: string; username: string; name: string; is_host: boolean }[]>`
+      select p.id as account_id, p.username, p.name, true as is_host
+      from groups g join players p on p.id = g.owner_account_id
+      where g.id = ${groupId} and p.username is not null
+      union all
+      select p.id as account_id, p.username, p.name, false as is_host
+      from group_organizers o join players p on p.id = o.account_id
+      where o.group_id = ${groupId} and p.username is not null
+      order by is_host desc, name
+    `;
+    return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: row.is_host }));
+  }
+
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
       select id, username, name, password_hash, skill_level, initial_rating, created_at
@@ -282,7 +344,7 @@ export class PostgresRepositories implements DomainRepository {
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     await this.query`
       insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, username, password_hash, skill_level, created_at)
-      values (${account.id}, null, ${account.name}, ${account.initialRating}, ${account.initialRating}, 0, true, ${account.username}, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+      values (${account.id}, null, ${account.name}, ${account.initialRating}, ${account.initialRating}, 0, true, ${account.username.trim().toLowerCase()}, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
     `;
   }
 
@@ -294,13 +356,20 @@ export class PostgresRepositories implements DomainRepository {
     });
   }
 
+  async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
+    await this.query`
+      update players set username = ${username.trim().toLowerCase()}
+      where id = ${accountId} and username is not null
+    `;
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.initial_rating, a.initial_rating, 0, true, a.id
       from groups g cross join players a
-      where g.id = ${groupId} and g.is_public = true and a.id = ${accountId} and a.username is not null
+      where g.id = ${groupId} and (g.is_public = true or g.owner_account_id = ${accountId}) and a.id = ${accountId} and a.username is not null
       on conflict (group_id, account_id) where account_id is not null do update set active = true
       returning id, group_id, name, initial_rating, rating, rated_games_played, active, account_id
     `;
@@ -314,9 +383,18 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
+    await this.query`
+      delete from group_organizers
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
     const rows = await this.query<{ id: string }[]>`
       update players set active = false
-      where group_id = ${groupId} and account_id = ${accountId} and active = true
+      where group_id = ${groupId}
+        and account_id = ${accountId}
+        and active = true
+        and not exists (
+          select 1 from groups where id = ${groupId} and owner_account_id = ${accountId}
+        )
       returning id
     `;
     return rows.length > 0;
@@ -324,6 +402,14 @@ export class PostgresRepositories implements DomainRepository {
 
   async updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void> {
     await this.query`update groups set is_public = ${isPublic} where id = ${groupId}`;
+  }
+
+  async updateGroupName(groupId: string, name: string): Promise<void> {
+    await this.query`update groups set name = ${name} where id = ${groupId}`;
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    await this.query`delete from groups where id = ${groupId}`;
   }
 
   async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
@@ -381,14 +467,14 @@ export class PostgresRepositories implements DomainRepository {
 
   async insertGroup(group: GroupRecord): Promise<void> {
     await this.query`
-      insert into groups (id, name, organizer_pin_hash, public_share_id, created_at, is_public)
-      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.publicShareId}, ${group.createdAt}, ${group.isPublic ?? false})
+      insert into groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id)
+      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.createdAt}, ${group.isPublic ?? false}, ${group.ownerAccountId ?? null})
     `;
   }
 
   async listSessions(groupId: string): Promise<readonly SessionRecord[]> {
     const rows = await this.query<SessionRow[]>`
-      select id, group_id, court_count, status, current_round_number,
+      select id, group_id, court_count, court_player_counts, status, current_round_number,
              started_at, ended_at, version
       from sessions where group_id = ${groupId}
       order by started_at desc
@@ -433,7 +519,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const rows = await this.query<SessionRow[]>`
-      select id, group_id, court_count, status, current_round_number,
+      select id, group_id, court_count, court_player_counts, status, current_round_number,
              started_at, ended_at, version
       from sessions where id = ${sessionId}
     `;
@@ -442,8 +528,11 @@ export class PostgresRepositories implements DomainRepository {
 
   async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
     const rows = await this.query<PlayerRow[]>`
-      select id, group_id, name, initial_rating, rating, rated_games_played, active
-      from players where group_id = ${groupId} order by created_at, id
+      select p.id, p.group_id, p.name, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+             coalesce(a.username, p.username) as username
+      from players p
+      left join players a on a.id = p.account_id and a.username is not null
+      where p.group_id = ${groupId} order by p.created_at, p.id
     `;
     return rows.map(mapPlayer);
   }
@@ -466,7 +555,7 @@ export class PostgresRepositories implements DomainRepository {
     const roundIds = roundRows.map((row) => row.id);
     const matchRows = await this.query<MatchRow[]>`
       select id, round_id, court_number, status, team1_score, team2_score,
-             completed_at, version
+             completed_at, version, rated
       from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
     `;
     const matchIds = matchRows.map((row) => row.id);
@@ -507,7 +596,7 @@ export class PostgresRepositories implements DomainRepository {
   async getMatch(matchId: string): Promise<MatchRecord | null> {
     const rows = await this.query<MatchRow[]>`
       select id, round_id, court_number, status, team1_score, team2_score,
-             completed_at, version
+             completed_at, version, rated
       from matches where id = ${matchId}
     `;
     return rows[0] ? mapMatch(rows[0]) : null;
@@ -516,10 +605,10 @@ export class PostgresRepositories implements DomainRepository {
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]) {
     await this.query`
       insert into sessions (
-        id, group_id, court_count, status, current_round_number,
+        id, group_id, court_count, court_player_counts, status, current_round_number,
         started_at, ended_at, version
       ) values (
-        ${session.id}, ${session.groupId}, ${session.courtCount}, ${session.status},
+        ${session.id}, ${session.groupId}, ${session.courtCount}, ${session.courtPlayerCounts ?? []}, ${session.status},
         ${session.currentRoundNumber}, ${session.startedAt}, ${session.endedAt}, ${session.version}
       )
     `;
@@ -529,7 +618,7 @@ export class PostgresRepositories implements DomainRepository {
   async updateSession(session: SessionRecord) {
     const rows = await this.query<{ id: string }[]>`
       update sessions set
-        court_count = ${session.courtCount}, status = ${session.status},
+        court_count = ${session.courtCount}, court_player_counts = ${session.courtPlayerCounts ?? []}, status = ${session.status},
         current_round_number = ${session.currentRoundNumber}, ended_at = ${session.endedAt},
         version = ${session.version}
       where id = ${session.id} and version = ${session.version - 1}
@@ -573,10 +662,10 @@ export class PostgresRepositories implements DomainRepository {
     for (const match of record.matches) {
       await this.query`
         insert into matches (
-          id, round_id, court_number, status, team1_score, team2_score, completed_at, version
+          id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
         ) values (
           ${match.id}, ${match.roundId}, ${match.courtNumber}, ${match.status},
-          ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}
+          ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
         )
       `;
     }
@@ -602,6 +691,7 @@ export class PostgresRepositories implements DomainRepository {
       update matches set
         status = ${match.status}, team1_score = ${match.team1Score},
         team2_score = ${match.team2Score}, completed_at = ${match.completedAt},
+        rated = ${match.rated ?? true},
         version = ${match.version}
       where id = ${match.id} and version = ${match.version - 1}
       returning id
@@ -627,7 +717,7 @@ export class PostgresRepositories implements DomainRepository {
     type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2 };
     const rows = await this.query<ReplayRow[]>`
       select m.id, m.round_id, m.court_number, m.status, m.team1_score,
-             m.team2_score, m.completed_at, m.version, s.group_id,
+             m.team2_score, m.completed_at, m.version, m.rated, s.group_id,
              mp.player_id, mp.team
       from matches m
       join rounds r on r.id = m.round_id
@@ -635,6 +725,7 @@ export class PostgresRepositories implements DomainRepository {
       join match_players mp on mp.match_id = m.id
       where s.group_id = ${groupId}
         and m.status in ('completed', 'cancelled')
+        and m.rated = true
         and m.completed_at is not null
       order by m.completed_at, m.id, mp.team, mp.player_id
     `;

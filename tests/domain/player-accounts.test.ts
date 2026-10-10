@@ -15,8 +15,8 @@ describe("player account group membership and history", () => {
   it("lets accounts join public groups with their starting rating, and rejects private groups", async () => {
     const repository = new InMemoryRepositories({
       groups: [
-        { id: "public", name: "Public Group", organizerPinHash: "hash", publicShareId: "share-public", createdAt: new Date(), isPublic: true },
-        { id: "private", name: "Private Group", organizerPinHash: "hash", publicShareId: "share-private", createdAt: new Date(), isPublic: false },
+        { id: "public", name: "Public Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        { id: "private", name: "Private Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: false },
       ],
       playerAccounts: [account],
     });
@@ -30,7 +30,7 @@ describe("player account group membership and history", () => {
 
   it("updates a player name across memberships and retains per-session results", async () => {
     const repository = new InMemoryRepositories({
-      groups: [{ id: "public", name: "Public Group", organizerPinHash: "hash", publicShareId: "share-public", createdAt: new Date(), isPublic: true }],
+      groups: [{ id: "public", name: "Public Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true }],
       playerAccounts: [account],
     });
     const player = await repository.joinPublicGroup(account.id, "public");
@@ -48,5 +48,45 @@ describe("player account group membership and history", () => {
     expect((await repository.getPlayerAccount(account.id))?.name).toBe("New Display Name");
     expect((await repository.listPlayers("public"))[0].name).toBe("New Display Name");
     expect(history).toMatchObject([{ sessionId: "session-1", groupName: "Public Group", wins: 1, losses: 0, rating: 910 }]);
+  });
+
+  it("prevents hosts from leaving their own group while allowing other members to leave", async () => {
+    const repository = new InMemoryRepositories({
+      groups: [
+        { id: "hosted", name: "Hosted Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true, ownerAccountId: account.id },
+        { id: "other", name: "Other Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true, ownerAccountId: "other-owner" },
+      ],
+      playerAccounts: [account],
+    });
+    await repository.joinPublicGroup(account.id, "hosted");
+    await repository.joinPublicGroup(account.id, "other");
+
+    const leftHosted = await repository.leavePublicGroup(account.id, "hosted");
+    expect(leftHosted).toBe(false);
+
+    const leftOther = await repository.leavePublicGroup(account.id, "other");
+    expect(leftOther).toBe(true);
+  });
+
+  it("updates a player username and enforces uniqueness in repository", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        account,
+        {
+          id: "user-2",
+          username: "player_two",
+          name: "Player Two",
+          passwordHash: "hashed",
+          skillLevel: "beginner",
+          initialRating: 900,
+          createdAt: new Date(),
+        },
+      ],
+    });
+
+    await repository.updatePlayerAccountUsername(account.id, "player_one_updated");
+    expect((await repository.getPlayerAccount(account.id))?.username).toBe("player_one_updated");
+
+    await expect(repository.updatePlayerAccountUsername(account.id, "player_two")).rejects.toThrow();
   });
 });

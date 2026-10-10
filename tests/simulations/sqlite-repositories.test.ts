@@ -11,7 +11,6 @@ describe("SqliteDomainRepository", () => {
       id: "public-group",
       name: "Public Pickleball",
       organizerPinHash: "hash",
-      publicShareId: "share-public",
       createdAt: new Date("2026-10-06T10:00:00Z"),
       isPublic: true,
     });
@@ -72,7 +71,6 @@ describe("SqliteDomainRepository", () => {
       id: "group-1",
       name: "Test Group",
       organizerPinHash: "hash",
-      publicShareId: "share-1",
       createdAt: new Date("2026-10-06T10:00:00Z"),
     });
 

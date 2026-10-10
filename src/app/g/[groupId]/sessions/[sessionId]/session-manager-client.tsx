@@ -33,7 +33,6 @@ export interface SessionManagerClientProps {
   readonly attendance?: readonly AttendanceRecord[];
   readonly startedRounds: readonly StartedRoundRecord[];
   readonly initialProposal: RoundProposal | null;
-  readonly shareId: string;
 }
 
 export function SessionManagerClient({
@@ -43,7 +42,6 @@ export function SessionManagerClient({
   attendance = [],
   startedRounds,
   initialProposal,
-  shareId,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
@@ -413,13 +411,6 @@ export function SessionManagerClient({
           >
             Attendance
           </button>
-          <Link
-            href={`/s/${shareId}`}
-            target="_blank"
-            className="px-2.5 py-1 rounded-lg bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            Live Spectator Link ↗
-          </Link>
           <button
             type="button"
             onClick={handleEndSession}

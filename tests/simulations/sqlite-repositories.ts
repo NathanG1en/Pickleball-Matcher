@@ -4,6 +4,7 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerSessionHistoryRecord,
   MatchPlayerRecord,
@@ -23,9 +24,9 @@ interface GroupRow {
   id: string;
   name: string;
   organizer_pin_hash: string;
-  public_share_id: string;
   created_at: string;
   is_public: number;
+  owner_account_id: string | null;
 }
 
 interface PlayerAccountRow {
@@ -44,15 +45,18 @@ interface PlayerRow {
   name: string;
   initial_rating: number;
   rating: number;
+  ratedGamesPlayed?: number;
   rated_games_played: number;
   active: number;
   account_id: string | null;
+  username?: string | null;
 }
 
 interface SessionRow {
   id: string;
   group_id: string;
   court_count: number;
+  court_player_counts: string;
   status: "active" | "completed";
   current_round_number: number;
   started_at: string;
@@ -100,6 +104,7 @@ interface MatchRow {
   team2_score: number | null;
   completed_at: string | null;
   version: number;
+  rated: number;
 }
 
 interface MatchPlayerRow {
@@ -130,9 +135,9 @@ export class SqliteDomainRepository implements DomainRepository {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
         organizer_pin_hash TEXT NOT NULL,
-        public_share_id TEXT NOT NULL UNIQUE,
         created_at TEXT NOT NULL,
-        is_public INTEGER NOT NULL DEFAULT 0
+        is_public INTEGER NOT NULL DEFAULT 0,
+        owner_account_id TEXT REFERENCES players(id) ON DELETE SET NULL
       );
 
       CREATE TABLE IF NOT EXISTS players (
@@ -144,18 +149,27 @@ export class SqliteDomainRepository implements DomainRepository {
         rated_games_played INTEGER NOT NULL,
         active INTEGER NOT NULL,
         account_id TEXT REFERENCES players(id) ON DELETE SET NULL,
-        username TEXT UNIQUE,
+        username TEXT,
         password_hash TEXT,
         skill_level TEXT,
         created_at TEXT NOT NULL
       );
       CREATE UNIQUE INDEX IF NOT EXISTS players_group_account_unique_idx
         ON players(group_id, account_id) WHERE account_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS players_username_case_insensitive_unique_idx
+        ON players(lower(username)) WHERE username IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS group_organizers (
+        group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        PRIMARY KEY (group_id, account_id)
+      );
 
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
         court_count INTEGER NOT NULL,
+        court_player_counts TEXT NOT NULL DEFAULT '[]',
         status TEXT NOT NULL,
         current_round_number INTEGER NOT NULL,
         started_at TEXT NOT NULL,
@@ -194,6 +208,7 @@ export class SqliteDomainRepository implements DomainRepository {
         team2_score INTEGER,
         completed_at TEXT,
         version INTEGER NOT NULL,
+        rated INTEGER NOT NULL DEFAULT 1,
         UNIQUE (round_id, court_number)
       );
 
@@ -288,9 +303,9 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       name: row.name,
       organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
+      ownerAccountId: row.owner_account_id,
     };
   }
 
@@ -302,25 +317,10 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       name: row.name,
       organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
+      ownerAccountId: row.owner_account_id,
     }));
-  }
-
-  async getGroupByShareId(shareId: string): Promise<GroupRecord | null> {
-    const row = this.db
-      .prepare("SELECT * FROM groups WHERE public_share_id = ?")
-      .get(shareId) as GroupRow | undefined;
-    if (!row) return null;
-    return {
-      id: row.id,
-      name: row.name,
-      organizerPinHash: row.organizer_pin_hash,
-      publicShareId: row.public_share_id,
-      createdAt: new Date(row.created_at),
-      isPublic: Boolean(row.is_public),
-    };
   }
 
   async listPublicGroups(search: string, accountId?: string) {
@@ -335,6 +335,55 @@ export class SqliteDomainRepository implements DomainRepository {
       `)
       .all(accountId ?? "", search.trim(), search.trim()) as unknown as { id: string; name: string; player_count: number; is_member: number }[];
     return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member) }));
+  }
+
+  async listAccountGroups(accountId: string) {
+    const rows = this.db.prepare(`
+      SELECT g.id, g.name, COUNT(DISTINCT roster.id) AS player_count,
+        MAX(CASE WHEN mine.id IS NOT NULL THEN 1 ELSE 0 END) AS is_member,
+        MAX(CASE WHEN g.owner_account_id = ? THEN 1 ELSE 0 END) AS is_host,
+        MAX(CASE WHEN g.owner_account_id = ? OR org.account_id IS NOT NULL THEN 1 ELSE 0 END) AS is_organizer
+      FROM groups g
+      LEFT JOIN players roster ON roster.group_id = g.id AND roster.active = 1
+      LEFT JOIN players mine ON mine.group_id = g.id AND mine.account_id = ? AND mine.active = 1
+      LEFT JOIN group_organizers org ON org.group_id = g.id AND org.account_id = ?
+      WHERE g.owner_account_id = ? OR org.account_id = ? OR mine.id IS NOT NULL
+      GROUP BY g.id, g.name ORDER BY g.name
+    `).all(accountId, accountId, accountId, accountId, accountId, accountId) as unknown as { id: string; name: string; player_count: number; is_member: number; is_host: number; is_organizer: number }[];
+    return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member), isHost: Boolean(row.is_host), isOrganizer: Boolean(row.is_organizer) }));
+  }
+
+  async isGroupOrganizer(groupId: string, accountId: string): Promise<boolean> {
+    return Boolean(this.db.prepare(`
+      SELECT 1 FROM groups WHERE id = ? AND owner_account_id = ?
+      UNION ALL SELECT 1 FROM group_organizers WHERE group_id = ? AND account_id = ?
+      LIMIT 1
+    `).get(groupId, accountId, groupId, accountId));
+  }
+
+  async addGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    this.db.prepare(`INSERT OR IGNORE INTO group_organizers (group_id, account_id)
+      SELECT ?, ? WHERE EXISTS (SELECT 1 FROM groups WHERE id = ?)
+      AND EXISTS (SELECT 1 FROM players WHERE id = ? AND username IS NOT NULL)`)
+      .run(groupId, accountId, groupId, accountId);
+  }
+
+  async removeGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?").run(groupId, accountId);
+  }
+
+  async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
+    const rows = this.db.prepare(`
+      SELECT p.id AS account_id, p.username, p.name, 1 AS is_host
+      FROM groups g JOIN players p ON p.id = g.owner_account_id
+      WHERE g.id = ? AND p.username IS NOT NULL
+      UNION ALL
+      SELECT p.id AS account_id, p.username, p.name, 0 AS is_host
+      FROM group_organizers o JOIN players p ON p.id = o.account_id
+      WHERE o.group_id = ? AND p.username IS NOT NULL
+      ORDER BY is_host DESC, name
+    `).all(groupId, groupId) as unknown as { account_id: string; username: string; name: string; is_host: number }[];
+    return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: Boolean(row.is_host) }));
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
@@ -363,7 +412,7 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare(`
       INSERT INTO players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id, username, password_hash, skill_level, created_at)
       VALUES (?, NULL, ?, ?, ?, 0, 1, NULL, ?, ?, ?, ?)
-    `).run(account.id, account.name, account.initialRating, account.initialRating, account.username, account.passwordHash, account.skillLevel, account.createdAt.toISOString());
+    `).run(account.id, account.name, account.initialRating, account.initialRating, account.username.trim().toLowerCase(), account.passwordHash, account.skillLevel, account.createdAt.toISOString());
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
@@ -371,10 +420,14 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE players SET name = ? WHERE account_id = ?").run(name, accountId);
   }
 
+  async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
+    this.db.prepare("UPDATE players SET username = ? WHERE id = ? AND username IS NOT NULL").run(username.trim().toLowerCase(), accountId);
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const group = await this.getGroup(groupId);
     const account = await this.getPlayerAccount(accountId);
-    if (!group?.isPublic || !account) return null;
+    if ((!group?.isPublic && group?.ownerAccountId !== accountId) || !account) return null;
     const existing = this.db.prepare("SELECT * FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId) as PlayerRow | undefined;
     if (existing) {
       this.db.prepare("UPDATE players SET active = 1 WHERE id = ?").run(existing.id);
@@ -395,6 +448,9 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
+    const group = await this.getGroup(groupId);
+    if (group?.ownerAccountId === accountId) return false;
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?").run(groupId, accountId);
     const result = this.db.prepare(
       "UPDATE players SET active = 0 WHERE group_id = ? AND account_id = ? AND active = 1",
     ).run(groupId, accountId);
@@ -411,6 +467,7 @@ export class SqliteDomainRepository implements DomainRepository {
       ratedGamesPlayed: row.rated_games_played,
       active: Boolean(row.active),
       accountId: row.account_id,
+      username: row.username ?? null,
     };
   }
 
@@ -457,18 +514,29 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE groups SET is_public = ? WHERE id = ?").run(isPublic ? 1 : 0, groupId);
   }
 
+  async updateGroupName(groupId: string, name: string): Promise<void> {
+    this.db.prepare("UPDATE groups SET name = ? WHERE id = ?").run(name, groupId);
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    this.db.prepare("DELETE FROM groups WHERE id = ?").run(groupId);
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ?").run(groupId);
+    this.db.prepare("DELETE FROM players WHERE group_id = ?").run(groupId);
+    this.db.prepare("DELETE FROM sessions WHERE group_id = ?").run(groupId);
+  }
+
   async insertGroup(group: GroupRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO groups (id, name, organizer_pin_hash, public_share_id, created_at, is_public) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id) VALUES (?, ?, ?, ?, ?, ?)",
       )
       .run(
         group.id,
         group.name,
         group.organizerPinHash,
-        group.publicShareId,
         group.createdAt.toISOString(),
         group.isPublic ? 1 : 0,
+        group.ownerAccountId ?? null,
       );
   }
 
@@ -481,6 +549,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
       startedAt: new Date(row.started_at),
@@ -497,6 +566,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
       startedAt: new Date(row.started_at),
@@ -507,7 +577,13 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async listPlayers(groupId: string): Promise<readonly PlayerRecord[]> {
     const rows = this.db
-      .prepare("SELECT * FROM players WHERE group_id = ?")
+      .prepare(`
+        SELECT p.*, COALESCE(a.username, p.username) AS username
+        FROM players p
+        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+        WHERE p.group_id = ?
+        ORDER BY p.created_at, p.id
+      `)
       .all(groupId) as unknown as PlayerRow[];
     return rows.map((row) => this.mapPlayerRecord(row));
   }
@@ -595,6 +671,7 @@ export class SqliteDomainRepository implements DomainRepository {
         team2Score: row.team2_score,
         completedAt: row.completed_at ? new Date(row.completed_at) : null,
         version: row.version,
+        rated: row.rated === 1,
       }));
 
       const matchIds = matches.map((m) => m.id);
@@ -663,18 +740,20 @@ export class SqliteDomainRepository implements DomainRepository {
       team2Score: row.team2_score,
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
       version: row.version,
+      rated: row.rated === 1,
     };
   }
 
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO sessions (id, group_id, court_count, status, current_round_number, started_at, ended_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         session.id,
         session.groupId,
         session.courtCount,
+        JSON.stringify(session.courtPlayerCounts ?? []),
         session.status,
         session.currentRoundNumber,
         session.startedAt.toISOString(),
@@ -689,10 +768,11 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateSession(session: SessionRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE sessions SET court_count = ?, status = ?, current_round_number = ?, ended_at = ?, version = ? WHERE id = ? AND version = ?",
+        "UPDATE sessions SET court_count = ?, court_player_counts = ?, status = ?, current_round_number = ?, ended_at = ?, version = ? WHERE id = ? AND version = ?",
       )
       .run(
         session.courtCount,
+        JSON.stringify(session.courtPlayerCounts ?? []),
         session.status,
         session.currentRoundNumber,
         session.endedAt ? session.endedAt.toISOString() : null,
@@ -744,7 +824,7 @@ export class SqliteDomainRepository implements DomainRepository {
       );
 
     const insertMatch = this.db.prepare(
-      "INSERT INTO matches (id, round_id, court_number, status, team1_score, team2_score, completed_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO matches (id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const match of record.matches) {
       insertMatch.run(
@@ -756,6 +836,7 @@ export class SqliteDomainRepository implements DomainRepository {
         match.team2Score,
         match.completedAt ? match.completedAt.toISOString() : null,
         match.version,
+        match.rated === false ? 0 : 1,
       );
     }
 
@@ -783,7 +864,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateMatch(match: MatchRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE matches SET status = ?, team1_score = ?, team2_score = ?, completed_at = ?, version = ? WHERE id = ? AND version = ?",
+        "UPDATE matches SET status = ?, team1_score = ?, team2_score = ?, completed_at = ?, version = ?, rated = ? WHERE id = ? AND version = ?",
       )
       .run(
         match.status,
@@ -791,6 +872,7 @@ export class SqliteDomainRepository implements DomainRepository {
         match.team2Score,
         match.completedAt ? match.completedAt.toISOString() : null,
         match.version,
+        match.rated === false ? 0 : 1,
         match.id,
         match.version - 1,
       );
@@ -838,6 +920,7 @@ export class SqliteDomainRepository implements DomainRepository {
          JOIN match_players mp ON mp.match_id = m.id
          WHERE s.group_id = ?
            AND m.status IN ('completed', 'cancelled')
+           AND m.rated = 1
            AND m.completed_at IS NOT NULL
          ORDER BY m.completed_at ASC, m.id ASC, mp.team ASC, mp.player_id ASC`,
       )

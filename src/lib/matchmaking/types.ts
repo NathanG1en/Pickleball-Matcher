@@ -26,7 +26,7 @@ export interface CourtAssignment {
   readonly courtNumber: number;
   readonly team1: Team;
   readonly team2: Team;
-  readonly matchType?: "doubles" | "singles";
+  readonly matchType?: "doubles" | "singles" | "team-vs-one";
 }
 
 export interface RoundCandidate {
@@ -134,4 +134,6 @@ export interface GenerateRoundInput {
   readonly config?: MatchmakingConfig;
   readonly seed?: number;
   readonly allowSingles?: boolean;
+  /** Optional player capacity for each court; unallocated players sit out. */
+  readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
 }

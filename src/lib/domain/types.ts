@@ -4,9 +4,9 @@ export interface GroupRecord {
   readonly id: string;
   readonly name: string;
   readonly organizerPinHash: string;
-  readonly publicShareId: string;
   readonly createdAt: Date;
   readonly isPublic?: boolean;
+  readonly ownerAccountId?: string | null;
 }
 
 export type PlayerSkillLevel = "beginner" | "intermediate" | "advanced";
@@ -26,6 +26,15 @@ export interface PublicGroupRecord {
   readonly name: string;
   readonly playerCount: number;
   readonly isMember?: boolean;
+  readonly isHost?: boolean;
+  readonly isOrganizer?: boolean;
+}
+
+export interface GroupOrganizerRecord {
+  readonly accountId: string;
+  readonly username: string;
+  readonly name: string;
+  readonly isHost: boolean;
 }
 
 export interface PlayerRecord {
@@ -37,6 +46,7 @@ export interface PlayerRecord {
   ratedGamesPlayed: number;
   readonly active: boolean;
   readonly accountId?: string | null;
+  readonly username?: string | null;
 }
 
 export interface PlayerSessionHistoryRecord {
@@ -53,6 +63,7 @@ export interface SessionRecord {
   readonly id: string;
   readonly groupId: string;
   readonly courtCount: number;
+  readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
   status: "active" | "completed";
   currentRoundNumber: number;
   readonly startedAt: Date;
@@ -84,6 +95,7 @@ export interface MatchRecord {
   readonly id: string;
   readonly roundId: string;
   readonly courtNumber: number;
+  readonly rated?: boolean;
   status: "pending" | "completed" | "cancelled";
   team1Score: number | null;
   team2Score: number | null;
@@ -145,6 +157,7 @@ export interface StartSessionInput {
   readonly groupId: string;
   readonly courtCount: number;
   readonly playerIds: readonly string[];
+  readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
 }
 
 export interface ChangeAttendanceInput {

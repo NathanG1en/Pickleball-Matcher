@@ -21,6 +21,26 @@ export const createGroupSchema = z
   })
   .strict();
 
+export const createAccountGroupSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  isPublic: z.boolean().default(false),
+}).strict();
+
+export const addGroupOrganizerSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+}).strict();
+
+export const removeGroupOrganizerSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+}).strict();
+
+export const addGroupPlayerSchema = z.object({
+  groupId: entityIdSchema,
+  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/),
+}).strict();
+
 export const organizerLoginSchema = z
   .object({
     groupName: z.string().trim().min(1).max(80),
@@ -46,6 +66,10 @@ export const updatePlayerProfileSchema = z.object({
   name: z.string().trim().min(1).max(80),
 }).strict();
 
+export const updatePlayerUsernameSchema = z.object({
+  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+}).strict();
+
 export const joinPublicGroupSchema = z.object({
   groupId: entityIdSchema,
 }).strict();
@@ -53,6 +77,16 @@ export const joinPublicGroupSchema = z.object({
 export const updateGroupVisibilitySchema = z.object({
   groupId: entityIdSchema,
   isPublic: z.boolean(),
+}).strict();
+
+export const updateGroupNameSchema = z.object({
+  groupId: entityIdSchema,
+  name: z.string().trim().min(1, "Group name cannot be blank.").max(80, "Group name must be 80 characters or fewer."),
+}).strict();
+
+export const deleteGroupSchema = z.object({
+  groupId: entityIdSchema,
+  confirmationName: z.string().trim().min(1, "Enter the group name to confirm."),
 }).strict();
 
 export const createPlayerSchema = z
