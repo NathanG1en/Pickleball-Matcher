@@ -518,6 +518,13 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE groups SET name = ? WHERE id = ?").run(name, groupId);
   }
 
+  async deleteGroup(groupId: string): Promise<void> {
+    this.db.prepare("DELETE FROM groups WHERE id = ?").run(groupId);
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ?").run(groupId);
+    this.db.prepare("DELETE FROM players WHERE group_id = ?").run(groupId);
+    this.db.prepare("DELETE FROM sessions WHERE group_id = ?").run(groupId);
+  }
+
   async insertGroup(group: GroupRecord): Promise<void> {
     this.db
       .prepare(
