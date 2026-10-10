@@ -239,7 +239,7 @@ export function GroupOrganizersPanel({
         <h2 className="font-display text-xl font-black uppercase">Roster ({players.length})</h2>
         <p className="text-xs font-semibold text-neutral-700">Players and group organizers.</p>
       </div>
-      {isHost && (
+      {(isHost || isOrganizer) && (
         <div className="space-y-2">
           {/* Mode Switch Tabs */}
           <div className="flex items-center gap-1.5 p-1 bg-black/10 rounded-xl w-fit">

@@ -78,4 +78,25 @@ describe("searchPlayersByUsernameAction", () => {
       expect(res.data[0].rating).toBe(1400);
     }
   });
+
+  it("successfully adds a player to a private group via addPlayerByAccountIdAction", async () => {
+    const privGroup = {
+      id: "grp_priv",
+      name: "Private Pickle Club",
+      organizerPinHash: "pin",
+      createdAt: new Date(),
+      isPublic: false,
+      ownerAccountId: "acc_pub",
+    };
+    await repository.insertGroup(privGroup);
+
+    // addPlayerToGroup works for private group
+    const added = await repository.addPlayerToGroup("acc_priv", "grp_priv");
+    expect(added).not.toBeNull();
+    expect(added?.name).toBe("Bob Private");
+    expect(added?.accountId).toBe("acc_priv");
+
+    const roster = await repository.listPlayers("grp_priv");
+    expect(roster.some((p) => p.accountId === "acc_priv")).toBe(true);
+  });
 });

@@ -2,9 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import {
+  addGroupPlayerByUsernameAction,
   removeGroupOrganizerAction,
   removeGroupPlayerAction,
 } from "@/app/actions/group-organizers";
+import {
+  addPlayerByAccountIdAction,
+  createPlayerAction,
+} from "@/app/actions/players";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -25,11 +30,24 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
+  const mockGetActivePlayerAccountId = vi.fn();
+  const mockGetActiveOrganizerSession = vi.fn();
   return {
     ...actual,
-    getActivePlayerAccountId: vi.fn(),
-    getActiveOrganizerSession: vi.fn(),
+    getActivePlayerAccountId: mockGetActivePlayerAccountId,
+    getActiveOrganizerSession: mockGetActiveOrganizerSession,
     requirePlayer: vi.fn(),
+    requireOrganizer: vi.fn(async (groupId: string) => {
+      const accountId = await mockGetActivePlayerAccountId();
+      if (accountId && (await actual.getActionRepository().isGroupOrganizer(groupId, accountId))) {
+        return null;
+      }
+      const session = await mockGetActiveOrganizerSession();
+      if (session && session.groupId === groupId) {
+        return session;
+      }
+      throw new Error("Not authorized");
+    }),
   };
 });
 
@@ -135,7 +153,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Find player by username");
     });
 
-    it("renders remove player option for group organizers, but not make organizer", () => {
+    it("renders add player/guest and remove player options for group organizers, but not make organizer", () => {
       const html = renderToStaticMarkup(
         <GroupOrganizersPanel
           groupId="g1"
@@ -151,6 +169,11 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Remove player");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Remove group organizer");
+
+      // Verify Find Player and Add Guest options exist for organizers
+      expect(html).toContain("Find Player");
+      expect(html).toContain("+ Add Guest");
+      expect(html).toContain("Find player by username");
     });
 
     it("does not render organizer options when user is not the host or organizer", () => {
@@ -170,6 +193,8 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Remove player");
       expect(html).not.toContain("···");
+      expect(html).not.toContain("Find Player");
+      expect(html).not.toContain("+ Add Guest");
     });
   });
 
@@ -412,6 +437,202 @@ describe("GroupOrganizersPanel and Actions", () => {
       const result = await removeGroupPlayerAction({ groupId: "g1", playerId: "p2" });
       expect(result.ok).toBe(false);
       expect(result.error).toContain("Only the host or a group organizer can remove players");
+    });
+  });
+
+  describe("Adding public users and guests to private groups", () => {
+    let repository: InMemoryRepositories;
+    const newPublicUserAccountId = "acc_newbie";
+
+    beforeEach(() => {
+      repository = new InMemoryRepositories({
+        groups: [
+          {
+            id: "priv_g1",
+            name: "Private Group",
+            organizerPinHash: "hash",
+            createdAt: new Date(),
+            isPublic: false,
+            ownerAccountId: hostAccountId,
+          },
+        ],
+        playerAccounts: [
+          {
+            id: hostAccountId,
+            username: "host_user",
+            name: "Host Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: orgAccountId,
+            username: "org_user",
+            name: "Organizer Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: memberAccountId,
+            username: "member_user",
+            name: "Regular Member",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: newPublicUserAccountId,
+            username: "new_player",
+            name: "New Player",
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            createdAt: new Date(),
+          },
+        ],
+        groupOrganizers: [
+          { groupId: "priv_g1", accountId: orgAccountId },
+        ],
+        players: [
+          {
+            id: "p1",
+            groupId: "priv_g1",
+            name: "Host Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: hostAccountId,
+            username: "host_user",
+          },
+          {
+            id: "p2",
+            groupId: "priv_g1",
+            name: "Organizer Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: orgAccountId,
+            username: "org_user",
+          },
+        ],
+      });
+      setActionRepository(repository);
+    });
+
+    it("allows host to add a public user by username to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await addGroupPlayerByUsernameAction({
+        groupId: "priv_g1",
+        username: "new_player",
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const added = roster.find((p) => p.accountId === newPublicUserAccountId);
+      expect(added).toBeDefined();
+      expect(added?.name).toBe("New Player");
+      expect(added?.username).toBe("new_player");
+      expect(added?.active).toBe(true);
+    });
+
+    it("allows a group organizer to add a public user by username to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(orgAccountId);
+
+      const result = await addGroupPlayerByUsernameAction({
+        groupId: "priv_g1",
+        username: "new_player",
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const added = roster.find((p) => p.accountId === newPublicUserAccountId);
+      expect(added).toBeDefined();
+      expect(added?.name).toBe("New Player");
+      expect(added?.username).toBe("new_player");
+    });
+
+    it("rejects non-organizers from adding players by username", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(newPublicUserAccountId);
+
+      const result = await addGroupPlayerByUsernameAction({
+        groupId: "priv_g1",
+        username: "member_user",
+      });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Only the host or a group organizer can add players");
+    });
+
+    it("allows host to add a public user by accountId to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await addPlayerByAccountIdAction({
+        groupId: "priv_g1",
+        accountId: newPublicUserAccountId,
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const added = roster.find((p) => p.accountId === newPublicUserAccountId);
+      expect(added).toBeDefined();
+      expect(added?.name).toBe("New Player");
+    });
+
+    it("allows an organizer to add a public user by accountId to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(orgAccountId);
+
+      const result = await addPlayerByAccountIdAction({
+        groupId: "priv_g1",
+        accountId: newPublicUserAccountId,
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const added = roster.find((p) => p.accountId === newPublicUserAccountId);
+      expect(added).toBeDefined();
+      expect(added?.name).toBe("New Player");
+    });
+
+    it("allows host to add a guest player to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await createPlayerAction({
+        groupId: "priv_g1",
+        name: "Guest Host Friend",
+        initialRating: 1100,
+        idempotencyKey: "guest_1",
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const guest = roster.find((p) => p.name === "Guest Host Friend");
+      expect(guest).toBeDefined();
+      expect(guest?.accountId).toBeUndefined();
+      expect(guest?.rating).toBe(1100);
+    });
+
+    it("allows an organizer to add a guest player to a private group", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(orgAccountId);
+
+      const result = await createPlayerAction({
+        groupId: "priv_g1",
+        name: "Guest Org Friend",
+        initialRating: 900,
+        idempotencyKey: "guest_2",
+      });
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("priv_g1");
+      const guest = roster.find((p) => p.name === "Guest Org Friend");
+      expect(guest).toBeDefined();
+      expect(guest?.accountId).toBeUndefined();
+      expect(guest?.rating).toBe(900);
     });
   });
 });

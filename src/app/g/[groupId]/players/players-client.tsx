@@ -23,6 +23,10 @@ export function PlayersClient({
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
+  React.useEffect(() => {
+    setPlayers(initialPlayers);
+  }, [initialPlayers]);
+
   const handleAddPlayer = async (name: string, initialRating: number) => {
     setIsPending(true);
     setError(null);
@@ -80,6 +84,10 @@ export function PlayersClient({
         <PlayerSearchDrawer
           groupId={groupId}
           onPlayerAdded={(newP) => {
+            setPlayers((prev) => {
+              if (prev.some((p) => p.id === newP.id)) return prev;
+              return [...prev, newP as PlayerRecord];
+            });
             router.refresh();
           }}
         />

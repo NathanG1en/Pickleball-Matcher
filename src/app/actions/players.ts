@@ -55,6 +55,9 @@ export async function createPlayerAction(input: unknown): Promise<ActionResult<P
       active: true,
     };
     await repository.createPlayer(newPlayer);
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath("/players");
     return { ok: true, data: newPlayer };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create player";
@@ -204,12 +207,14 @@ export async function addPlayerByAccountIdAction(
   try {
     await requireOrganizer(parsed.data.groupId);
     const repository = getActionRepository();
-    const player = await repository.joinPublicGroup(parsed.data.accountId, parsed.data.groupId);
+    const player = await repository.addPlayerToGroup(parsed.data.accountId, parsed.data.groupId);
     if (!player) {
       return { ok: false, error: "Failed to add player to group roster." };
     }
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: player };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to add player to group";
