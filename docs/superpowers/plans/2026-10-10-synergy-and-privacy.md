@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: `calculateSynergyScore(matchesPlayed: number, wins: number): number`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/synergy/calculator.test.ts
@@ -63,12 +63,12 @@ describe("calculateSynergyScore", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/synergy/calculator.test.ts`  
 Expected: FAIL with "Cannot find module '@/lib/synergy/calculator'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```ts
 // src/lib/synergy/calculator.ts
@@ -84,12 +84,12 @@ export function calculateSynergyScore(matchesPlayed: number, wins: number): numb
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/synergy/calculator.test.ts`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/synergy/calculator.ts tests/synergy/calculator.test.ts
@@ -107,7 +107,7 @@ git commit -m "feat(synergy): add Bayesian Laplace synergy calculator"
 **Interfaces:**
 - Produces: `resolveProfileVisibility(viewerAccountId: string | null, targetAccount: PlayerAccountRecord, stats: { bestPartner: BestPartnerData | null; viewerSynergyScore: number | null }): SanitizedProfileView`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/privacy/profile-visibility.test.ts
@@ -175,12 +175,12 @@ describe("resolveProfileVisibility", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/privacy/profile-visibility.test.ts`  
 Expected: FAIL with "Cannot find module '@/lib/privacy/profile-visibility'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```ts
 // src/lib/privacy/profile-visibility.ts
@@ -240,12 +240,12 @@ export function resolveProfileVisibility(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/privacy/profile-visibility.test.ts`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/privacy/profile-visibility.ts tests/privacy/profile-visibility.test.ts
@@ -272,7 +272,7 @@ git commit -m "feat(privacy): add decoupled profile visibility policy resolver"
   - `recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void>`
   - `searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>`
 
-- [ ] **Step 1: Write migration SQL file**
+- [x] **Step 1: Write migration SQL file**
 
 ```sql
 -- migrations/202610100003_player_privacy_and_synergy.sql
@@ -297,16 +297,16 @@ alter table player_synergy enable row level security;
 grant select, insert, update, delete on player_synergy to anon;
 ```
 
-- [ ] **Step 2: Update types and repositories interface**
+- [x] **Step 2: Update types and repositories interface**
 
 Add `isPublic: boolean` to `PlayerAccountRecord`.  
 Add `PlayerSynergyRecord` and repository method signatures to `src/lib/domain/repositories.ts`.
 
-- [ ] **Step 3: Implement repository methods in `postgres-repositories.ts`**
+- [x] **Step 3: Implement repository methods in `postgres-repositories.ts`**
 
 Implement `getPairSynergy`, `getBestPartner`, `recordMatchesSynergy`, `updatePlayerPrivacy`, and `searchPlayerAccounts`.
 
-- [ ] **Step 4: Write repository test to verify canonical ordering and synergy tracking**
+- [x] **Step 4: Write repository test to verify canonical ordering and synergy tracking**
 
 ```ts
 // tests/domain/synergy-repository.test.ts
@@ -324,12 +324,12 @@ describe("Canonical pair ordering", () => {
 });
 ```
 
-- [ ] **Step 5: Run tests and apply migration to Neon**
+- [x] **Step 5: Run tests and apply migration to Neon**
 
 Run: `node scripts/migrate.js && npx vitest run tests/domain/synergy-repository.test.ts`  
 Expected: Migration executes successfully, test PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add migrations/202610100003_player_privacy_and_synergy.sql src/lib/domain/ src/lib/db/ tests/domain/synergy-repository.test.ts
@@ -348,7 +348,7 @@ git commit -m "feat(db): add player_synergy table and repository methods"
 - Consumes: `repository.recordMatchesSynergy`
 - Produces: automatically increments matches and wins for teammates with accounts upon round completion
 
-- [ ] **Step 1: Write failing test for session synergy update extraction**
+- [x] **Step 1: Write failing test for session synergy update extraction**
 
 ```ts
 // tests/domain/session-synergy.test.ts
@@ -375,22 +375,22 @@ describe("Session synergy pair extraction", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it passes**
+- [x] **Step 2: Run test to verify it passes**
 
 Run: `npx vitest run tests/domain/session-synergy.test.ts`  
 Expected: PASS
 
-- [ ] **Step 3: Integrate pair synergy recording into `completeRoundAction`**
+- [x] **Step 3: Integrate pair synergy recording into `completeRoundAction`**
 
 In `src/app/actions/sessions.ts`:
 When matches are recorded in `completeRoundAction`, collect doubles teams where both players have an `accountId`, determine if their team won, and call `repository.recordMatchesSynergy(pairs)`.
 
-- [ ] **Step 4: Run full test suite**
+- [x] **Step 4: Run full test suite**
 
 Run: `npm test`  
 Expected: PASS (all existing tests still pass)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/actions/sessions.ts tests/domain/session-synergy.test.ts
@@ -411,7 +411,7 @@ git commit -m "feat(sessions): record player synergy upon round completion"
   - `updatePlayerPrivacyAction(isPublic: boolean): Promise<ActionResult<void>>`
   - `addPlayerByAccountIdAction(params: { groupId: string; accountId: string }): Promise<ActionResult<PlayerRecord>>`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/actions/player-search-and-privacy.test.ts
@@ -426,24 +426,24 @@ describe("searchPlayersByUsernameAction validation", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/actions/player-search-and-privacy.test.ts`  
 Expected: FAIL (action not exported yet)
 
-- [ ] **Step 3: Implement server actions in `src/app/actions/players.ts`**
+- [x] **Step 3: Implement server actions in `src/app/actions/players.ts`**
 
 Export:
 - `searchPlayersByUsernameAction` (sanitizes results with `resolveProfileVisibility`)
 - `updatePlayerPrivacyAction`
 - `addPlayerByAccountIdAction`
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/actions/player-search-and-privacy.test.ts`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/actions/players.ts tests/actions/player-search-and-privacy.test.ts
@@ -464,7 +464,7 @@ git commit -m "feat(actions): add username search and privacy update server acti
 - Consumes: `searchPlayersByUsernameAction`, `addPlayerByAccountIdAction`
 - Produces: Interactive search component allowing organizers to search `@username`, preview public chemistry (or private lock badge), and add to the group roster.
 
-- [ ] **Step 1: Write component test**
+- [x] **Step 1: Write component test**
 
 ```tsx
 // tests/components/player-search-drawer.test.tsx
@@ -481,20 +481,20 @@ describe("PlayerSearchDrawer", () => {
 });
 ```
 
-- [ ] **Step 2: Implement `PlayerSearchDrawer` component**
+- [x] **Step 2: Implement `PlayerSearchDrawer` component**
 
 Include debounced search input, results list, preview card showing `@username`, public stats / "Best Partner" (or `🔒 Private Profile`), and an "Add to Group" button.
 
-- [ ] **Step 3: Integrate into Group Dashboard & Players Roster**
+- [x] **Step 3: Integrate into Group Dashboard & Players Roster**
 
 Embed `PlayerSearchDrawer` into `src/app/g/[groupId]/page.tsx` and `src/app/g/[groupId]/players/players-client.tsx`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/components/player-search-drawer.test.tsx`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/groups/player-search-drawer.tsx src/app/g/[groupId]/page.tsx src/app/g/[groupId]/players/players-client.tsx tests/components/player-search-drawer.test.tsx
@@ -517,7 +517,7 @@ git commit -m "feat(ui): add username search drawer to group dashboard and roste
   - Partner synergy badge on court card when viewer is a court participant
   - "⚡ Reveal Synergy" modal for organizers to inspect court chemistry
 
-- [ ] **Step 1: Write test for partner synergy badge display**
+- [x] **Step 1: Write test for partner synergy badge display**
 
 ```tsx
 // tests/components/current-round-synergy.test.tsx
@@ -543,16 +543,16 @@ describe("CurrentRoundView synergy badge", () => {
 });
 ```
 
-- [ ] **Step 2: Implement `SynergyRevealModal` and update `CurrentRoundView`**
+- [x] **Step 2: Implement `SynergyRevealModal` and update `CurrentRoundView`**
 
 Add partner badge to active court card, and add "⚡ Reveal Synergy" button/modal for organizers.
 
-- [ ] **Step 3: Run test to verify it passes**
+- [x] **Step 3: Run test to verify it passes**
 
 Run: `npx vitest run tests/components/current-round-synergy.test.tsx`  
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/rounds/synergy-reveal-modal.tsx src/components/rounds/current-round.tsx src/app/g/[groupId]/sessions/[sessionId]/page.tsx tests/components/current-round-synergy.test.tsx
@@ -576,7 +576,7 @@ git commit -m "feat(rounds): serve partner synergy to players and add organizer 
   - "Best Partner Overall" spotlight card
   - Comprehensive documentation in `docs/synergy-and-privacy-system.md`
 
-- [ ] **Step 1: Write test for profile privacy toggle & best partner card**
+- [x] **Step 1: Write test for profile privacy toggle & best partner card**
 
 ```tsx
 // tests/components/player-profile-synergy.test.tsx
@@ -602,20 +602,20 @@ describe("PlayerProfileHeader privacy toggle", () => {
 });
 ```
 
-- [ ] **Step 2: Update `PlayerProfileHeader` & `PlayerProfilePage`**
+- [x] **Step 2: Update `PlayerProfileHeader` & `PlayerProfilePage`**
 
 Add the privacy toggle and "Best Partner Overall" card (displaying `@partner_username` and synergy score %).
 
-- [ ] **Step 3: Create documentation in `docs/synergy-and-privacy-system.md`**
+- [x] **Step 3: Create documentation in `docs/synergy-and-privacy-system.md`**
 
 Document the system architecture, mathematical formula, privacy model, and user guides for organizers and players.
 
-- [ ] **Step 4: Run full test suite to verify all tests pass**
+- [x] **Step 4: Run full test suite to verify all tests pass**
 
 Run: `npm test && npm run typecheck`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/players/player-profile-controls.tsx src/app/players/page.tsx docs/synergy-and-privacy-system.md tests/components/player-profile-synergy.test.tsx
