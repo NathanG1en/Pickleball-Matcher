@@ -31,6 +31,11 @@ export const addGroupOrganizerSchema = z.object({
   playerId: entityIdSchema,
 }).strict();
 
+export const removeGroupOrganizerSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+}).strict();
+
 export const addGroupPlayerSchema = z.object({
   groupId: entityIdSchema,
   username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/),
@@ -72,6 +77,11 @@ export const joinPublicGroupSchema = z.object({
 export const updateGroupVisibilitySchema = z.object({
   groupId: entityIdSchema,
   isPublic: z.boolean(),
+}).strict();
+
+export const updateGroupNameSchema = z.object({
+  groupId: entityIdSchema,
+  name: z.string().trim().min(1, "Group name cannot be blank.").max(80, "Group name must be 80 characters or fewer."),
 }).strict();
 
 export const createPlayerSchema = z

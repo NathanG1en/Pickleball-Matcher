@@ -122,6 +122,13 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
+  async removeGroupOrganizer(groupId: string, accountId: string) {
+    this.state.groupOrganizers = this.state.groupOrganizers.filter(
+      (item) => !(item.groupId === groupId && item.accountId === accountId),
+    );
+    this.writeCount += 1;
+  }
+
   async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
     const group = this.state.groups.find((item) => item.id === groupId);
     const entries = [
@@ -179,7 +186,7 @@ export class InMemoryRepositories implements DomainRepository {
     if (!account || !group) return null;
     const existing = this.state.players.find((player) => player.groupId === groupId && player.accountId === accountId);
     if (existing) {
-      const reactivated = { ...existing, active: true };
+      const reactivated = { ...existing, active: true, username: existing.username ?? account.username };
       this.state.players = this.state.players.map((player) => player.id === existing.id ? reactivated : player);
       return reactivated;
     }
@@ -192,6 +199,7 @@ export class InMemoryRepositories implements DomainRepository {
       ratedGamesPlayed: 0,
       active: true,
       accountId,
+      username: account.username,
     };
     this.state.players.push(player);
     return player;
@@ -204,6 +212,9 @@ export class InMemoryRepositories implements DomainRepository {
       (player) => player.groupId === groupId && player.accountId === accountId && player.active,
     );
     if (!membership) return false;
+    this.state.groupOrganizers = this.state.groupOrganizers.filter(
+      (item) => !(item.groupId === groupId && item.accountId === accountId),
+    );
     this.state.players = this.state.players.map((player) =>
       player.id === membership.id ? { ...player, active: false } : player,
     );
@@ -244,6 +255,14 @@ export class InMemoryRepositories implements DomainRepository {
   async updateGroupVisibility(groupId: string, isPublic: boolean) {
     const group = this.state.groups.find((item) => item.id === groupId);
     if (group) this.state.groups = this.state.groups.map((item) => item.id === groupId ? { ...item, isPublic } : item);
+  }
+
+  async updateGroupName(groupId: string, name: string) {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    if (group) {
+      this.state.groups = this.state.groups.map((item) => item.id === groupId ? { ...item, name } : item);
+      this.writeCount += 1;
+    }
   }
 
   async insertGroup(group: GroupRecord) {
@@ -295,7 +314,18 @@ export class InMemoryRepositories implements DomainRepository {
   }
 
   async listPlayers(groupId: string) {
-    return this.state.players.filter((player) => player.groupId === groupId);
+    return this.state.players
+      .filter((player) => player.groupId === groupId)
+      .map((player) => {
+        if (player.username) return player;
+        if (player.accountId) {
+          const account = this.state.playerAccounts.find((a) => a.id === player.accountId);
+          if (account?.username) {
+            return { ...player, username: account.username };
+          }
+        }
+        return player;
+      });
   }
 
   async listAttendance(sessionId: string) {
