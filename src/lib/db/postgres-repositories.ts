@@ -11,6 +11,7 @@ import type {
   PlayerAccountRecord,
   PlayerGender,
   PlayerSessionHistoryRecord,
+  PlayerSynergyRecord,
   PublicGroupRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -20,6 +21,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
+import { calculateSynergyScore } from "@/lib/synergy/calculator";
 
 export class RepositoryConflictError extends Error {
   constructor(message = "The record changed before this update was saved.") {
@@ -69,10 +71,20 @@ type PlayerAccountRow = {
   username: string;
   name: string;
   gender?: "male" | "female" | null;
+  is_public?: boolean;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
   created_at: Date;
+};
+
+type PlayerSynergyRow = {
+  account_id_1: string;
+  account_id_2: string;
+  matches_played: number;
+  wins: number;
+  synergy_score: number;
+  updated_at: Date;
 };
 
 type AttendanceRow = {
@@ -156,10 +168,20 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   username: row.username,
   name: row.name,
   gender: (row.gender as PlayerGender) ?? undefined,
+  isPublic: row.is_public ?? true,
   passwordHash: row.password_hash,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
   createdAt: row.created_at,
+});
+
+const mapPlayerSynergy = (row: PlayerSynergyRow): PlayerSynergyRecord => ({
+  accountId1: row.account_id_1,
+  accountId2: row.account_id_2,
+  matchesPlayed: row.matches_played,
+  wins: row.wins,
+  synergyScore: row.synergy_score,
+  updatedAt: row.updated_at,
 });
 
 const mapAttendance = (row: AttendanceRow): AttendanceRecord => ({
@@ -332,7 +354,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, password_hash, skill_level, initial_rating, created_at
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
       from players where id = ${accountId} and username is not null
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -340,7 +362,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, password_hash, skill_level, initial_rating, created_at
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
       from players where username = ${username.trim().toLowerCase()}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -348,8 +370,8 @@ export class PostgresRepositories implements DomainRepository {
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     await this.query`
-      insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, username, password_hash, skill_level, created_at)
-      values (${account.id}, null, ${account.name}, ${account.gender ?? null}, ${account.initialRating}, ${account.initialRating}, 0, true, ${account.username.trim().toLowerCase()}, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+      insert into players (id, group_id, name, gender, is_public, initial_rating, rating, rated_games_played, active, username, password_hash, skill_level, created_at)
+      values (${account.id}, null, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${account.initialRating}, ${account.initialRating}, 0, true, ${account.username.trim().toLowerCase()}, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
     `;
   }
 
@@ -374,6 +396,91 @@ export class PostgresRepositories implements DomainRepository {
       await transactionQuery`update players set gender = ${gender} where id = ${accountId} and username is not null`;
       await transactionQuery`update players set gender = ${gender} where account_id = ${accountId}`;
     });
+  }
+
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
+    await this.query`
+      update players set is_public = ${isPublic}
+      where id = ${accountId} and username is not null
+    `;
+  }
+
+  async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
+    if (accountIdA === accountIdB) return null;
+    const [first, second] = accountIdA < accountIdB ? [accountIdA, accountIdB] : [accountIdB, accountIdA];
+    const rows = await this.query<PlayerSynergyRow[]>`
+      select account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at
+      from player_synergy
+      where account_id_1 = ${first} and account_id_2 = ${second}
+    `;
+    return rows[0] ? mapPlayerSynergy(rows[0]) : null;
+  }
+
+  async getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null> {
+    const rows = await this.query<{ partner_account_id: string; username: string; synergy_score: number; matches_played: number }[]>`
+      select
+        case when s.account_id_1 = ${accountId} then s.account_id_2 else s.account_id_1 end as partner_account_id,
+        p.username,
+        s.synergy_score,
+        s.matches_played
+      from player_synergy s
+      join players p on p.id = (case when s.account_id_1 = ${accountId} then s.account_id_2 else s.account_id_1 end)
+      where (s.account_id_1 = ${accountId} or s.account_id_2 = ${accountId})
+        and s.matches_played >= 1
+        and p.username is not null
+      order by s.synergy_score desc, s.matches_played desc
+      limit 1
+    `;
+    if (!rows[0]) return null;
+    return {
+      partnerAccountId: rows[0].partner_account_id,
+      username: rows[0].username,
+      synergyScore: rows[0].synergy_score,
+      matchesPlayed: rows[0].matches_played,
+    };
+  }
+
+  async recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void> {
+    if (pairResults.length === 0) return;
+    for (const pair of pairResults) {
+      if (pair.accountIdA === pair.accountIdB) continue;
+      const [first, second] = pair.accountIdA < pair.accountIdB
+        ? [pair.accountIdA, pair.accountIdB]
+        : [pair.accountIdB, pair.accountIdA];
+      const winIncrement = pair.won ? 1 : 0;
+
+      await this.query`
+        insert into player_synergy (account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at)
+        values (
+          ${first},
+          ${second},
+          1,
+          ${winIncrement},
+          ${calculateSynergyScore(1, winIncrement)},
+          now()
+        )
+        on conflict (account_id_1, account_id_2) do update set
+          matches_played = player_synergy.matches_played + 1,
+          wins = player_synergy.wins + ${winIncrement},
+          synergy_score = round(((player_synergy.wins + ${winIncrement} + 1)::float / (player_synergy.matches_played + 1 + 2)::float) * 100),
+          updated_at = now()
+      `;
+    }
+  }
+
+  async searchPlayerAccounts(query: string, limit: number = 10): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = query.trim().toLowerCase().replace(/^@/, "");
+    if (!trimmed) return [];
+    const searchTerm = `%${trimmed}%`;
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
+      from players
+      where username is not null
+        and (username ilike ${searchTerm} or name ilike ${searchTerm})
+      order by (username = ${trimmed}) desc, username asc
+      limit ${limit}
+    `;
+    return rows.map(mapPlayerAccount);
   }
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {

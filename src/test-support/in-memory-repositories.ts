@@ -6,6 +6,7 @@ import type {
   PlayerAccountRecord,
   PlayerGender,
   PlayerSessionHistoryRecord,
+  PlayerSynergyRecord,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -16,6 +17,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
+import { calculateSynergyScore } from "@/lib/synergy/calculator";
 
 interface InMemoryState {
   groups: GroupRecord[];
@@ -30,6 +32,7 @@ interface InMemoryState {
   roundSits: RoundSitRecord[];
   replayMatches: ReplayMatch[];
   ratingSnapshots: Map<string, readonly RatingSnapshot[]>;
+  synergies: PlayerSynergyRecord[];
 }
 
 type InMemorySeed = Partial<Omit<InMemoryState, "ratingSnapshots">> & {
@@ -55,6 +58,7 @@ export class InMemoryRepositories implements DomainRepository {
       roundSits: structuredClone(seed.roundSits ?? []),
       replayMatches: structuredClone(seed.replayMatches ?? []),
       ratingSnapshots: new Map(seed.ratingSnapshots ?? []),
+      synergies: structuredClone(seed.synergies ?? []),
     };
   }
 
@@ -500,5 +504,78 @@ export class InMemoryRepositories implements DomainRepository {
         : { ...item, ratingBefore: null, ratingAfter: null };
     });
     this.writeCount += 1;
+  }
+
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
+    const account = this.state.playerAccounts.find((a) => a.id === accountId);
+    if (account) {
+      (account as { isPublic?: boolean }).isPublic = isPublic;
+      this.writeCount += 1;
+    }
+  }
+
+  async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
+    if (accountIdA === accountIdB) return null;
+    const [first, second] = accountIdA < accountIdB ? [accountIdA, accountIdB] : [accountIdB, accountIdA];
+    return this.state.synergies.find((s) => s.accountId1 === first && s.accountId2 === second) ?? null;
+  }
+
+  async getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null> {
+    const eligible = this.state.synergies.filter(
+      (s) => (s.accountId1 === accountId || s.accountId2 === accountId) && s.matchesPlayed >= 1
+    );
+    if (eligible.length === 0) return null;
+    eligible.sort((a, b) => b.synergyScore - a.synergyScore || b.matchesPlayed - a.matchesPlayed);
+    const best = eligible[0];
+    const partnerId = best.accountId1 === accountId ? best.accountId2 : best.accountId1;
+    const partnerAcc = this.state.playerAccounts.find((a) => a.id === partnerId);
+    if (!partnerAcc) return null;
+    return {
+      partnerAccountId: partnerId,
+      username: partnerAcc.username,
+      synergyScore: best.synergyScore,
+      matchesPlayed: best.matchesPlayed,
+    };
+  }
+
+  async recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void> {
+    for (const pair of pairResults) {
+      if (pair.accountIdA === pair.accountIdB) continue;
+      const [first, second] = pair.accountIdA < pair.accountIdB ? [pair.accountIdA, pair.accountIdB] : [pair.accountIdB, pair.accountIdA];
+      const existing = this.state.synergies.find((s) => s.accountId1 === first && s.accountId2 === second);
+      const winInc = pair.won ? 1 : 0;
+      if (existing) {
+        const newMatches = existing.matchesPlayed + 1;
+        const newWins = existing.wins + winInc;
+        const newScore = calculateSynergyScore(newMatches, newWins);
+        const index = this.state.synergies.indexOf(existing);
+        this.state.synergies[index] = {
+          accountId1: first,
+          accountId2: second,
+          matchesPlayed: newMatches,
+          wins: newWins,
+          synergyScore: newScore,
+          updatedAt: new Date(),
+        };
+      } else {
+        this.state.synergies.push({
+          accountId1: first,
+          accountId2: second,
+          matchesPlayed: 1,
+          wins: winInc,
+          synergyScore: calculateSynergyScore(1, winInc),
+          updatedAt: new Date(),
+        });
+      }
+    }
+    this.writeCount += 1;
+  }
+
+  async searchPlayerAccounts(query: string, limit: number = 10): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = query.trim().toLowerCase().replace(/^@/, "");
+    if (!trimmed) return [];
+    return this.state.playerAccounts
+      .filter((a) => a.username.toLowerCase().includes(trimmed) || a.name.toLowerCase().includes(trimmed))
+      .slice(0, limit);
   }
 }
