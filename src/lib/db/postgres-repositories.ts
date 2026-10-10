@@ -348,6 +348,13 @@ export class PostgresRepositories implements DomainRepository {
     });
   }
 
+  async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
+    await this.query`
+      update players set username = ${username.trim().toLowerCase()}
+      where id = ${accountId} and username is not null
+    `;
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id)

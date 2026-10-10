@@ -414,6 +414,10 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE players SET name = ? WHERE account_id = ?").run(name, accountId);
   }
 
+  async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
+    this.db.prepare("UPDATE players SET username = ? WHERE id = ? AND username IS NOT NULL").run(username.trim().toLowerCase(), accountId);
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const group = await this.getGroup(groupId);
     const account = await this.getPlayerAccount(accountId);

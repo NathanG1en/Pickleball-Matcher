@@ -140,7 +140,7 @@ export class InMemoryRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string) {
     const normalized = username.trim().toLowerCase();
-    return this.state.playerAccounts.find((account) => account.username === normalized) ?? null;
+    return this.state.playerAccounts.find((account) => account.username.toLowerCase() === normalized) ?? null;
   }
 
   async createPlayerAccount(account: PlayerAccountRecord) {
@@ -158,6 +158,19 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.players = this.state.players.map((player) =>
       player.accountId === accountId ? { ...player, name } : player,
     );
+  }
+
+  async updatePlayerAccountUsername(accountId: string, username: string) {
+    const normalized = username.trim().toLowerCase();
+    const existing = this.state.playerAccounts.find(
+      (account) => account.username.toLowerCase() === normalized && account.id !== accountId,
+    );
+    if (existing) {
+      throw new Error("Username already exists");
+    }
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return;
+    (account as { username: string }).username = normalized;
   }
 
   async joinPublicGroup(accountId: string, groupId: string) {

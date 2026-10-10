@@ -27,6 +27,7 @@ export interface DomainRepository {
   getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
   updatePlayerAccountName(accountId: string, name: string): Promise<void>;
+  updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
   joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;

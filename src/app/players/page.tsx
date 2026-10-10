@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActionRepository } from "@/app/actions/action-context";
 import { getActivePlayerAccountId } from "@/app/actions/action-context";
-import { LeaveGroupButton, PlayerLogoutButton, PlayerNameEditor } from "@/components/players/player-profile-controls";
+import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 
 export default async function PlayerProfilePage() {
@@ -22,15 +22,15 @@ export default async function PlayerProfilePage() {
 
   return <main className="min-h-screen p-4 sm:p-6">
     <section className="mx-auto max-w-2xl space-y-5">
-      <header className="flex items-center justify-between gap-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
-        <div><p className="text-xs font-black uppercase tracking-wider text-neutral-600">Player profile</p><h1 className="font-display text-3xl font-black uppercase">{account.name}</h1><p className="text-sm font-bold text-neutral-600">@{account.username}</p></div>
+      <header className="flex items-start justify-between gap-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
+        <PlayerProfileHeader
+          initialName={account.name}
+          initialUsername={account.username}
+          skillLevel={account.skillLevel}
+          initialRating={account.initialRating}
+        />
         <PlayerLogoutButton />
       </header>
-
-      <section className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
-        <PlayerNameEditor initialName={account.name} />
-        <p className="mt-3 text-xs font-bold uppercase text-neutral-600">{account.skillLevel} · starting rating {account.initialRating}</p>
-      </section>
 
       <section className="grid grid-cols-3 gap-3 text-center">
         <Stat label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />

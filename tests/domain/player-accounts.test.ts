@@ -67,4 +67,26 @@ describe("player account group membership and history", () => {
     const leftOther = await repository.leavePublicGroup(account.id, "other");
     expect(leftOther).toBe(true);
   });
+
+  it("updates a player username and enforces uniqueness in repository", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        account,
+        {
+          id: "user-2",
+          username: "player_two",
+          name: "Player Two",
+          passwordHash: "hashed",
+          skillLevel: "beginner",
+          initialRating: 900,
+          createdAt: new Date(),
+        },
+      ],
+    });
+
+    await repository.updatePlayerAccountUsername(account.id, "player_one_updated");
+    expect((await repository.getPlayerAccount(account.id))?.username).toBe("player_one_updated");
+
+    await expect(repository.updatePlayerAccountUsername(account.id, "player_two")).rejects.toThrow();
+  });
 });
