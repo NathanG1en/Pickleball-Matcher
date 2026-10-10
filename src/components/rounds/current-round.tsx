@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SynergyRevealModal, type CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
 
 export interface RoundCourtData {
   readonly courtNumber: number;
@@ -22,6 +23,10 @@ export interface CurrentRoundViewProps {
   readonly playerNames: Record<string, string>;
   readonly canRegenerate?: boolean;
   readonly isPending?: boolean;
+  readonly currentViewerPlayerId?: string | null;
+  readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
+  readonly courtSynergies?: CourtSynergiesMap;
+  readonly isOrganizer?: boolean;
   readonly onStartRound?: (customProposal?: {
     courts: readonly RoundCourtData[];
     sitting: readonly string[];
@@ -37,6 +42,10 @@ export function CurrentRoundView({
   playerNames,
   canRegenerate = false,
   isPending = false,
+  currentViewerPlayerId = null,
+  partnerSynergy = null,
+  courtSynergies,
+  isOrganizer = false,
   onStartRound,
   onRegenerate,
   onEnterResults,
@@ -69,6 +78,7 @@ export function CurrentRoundView({
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showConfirmStart, setShowConfirmStart] = useState(false);
+  const [showSynergyModal, setShowSynergyModal] = useState(false);
   const [acknowledgedOverride, setAcknowledgedOverride] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [draggedPlayerId, setDraggedPlayerId] = useState<string | null>(null);
@@ -331,6 +341,15 @@ export function CurrentRoundView({
               )}
             </>
           )}
+          {isOrganizer && courtSynergies && Object.keys(courtSynergies).length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowSynergyModal(true)}
+              className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+            >
+              ⚡ Reveal Synergy
+            </button>
+          )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
           {round.status === "completed" && <Badge variant="default">Completed</Badge>}
         </div>
@@ -484,6 +503,11 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 1" : "Team 1"}
                     </span>
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
+                        ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
                     {isUnlocked && court.team1.length > 0 && (
                       <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
@@ -608,6 +632,11 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 2" : "Team 2"}
                     </span>
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
+                        ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
                     {isUnlocked && court.team2.length > 0 && (
                       <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
@@ -983,6 +1012,16 @@ export function CurrentRoundView({
           )}
         </div>
       </div>
+
+      {showSynergyModal && courtSynergies && (
+        <SynergyRevealModal
+          isOpen={showSynergyModal}
+          onClose={() => setShowSynergyModal(false)}
+          courts={localCourts}
+          courtSynergies={courtSynergies}
+          playerNames={playerNames}
+        />
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
+import type { CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -33,6 +34,10 @@ export interface SessionManagerClientProps {
   readonly attendance?: readonly AttendanceRecord[];
   readonly startedRounds: readonly StartedRoundRecord[];
   readonly initialProposal: RoundProposal | null;
+  readonly currentViewerPlayerId?: string | null;
+  readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
+  readonly courtSynergies?: CourtSynergiesMap;
+  readonly isOrganizer?: boolean;
 }
 
 export function SessionManagerClient({
@@ -42,6 +47,10 @@ export function SessionManagerClient({
   attendance = [],
   startedRounds,
   initialProposal,
+  currentViewerPlayerId = null,
+  partnerSynergy = null,
+  courtSynergies,
+  isOrganizer = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
@@ -469,6 +478,10 @@ export function SessionManagerClient({
           playerNames={playerNames}
           canRegenerate={true}
           isPending={isPending}
+          currentViewerPlayerId={currentViewerPlayerId}
+          partnerSynergy={partnerSynergy}
+          courtSynergies={courtSynergies}
+          isOrganizer={isOrganizer}
           onRegenerate={handleRegenerate}
           onStartRound={handleStartRound}
         />
