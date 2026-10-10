@@ -5,7 +5,7 @@ import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { getActionRepository, getActivePlayerAccountId, requirePlayer } from "@/app/actions/action-context";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
-import { joinPublicGroupSchema, playerLoginSchema, playerSignupSchema, updatePlayerProfileSchema, updatePlayerUsernameSchema } from "@/lib/validation/group";
+import { joinPublicGroupSchema, playerLoginSchema, playerSignupSchema, updatePlayerGenderSchema, updatePlayerProfileSchema, updatePlayerUsernameSchema } from "@/lib/validation/group";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -52,6 +52,7 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       id: accountId,
       username,
       name: parsed.data.name,
+      gender: parsed.data.gender,
       passwordHash: await hash(parsed.data.password, PASSWORD_HASH_COST),
       skillLevel: parsed.data.skillLevel,
       initialRating: parsed.data.customRating ? parsed.data.initialRating : DEFAULT_RATING[parsed.data.skillLevel],
@@ -109,13 +110,32 @@ export async function updatePlayerProfileAction(input: unknown): Promise<PlayerA
     const accountId = await requirePlayer();
     const repository = getActionRepository();
     const existing = await repository.getPlayerAccount(accountId);
-    if (existing && existing.name === parsed.data.name) {
-      return { ok: true, data: undefined };
+    if (parsed.data.name !== undefined && (!existing || existing.name !== parsed.data.name)) {
+      await repository.updatePlayerAccountName(accountId, parsed.data.name);
     }
-    await repository.updatePlayerAccountName(accountId, parsed.data.name);
+    if (parsed.data.gender !== undefined && (!existing || existing.gender !== parsed.data.gender)) {
+      await repository.updatePlayerAccountGender(accountId, parsed.data.gender);
+    }
     return { ok: true, data: undefined };
   } catch {
     return { ok: false, error: "Unable to update your profile." };
+  }
+}
+
+export async function updatePlayerGenderAction(input: unknown): Promise<PlayerActionResult<{ gender: "male" | "female" }>> {
+  const parsed = updatePlayerGenderSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Select a valid gender." };
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const existing = await repository.getPlayerAccount(accountId);
+    if (existing && existing.gender === parsed.data.gender) {
+      return { ok: true, data: { gender: parsed.data.gender } };
+    }
+    await repository.updatePlayerAccountGender(accountId, parsed.data.gender);
+    return { ok: true, data: { gender: parsed.data.gender } };
+  } catch {
+    return { ok: false, error: "Unable to update your gender." };
   }
 }
 

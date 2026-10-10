@@ -6,6 +6,7 @@ import type {
   MatchRecord,
   PlayerRecord,
   PlayerAccountRecord,
+  PlayerGender,
   PlayerSessionHistoryRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -29,6 +30,7 @@ export interface DomainRepository {
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
   updatePlayerAccountName(accountId: string, name: string): Promise<void>;
   updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
+  updatePlayerAccountGender(accountId: string, gender: PlayerGender): Promise<void>;
   joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;

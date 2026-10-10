@@ -31,6 +31,7 @@ export default async function PlayerProfilePage() {
         <PlayerProfileHeader
           initialName={account.name}
           initialUsername={account.username}
+          initialGender={account.gender}
           skillLevel={account.skillLevel}
           initialRating={account.initialRating}
         />

@@ -4,6 +4,7 @@ import PlayerProfilePage from "@/app/players/page";
 import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
+  updatePlayerGenderAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
@@ -246,13 +247,14 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(result).toEqual({ ok: true, data: { groupId: "grp_member" } });
   });
 
-  it("renders pencil icons beside display name and username and removes old display name editor section", async () => {
+  it("renders pencil icons beside display name, username, and gender and removes old display name editor section", async () => {
     const repository = new InMemoryRepositories({
       playerAccounts: [
         {
           id: testAccountId,
           username: "active_user",
           name: "Active User",
+          gender: "female",
           passwordHash: "hash",
           skillLevel: "intermediate",
           initialRating: 1000,
@@ -265,13 +267,15 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const pageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(pageElement);
 
-    // Displays name and username
+    // Displays name and username and gender
     expect(html).toContain("Active User");
     expect(html).toContain("@active_user");
+    expect(html).toContain("Female");
 
-    // Has pencil icons by display name and username
+    // Has pencil icons by display name, username, and gender
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
+    expect(html).toContain('aria-label="Edit gender"');
 
     // Has back button
     expect(html).toContain('aria-label="Go back"');
@@ -282,11 +286,12 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toContain('<label for="profile-name"');
   });
 
-  it("PlayerProfileHeader renders display name and username with pencil buttons", () => {
+  it("PlayerProfileHeader renders display name, username, and gender with pencil buttons", () => {
     const html = renderToStaticMarkup(
       <PlayerProfileHeader
         initialName="Jane Doe"
         initialUsername="janedoe"
+        initialGender="male"
         skillLevel="advanced"
         initialRating={1100}
       />
@@ -294,8 +299,10 @@ describe("PlayerProfilePage and Group Leaving", () => {
 
     expect(html).toContain("Jane Doe");
     expect(html).toContain("@janedoe");
+    expect(html).toContain("Male");
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
+    expect(html).toContain('aria-label="Edit gender"');
     expect(html).toContain("advanced · starting rating 1100");
   });
 
@@ -437,6 +444,75 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const result = await updatePlayerProfileAction({ name: "Current Name" });
     expect(result).toEqual({ ok: true, data: undefined });
     expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("allows updating gender to male or female and updates the repository", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "my_user",
+          name: "My User",
+          gender: "male",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const result = await updatePlayerGenderAction({ gender: "female" });
+    expect(result).toEqual({ ok: true, data: { gender: "female" } });
+
+    const updatedAccount = await repository.getPlayerAccount(testAccountId);
+    expect(updatedAccount?.gender).toBe("female");
+  });
+
+  it("does not save gender to the database if it is unchanged", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "my_user",
+          name: "My User",
+          gender: "female",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const updateSpy = vi.spyOn(repository, "updatePlayerAccountGender");
+
+    const result = await updatePlayerGenderAction({ gender: "female" });
+    expect(result).toEqual({ ok: true, data: { gender: "female" } });
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects updating to an invalid gender", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "my_user",
+          name: "My User",
+          gender: "male",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const result = await updatePlayerGenderAction({ gender: "other" });
+    expect(result).toEqual({ ok: false, error: "Select a valid gender." });
   });
 });
 
