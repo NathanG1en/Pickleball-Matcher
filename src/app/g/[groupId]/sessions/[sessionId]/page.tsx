@@ -50,8 +50,6 @@ export default async function ActiveSessionPage({
     redirect("/players");
   }
 
-  const viewerPlayer = players.find((p) => p.accountId === accountId);
-
   let initialProposal: RoundProposal | null = null;
   const latestStarted = startedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
