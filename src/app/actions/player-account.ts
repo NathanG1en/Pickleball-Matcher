@@ -3,9 +3,9 @@
 import { randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
-import { getActionRepository, requirePlayer } from "@/app/actions/action-context";
+import { getActionRepository, getActivePlayerAccountId, requirePlayer } from "@/app/actions/action-context";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
-import { joinPublicGroupSchema, playerLoginSchema, playerSignupSchema, updatePlayerProfileSchema } from "@/lib/validation/group";
+import { joinPublicGroupSchema, playerLoginSchema, playerSignupSchema, updatePlayerProfileSchema, updatePlayerUsernameSchema } from "@/lib/validation/group";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -107,10 +107,73 @@ export async function updatePlayerProfileAction(input: unknown): Promise<PlayerA
   if (!parsed.success) return { ok: false, error: "Enter a display name." };
   try {
     const accountId = await requirePlayer();
-    await getActionRepository().updatePlayerAccountName(accountId, parsed.data.name);
+    const repository = getActionRepository();
+    const existing = await repository.getPlayerAccount(accountId);
+    if (existing && existing.name === parsed.data.name) {
+      return { ok: true, data: undefined };
+    }
+    await repository.updatePlayerAccountName(accountId, parsed.data.name);
     return { ok: true, data: undefined };
   } catch {
     return { ok: false, error: "Unable to update your profile." };
+  }
+}
+
+export async function updatePlayerUsernameAction(input: unknown): Promise<PlayerActionResult<{ username: string }>> {
+  const raw =
+    input && typeof input === "object" && "username" in input && typeof input.username === "string"
+      ? input.username.replace(/^@/, "").trim()
+      : typeof input === "string"
+      ? input.replace(/^@/, "").trim()
+      : "";
+  const parsed = updatePlayerUsernameSchema.safeParse({ username: raw });
+  if (!parsed.success) {
+    return { ok: false, error: "Username must be 3 to 24 letters, numbers, or underscores." };
+  }
+  const username = parsed.data.username.toLowerCase();
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const existing = await repository.getPlayerAccountByUsername(username);
+    if (existing && existing.id !== accountId) {
+      return { ok: false, error: "That username is already taken." };
+    }
+    await repository.updatePlayerAccountUsername(accountId, username);
+    return { ok: true, data: { username } };
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")
+    ) {
+      return { ok: false, error: "That username is already taken." };
+    }
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update username." };
+  }
+}
+
+export async function checkUsernameAvailabilityAction(input: unknown): Promise<{ available: boolean }> {
+  const raw =
+    input && typeof input === "object" && "username" in input && typeof input.username === "string"
+      ? input.username.replace(/^@/, "").trim()
+      : typeof input === "string"
+      ? input.replace(/^@/, "").trim()
+      : "";
+  const normalized = raw.toLowerCase();
+  if (!normalized) {
+    return { available: true };
+  }
+  try {
+    const accountId = await getActivePlayerAccountId();
+    const repository = getActionRepository();
+    const existing = await repository.getPlayerAccountByUsername(normalized);
+    if (existing && existing.id !== accountId) {
+      return { available: false };
+    }
+    return { available: true };
+  } catch {
+    return { available: true };
   }
 }
 

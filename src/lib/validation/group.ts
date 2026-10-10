@@ -61,6 +61,10 @@ export const updatePlayerProfileSchema = z.object({
   name: z.string().trim().min(1).max(80),
 }).strict();
 
+export const updatePlayerUsernameSchema = z.object({
+  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+}).strict();
+
 export const joinPublicGroupSchema = z.object({
   groupId: entityIdSchema,
 }).strict();
