@@ -342,6 +342,47 @@ export class SessionService {
         version: round.version + 1,
       };
       await repository.updateRound(updated);
+
+      const session = await requiredSession(repository, round.sessionId);
+      const groupPlayers = await repository.listPlayers(session.groupId);
+      const playerAccountMap = new Map<string, string | null>(
+        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
+      );
+
+      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      for (const match of record.matches) {
+        if (match.status === "completed" && match.team1Score !== null && match.team2Score !== null) {
+          const mps = record.matchPlayers.filter((item) => item.matchId === match.id);
+          const t1 = mps.filter((m) => m.team === 1);
+          const t2 = mps.filter((m) => m.team === 2);
+          if (t1.length === 2 && t2.length === 2) {
+            const t1Acc1 = playerAccountMap.get(t1[0].playerId);
+            const t1Acc2 = playerAccountMap.get(t1[1].playerId);
+            if (t1Acc1 && t1Acc2) {
+              pairResults.push({
+                accountIdA: t1Acc1,
+                accountIdB: t1Acc2,
+                won: match.team1Score > match.team2Score,
+              });
+            }
+
+            const t2Acc1 = playerAccountMap.get(t2[0].playerId);
+            const t2Acc2 = playerAccountMap.get(t2[1].playerId);
+            if (t2Acc1 && t2Acc2) {
+              pairResults.push({
+                accountIdA: t2Acc1,
+                accountIdB: t2Acc2,
+                won: match.team2Score > match.team1Score,
+              });
+            }
+          }
+        }
+      }
+
+      if (pairResults.length > 0) {
+        await repository.recordMatchesSynergy(pairResults);
+      }
+
       return updated;
     });
   }
