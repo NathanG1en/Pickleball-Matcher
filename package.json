@@ -15,7 +15,10 @@
     "test:simulation": "vitest run --config vitest.simulation.config.ts",
     "test:e2e": "playwright test",
     "db:migrate": "node scripts/migrate.js",
-    "db:reset": "node scripts/migrate.js --reset"
+    "db:reset": "node scripts/migrate.js --reset",
+    "build:worker": "opennextjs-cloudflare build",
+    "preview:worker": "opennextjs-cloudflare build && wrangler dev",
+    "deploy:worker": "opennextjs-cloudflare build && wrangler deploy"
   },
   "keywords": [],
   "license": "UNLICENSED",
@@ -39,6 +42,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@opennextjs/cloudflare": "^1.20.10",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.20.5",
@@ -49,6 +53,7 @@
     "fast-check": "^4.10.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.149.0"
   }
 }
