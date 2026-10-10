@@ -75,7 +75,7 @@ export function RecentGroupsHome({ excludeGroupId }: { excludeGroupId?: string }
     <div className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
       <div className="flex items-center justify-between">
         <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
-          Your Groups on this Device ({groups.length})
+          Your Groups ({groups.length})
         </span>
       </div>
 

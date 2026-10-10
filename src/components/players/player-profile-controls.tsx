@@ -9,6 +9,7 @@ import {
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
+import { clearRecentGroups } from "@/lib/storage/recent-groups";
 import { Button } from "@/components/ui/button";
 
 function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -158,7 +159,7 @@ export function PlayerProfileHeader({
 
   return (
     <div className="min-w-0 flex-1 space-y-2">
-      <p className="text-xs font-black uppercase tracking-wider text-neutral-600">Player profile</p>
+      {/* <p className="text-xs font-black uppercase tracking-wider text-neutral-600">Player profile</p> */}
 
       {/* Display name row */}
       {isEditingName ? (
@@ -316,16 +317,29 @@ export function PlayerNameEditor({ initialName }: { initialName: string }) {
   </form>;
 }
 
-export function PlayerLogoutButton() {
+export function PlayerLogoutButton({ className }: { className?: string } = {}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const logout = async () => {
     setPending(true);
+    clearRecentGroups();
     await playerLogoutAction();
     router.replace("/");
     router.refresh();
   };
-  return <button type="button" onClick={logout} disabled={pending} className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047]">{pending ? "Signing out…" : "Log Out"}</button>;
+  return (
+    <button
+      type="button"
+      onClick={logout}
+      disabled={pending}
+      className={
+        className ??
+        "rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60 cursor-pointer"
+      }
+    >
+      {pending ? "Signing out…" : "Log Out"}
+    </button>
+  );
 }
 
 export function LeaveGroupButton({ groupId }: { groupId: string }) {

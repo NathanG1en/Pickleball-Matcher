@@ -102,7 +102,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const pageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(pageElement);
 
-    // Should display group names
+    // Should display back button and group names
+    expect(html).toContain("← Back");
     expect(html).toContain("Hosted League");
     expect(html).toContain("Regular League");
 
@@ -272,6 +273,10 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
 
+    // Has back button
+    expect(html).toContain('aria-label="Go back"');
+    expect(html).toContain("← Back");
+
     // The old display name editor form section is removed
     expect(html).not.toContain('id="profile-name"');
     expect(html).not.toContain('<label for="profile-name"');
@@ -287,7 +292,6 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    expect(html).toContain("Player profile");
     expect(html).toContain("Jane Doe");
     expect(html).toContain("@janedoe");
     expect(html).toContain('aria-label="Edit display name"');
