@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import {
-  addGroupOrganizerAction,
   removeGroupOrganizerAction,
 } from "@/app/actions/group-organizers";
 import { setActionRepository } from "@/app/actions/action-context";
