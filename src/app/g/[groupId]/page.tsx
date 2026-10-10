@@ -17,6 +17,7 @@ import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
+import { PlayerSearchDrawer } from "@/components/groups/player-search-drawer";
 
 export default async function GroupDashboardPage({
   params,
@@ -80,6 +81,7 @@ export default async function GroupDashboardPage({
       </header>
 
       <GroupOrganizersPanel groupId={groupId} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+      <PlayerSearchDrawer groupId={groupId} />
 
       {/* Mobile Add to Home Screen Tip */}
       <HomeScreenTip />

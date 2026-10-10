@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createPlayerAction, deletePlayerAction } from "@/app/actions/players";
+import { PlayerSearchDrawer } from "@/components/groups/player-search-drawer";
 import { PlayerRoster } from "@/components/players/player-roster";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
@@ -72,6 +73,13 @@ export function PlayersClient({
           {error}
         </div>
       )}
+
+      <PlayerSearchDrawer
+        groupId={groupId}
+        onPlayerAdded={(newP) => {
+          router.refresh();
+        }}
+      />
 
       <PlayerRoster
         groupId={groupId}
