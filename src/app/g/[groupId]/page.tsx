@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import {
   getActionRepository,
+  getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,8 @@ import { GroupVisibilityControl } from "@/components/groups/group-visibility-con
 import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
+import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
+import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
 
 export default async function GroupDashboardPage({
   params,
@@ -31,10 +34,18 @@ export default async function GroupDashboardPage({
     redirect("/setup");
   }
 
-  const [players, sessions] = await Promise.all([
+  let [players, sessions] = await Promise.all([
     repository.listPlayers(groupId),
     repository.listSessions(groupId),
   ]);
+  const accountId = await getActivePlayerAccountId();
+  const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
+  const isHost = accountId === group.ownerAccountId;
+  if (isHost && accountId && !players.some((player) => player.accountId === accountId)) {
+    await repository.joinPublicGroup(accountId, groupId);
+    players = await repository.listPlayers(groupId);
+  }
+  const organizers = isAccountOrganizer ? await repository.listGroupOrganizers(groupId) : [];
 
   const activeSession = sessions.find((s) => s.status === "active");
   const recentSessions = sessions.slice(0, 10);
@@ -44,7 +55,7 @@ export default async function GroupDashboardPage({
       <RecentGroupTracker groupId={groupId} groupName={group.name} />
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="mb-2 flex justify-end"><LogoutButton /></div>
+        <div className="mb-2 flex justify-end">{isAccountOrganizer ? <PlayerLogoutButton /> : <LogoutButton />}</div>
         <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight">{group.name}</h1>
         <p className="text-xs font-bold text-neutral-600 mt-1">
           {players.filter((p) => p.active).length} active players on roster
@@ -54,6 +65,8 @@ export default async function GroupDashboardPage({
         <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
 
       </header>
+
+      <GroupOrganizersPanel groupId={groupId} players={players} organizers={organizers} isHost={isHost} />
 
       {/* Mobile Add to Home Screen Tip */}
       <HomeScreenTip />
@@ -92,28 +105,6 @@ export default async function GroupDashboardPage({
           </Link>
         </section>
       )}
-
-      {/* Quick Nav */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href={`/g/${groupId}/players`}
-          className="p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] text-left transition-all"
-        >
-          <span className="font-display text-lg font-black uppercase text-black block">Roster</span>
-          <span className="text-xs font-bold text-neutral-600 mt-0.5 block">
-            {players.length} registered players
-          </span>
-        </Link>
-        <Link
-          href={`/setup`}
-          className="p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] text-left transition-all"
-        >
-          <span className="font-display text-lg font-black uppercase text-black block">New Group</span>
-          <span className="text-xs font-bold text-neutral-600 mt-0.5 block">
-            Create another group
-          </span>
-        </Link>
-      </div>
 
       {/* Recent Sessions */}
       <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">

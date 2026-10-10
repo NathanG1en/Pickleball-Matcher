@@ -34,7 +34,7 @@ export function PlayerSignupForm() {
     setFieldErrors({});
     const result = await playerSignupAction({ username, name, password, skillLevel, customRating, initialRating });
     if (result.ok) {
-      router.push("/players/groups");
+      router.push(getReturnPath() ?? "/players/groups");
       router.refresh();
       return;
     }
@@ -80,7 +80,7 @@ export function PlayerSignupForm() {
       <Button type="submit" variant="primary" size="lg" disabled={pending} className="w-full font-display text-lg uppercase">
         {pending ? "Creating account…" : "Sign Up"}
       </Button>
-      <p className="text-center text-sm font-bold text-neutral-700">Already have an account? <Link href="/player-login" className="underline">Sign in</Link></p>
+      <p className="text-center text-sm font-bold text-neutral-700">Already have an account? <Link href="/player-login" onClick={(event) => { const next = getReturnPath(); if (next) { event.preventDefault(); router.push(`/player-login?next=${encodeURIComponent(next)}`); } }} className="underline">Sign in</Link></p>
     </form>
   );
 }
@@ -90,4 +90,9 @@ const errorInputClass = "w-full rounded-xl border-2 border-red-600 bg-red-50 px-
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return <div><label htmlFor={id} className="mb-1.5 block text-xs font-black uppercase tracking-wider">{label}</label>{children}</div>;
+}
+
+function getReturnPath(): string | null {
+  const requested = new URLSearchParams(window.location.search).get("next");
+  return requested?.startsWith("/temporary") ? requested : null;
 }

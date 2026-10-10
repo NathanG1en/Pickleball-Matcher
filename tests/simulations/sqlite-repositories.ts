@@ -4,6 +4,7 @@ import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerSessionHistoryRecord,
   MatchPlayerRecord,
@@ -25,6 +26,7 @@ interface GroupRow {
   organizer_pin_hash: string;
   created_at: string;
   is_public: number;
+  owner_account_id: string | null;
 }
 
 interface PlayerAccountRow {
@@ -132,7 +134,8 @@ export class SqliteDomainRepository implements DomainRepository {
         name TEXT NOT NULL UNIQUE,
         organizer_pin_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        is_public INTEGER NOT NULL DEFAULT 0
+        is_public INTEGER NOT NULL DEFAULT 0,
+        owner_account_id TEXT REFERENCES players(id) ON DELETE SET NULL
       );
 
       CREATE TABLE IF NOT EXISTS players (
@@ -153,6 +156,12 @@ export class SqliteDomainRepository implements DomainRepository {
         ON players(group_id, account_id) WHERE account_id IS NOT NULL;
       CREATE UNIQUE INDEX IF NOT EXISTS players_username_case_insensitive_unique_idx
         ON players(lower(username)) WHERE username IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS group_organizers (
+        group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        PRIMARY KEY (group_id, account_id)
+      );
 
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -294,6 +303,7 @@ export class SqliteDomainRepository implements DomainRepository {
       organizerPinHash: row.organizer_pin_hash,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
+      ownerAccountId: row.owner_account_id,
     };
   }
 
@@ -307,6 +317,7 @@ export class SqliteDomainRepository implements DomainRepository {
       organizerPinHash: row.organizer_pin_hash,
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
+      ownerAccountId: row.owner_account_id,
     }));
   }
 
@@ -322,6 +333,51 @@ export class SqliteDomainRepository implements DomainRepository {
       `)
       .all(accountId ?? "", search.trim(), search.trim()) as unknown as { id: string; name: string; player_count: number; is_member: number }[];
     return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member) }));
+  }
+
+  async listAccountGroups(accountId: string) {
+    const rows = this.db.prepare(`
+      SELECT g.id, g.name, COUNT(DISTINCT roster.id) AS player_count,
+        MAX(CASE WHEN mine.id IS NOT NULL THEN 1 ELSE 0 END) AS is_member,
+        MAX(CASE WHEN g.owner_account_id = ? THEN 1 ELSE 0 END) AS is_host,
+        MAX(CASE WHEN g.owner_account_id = ? OR org.account_id IS NOT NULL THEN 1 ELSE 0 END) AS is_organizer
+      FROM groups g
+      LEFT JOIN players roster ON roster.group_id = g.id AND roster.active = 1
+      LEFT JOIN players mine ON mine.group_id = g.id AND mine.account_id = ? AND mine.active = 1
+      LEFT JOIN group_organizers org ON org.group_id = g.id AND org.account_id = ?
+      WHERE g.owner_account_id = ? OR org.account_id = ? OR mine.id IS NOT NULL
+      GROUP BY g.id, g.name ORDER BY g.name
+    `).all(accountId, accountId, accountId, accountId, accountId, accountId) as unknown as { id: string; name: string; player_count: number; is_member: number; is_host: number; is_organizer: number }[];
+    return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member), isHost: Boolean(row.is_host), isOrganizer: Boolean(row.is_organizer) }));
+  }
+
+  async isGroupOrganizer(groupId: string, accountId: string): Promise<boolean> {
+    return Boolean(this.db.prepare(`
+      SELECT 1 FROM groups WHERE id = ? AND owner_account_id = ?
+      UNION ALL SELECT 1 FROM group_organizers WHERE group_id = ? AND account_id = ?
+      LIMIT 1
+    `).get(groupId, accountId, groupId, accountId));
+  }
+
+  async addGroupOrganizer(groupId: string, accountId: string): Promise<void> {
+    this.db.prepare(`INSERT OR IGNORE INTO group_organizers (group_id, account_id)
+      SELECT ?, ? WHERE EXISTS (SELECT 1 FROM groups WHERE id = ?)
+      AND EXISTS (SELECT 1 FROM players WHERE id = ? AND username IS NOT NULL)`)
+      .run(groupId, accountId, groupId, accountId);
+  }
+
+  async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
+    const rows = this.db.prepare(`
+      SELECT p.id AS account_id, p.username, p.name, 1 AS is_host
+      FROM groups g JOIN players p ON p.id = g.owner_account_id
+      WHERE g.id = ? AND p.username IS NOT NULL
+      UNION ALL
+      SELECT p.id AS account_id, p.username, p.name, 0 AS is_host
+      FROM group_organizers o JOIN players p ON p.id = o.account_id
+      WHERE o.group_id = ? AND p.username IS NOT NULL
+      ORDER BY is_host DESC, name
+    `).all(groupId, groupId) as unknown as { account_id: string; username: string; name: string; is_host: number }[];
+    return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: Boolean(row.is_host) }));
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
@@ -361,7 +417,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const group = await this.getGroup(groupId);
     const account = await this.getPlayerAccount(accountId);
-    if (!group?.isPublic || !account) return null;
+    if ((!group?.isPublic && group?.ownerAccountId !== accountId) || !account) return null;
     const existing = this.db.prepare("SELECT * FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId) as PlayerRow | undefined;
     if (existing) {
       this.db.prepare("UPDATE players SET active = 1 WHERE id = ?").run(existing.id);
@@ -447,7 +503,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertGroup(group: GroupRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id) VALUES (?, ?, ?, ?, ?, ?)",
       )
       .run(
         group.id,
@@ -455,6 +511,7 @@ export class SqliteDomainRepository implements DomainRepository {
         group.organizerPinHash,
         group.createdAt.toISOString(),
         group.isPublic ? 1 : 0,
+        group.ownerAccountId ?? null,
       );
   }
 

@@ -1,6 +1,7 @@
 import type {
   AttendanceRecord,
   GroupRecord,
+  GroupOrganizerRecord,
   PublicGroupRecord,
   MatchRecord,
   PlayerRecord,
@@ -18,6 +19,10 @@ export interface DomainRepository {
   getGroup(groupId: string): Promise<GroupRecord | null>;
   getGroupsByName(name: string): Promise<readonly GroupRecord[]>;
   listPublicGroups(search: string, accountId?: string): Promise<readonly PublicGroupRecord[]>;
+  listAccountGroups(accountId: string): Promise<readonly PublicGroupRecord[]>;
+  isGroupOrganizer(groupId: string, accountId: string): Promise<boolean>;
+  addGroupOrganizer(groupId: string, accountId: string): Promise<void>;
+  listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]>;
   getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null>;
   getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
