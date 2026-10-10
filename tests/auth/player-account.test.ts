@@ -17,6 +17,7 @@ describe("player account authentication", () => {
     const result = await playerSignupAction({
       username: "Court_Player",
       name: "Court Player",
+      gender: "female",
       password: "secure-password-123",
       skillLevel: "advanced",
       customRating: false,
@@ -25,7 +26,7 @@ describe("player account authentication", () => {
 
     expect(result.ok).toBe(true);
     const created = await repository.getPlayerAccountByUsername("court_player");
-    expect(created).toMatchObject({ username: "court_player", name: "Court Player", skillLevel: "advanced", initialRating: 1_100 });
+    expect(created).toMatchObject({ username: "court_player", name: "Court Player", gender: "female", skillLevel: "advanced", initialRating: 1_100 });
     expect(created?.passwordHash).not.toBe("secure-password-123");
   });
 
@@ -77,6 +78,29 @@ describe("player account authentication", () => {
       fieldErrors: {
         username: ["That username is already taken."],
         password: [expect.any(String)],
+      },
+    });
+  });
+
+  it("rejects signup with an invalid or unselected gender", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+
+    const result = await playerSignupAction({
+      username: "valid_user",
+      name: "Valid User",
+      gender: "",
+      password: "valid-password-123",
+      skillLevel: "beginner",
+      customRating: false,
+      initialRating: 900,
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      fieldErrors: {
+        gender: ["Select your gender (male or female)."],
       },
     });
   });

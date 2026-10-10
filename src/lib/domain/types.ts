@@ -10,11 +10,13 @@ export interface GroupRecord {
 }
 
 export type PlayerSkillLevel = "beginner" | "intermediate" | "advanced";
+export type PlayerGender = "male" | "female";
 
 export interface PlayerAccountRecord {
   readonly id: string;
   readonly username: string;
   name: string;
+  gender?: PlayerGender;
   readonly passwordHash: string;
   readonly skillLevel: PlayerSkillLevel;
   readonly initialRating: number;
@@ -47,6 +49,7 @@ export interface PlayerRecord {
   readonly active: boolean;
   readonly accountId?: string | null;
   readonly username?: string | null;
+  gender?: PlayerGender | null;
 }
 
 export interface PlayerSessionHistoryRecord {

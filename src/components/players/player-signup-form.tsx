@@ -18,6 +18,7 @@ export function PlayerSignupForm() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [skillLevel, setSkillLevel] = useState<keyof typeof ratings>("intermediate");
@@ -32,7 +33,7 @@ export function PlayerSignupForm() {
     setPending(true);
     setError(null);
     setFieldErrors({});
-    const result = await playerSignupAction({ username, name, password, skillLevel, customRating, initialRating });
+    const result = await playerSignupAction({ username, name, gender, password, skillLevel, customRating, initialRating });
     if (result.ok) {
       router.push(getReturnPath() ?? "/players/groups");
       router.refresh();
@@ -53,6 +54,22 @@ export function PlayerSignupForm() {
       <Field label="Display name" id="player-name">
         <input id="player-name" required maxLength={80} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Name shown to your groups" aria-invalid={Boolean(fieldErrors.name?.length)} aria-describedby={fieldErrors.name?.length ? "player-name-error" : undefined} className={fieldErrors.name?.length ? errorInputClass : inputClass} />
         {fieldErrors.name?.[0] && <p id="player-name-error" className="mt-1 text-xs font-bold text-red-700">{fieldErrors.name[0]}</p>}
+      </Field>
+      <Field label="Gender" id="player-gender">
+        <select
+          id="player-gender"
+          required
+          value={gender}
+          onChange={(event) => setGender(event.target.value as "male" | "female")}
+          aria-invalid={Boolean(fieldErrors.gender?.length)}
+          aria-describedby={fieldErrors.gender?.length ? "player-gender-error" : undefined}
+          className={fieldErrors.gender?.length ? errorInputClass : inputClass}
+        >
+          <option value="" disabled>Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        {fieldErrors.gender?.[0] && <p id="player-gender-error" className="mt-1 text-xs font-bold text-red-700">{fieldErrors.gender[0]}</p>}
       </Field>
       <Field label="Password" id="player-password">
         <div className="relative"><input id="player-password" required minLength={10} maxLength={72} type={passwordVisible ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} aria-invalid={Boolean(fieldErrors.password?.length)} aria-describedby={fieldErrors.password?.length ? "player-password-error" : "player-password-hint"} className={`${fieldErrors.password?.length ? errorInputClass : inputClass} pr-14`} /><VisibilityToggle visible={passwordVisible} onToggle={() => setPasswordVisible((visible) => !visible)} label="password" /></div>

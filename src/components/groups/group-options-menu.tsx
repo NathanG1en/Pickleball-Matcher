@@ -103,7 +103,7 @@ export function GroupOptionsMenu({
             <form onSubmit={handleDelete} className="space-y-3">
               <div>
                 <label htmlFor="confirm-group-name" className="block text-xs font-black uppercase tracking-wider text-neutral-600 mb-1">
-                  Type <span className="text-black font-black select-all">"{groupName}"</span> to confirm
+                  Type <span className="text-black font-black select-all">&quot;{groupName}&quot;</span> to confirm
                 </label>
                 <input
                   id="confirm-group-name"

@@ -4,6 +4,7 @@ import type {
   GroupRecord,
   GroupOrganizerRecord,
   PlayerAccountRecord,
+  PlayerGender,
   PlayerSessionHistoryRecord,
   MatchPlayerRecord,
   MatchRecord,
@@ -180,13 +181,22 @@ export class InMemoryRepositories implements DomainRepository {
     (account as { username: string }).username = normalized;
   }
 
+  async updatePlayerAccountGender(accountId: string, gender: PlayerGender) {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return;
+    account.gender = gender;
+    this.state.players = this.state.players.map((player) =>
+      player.accountId === accountId ? { ...player, gender } : player,
+    );
+  }
+
   async joinPublicGroup(accountId: string, groupId: string) {
     const account = this.state.playerAccounts.find((item) => item.id === accountId);
     const group = this.state.groups.find((item) => item.id === groupId && (item.isPublic === true || item.ownerAccountId === accountId));
     if (!account || !group) return null;
     const existing = this.state.players.find((player) => player.groupId === groupId && player.accountId === accountId);
     if (existing) {
-      const reactivated = { ...existing, active: true, username: existing.username ?? account.username };
+      const reactivated = { ...existing, active: true, username: existing.username ?? account.username, gender: existing.gender ?? account.gender ?? null };
       this.state.players = this.state.players.map((player) => player.id === existing.id ? reactivated : player);
       return reactivated;
     }
@@ -200,6 +210,7 @@ export class InMemoryRepositories implements DomainRepository {
       active: true,
       accountId,
       username: account.username,
+      gender: account.gender ?? null,
     };
     this.state.players.push(player);
     return player;
