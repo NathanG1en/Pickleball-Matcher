@@ -434,10 +434,10 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE players SET gender = ? WHERE account_id = ?").run(gender, accountId);
   }
 
-  async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
+  async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const group = await this.getGroup(groupId);
     const account = await this.getPlayerAccount(accountId);
-    if ((!group?.isPublic && group?.ownerAccountId !== accountId) || !account) return null;
+    if (!group || !account) return null;
     const existing = this.db.prepare("SELECT * FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId) as PlayerRow | undefined;
     if (existing) {
       this.db.prepare("UPDATE players SET active = 1 WHERE id = ?").run(existing.id);
@@ -455,6 +455,12 @@ export class SqliteDomainRepository implements DomainRepository {
     };
     await this.createPlayer(player);
     return player;
+  }
+
+  async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
+    const group = await this.getGroup(groupId);
+    if (!group?.isPublic && group?.ownerAccountId !== accountId) return null;
+    return this.addPlayerToGroup(accountId, groupId);
   }
 
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {

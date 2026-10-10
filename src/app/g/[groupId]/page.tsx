@@ -43,7 +43,7 @@ export default async function GroupDashboardPage({
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
   const isHost = accountId === group.ownerAccountId;
   if (isHost && accountId && !players.some((player) => player.accountId === accountId)) {
-    await repository.joinPublicGroup(accountId, groupId);
+    await repository.addPlayerToGroup(accountId, groupId);
     players = await repository.listPlayers(groupId);
   }
 
