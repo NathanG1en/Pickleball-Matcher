@@ -265,6 +265,22 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
+  async deleteGroup(groupId: string) {
+    this.state.groups = this.state.groups.filter((g) => g.id !== groupId);
+    this.state.groupOrganizers = this.state.groupOrganizers.filter((o) => o.groupId !== groupId);
+    const sessionIds = new Set(this.state.sessions.filter((s) => s.groupId === groupId).map((s) => s.id));
+    this.state.sessions = this.state.sessions.filter((s) => s.groupId !== groupId);
+    const roundIds = new Set(this.state.rounds.filter((r) => sessionIds.has(r.sessionId)).map((r) => r.id));
+    this.state.rounds = this.state.rounds.filter((r) => !sessionIds.has(r.sessionId));
+    const matchIds = new Set(this.state.matches.filter((m) => roundIds.has(m.roundId)).map((m) => m.id));
+    this.state.matches = this.state.matches.filter((m) => !roundIds.has(m.roundId));
+    this.state.matchPlayers = this.state.matchPlayers.filter((mp) => !matchIds.has(mp.matchId));
+    this.state.roundSits = this.state.roundSits.filter((rs) => !roundIds.has(rs.roundId));
+    this.state.attendance = this.state.attendance.filter((a) => !sessionIds.has(a.sessionId));
+    this.state.players = this.state.players.filter((p) => p.groupId !== groupId);
+    this.writeCount += 1;
+  }
+
   async insertGroup(group: GroupRecord) {
     this.state.groups.push(structuredClone(group));
     this.writeCount += 1;

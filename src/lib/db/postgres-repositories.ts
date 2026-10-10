@@ -408,6 +408,10 @@ export class PostgresRepositories implements DomainRepository {
     await this.query`update groups set name = ${name} where id = ${groupId}`;
   }
 
+  async deleteGroup(groupId: string): Promise<void> {
+    await this.query`delete from groups where id = ${groupId}`;
+  }
+
   async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
     const rows = await this.query<{
       session_id: string;

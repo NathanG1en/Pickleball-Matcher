@@ -33,6 +33,7 @@ export interface DomainRepository {
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;
   updateGroupName(groupId: string, name: string): Promise<void>;
+  deleteGroup(groupId: string): Promise<void>;
   listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]>;
   insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;

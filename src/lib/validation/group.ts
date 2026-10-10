@@ -84,6 +84,11 @@ export const updateGroupNameSchema = z.object({
   name: z.string().trim().min(1, "Group name cannot be blank.").max(80, "Group name must be 80 characters or fewer."),
 }).strict();
 
+export const deleteGroupSchema = z.object({
+  groupId: entityIdSchema,
+  confirmationName: z.string().trim().min(1, "Enter the group name to confirm."),
+}).strict();
+
 export const createPlayerSchema = z
   .object({
     groupId: entityIdSchema,

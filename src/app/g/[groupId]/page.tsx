@@ -8,14 +8,14 @@ import {
   requireOrganizer,
 } from "@/app/actions/action-context";
 import { Badge } from "@/components/ui/badge";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
 import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
-import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
+import { BackButton } from "@/components/groups/back-button";
+import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 
 export default async function GroupDashboardPage({
   params,
@@ -57,7 +57,14 @@ export default async function GroupDashboardPage({
       <RecentGroupTracker groupId={groupId} groupName={group.name} />
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="mb-2 flex justify-end">{isAccountOrganizer ? <PlayerLogoutButton /> : <LogoutButton />}</div>
+        <div className="mb-4 flex items-center justify-between">
+          <BackButton fallbackHref={isAccountOrganizer ? "/players" : "/"} />
+          <GroupOptionsMenu
+            groupId={groupId}
+            groupName={group.name}
+            isAccountOrganizer={isAccountOrganizer}
+          />
+        </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={true} />
         <p className="text-xs font-bold text-neutral-600 mt-1">
           {players.filter((p) => p.active).length} active players on roster
