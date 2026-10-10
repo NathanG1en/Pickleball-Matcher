@@ -370,7 +370,12 @@ export class PostgresRepositories implements DomainRepository {
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
     const rows = await this.query<{ id: string }[]>`
       update players set active = false
-      where group_id = ${groupId} and account_id = ${accountId} and active = true
+      where group_id = ${groupId}
+        and account_id = ${accountId}
+        and active = true
+        and not exists (
+          select 1 from groups where id = ${groupId} and owner_account_id = ${accountId}
+        )
       returning id
     `;
     return rows.length > 0;

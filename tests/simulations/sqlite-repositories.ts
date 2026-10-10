@@ -438,6 +438,8 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async leavePublicGroup(accountId: string, groupId: string): Promise<boolean> {
+    const group = await this.getGroup(groupId);
+    if (group?.ownerAccountId === accountId) return false;
     const result = this.db.prepare(
       "UPDATE players SET active = 0 WHERE group_id = ? AND account_id = ? AND active = 1",
     ).run(groupId, accountId);

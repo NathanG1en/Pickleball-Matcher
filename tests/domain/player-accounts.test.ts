@@ -49,4 +49,22 @@ describe("player account group membership and history", () => {
     expect((await repository.listPlayers("public"))[0].name).toBe("New Display Name");
     expect(history).toMatchObject([{ sessionId: "session-1", groupName: "Public Group", wins: 1, losses: 0, rating: 910 }]);
   });
+
+  it("prevents hosts from leaving their own group while allowing other members to leave", async () => {
+    const repository = new InMemoryRepositories({
+      groups: [
+        { id: "hosted", name: "Hosted Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true, ownerAccountId: account.id },
+        { id: "other", name: "Other Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true, ownerAccountId: "other-owner" },
+      ],
+      playerAccounts: [account],
+    });
+    await repository.joinPublicGroup(account.id, "hosted");
+    await repository.joinPublicGroup(account.id, "other");
+
+    const leftHosted = await repository.leavePublicGroup(account.id, "hosted");
+    expect(leftHosted).toBe(false);
+
+    const leftOther = await repository.leavePublicGroup(account.id, "other");
+    expect(leftOther).toBe(true);
+  });
 });

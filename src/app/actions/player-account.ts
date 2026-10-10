@@ -132,7 +132,12 @@ export async function leavePublicGroupAction(input: unknown): Promise<PlayerActi
   if (!parsed.success) return { ok: false, error: "Choose a valid group." };
   try {
     const accountId = await requirePlayer();
-    const left = await getActionRepository().leavePublicGroup(accountId, parsed.data.groupId);
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (group?.ownerAccountId === accountId) {
+      return { ok: false, error: "Hosts cannot leave their own group." };
+    }
+    const left = await repository.leavePublicGroup(accountId, parsed.data.groupId);
     if (!left) return { ok: false, error: "You are no longer a member of this group." };
     return { ok: true, data: { groupId: parsed.data.groupId } };
   } catch {
