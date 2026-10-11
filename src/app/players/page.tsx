@@ -4,7 +4,7 @@ import { getActionRepository } from "@/app/actions/action-context";
 import { getActivePlayerAccountId } from "@/app/actions/action-context";
 import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
-import { BackButton } from "@/components/groups/back-button";
+import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 
 export default async function PlayerProfilePage() {
@@ -84,9 +84,9 @@ export default async function PlayerProfilePage() {
       )}
 
       <section className="grid grid-cols-3 gap-3 text-center">
-        <Stat label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
-        <Stat label="Wins" value={wins} />
-        <Stat label="Losses" value={losses} />
+        <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
+        <StatCard label="Wins" value={wins} />
+        <StatCard label="Losses" value={losses} />
       </section>
 
       <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 shadow-[5px_5px_0px_0px_#000]">
@@ -105,8 +105,4 @@ export default async function PlayerProfilePage() {
       </section>
     </section>
   </main>;
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-2xl border-2 border-black bg-white p-3 shadow-[3px_3px_0px_0px_#000]"><p className="font-display text-2xl font-black">{value}</p><p className="text-[10px] font-black uppercase tracking-wider text-neutral-600">{label}</p></div>;
 }

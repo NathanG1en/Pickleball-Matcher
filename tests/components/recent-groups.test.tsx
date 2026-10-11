@@ -90,13 +90,16 @@ describe("Recent Groups Storage & Components", () => {
     expect(recents).toHaveLength(0);
   });
 
-  it("renders RecentGroupsHome hero card when 1 group is stored", () => {
+  it("renders RecentGroupsHome list when 1 group is stored", () => {
     saveRecentGroup({ id: "grp-hero", name: "Sunset Pickleballers" });
 
     const html = renderToStaticMarkup(<RecentGroupsHome />);
     expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Group");
+    expect(html).toContain("Your Groups (1)");
     expect(html).toContain("/g/grp-hero");
+    expect(html).toContain("Find groups");
+    expect(html).toContain("/players/groups");
+    expect(html).toContain("aria-label=\"Forget Sunset Pickleballers\"");
   });
 
   it("renders RecentGroupsHome list when multiple groups are stored", () => {
@@ -107,6 +110,10 @@ describe("Recent Groups Storage & Components", () => {
     expect(html).toContain("Alpha League");
     expect(html).toContain("Beta League");
     expect(html).toContain("Your Groups (2)");
+    expect(html).toContain("Find groups");
+    expect(html).toContain("/players/groups");
+    expect(html).toContain("aria-label=\"Forget Alpha League\"");
+    expect(html).toContain("title=\"Forget\"");
   });
 
   it("renders nothing when storage is empty", () => {

@@ -18,7 +18,10 @@ export default async function ActiveSessionPage({
 }) {
   const { groupId, sessionId } = await params;
   const repository = getActionRepository();
-  const accountId = await getActivePlayerAccountId();
+  const [accountId, guestPlayerId] = await Promise.all([
+    getActivePlayerAccountId(),
+    (await import("@/lib/auth/guest-session")).getGuestPlayerIdForGroup(groupId),
+  ]);
   const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
     repository.getGroup(groupId),
     repository.getSession(sessionId),
@@ -31,17 +34,15 @@ export default async function ActiveSessionPage({
     redirect(`/g/${groupId}`);
   }
 
-  // If completed, redirect back to dashboard
-  if (sessionRecord.status === "completed") {
-    redirect(`/g/${groupId}`);
-  }
-
   const organizerSession = await getActiveOrganizerSession();
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
   const isAccountOrganizer = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
-  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
-  const viewerPlayer = players.find((p) => p.accountId === accountId);
+  const isGuestMember = Boolean(guestPlayerId && players.some((player) => player.id === guestPlayerId && player.active));
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
+  const viewerPlayer = accountId
+    ? players.find((p) => p.accountId === accountId)
+    : (guestPlayerId ? players.find((p) => p.id === guestPlayerId) : undefined);
 
   if (!isOrganizer && !isMember) {
     if (!accountId) {
@@ -54,7 +55,7 @@ export default async function ActiveSessionPage({
   const latestStarted = startedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  if (!isRoundInProgress && isOrganizer) {
+  if (sessionRecord.status !== "completed" && !isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
       initialProposal = await sessionService.proposeRound(sessionId);
@@ -126,6 +127,7 @@ export default async function ActiveSessionPage({
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
       <SessionManagerClient
         groupId={groupId}
+        groupName={group.name}
         session={sessionRecord}
         players={players}
         attendance={attendance}

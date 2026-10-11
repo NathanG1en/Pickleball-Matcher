@@ -17,6 +17,7 @@ import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/results-entry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BackButton } from "@/components/groups/back-button";
 import type {
   AttendanceRecord,
   PlayerRecord,
@@ -29,6 +30,7 @@ import type { CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
+  readonly groupName?: string;
   readonly session: SessionRecord;
   readonly players: readonly PlayerRecord[];
   readonly attendance?: readonly AttendanceRecord[];
@@ -43,6 +45,7 @@ export interface SessionManagerClientProps {
 
 export function SessionManagerClient({
   groupId,
+  groupName,
   session,
   players,
   attendance = [],
@@ -423,6 +426,78 @@ export function SessionManagerClient({
       })
     : [];
 
+  const isCompletedSession = session.status === "completed";
+  const allSessionRounds = startedRounds;
+  const totalSessionMatches = allSessionRounds.reduce((acc, r) => acc + r.matches.length, 0);
+
+  // Calculate participating player statistics for the session
+  const attendeePlayerIds = new Set<string>();
+  for (const att of currentAttendance) {
+    attendeePlayerIds.add(att.playerId);
+  }
+  for (const sr of allSessionRounds) {
+    for (const mp of sr.matchPlayers) {
+      attendeePlayerIds.add(mp.playerId);
+    }
+    for (const sit of sr.sits) {
+      attendeePlayerIds.add(sit.playerId);
+    }
+  }
+
+  const sessionPlayerStats = Array.from(attendeePlayerIds)
+    .map((pId) => {
+      const player = players.find((p) => p.id === pId);
+      let gamesPlayed = 0;
+      let wins = 0;
+      let losses = 0;
+
+      for (const sr of allSessionRounds) {
+        for (const m of sr.matches) {
+          if (m.status !== "completed" || m.team1Score === null || m.team2Score === null) continue;
+          const mp = sr.matchPlayers.find((entry) => entry.matchId === m.id && entry.playerId === pId);
+          if (!mp) continue;
+          gamesPlayed += 1;
+          if (
+            (mp.team === 1 && m.team1Score > m.team2Score) ||
+            (mp.team === 2 && m.team2Score > m.team1Score)
+          ) {
+            wins += 1;
+          } else if (
+            (mp.team === 1 && m.team1Score < m.team2Score) ||
+            (mp.team === 2 && m.team2Score < m.team1Score)
+          ) {
+            losses += 1;
+          }
+        }
+      }
+
+      const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+
+      return {
+        id: pId,
+        name: player?.name ?? playerNames[pId] ?? pId,
+        gamesPlayed,
+        wins,
+        losses,
+        winRate,
+      };
+    })
+    .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || a.name.localeCompare(b.name));
+
+  let durationFormatted: string | null = null;
+  if (session.endedAt && session.startedAt) {
+    const startMs = new Date(session.startedAt).getTime();
+    const endMs = new Date(session.endedAt).getTime();
+    const diffMinutes = Math.max(1, Math.round((endMs - startMs) / (1000 * 60)));
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    if (hours > 0) {
+      durationFormatted = `${hours}h ${mins}m`;
+    } else {
+      durationFormatted = `${mins}m`;
+    }
+  }
+
   const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
 
   if (isEnded || session.status === "completed") {
@@ -446,30 +521,35 @@ export function SessionManagerClient({
     <div className="space-y-6 text-black">
       {/* Top Header Controls */}
       <div className="flex items-center justify-between">
-        <Link
-          href={`/g/${groupId}`}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
-        >
-          ← Group Dashboard
-        </Link>
-        {canManage && (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setShowAttendanceModal(true)}
-              className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-            >
-              Attendance
-            </button>
-            <button
-              type="button"
-              onClick={handleEndSession}
-              disabled={isPending}
-              className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-            >
-              End Session
-            </button>
-          </div>
+        <BackButton
+          fallbackHref={`/g/${groupId}`}
+          label="← Back to Group"
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+        />
+        {isCompletedSession ? (
+          <Badge variant="muted" className="text-xs font-black uppercase">
+            Completed Session
+          </Badge>
+        ) : (
+          canManage && (
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAttendanceModal(true)}
+                className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              >
+                Attendance
+              </button>
+              <button
+                type="button"
+                onClick={handleEndSession}
+                disabled={isPending}
+                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              >
+                End Session
+              </button>
+            </div>
+          )
         )}
       </div>
 
@@ -479,184 +559,453 @@ export function SessionManagerClient({
         </div>
       )}
 
-      {/* Main Mode: Round In Progress (Score Entry) OR Proposed Round */}
-      {isRoundInProgress ? (
-        <div className="space-y-4">
-          <ResultsEntryView
-            roundId={latestStarted.round.id}
-            roundNumber={latestStarted.round.roundNumber}
-            matches={scoreEntries}
-            fieldErrors={fieldErrors}
-            isPending={isPending}
-            onSubmitResult={canManage ? handleSaveResult : undefined}
-            onCancelMatch={canManage ? handleCancelMatch : undefined}
-            onNextRound={canManage ? handleNextRound : undefined}
-            canManage={canManage}
-          />
-          {canManage && (
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={handleUndo}
-                disabled={isPending}
-                className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black underline cursor-pointer"
-              >
-                Undo Round {latestStarted.round.roundNumber}
-              </button>
+      {/* Main Mode: Completed Session Full View OR Active Round Flow */}
+      {isCompletedSession ? (
+        <div className="space-y-6" data-testid="completed-session-full-view">
+          {/* Completed Session Overview Card */}
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+            <div>
+              {groupName && (
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-500 block mb-1">
+                  {groupName}
+                </span>
+              )}
+              <h2 className="font-display text-2xl font-black uppercase text-black">
+                Session Summary
+              </h2>
+              <p className="text-sm font-bold text-neutral-600 mt-1">
+                {new Date(session.startedAt).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
+                <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Rounds</span>
+                <span className="font-display text-xl font-black text-black">{allSessionRounds.length}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+                <span className="font-display text-xl font-black text-black">{totalSessionMatches}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+                <span className="font-display text-xl font-black text-black">{sessionPlayerStats.length}</span>
+              </div>
+            </div>
+
+            {/* Time / Duration info */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
+              <span>
+                <strong className="text-black">Started:</strong>{" "}
+                {new Date(session.startedAt).toLocaleTimeString(undefined, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </span>
+              {session.endedAt && (
+                <span>
+                  <strong className="text-black">Ended:</strong>{" "}
+                  {new Date(session.endedAt).toLocaleTimeString(undefined, {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
+              {durationFormatted && (
+                <span>
+                  <strong className="text-black">Duration:</strong> {durationFormatted}
+                </span>
+              )}
+            </div>
+          </section>
+
+          {/* Session Player Leaderboard / Roster */}
+          {sessionPlayerStats.length > 0 && (
+            <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+              <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+                Player Summary
+              </h3>
+              <div className="divide-y-2 divide-neutral-100">
+                {sessionPlayerStats.map((stat) => (
+                  <div key={stat.id} className="py-2.5 flex items-center justify-between">
+                    <div>
+                      <span className="font-black text-black text-sm block">{stat.name}</span>
+                      <span className="text-xs font-bold text-neutral-500">
+                        {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg border-2 border-black bg-neutral-50 shadow-[1px_1px_0px_0px_#000]">
+                        {stat.wins}W – {stat.losses}L
+                      </span>
+                      {stat.gamesPlayed > 0 && (
+                        <span className="text-xs font-bold text-neutral-600">
+                          ({stat.winRate}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Categorized Rounds & Games */}
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+            <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+              All Rounds & Matchups
+            </h3>
+            {allSessionRounds.length === 0 ? (
+              <p className="text-sm font-bold text-neutral-600">No rounds played in this session.</p>
+            ) : (
+              <div className="space-y-4">
+                {allSessionRounds.map((sr) => (
+                  <div key={sr.round.id} className="border-2 border-black rounded-2xl p-4 bg-neutral-50 shadow-[3px_3px_0px_0px_#000] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-display text-base font-black text-black">
+                        Round {sr.round.roundNumber}
+                      </span>
+                      <Badge variant={sr.round.status === "completed" ? "muted" : "warning"}>
+                        {sr.round.status === "completed" ? "Completed" : "In Progress"}
+                      </Badge>
+                    </div>
+
+                    {sr.sits.length > 0 && (
+                      <p className="text-xs font-bold text-neutral-600">
+                        Sitting out: {sr.sits.map((s) => playerNames[s.playerId] ?? s.playerId).join(", ")}
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      {sr.matches.map((m) => {
+                        const t1 = sr.matchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                        const t2 = sr.matchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                        const isEditing = editingHistoricalMatchId === m.id;
+                        const isT1Winner =
+                          m.team1Score !== null &&
+                          m.team2Score !== null &&
+                          m.team1Score > m.team2Score;
+                        const isT2Winner =
+                          m.team1Score !== null &&
+                          m.team2Score !== null &&
+                          m.team2Score > m.team1Score;
+
+                        return (
+                          <div
+                            key={m.id}
+                            className="p-3.5 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2"
+                            data-testid={`completed-match-${m.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-black">Court {m.courtNumber}</span>
+                              <span className="font-display text-sm font-black text-black">
+                                {m.status === "cancelled"
+                                  ? "Cancelled"
+                                  : m.status === "completed"
+                                  ? `${m.team1Score ?? 0} – ${m.team2Score ?? 0}`
+                                  : "In Play"}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1 pt-1">
+                              <div className="flex items-center justify-between">
+                                <span className={`font-bold ${isT1Winner ? "font-black text-black" : "text-neutral-800"}`}>
+                                  {t1.join(" & ") || "Team 1"}
+                                </span>
+                                <span
+                                  className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black ${
+                                    isT1Winner ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]" : "bg-neutral-100 text-neutral-800"
+                                  }`}
+                                >
+                                  {m.team1Score ?? 0}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className={`font-bold ${isT2Winner ? "font-black text-black" : "text-neutral-800"}`}>
+                                  {t2.join(" & ") || "Team 2"}
+                                </span>
+                                <span
+                                  className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black ${
+                                    isT2Winner ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]" : "bg-neutral-100 text-neutral-800"
+                                  }`}
+                                >
+                                  {m.team2Score ?? 0}
+                                </span>
+                              </div>
+                            </div>
+
+                            {isEditing ? (
+                              <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={historicalScores.team1}
+                                  onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
+                                  placeholder="T1"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                />
+                                <span className="font-black text-black">–</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={historicalScores.team2}
+                                  onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
+                                  placeholder="T2"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={() => handleHistoricalSaveResult(m.id, m.version)}
+                                  disabled={isPending}
+                                  className="font-display text-xs uppercase"
+                                >
+                                  Save Score
+                                </Button>
+                                {m.status !== "cancelled" && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
+                                    disabled={isPending}
+                                    className="font-display text-xs uppercase"
+                                  >
+                                    Cancel Match
+                                  </Button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingHistoricalMatchId(null)}
+                                  className="text-xs font-black uppercase text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            ) : canManage ? (
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingHistoricalMatchId(m.id);
+                                    setHistoricalScores({
+                                      team1: m.team1Score !== null ? String(m.team1Score) : "",
+                                      team2: m.team2Score !== null ? String(m.team2Score) : "",
+                                    });
+                                  }}
+                                  className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
+                                >
+                                  Edit Result
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      ) : (
+        <>
+          {/* Main Mode: Round In Progress (Score Entry) OR Proposed Round */}
+          {isRoundInProgress ? (
+            <div className="space-y-4">
+              <ResultsEntryView
+                roundId={latestStarted.round.id}
+                roundNumber={latestStarted.round.roundNumber}
+                matches={scoreEntries}
+                fieldErrors={fieldErrors}
+                isPending={isPending}
+                onSubmitResult={canManage ? handleSaveResult : undefined}
+                onCancelMatch={canManage ? handleCancelMatch : undefined}
+                onNextRound={canManage ? handleNextRound : undefined}
+                canManage={canManage}
+              />
+              {canManage && (
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={isPending}
+                    className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black underline cursor-pointer"
+                  >
+                    Undo Round {latestStarted.round.roundNumber}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : activeProposal ? (
+            <CurrentRoundView
+              round={{
+                id: `proposal_${activeProposal.seed}`,
+                roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
+                status: "proposed",
+                seed: activeProposal.seed,
+              }}
+              courts={activeProposal.courts.map((c) => ({
+                courtNumber: c.courtNumber,
+                team1: c.team1,
+                team2: c.team2,
+              }))}
+              sittingPlayerIds={activeProposal.sitting}
+              playerNames={playerNames}
+              playerAccounts={playerAccounts}
+              isPending={isPending}
+              currentViewerPlayerId={currentViewerPlayerId}
+              partnerSynergy={partnerSynergy}
+              courtSynergies={courtSynergies}
+              isOrganizer={isOrganizer}
+              onRegenerate={canManage ? handleRegenerate : undefined}
+              onStartRound={canManage ? handleStartRound : undefined}
+              canManage={canManage}
+            />
+          ) : (
+            <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+              <p className="font-display text-xl font-black uppercase text-black">
+                {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
+              </p>
+              {canManage ? (
+                <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                  Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
+                </Button>
+              ) : (
+                <p className="text-sm font-bold text-neutral-600">
+                  The organizer has not started the next round yet.
+                </p>
+              )}
             </div>
           )}
-        </div>
-      ) : activeProposal ? (
-        <CurrentRoundView
-          round={{
-            id: `proposal_${activeProposal.seed}`,
-            roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
-            status: "proposed",
-            seed: activeProposal.seed,
-          }}
-          courts={activeProposal.courts.map((c) => ({
-            courtNumber: c.courtNumber,
-            team1: c.team1,
-            team2: c.team2,
-          }))}
-          sittingPlayerIds={activeProposal.sitting}
-          playerNames={playerNames}
-          playerAccounts={playerAccounts}
-          isPending={isPending}
-          currentViewerPlayerId={currentViewerPlayerId}
-          partnerSynergy={partnerSynergy}
-          courtSynergies={courtSynergies}
-          isOrganizer={isOrganizer}
-          onRegenerate={canManage ? handleRegenerate : undefined}
-          onStartRound={canManage ? handleStartRound : undefined}
-          canManage={canManage}
-        />
-      ) : (
-        <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
-          <p className="font-display text-xl font-black uppercase text-black">
-            {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
-          </p>
-          {canManage ? (
-            <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-              Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
-            </Button>
-          ) : (
-            <p className="text-sm font-bold text-neutral-600">
-              The organizer has not started the next round yet.
-            </p>
-          )}
-        </div>
-      )}
 
-      {/* Past Rounds Accordion / List */}
-      {pastRounds.length > 0 && (
-        <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000]">
-          <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
-            Past Rounds History
-          </h3>
-          <div className="space-y-4">
-            {pastRounds.map((past) => (
-              <div key={past.round.id} className="border-2 border-black rounded-xl p-4 bg-neutral-50 shadow-[3px_3px_0px_0px_#000] space-y-2">
-                <div className="flex items-center justify-between text-xs font-black uppercase">
-                  <span className="font-display text-base text-black">Round {past.round.roundNumber}</span>
-                  <Badge variant="muted">Completed</Badge>
-                </div>
-                <div className="space-y-2 pt-1">
-                  {past.matches.map((m) => {
-                    const t1 = past.matchPlayers
-                      .filter((mp) => mp.matchId === m.id && mp.team === 1)
-                      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-                    const t2 = past.matchPlayers
-                      .filter((mp) => mp.matchId === m.id && mp.team === 2)
-                      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-                    const isEditing = editingHistoricalMatchId === m.id;
+          {/* Past Rounds Accordion / List */}
+          {pastRounds.length > 0 && (
+            <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000]">
+              <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+                Past Rounds History
+              </h3>
+              <div className="space-y-4">
+                {pastRounds.map((past) => (
+                  <div key={past.round.id} className="border-2 border-black rounded-xl p-4 bg-neutral-50 shadow-[3px_3px_0px_0px_#000] space-y-2">
+                    <div className="flex items-center justify-between text-xs font-black uppercase">
+                      <span className="font-display text-base text-black">Round {past.round.roundNumber}</span>
+                      <Badge variant="muted">Completed</Badge>
+                    </div>
+                    <div className="space-y-2 pt-1">
+                      {past.matches.map((m) => {
+                        const t1 = past.matchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                        const t2 = past.matchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+                        const isEditing = editingHistoricalMatchId === m.id;
 
-                    return (
-                      <div key={m.id} className="p-3 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-black text-black">Court {m.courtNumber}</span>
-                          <span className="font-display text-sm font-black text-black">
-                            {m.status === "cancelled" ? "Cancelled" : `${m.team1Score ?? 0} – ${m.team2Score ?? 0}`}
-                          </span>
-                        </div>
-                        <div className="font-bold text-neutral-800">
-                          {t1.join(" & ")} vs {t2.join(" & ")}
-                        </div>
+                        return (
+                          <div key={m.id} className="p-3 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-black">Court {m.courtNumber}</span>
+                              <span className="font-display text-sm font-black text-black">
+                                {m.status === "cancelled" ? "Cancelled" : `${m.team1Score ?? 0} – ${m.team2Score ?? 0}`}
+                              </span>
+                            </div>
+                            <div className="font-bold text-neutral-800">
+                              {t1.join(" & ")} vs {t2.join(" & ")}
+                            </div>
 
-                        {isEditing ? (
-                          <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
-                            <input
-                              type="number"
-                              min={0}
-                              value={historicalScores.team1}
-                              onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
-                              placeholder="T1"
-                              className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
-                            />
-                            <span className="font-black text-black">–</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={historicalScores.team2}
-                              onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
-                              placeholder="T2"
-                              className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="primary"
-                              onClick={() => handleHistoricalSaveResult(m.id, m.version)}
-                              disabled={isPending}
-                              className="font-display text-xs uppercase"
-                            >
-                              Save Score
-                            </Button>
-                            {m.status !== "cancelled" && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
-                                disabled={isPending}
-                                className="font-display text-xs uppercase"
-                              >
-                                Cancel Match
-                              </Button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => setEditingHistoricalMatchId(null)}
-                              className="text-xs font-black uppercase text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
-                            >
-                              Close
-                            </button>
+                            {isEditing ? (
+                              <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={historicalScores.team1}
+                                  onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
+                                  placeholder="T1"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                />
+                                <span className="font-black text-black">–</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={historicalScores.team2}
+                                  onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
+                                  placeholder="T2"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={() => handleHistoricalSaveResult(m.id, m.version)}
+                                  disabled={isPending}
+                                  className="font-display text-xs uppercase"
+                                >
+                                  Save Score
+                                </Button>
+                                {m.status !== "cancelled" && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
+                                    disabled={isPending}
+                                    className="font-display text-xs uppercase"
+                                  >
+                                    Cancel Match
+                                  </Button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingHistoricalMatchId(null)}
+                                  className="text-xs font-black uppercase text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            ) : canManage ? (
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingHistoricalMatchId(m.id);
+                                    setHistoricalScores({
+                                       team1: m.team1Score !== null ? String(m.team1Score) : "",
+                                      team2: m.team2Score !== null ? String(m.team2Score) : "",
+                                    });
+                                  }}
+                                  className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
+                                >
+                                  Edit Result
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
-                        ) : canManage ? (
-                          <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingHistoricalMatchId(m.id);
-                                setHistoricalScores({
-                                   team1: m.team1Score !== null ? String(m.team1Score) : "",
-                                  team2: m.team2Score !== null ? String(m.team2Score) : "",
-                                });
-                              }}
-                              className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
-                            >
-                              Edit Result
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
+          )}
+        </>
       )}
 
       {/* Attendance Modal */}

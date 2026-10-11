@@ -194,9 +194,9 @@ export class InMemoryRepositories implements DomainRepository {
     );
   }
 
-  async joinPublicGroup(accountId: string, groupId: string) {
+  async addPlayerToGroup(accountId: string, groupId: string) {
     const account = this.state.playerAccounts.find((item) => item.id === accountId);
-    const group = this.state.groups.find((item) => item.id === groupId && (item.isPublic === true || item.ownerAccountId === accountId));
+    const group = this.state.groups.find((item) => item.id === groupId);
     if (!account || !group) return null;
     const existing = this.state.players.find((player) => player.groupId === groupId && player.accountId === accountId);
     if (existing) {
@@ -218,6 +218,12 @@ export class InMemoryRepositories implements DomainRepository {
     };
     this.state.players.push(player);
     return player;
+  }
+
+  async joinPublicGroup(accountId: string, groupId: string) {
+    const group = this.state.groups.find((item) => item.id === groupId && (item.isPublic === true || item.ownerAccountId === accountId));
+    if (!group) return null;
+    return this.addPlayerToGroup(accountId, groupId);
   }
 
   async leavePublicGroup(accountId: string, groupId: string) {

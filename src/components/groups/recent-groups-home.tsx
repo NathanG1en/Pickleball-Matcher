@@ -30,53 +30,18 @@ export function RecentGroupsHome({ excludeGroupId }: { excludeGroupId?: string }
     return null;
   }
 
-  // If there's only 1 recent group, show a featured quick-resume hero card
-  if (groups.length === 1) {
-    const group = groups[0];
-    return (
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#fef08a] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]">
-            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-            Your Group
-          </span>
-          <button
-            type="button"
-            onClick={() => removeRecentGroup(group.id)}
-            title="Forget this group on this device"
-            aria-label="Forget group"
-            className="text-xs font-black text-neutral-500 hover:text-black px-1.5 py-0.5 rounded border border-transparent hover:border-black hover:bg-white transition-all cursor-pointer"
-          >
-            ×
-          </button>
-        </div>
-
-        <div>
-          <h2 className="font-display text-2xl font-black uppercase text-black leading-tight truncate">
-            {group.name}
-          </h2>
-          <p className="text-xs font-bold text-neutral-700 mt-0.5">
-            Ready to run your next session?
-          </p>
-        </div>
-
-        <Link
-          href={`/g/${group.id}`}
-          className="block w-full py-3 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-black text-center text-sm uppercase tracking-wide border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] active:translate-x-0.5 active:translate-y-0.5 transition-all font-display"
-        >
-          Open Group Dashboard →
-        </Link>
-      </div>
-    );
-  }
-
-  // If multiple groups are stored, show a list
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
-          Your Groups ({groups.length})
+          Your Recent Groups ({groups.length})
         </span>
+        <Link
+          href="/players/groups"
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] hover:bg-[#b8eb00] border border-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+        >
+          Find groups
+        </Link>
       </div>
 
       <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
