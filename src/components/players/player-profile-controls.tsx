@@ -470,20 +470,70 @@ export function PlayerLogoutButton({ className }: { className?: string } = {}) {
   );
 }
 
-export function LeaveGroupButton({ groupId }: { groupId: string }) {
+export function LeaveGroupButton({
+  groupId,
+  initialConfirming = false,
+}: {
+  groupId: string;
+  initialConfirming?: boolean;
+}) {
   const router = useRouter();
+  const [confirming, setConfirming] = useState(initialConfirming);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const leave = async () => {
     setPending(true);
     setError(null);
     const result = await leavePublicGroupAction({ groupId });
-    if (result.ok) router.refresh();
-    else setError(result.error);
+    if (result.ok) {
+      router.refresh();
+    } else {
+      setError(result.error);
+    }
     setPending(false);
   };
-  return <div className="flex flex-col items-end gap-1">
-    <button type="button" onClick={leave} disabled={pending} className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-[10px] font-black uppercase hover:bg-[#ff6b6b] disabled:opacity-60">{pending ? "Leaving…" : "Leave group"}</button>
-    {error && <p role="alert" className="max-w-40 text-right text-[10px] font-bold text-red-700">{error}</p>}
-  </div>;
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {confirming ? (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={leave}
+            disabled={pending}
+            className="rounded-lg border-2 border-black bg-[#ff6b6b] px-3 py-1.5 text-[10px] font-black uppercase text-black hover:bg-[#fa5252] disabled:opacity-60 cursor-pointer"
+          >
+            {pending ? "Leaving…" : "Leave"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setConfirming(false);
+            }}
+            disabled={pending}
+            aria-label="Cancel"
+            title="Cancel"
+            className="rounded-lg border-2 border-black bg-white px-2.5 py-1.5 text-[10px] font-black uppercase text-black hover:bg-neutral-100 disabled:opacity-60 cursor-pointer"
+          >
+            X
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setConfirming(true);
+          }}
+          disabled={pending}
+          className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-[10px] font-black uppercase hover:bg-[#ff6b6b] disabled:opacity-60 cursor-pointer"
+        >
+          {pending ? "Leaving…" : "Leave group"}
+        </button>
+      )}
+      {error && <p role="alert" className="max-w-40 text-right text-[10px] font-bold text-red-700">{error}</p>}
+    </div>
+  );
 }
