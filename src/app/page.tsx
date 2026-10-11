@@ -126,8 +126,8 @@ export default async function HomePage() {
             </>
           ) : (
             <>
-              <Link href="/player-login?next=%2Fsetup" className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Sign In to Play →</Link>
-              <Link href="/player-signup?next=%2Fsetup" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create an Account</Link>
+              <Link href="/player-login" className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Sign In to Play →</Link>
+              <Link href="/player-signup" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create an Account</Link>
             </>
           )}
           {!playerAccount ? (
