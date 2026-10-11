@@ -17,6 +17,7 @@ import type {
   RoundSitRecord,
   SessionRecord,
   StartedRoundRecord,
+  TournamentRecord,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
@@ -1054,5 +1055,28 @@ export class SqliteDomainRepository implements DomainRepository {
     void query;
     void limit;
     return [];
+  }
+
+  async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
+    void tournamentId;
+    return null;
+  }
+
+  async listTournaments(groupId: string): Promise<readonly TournamentRecord[]> {
+    void groupId;
+    return [];
+  }
+
+  async createTournament(tournament: TournamentRecord): Promise<void> {
+    void tournament;
+  }
+
+  async updateTournament(tournament: TournamentRecord): Promise<void> {
+    void tournament;
+  }
+
+  async deleteTournament(tournamentId: string, groupId: string): Promise<void> {
+    void tournamentId;
+    void groupId;
   }
 }

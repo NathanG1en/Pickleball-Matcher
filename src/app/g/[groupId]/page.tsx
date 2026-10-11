@@ -19,6 +19,7 @@ import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
+import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
@@ -34,9 +35,10 @@ export default async function GroupDashboardPage({
     redirect("/setup");
   }
 
-  const [initialPlayers, sessions] = await Promise.all([
+  const [initialPlayers, sessions, tournaments] = await Promise.all([
     repository.listPlayers(groupId),
     repository.listSessions(groupId),
+    repository.listTournaments(groupId),
   ]);
   let players = initialPlayers;
   const [accountId, guestPlayerId] = await Promise.all([
@@ -241,14 +243,22 @@ export default async function GroupDashboardPage({
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
               <p className="text-sm font-bold text-neutral-700 mb-5">
-                Check attendance and let the matchmaker generate fair courts.
+                Check attendance and generate fair courts, or create a tournament bracket.
               </p>
-              <Link
-                href={`/g/${groupId}/sessions/new`}
-                className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
-              >
-                Start New Session
-              </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Link
+                  href={`/g/${groupId}/sessions/new`}
+                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+                >
+                  Start Session
+                </Link>
+                <Link
+                  href={`/g/${groupId}/tournaments/new`}
+                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+                >
+                  🏆 Tournament
+                </Link>
+              </div>
             </section>
           ) : (
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
@@ -258,6 +268,26 @@ export default async function GroupDashboardPage({
               </p>
             </section>
           )}
+
+          {/* Tournaments Section */}
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl font-black uppercase text-black">Tournaments</h2>
+              {isOrganizer && (
+                <Link
+                  href={`/g/${groupId}/tournaments/new`}
+                  className="px-3 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                >
+                  + Create Tournament
+                </Link>
+              )}
+            </div>
+            <GroupTournamentsList
+              groupId={groupId}
+              tournaments={tournaments}
+              isOrganizer={isOrganizer}
+            />
+          </section>
 
           {/* Past Sessions */}
           <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">

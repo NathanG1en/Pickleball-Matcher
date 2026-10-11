@@ -14,6 +14,7 @@ import type {
   RoundRecord,
   SessionRecord,
   StartedRoundRecord,
+  TournamentRecord,
 } from "@/lib/domain/types";
 
 export interface DomainRepository {
@@ -69,4 +70,10 @@ export interface DomainRepository {
     players: readonly Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed">[],
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ): Promise<void>;
+  getTournament(tournamentId: string): Promise<TournamentRecord | null>;
+  listTournaments(groupId: string): Promise<readonly TournamentRecord[]>;
+  createTournament(tournament: TournamentRecord): Promise<void>;
+  updateTournament(tournament: TournamentRecord): Promise<void>;
+  deleteTournament(tournamentId: string, groupId: string): Promise<void>;
 }
+

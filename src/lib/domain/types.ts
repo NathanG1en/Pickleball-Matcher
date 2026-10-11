@@ -184,3 +184,74 @@ export interface RecordResultInput {
   readonly team1Score: number;
   readonly team2Score: number;
 }
+
+export type TournamentDivision =
+  | "mens_singles"
+  | "womens_singles"
+  | "mens_doubles"
+  | "womens_doubles"
+  | "mixed_doubles";
+
+export const TOURNAMENT_DIVISIONS: readonly TournamentDivision[] = [
+  "mens_singles",
+  "womens_singles",
+  "mens_doubles",
+  "womens_doubles",
+  "mixed_doubles",
+] as const;
+
+export const TOURNAMENT_DIVISION_LABELS: Record<TournamentDivision, string> = {
+  mens_singles: "Men's Singles",
+  womens_singles: "Women's Singles",
+  mens_doubles: "Men's Doubles",
+  womens_doubles: "Women's Doubles",
+  mixed_doubles: "Mixed Doubles",
+};
+
+export const TOURNAMENT_DIVISION_DESCRIPTIONS: Record<TournamentDivision, string> = {
+  mens_singles: "1v1 · Male players",
+  womens_singles: "1v1 · Female players",
+  mens_doubles: "2v2 · Male teams",
+  womens_doubles: "2v2 · Female teams",
+  mixed_doubles: "2v2 · 1 Male & 1 Female per team",
+};
+
+export interface TournamentParticipant {
+  readonly id: string;
+  name: string;
+  playerIds: readonly string[];
+  seed?: number;
+}
+
+export interface TournamentMatch {
+  readonly id: string;
+  readonly round: number;
+  readonly matchNumber: number;
+  participant1Id: string | null;
+  participant2Id: string | null;
+  score1: number | null;
+  score2: number | null;
+  winnerId: string | null;
+  status: "pending" | "in_progress" | "completed" | "bye";
+  nextMatchId?: string | null;
+  nextMatchSlot?: 1 | 2 | null;
+}
+
+export interface TournamentBracket {
+  readonly division: TournamentDivision;
+  participants: readonly TournamentParticipant[];
+  matches: readonly TournamentMatch[];
+  roundNames: readonly string[];
+}
+
+export interface TournamentRecord {
+  readonly id: string;
+  readonly groupId: string;
+  name: string;
+  status: "draft" | "active" | "completed";
+  divisions: readonly TournamentDivision[];
+  brackets: Record<string, TournamentBracket>;
+  readonly createdAt: Date;
+  updatedAt: Date;
+}
+
