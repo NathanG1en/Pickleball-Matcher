@@ -27,7 +27,7 @@ export default async function PlayerProfilePage() {
     <section className="mx-auto max-w-2xl space-y-5">
       <header className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref="/" />
+          <BackButton href="/" />
           <PlayerLogoutButton />
         </div>
         <PlayerProfileHeader
