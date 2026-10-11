@@ -88,8 +88,10 @@ export function SessionManagerClient({
   }, [router]);
 
   const playerNames: Record<string, string> = {};
+  const playerAccounts: Record<string, string | null> = {};
   for (const p of players) {
     playerNames[p.id] = p.name;
+    playerAccounts[p.id] = p.accountId ?? null;
   }
 
   const latestStarted = startedRounds.at(-1);
@@ -519,6 +521,7 @@ export function SessionManagerClient({
           }))}
           sittingPlayerIds={activeProposal.sitting}
           playerNames={playerNames}
+          playerAccounts={playerAccounts}
           isPending={isPending}
           currentViewerPlayerId={currentViewerPlayerId}
           partnerSynergy={partnerSynergy}

@@ -27,6 +27,7 @@ export interface CurrentRoundViewProps {
   readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
   readonly courtSynergies?: CourtSynergiesMap;
   readonly isOrganizer?: boolean;
+  readonly playerAccounts?: Record<string, string | null>;
   readonly onStartRound?: (customProposal?: {
     courts: readonly RoundCourtData[];
     sitting: readonly string[];
@@ -47,6 +48,7 @@ export function CurrentRoundView({
   partnerSynergy = null,
   courtSynergies,
   isOrganizer = false,
+  playerAccounts,
   onStartRound,
   onRegenerate,
   onEnterResults,
@@ -509,9 +511,19 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 1" : "Team 1"}
                     </span>
-                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy) && (
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score !== undefined) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
                         ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] === null) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
+                        ⚠️ Guest Partner
+                      </span>
+                    )}
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
+                        New Duo
                       </span>
                     )}
 
@@ -639,9 +651,19 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 2" : "Team 2"}
                     </span>
-                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy) && (
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score !== undefined) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
                         ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] === null) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
+                        ⚠️ Guest Partner
+                      </span>
+                    )}
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
+                        New Duo
                       </span>
                     )}
 
@@ -1030,6 +1052,7 @@ export function CurrentRoundView({
           courts={localCourts}
           courtSynergies={courtSynergies}
           playerNames={playerNames}
+          playerAccounts={playerAccounts}
         />
       )}
     </div>
