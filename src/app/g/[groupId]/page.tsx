@@ -82,7 +82,7 @@ export default async function GroupDashboardPage({
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref={accountId ? "/players" : "/"} />
+          <BackButton href={accountId ? "/players" : "/"} />
           {isOrganizer && (
             <GroupOptionsMenu
               groupId={groupId}

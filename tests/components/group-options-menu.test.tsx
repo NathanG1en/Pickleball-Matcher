@@ -115,6 +115,12 @@ describe("Group Navigation and Options Menu", () => {
       expect(html).toContain("← Back");
       expect(html).toContain('aria-label="Go back"');
     });
+
+    it("renders as Link when href is provided", () => {
+      const html = renderToStaticMarkup(<BackButton href="/players" />);
+      expect(html).toContain("← Back");
+      expect(html).toContain('href="/players"');
+    });
   });
 
   describe("GroupOptionsMenu component", () => {

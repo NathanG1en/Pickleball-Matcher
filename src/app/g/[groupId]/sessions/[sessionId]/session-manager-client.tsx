@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -66,9 +66,26 @@ export function SessionManagerClient({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isEnded, setIsEnded] = useState(session.status === "completed");
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
+
+  useEffect(() => {
+    if (session.status === "completed" || isEnded) {
+      router.replace(`/g/${groupId}`);
+    }
+  }, [session.status, isEnded, groupId, router]);
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        router.refresh();
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [router]);
 
   const playerNames: Record<string, string> = {};
   for (const p of players) {
@@ -270,7 +287,9 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("end"),
       });
       if (res.ok) {
-        router.push(`/g/${groupId}`);
+        setIsEnded(true);
+        router.replace(`/g/${groupId}`);
+        router.refresh();
       } else {
         setError(res.error);
       }
@@ -403,6 +422,23 @@ export function SessionManagerClient({
     : [];
 
   const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
+
+  if (isEnded || session.status === "completed") {
+    return (
+      <div className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] text-center space-y-4 max-w-xl mx-auto my-8 text-black">
+        <h2 className="text-xl font-black uppercase">Session Ended</h2>
+        <p className="text-sm font-bold text-neutral-600">
+          This session has already ended and match results have been finalized.
+        </p>
+        <Link
+          href={`/g/${groupId}`}
+          className="inline-block px-4 py-2 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+        >
+          Return to Group Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 text-black">

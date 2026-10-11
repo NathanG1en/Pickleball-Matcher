@@ -36,7 +36,7 @@ export function SynergyExplainerButton() {
               </button>
             </div>
             <p className="text-[11px] font-medium leading-relaxed text-neutral-700">
-              Doubles synergy is calculated using Bayesian Laplace smoothing with a 50% prior. This balances early wins fairly so a single 1–0 result starts at 67% rather than volatile 100%, stabilizing with more games played.
+              It's magic. Pure magic that measures the power of your friendship
             </p>
           </div>
         </>
