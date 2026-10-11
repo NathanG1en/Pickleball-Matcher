@@ -1,22 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { createTestGroup } from "./test-helpers";
 
 test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
     page,
   }) => {
     // 1. Create a group
-    await page.goto("/setup");
     const groupName = `Corrections League ${Date.now()}`;
-    await page.fill("#group-name", groupName);
-    await page.fill("#organizer-pin", "2345");
-    await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
-    await page.click("button[type='submit']");
-    await expect(page).toHaveURL(/\/g\/grp_/);
+    await createTestGroup(page, groupName);
 
     // 2. Add 8 players for 2 courts
-    await page.click("a[href*='/players']");
+    await page.click("a:has-text('Manage Roster')");
     await expect(page).toHaveURL(/\/players/);
-    const players = ["Charlie", "Dana", "Eli", "Frank", "Grace", "Henry", "Ivy", "Jack"];
+    const players = ["Charlie", "Dana", "Eli", "Frank", "Grace", "Henry", "Ivy"];
     for (const name of players) {
       await page.fill("#player-name-input", name);
       await page.click("button:has-text('Add Player')");

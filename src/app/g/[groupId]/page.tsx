@@ -152,9 +152,20 @@ export default async function GroupDashboardPage({
           </div>
         </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
-        <p className="text-xs font-bold text-neutral-600 mt-1">
-          {players.length} players on roster
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs font-bold text-neutral-600">
+            {players.length} players on roster
+          </p>
+          {isOrganizer && (
+            <Link
+              href={`/g/${groupId}/players`}
+              data-testid="manage-roster-link"
+              className="text-xs font-black uppercase text-black hover:underline"
+            >
+              Manage Roster →
+            </Link>
+          )}
+        </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
         {isOrganizer && (
