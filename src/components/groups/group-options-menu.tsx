@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteGroupAction } from "@/app/actions/group-settings";
-import { Button } from "@/components/ui/button";
+import { Button, Input, Label, Modal } from "@/components/ui";
 import { ShareGroupModal } from "@/components/groups/share-group-modal";
 
 export function GroupOptionsMenu({
@@ -120,68 +120,62 @@ export function GroupOptionsMenu({
       />
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-dialog-title"
-            aria-describedby="delete-dialog-description"
-            className="w-full max-w-sm space-y-4 rounded-3xl border-[3px] border-black bg-white p-6 text-black shadow-[8px_8px_0px_0px_#000]"
-          >
-            <h3 id="delete-dialog-title" className="font-display text-2xl font-black uppercase tracking-tight text-black">
-              Delete Group
-            </h3>
-            <p id="delete-dialog-description" className="text-sm font-bold text-neutral-700">
-              You are about to delete the group. Are you sure? Enter in the name of the group to continue.
-            </p>
-            <form onSubmit={handleDelete} className="space-y-3">
-              <div>
-                <label htmlFor="confirm-group-name" className="block text-xs font-black uppercase tracking-wider text-neutral-600 mb-1">
-                  Type <span className="text-black font-black select-all">&quot;{groupName}&quot;</span> to confirm
-                </label>
-                <input
-                  id="confirm-group-name"
-                  type="text"
-                  required
-                  value={confirmName}
-                  onChange={(e) => {
-                    setConfirmName(e.target.value);
-                    if (deleteError) setDeleteError(null);
-                  }}
-                  placeholder={groupName}
-                  className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
-                  autoFocus
-                />
-              </div>
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          size="sm"
+          role="alertdialog"
+          showCloseButton={false}
+          title="Delete Group"
+          description="You are about to delete the group. Are you sure? Enter in the name of the group to continue."
+        >
+          <form onSubmit={handleDelete} className="space-y-3">
+            <div>
+              <Label htmlFor="confirm-group-name" className="text-neutral-600">
+                Type <span className="text-black font-black select-all">&quot;{groupName}&quot;</span> to confirm
+              </Label>
+              <Input
+                id="confirm-group-name"
+                type="text"
+                required
+                sizeVariant="sm"
+                value={confirmName}
+                onChange={(e) => {
+                  setConfirmName(e.target.value);
+                  if (deleteError) setDeleteError(null);
+                }}
+                placeholder={groupName}
+                autoFocus
+              />
+            </div>
 
-              {deleteError && (
-                <p role="alert" className="text-xs font-bold text-red-600">
-                  {deleteError}
-                </p>
-              )}
+            {deleteError && (
+              <p role="alert" className="text-xs font-bold text-red-600">
+                {deleteError}
+              </p>
+            )}
 
-              <div className="flex gap-3 justify-end pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowDeleteModal(false)}
-                  disabled={deletePending}
-                  className="font-display text-xs uppercase tracking-wider"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="danger"
-                  disabled={!isConfirmed || deletePending}
-                  className="font-display text-xs uppercase tracking-wider"
-                >
-                  {deletePending ? "Deleting…" : "Delete Group"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex gap-3 justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletePending}
+                className="font-display text-xs uppercase tracking-wider"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="danger"
+                disabled={!isConfirmed || deletePending}
+                className="font-display text-xs uppercase tracking-wider"
+              >
+                {deletePending ? "Deleting…" : "Delete Group"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

@@ -3,8 +3,7 @@
 import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { organizerLoginAction } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
-import { VisibilityToggle } from "@/components/ui/visibility-toggle";
+import { Alert, Button, Input, Label, VisibilityToggle } from "@/components/ui";
 import {
   getRecentGroupsSnapshot,
   saveRecentGroup,
@@ -63,16 +62,16 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-left">
       {error && (
-        <div role="alert" className="p-3 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-xs text-center">
+        <Alert variant="danger" size="sm" className="text-center">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div>
-        <label htmlFor="login-group-name" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+        <Label htmlFor="login-group-name">
           Group Name
-        </label>
-        <input
+        </Label>
+        <Input
           id="login-group-name"
           type="text"
           required
@@ -80,7 +79,6 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
           placeholder="Enter your group name"
-          className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
         />
         {recentGroups.length > 0 && !groupName && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2">
@@ -102,11 +100,11 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
       </div>
 
       <div>
-        <label htmlFor="login-pin" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+        <Label htmlFor="login-pin">
           Organizer PIN
-        </label>
+        </Label>
         <div className="relative">
-          <input
+          <Input
             id="login-pin"
             type={pinVisible ? "text" : "password"}
             inputMode="numeric"
@@ -116,7 +114,7 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="••••"
-            className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 pr-14 text-black text-center text-3xl font-mono font-bold tracking-widest shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+            className="pr-14 text-center text-3xl font-mono tracking-widest"
           />
           <VisibilityToggle visible={pinVisible} onToggle={() => setPinVisible((visible) => !visible)} label="organizer PIN" />
         </div>
