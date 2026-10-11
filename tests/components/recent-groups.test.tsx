@@ -95,7 +95,7 @@ describe("Recent Groups Storage & Components", () => {
 
     const html = renderToStaticMarkup(<RecentGroupsHome />);
     expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Groups (1)");
+    expect(html).toContain("Your Recent Groups (1)");
     expect(html).toContain("/g/grp-hero");
     expect(html).toContain("Find groups");
     expect(html).toContain("/players/groups");
@@ -109,7 +109,7 @@ describe("Recent Groups Storage & Components", () => {
     const html = renderToStaticMarkup(<RecentGroupsHome />);
     expect(html).toContain("Alpha League");
     expect(html).toContain("Beta League");
-    expect(html).toContain("Your Groups (2)");
+    expect(html).toContain("Your Recent Groups (2)");
     expect(html).toContain("Find groups");
     expect(html).toContain("/players/groups");
     expect(html).toContain("aria-label=\"Forget Alpha League\"");
