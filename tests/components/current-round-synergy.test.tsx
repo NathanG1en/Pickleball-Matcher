@@ -5,7 +5,7 @@ import { CurrentRoundView } from "@/components/rounds/current-round";
 import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
 
 describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
-  it("keeps court cards clean and does NOT render synergy badges on courts", () => {
+  it("allows player to see their own partner synergy badge on their court", () => {
     const html = renderToStaticMarkup(
       <CurrentRoundView
         round={{ id: "r1", roundNumber: 1, status: "started", seed: 1 }}
@@ -16,10 +16,26 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         partnerSynergy={{ score: 84, matchesPlayed: 10 }}
       />
     );
-    // Court cards should not display synergy score badges
-    expect(html).not.toContain("84% Synergy");
+    // Player's own team displays their partner synergy badge
+    expect(html).toContain("84% Synergy");
+    // Warning pills remain removed
     expect(html).not.toContain("Synergy Paused");
     expect(html).not.toContain("Guest Duo");
+  });
+
+  it("does not render synergy badges on other teams or when viewing as organizer", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView
+        round={{ id: "r1", roundNumber: 1, status: "started", seed: 1 }}
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        sittingPlayerIds={[]}
+        playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
+        isOrganizer={true}
+        courtSynergies={{ 1: { team1: { score: 84, matchesPlayed: 10 } } }}
+      />
+    );
+    // Court cards don't render synergy badges for organizer (revealed only via panel)
+    expect(html).not.toContain("84% Synergy");
   });
 
   it("renders reveal synergy button only for organizers", () => {
