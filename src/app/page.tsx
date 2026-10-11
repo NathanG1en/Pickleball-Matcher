@@ -3,24 +3,20 @@ import { getActiveOrganizerSession, getActivePlayerAccountId, getActionRepositor
 import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
-import type { GroupRecord, PlayerAccountRecord, PublicGroupRecord } from "@/lib/domain/types";
+import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
 
 export default async function HomePage() {
   const session = await getActiveOrganizerSession();
   const playerAccountId = await getActivePlayerAccountId();
   let activeGroup: GroupRecord | null = null;
   let playerAccount: PlayerAccountRecord | null = null;
-  let accountGroups: readonly PublicGroupRecord[] = [];
 
   if (session?.groupId || playerAccountId) {
     try {
       const repo = getActionRepository();
       if (session?.groupId) activeGroup = await repo.getGroup(session.groupId);
       if (playerAccountId) {
-        [playerAccount, accountGroups] = await Promise.all([
-          repo.getPlayerAccount(playerAccountId),
-          repo.listAccountGroups(playerAccountId),
-        ]);
+        playerAccount = await repo.getPlayerAccount(playerAccountId);
       }
     } catch {
       // Fallback in non-db environments
