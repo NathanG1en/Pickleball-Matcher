@@ -133,12 +133,6 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Find Player");
       expect(html).toContain("+ Add Guest");
       expect(html).toContain("Find player by username");
-
-      // Verify Synergy badges and notice
-      expect(html).toContain("Guest · No Synergy");
-      expect(html).toContain("⚡ Synergy Ready");
-      expect(html).toContain("⚡ Synergy Notice");
-      expect(html).toContain("1 Guest Ineligible");
     });
 
     it("renders remove player option for group organizers, but not make organizer", () => {

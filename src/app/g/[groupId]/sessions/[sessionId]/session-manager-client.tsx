@@ -88,10 +88,8 @@ export function SessionManagerClient({
   }, [router]);
 
   const playerNames: Record<string, string> = {};
-  const playerAccounts: Record<string, boolean> = {};
   for (const p of players) {
     playerNames[p.id] = p.name;
-    playerAccounts[p.id] = Boolean(p.accountId);
   }
 
   const latestStarted = startedRounds.at(-1);
@@ -526,7 +524,6 @@ export function SessionManagerClient({
           partnerSynergy={partnerSynergy}
           courtSynergies={courtSynergies}
           isOrganizer={isOrganizer}
-          playerAccounts={playerAccounts}
           onRegenerate={canManage ? handleRegenerate : undefined}
           onStartRound={canManage ? handleStartRound : undefined}
           canManage={canManage}
