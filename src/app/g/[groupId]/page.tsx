@@ -250,7 +250,7 @@ export default async function GroupDashboardPage({
                   href={`/g/${groupId}/sessions/new`}
                   className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
                 >
-                  Start Session
+                  Start New Session
                 </Link>
                 <Link
                   href={`/g/${groupId}/tournaments/new`}
