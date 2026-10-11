@@ -7,6 +7,7 @@ import {
   addPlayerByAccountIdAction,
   type SearchPlayerResult,
 } from "@/app/actions/players";
+import { Alert, Button, Input } from "@/components/ui";
 
 interface PlayerSearchDrawerProps {
   readonly groupId: string;
@@ -73,29 +74,31 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2">
-        <input
+        <Input
           type="text"
+          sizeVariant="sm"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             if (error) setError(null);
           }}
           placeholder="Search by @username or name..."
-          className="flex-1 rounded-xl border-2 border-black px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
+          className="flex-1"
         />
-        <button
+        <Button
           type="submit"
+          size="sm"
+          variant="primary"
           disabled={isSearching}
-          className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
         >
           {isSearching ? "Searching..." : "Search"}
-        </button>
+        </Button>
       </form>
 
       {error && (
-        <p className="mt-3 rounded-lg border border-red-500 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600">
+        <Alert variant="danger-soft" size="sm" className="mt-3">
           {error}
-        </p>
+        </Alert>
       )}
 
       {hasSearched && results.length === 0 && !isSearching && !error && (
