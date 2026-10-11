@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { createAccountGroupAction } from "@/app/actions/auth";
 import { Alert, Button, FormField, Input } from "@/components/ui";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
 
+const emptySubscribe = () => () => {};
+
 export function CreateGroupForm() {
   const router = useRouter();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [name, setName] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +32,7 @@ export function CreateGroupForm() {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} className="space-y-5" data-hydrated={mounted ? "true" : undefined}>
       {error && (
         <Alert variant="danger-soft" size="md">
           {error}
