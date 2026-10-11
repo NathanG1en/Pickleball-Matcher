@@ -483,6 +483,25 @@ export class PostgresRepositories implements DomainRepository {
     return rows.map(mapPlayerAccount);
   }
 
+  async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
+    const rows = await this.query<PlayerRow[]>`
+      insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
+      select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
+             g.id, a.name, a.gender, a.initial_rating, a.initial_rating, 0, true, a.id
+      from groups g cross join players a
+      where g.id = ${groupId} and a.id = ${accountId} and a.username is not null
+      on conflict (group_id, account_id) where account_id is not null do update set active = true
+      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+    `;
+    if (rows[0]) return mapPlayer(rows[0]);
+
+    const existing = await this.query<PlayerRow[]>`
+      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+      from players where account_id = ${accountId} and group_id = ${groupId}
+    `;
+    return existing[0] ? mapPlayer(existing[0]) : null;
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)

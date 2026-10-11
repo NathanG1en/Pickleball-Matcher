@@ -18,19 +18,30 @@ export async function addGroupPlayerByUsernameAction(input: unknown): Promise<{ 
   const parsed = addGroupPlayerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a valid username." };
   try {
-    const accountId = await requirePlayer();
     const repository = getActionRepository();
     const group = await repository.getGroup(parsed.data.groupId);
-    if (!group || group.ownerAccountId !== accountId) return { ok: false, error: "Only the host can add players by username." };
+    if (!group) return { ok: false, error: "Group not found." };
+
+    const accountId = await getActivePlayerAccountId();
+    const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+    const isAccountOrganizer = Boolean(accountId && (await repository.isGroupOrganizer(parsed.data.groupId, accountId)));
+    const organizerSession = await getActiveOrganizerSession();
+    const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === parsed.data.groupId);
+
+    if (!isHost && !isAccountOrganizer && !isSessionOrganizer) {
+      return { ok: false, error: "Only the host or a group organizer can add players." };
+    }
+
     const account = await repository.getPlayerAccountByUsername(parsed.data.username.toLowerCase());
     if (!account) return { ok: false, error: "No player account uses that username." };
     const existing = (await repository.listPlayers(group.id)).find((player) => player.accountId === account.id);
     if (existing?.active) return { ok: false, error: "That player is already on the roster." };
-    const player = await repository.joinPublicGroup(account.id, group.id);
+    const player = await repository.addPlayerToGroup(account.id, group.id);
     if (!player) return { ok: false, error: "Unable to add that player to the roster." };
     revalidatePath(`/g/${group.id}`);
     revalidatePath(`/g/${group.id}/players`);
     revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true };
   } catch {
     return { ok: false, error: "Unable to look up that player." };

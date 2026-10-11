@@ -97,6 +97,26 @@ describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
     }
   });
 
+  it("successfully adds a player to a private group via addPlayerByAccountIdAction", async () => {
+    const privGroup = {
+      id: "grp_priv",
+      name: "Private Pickle Club",
+      organizerPinHash: "pin",
+      createdAt: new Date(),
+      isPublic: false,
+      ownerAccountId: "acc_pub",
+    };
+    await repository.insertGroup(privGroup);
+
+    const added = await repository.addPlayerToGroup("acc_priv", "grp_priv");
+    expect(added).not.toBeNull();
+    expect(added?.name).toBe("Bob Private");
+    expect(added?.accountId).toBe("acc_priv");
+
+    const roster = await repository.listPlayers("grp_priv");
+    expect(roster.some((p) => p.accountId === "acc_priv")).toBe(true);
+  });
+
   describe("updatePlayerPrivacyAction", () => {
     it("updates player privacy when given an object input { isPublic: false }", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
@@ -139,4 +159,3 @@ describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
     });
   });
 });
-

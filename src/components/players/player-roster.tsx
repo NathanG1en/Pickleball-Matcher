@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
 import type { PlayerRecord } from "@/lib/domain/types";
 
 export interface PlayerRosterProps {
@@ -48,17 +48,16 @@ export function PlayerRoster({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="player-name-input" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+            <Label htmlFor="player-name-input">
               Player Name
-            </label>
-            <input
+            </Label>
+            <Input
               id="player-name-input"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Jordan Smith"
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold placeholder-neutral-400 shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
             />
           </div>
 
@@ -121,43 +120,26 @@ export function PlayerRoster({
       </section>
 
       {/* Delete Confirmation Modal */}
-      {showDelete && playerToDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
-            <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
-              Are you sure?
-            </h3>
-            <p className="text-sm font-bold text-neutral-700">
-              Are you sure you want to delete <span className="font-black text-black">{playerToDelete.name}</span> from the roster?
-            </p>
-            <div className="flex gap-3 justify-end pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPlayerToDelete(null)}
-                disabled={isPending}
-                className="font-display uppercase tracking-wider text-sm"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={() => {
-                  if (playerToDelete && onDeletePlayer) {
-                    onDeletePlayer(playerToDelete);
-                    setPlayerToDelete(null);
-                  }
-                }}
-                disabled={isPending}
-                className="font-display uppercase tracking-wider text-sm"
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(showDelete && playerToDelete)}
+        onClose={() => setPlayerToDelete(null)}
+        onConfirm={() => {
+          if (playerToDelete && onDeletePlayer) {
+            onDeletePlayer(playerToDelete);
+            setPlayerToDelete(null);
+          }
+        }}
+        title="Are you sure?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-black text-black">{playerToDelete?.name}</span> from the roster?
+          </>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        disabled={isPending}
+      />
     </div>
   );
 }

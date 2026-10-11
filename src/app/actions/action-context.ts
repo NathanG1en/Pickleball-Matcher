@@ -72,3 +72,12 @@ export async function requirePlayer(): Promise<string> {
   if (!accountId) throw new Error("Not signed in");
   return accountId;
 }
+
+export async function getActiveGuestPlayerId(groupId: string): Promise<string | null> {
+  try {
+    const { getGuestPlayerIdForGroup } = await import("@/lib/auth/guest-session");
+    return await getGuestPlayerIdForGroup(groupId);
+  } catch {
+    return null;
+  }
+}

@@ -3,9 +3,20 @@
 import { randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { getActionRepository, getActivePlayerAccountId, requirePlayer } from "@/app/actions/action-context";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
-import { joinPublicGroupSchema, playerLoginSchema, playerSignupSchema, updatePlayerGenderSchema, updatePlayerProfileSchema, updatePlayerUsernameSchema } from "@/lib/validation/group";
+import { recordGuestPlayer } from "@/lib/auth/guest-session";
+import {
+  joinAsGuestSchema,
+  joinGroupInviteSchema,
+  joinPublicGroupSchema,
+  playerLoginSchema,
+  playerSignupSchema,
+  updatePlayerGenderSchema,
+  updatePlayerProfileSchema,
+  updatePlayerUsernameSchema,
+} from "@/lib/validation/group";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -225,5 +236,60 @@ export async function leavePublicGroupAction(input: unknown): Promise<PlayerActi
     return { ok: true, data: { groupId: parsed.data.groupId } };
   } catch {
     return { ok: false, error: "Unable to leave this group. Please sign in and try again." };
+  }
+}
+
+export async function joinGroupViaInviteAction(input: unknown): Promise<PlayerActionResult<{ groupId: string }>> {
+  const parsed = joinGroupInviteSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Choose a valid group." };
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "This group does not exist." };
+    const player = await repository.addPlayerToGroup(accountId, parsed.data.groupId);
+    if (!player) return { ok: false, error: "Unable to join this group." };
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/join`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+    return { ok: true, data: { groupId: parsed.data.groupId } };
+  } catch {
+    return { ok: false, error: "Unable to join this group. Please sign in and try again." };
+  }
+}
+
+export async function joinAsGuestAction(input: unknown): Promise<PlayerActionResult<{ playerId: string; groupId: string }>> {
+  const parsed = joinAsGuestSchema.safeParse(input);
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    return { ok: false, error: "Please enter your name.", fieldErrors };
+  }
+  try {
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "This group does not exist." };
+
+    const initialRating = parsed.data.initialRating ?? DEFAULT_RATING[parsed.data.skillLevel ?? "intermediate"];
+    const playerId = `ply_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+    const newPlayer = {
+      id: playerId,
+      groupId: parsed.data.groupId,
+      name: parsed.data.name,
+      initialRating,
+      rating: initialRating,
+      ratedGamesPlayed: 0,
+      active: true,
+      accountId: null,
+    };
+    await repository.createPlayer(newPlayer);
+    await recordGuestPlayer(parsed.data.groupId, playerId);
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/join`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    return { ok: true, data: { playerId, groupId: parsed.data.groupId } };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to join as a guest." };
   }
 }

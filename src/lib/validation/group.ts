@@ -87,6 +87,17 @@ export const joinPublicGroupSchema = z.object({
   groupId: entityIdSchema,
 }).strict();
 
+export const joinGroupInviteSchema = z.object({
+  groupId: entityIdSchema,
+}).strict();
+
+export const joinAsGuestSchema = z.object({
+  groupId: entityIdSchema,
+  name: z.string().trim().min(1, "Name is required").max(80, "Name must be 80 characters or fewer"),
+  skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional().default("intermediate"),
+  initialRating: z.coerce.number().finite().min(100).max(3_000).optional(),
+}).strict();
+
 export const updateGroupVisibilitySchema = z.object({
   groupId: entityIdSchema,
   isPublic: z.boolean(),

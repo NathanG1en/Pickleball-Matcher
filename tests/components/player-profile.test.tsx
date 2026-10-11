@@ -8,7 +8,7 @@ import {
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
-import { PlayerProfileHeader } from "@/components/players/player-profile-controls";
+import { LeaveGroupButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -513,6 +513,21 @@ describe("PlayerProfilePage and Group Leaving", () => {
 
     const result = await updatePlayerGenderAction({ gender: "other" });
     expect(result).toEqual({ ok: false, error: "Select a valid gender." });
+  });
+
+  it("LeaveGroupButton initially renders Leave group button and not confirmation buttons", () => {
+    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" />);
+    expect(html).toContain("Leave group");
+    expect(html).not.toContain(">Leave<");
+    expect(html).not.toContain(">X<");
+  });
+
+  it("LeaveGroupButton renders confirmation buttons (Leave and X) when confirming", () => {
+    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" initialConfirming={true} />);
+    expect(html).not.toContain("Leave group");
+    expect(html).toContain(">Leave<");
+    expect(html).toContain(">X<");
+    expect(html).toContain('aria-label="Cancel"');
   });
 });
 
