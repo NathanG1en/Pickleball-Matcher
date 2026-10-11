@@ -116,6 +116,7 @@ describe("HomePage authentication states", () => {
 
     // Action buttons when logged in
     expect(html).toContain("Create A Group");
+    expect(html).toContain("Find Groups");
     expect(html).toContain("View Profile");
     expect(html).toContain("Log Out");
 
