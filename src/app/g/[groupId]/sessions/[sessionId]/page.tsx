@@ -18,7 +18,10 @@ export default async function ActiveSessionPage({
 }) {
   const { groupId, sessionId } = await params;
   const repository = getActionRepository();
-  const accountId = await getActivePlayerAccountId();
+  const [accountId, guestPlayerId] = await Promise.all([
+    getActivePlayerAccountId(),
+    (await import("@/lib/auth/guest-session")).getGuestPlayerIdForGroup(groupId),
+  ]);
   const [group, sessionRecord, players, startedRounds, attendance] = await Promise.all([
     repository.getGroup(groupId),
     repository.getSession(sessionId),
@@ -35,8 +38,11 @@ export default async function ActiveSessionPage({
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
   const isAccountOrganizer = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
-  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
-  const viewerPlayer = players.find((p) => p.accountId === accountId);
+  const isGuestMember = Boolean(guestPlayerId && players.some((player) => player.id === guestPlayerId && player.active));
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
+  const viewerPlayer = accountId
+    ? players.find((p) => p.accountId === accountId)
+    : (guestPlayerId ? players.find((p) => p.id === guestPlayerId) : undefined);
 
   if (!isOrganizer && !isMember) {
     if (!accountId) {

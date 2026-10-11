@@ -43,6 +43,11 @@ export function PlayerLoginForm() {
 const inputClass = "w-full rounded-xl border-2 border-black bg-white px-4 py-3 font-bold text-black shadow-[3px_3px_0px_0px_#000] focus:outline-none focus:shadow-[5px_5px_0px_0px_#000]";
 
 function getReturnPath(): string | null {
+  if (typeof window === "undefined") return null;
   const requested = new URLSearchParams(window.location.search).get("next");
-  return requested?.startsWith("/temporary") ? requested : null;
+  if (!requested) return null;
+  if (requested.startsWith("/") && !requested.startsWith("//") && !requested.includes("\\")) {
+    return requested;
+  }
+  return null;
 }
