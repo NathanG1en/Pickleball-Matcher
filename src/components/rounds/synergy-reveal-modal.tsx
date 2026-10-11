@@ -21,6 +21,7 @@ interface SynergyRevealModalProps {
   readonly courts: readonly RoundCourtData[];
   readonly courtSynergies: CourtSynergiesMap;
   readonly playerNames: Record<string, string>;
+  readonly playerAccounts?: Record<string, boolean>;
 }
 
 export function SynergyRevealModal({
@@ -29,10 +30,12 @@ export function SynergyRevealModal({
   courts,
   courtSynergies,
   playerNames,
+  playerAccounts = {},
 }: SynergyRevealModalProps) {
   if (!isOpen) return null;
 
   const nameFor = (id: string) => playerNames[id] ?? id;
+  const isGuest = (id: string) => playerAccounts[id] === false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
@@ -58,6 +61,8 @@ export function SynergyRevealModal({
               const syn = courtSynergies[court.courtNumber];
               const t1Names = court.team1.map(nameFor).join(" & ");
               const t2Names = court.team2.map(nameFor).join(" & ");
+              const t1HasGuest = court.team1.some(isGuest);
+              const t2HasGuest = court.team2.some(isGuest);
 
               return (
                 <div
@@ -76,9 +81,16 @@ export function SynergyRevealModal({
                         <span className="rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black">
                           ⚡ {syn.team1.score}% ({syn.team1.matchesPlayed} games)
                         </span>
+                      ) : court.team1.length === 2 && t1HasGuest ? (
+                        <span
+                          className="rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
+                          title="At least one player is a guest without an account. Registered accounts are required to record synergy."
+                        >
+                          ⚠️ Ineligible (Guest Duo)
+                        </span>
                       ) : court.team1.length === 2 ? (
                         <span className="rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                          New Duo
+                          ⚡ New Duo (0 games)
                         </span>
                       ) : (
                         <span className="text-neutral-500 text-[10px]">Singles / Solo</span>
@@ -92,9 +104,16 @@ export function SynergyRevealModal({
                         <span className="rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black">
                           ⚡ {syn.team2.score}% ({syn.team2.matchesPlayed} games)
                         </span>
+                      ) : court.team2.length === 2 && t2HasGuest ? (
+                        <span
+                          className="rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
+                          title="At least one player is a guest without an account. Registered accounts are required to record synergy."
+                        >
+                          ⚠️ Ineligible (Guest Duo)
+                        </span>
                       ) : court.team2.length === 2 ? (
                         <span className="rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                          New Duo
+                          ⚡ New Duo (0 games)
                         </span>
                       ) : (
                         <span className="text-neutral-500 text-[10px]">Singles / Solo</span>
@@ -106,10 +125,14 @@ export function SynergyRevealModal({
             })}
         </div>
 
+        <div className="mt-4 rounded-xl border border-neutral-300 bg-neutral-100 p-2.5 text-[11px] font-semibold text-neutral-700">
+          💡 <strong>Synergy Eligibility</strong>: Chemistry is tracked between registered player accounts. Matches involving guest players do not record doubles synergy.
+        </div>
+
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-xl border-2 border-black bg-black py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neutral-900 active:translate-x-[1px] active:translate-y-[1px]"
+          className="mt-4 w-full rounded-xl border-2 border-black bg-black py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neutral-900 active:translate-x-[1px] active:translate-y-[1px]"
         >
           Close Breakdown
         </button>
