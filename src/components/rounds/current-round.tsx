@@ -511,64 +511,11 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 1" : "Team 1"}
                     </span>
-                    {court.team1.length === 2 && (() => {
-                      const isViewerTeam = Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId));
-                      if (isViewerTeam && currentViewerPlayerId) {
-                        const partnerId = court.team1.find((id) => id !== currentViewerPlayerId);
-                        const isViewerGuest = playerAccounts[currentViewerPlayerId] === false;
-                        const isPartnerGuest = partnerId ? playerAccounts[partnerId] === false : false;
-                        const partnerName = partnerId ? (playerNames[partnerId] ?? "Partner") : "Partner";
-
-                        if (isViewerGuest) {
-                          return (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-950 shadow-[1px_1px_0px_0px_#000]"
-                              title="You are playing as a guest without an account. Link or register an account to track doubles synergy."
-                            >
-                              ⚠️ Synergy Ineligible (You&apos;re a guest)
-                            </span>
-                          );
-                        }
-                        if (isPartnerGuest) {
-                          return (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-950 shadow-[1px_1px_0px_0px_#000]"
-                              title={`${partnerName} is playing as a guest without an account. Both partners must have registered accounts to track doubles synergy.`}
-                            >
-                              ⚠️ Synergy Paused (Partner is guest)
-                            </span>
-                          );
-                        }
-                        if (partnerSynergy) {
-                          return (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                              ⚡ {partnerSynergy.score}% Synergy
-                            </span>
-                          );
-                        }
-                        return (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]"
-                            title="Eligible! Complete your first doubles match together to generate your synergy rating."
-                          >
-                            ⚡ New Duo (0 games)
-                          </span>
-                        );
-                      }
-
-                      if (isOrganizer && court.team1.some((id) => playerAccounts[id] === false)) {
-                        return (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase text-amber-900"
-                            title="Guest player on team. Ineligible for synergy tracking."
-                          >
-                            ⚠️ Guest Duo (No Synergy)
-                          </span>
-                        );
-                      }
-
-                      return null;
-                    })()}
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
+                        ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
                     {isUnlocked && court.team1.length > 0 && (
                       <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
@@ -693,64 +640,11 @@ export function CurrentRoundView({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 2" : "Team 2"}
                     </span>
-                    {court.team2.length === 2 && (() => {
-                      const isViewerTeam = Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId));
-                      if (isViewerTeam && currentViewerPlayerId) {
-                        const partnerId = court.team2.find((id) => id !== currentViewerPlayerId);
-                        const isViewerGuest = playerAccounts[currentViewerPlayerId] === false;
-                        const isPartnerGuest = partnerId ? playerAccounts[partnerId] === false : false;
-                        const partnerName = partnerId ? (playerNames[partnerId] ?? "Partner") : "Partner";
-
-                        if (isViewerGuest) {
-                          return (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-950 shadow-[1px_1px_0px_0px_#000]"
-                              title="You are playing as a guest without an account. Link or register an account to track doubles synergy."
-                            >
-                              ⚠️ Synergy Ineligible (You&apos;re a guest)
-                            </span>
-                          );
-                        }
-                        if (isPartnerGuest) {
-                          return (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-950 shadow-[1px_1px_0px_0px_#000]"
-                              title={`${partnerName} is playing as a guest without an account. Both partners must have registered accounts to track doubles synergy.`}
-                            >
-                              ⚠️ Synergy Paused (Partner is guest)
-                            </span>
-                          );
-                        }
-                        if (partnerSynergy) {
-                          return (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                              ⚡ {partnerSynergy.score}% Synergy
-                            </span>
-                          );
-                        }
-                        return (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]"
-                            title="Eligible! Complete your first doubles match together to generate your synergy rating."
-                          >
-                            ⚡ New Duo (0 games)
-                          </span>
-                        );
-                      }
-
-                      if (isOrganizer && court.team2.some((id) => playerAccounts[id] === false)) {
-                        return (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase text-amber-900"
-                            title="Guest player on team. Ineligible for synergy tracking."
-                          >
-                            ⚠️ Guest Duo (No Synergy)
-                          </span>
-                        );
-                      }
-
-                      return null;
-                    })()}
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
+                        ⚡ {partnerSynergy!.score}% Synergy
+                      </span>
+                    )}
                     {isUnlocked && court.team2.length > 0 && (
                       <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
