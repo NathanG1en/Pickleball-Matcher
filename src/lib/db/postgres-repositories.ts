@@ -19,6 +19,9 @@ import type {
   RoundSitRecord,
   SessionRecord,
   StartedRoundRecord,
+  TournamentRecord,
+  TournamentDivision,
+  TournamentBracket,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { calculateSynergyScore } from "@/lib/synergy/calculator";
@@ -128,6 +131,47 @@ type MatchPlayerRow = {
 };
 
 type SitRow = { round_id: string; player_id: string };
+
+type TournamentRow = {
+  id: string;
+  group_id: string;
+  name: string;
+  status: "draft" | "active" | "completed";
+  divisions: TournamentDivision[] | string;
+  brackets: Record<string, TournamentBracket> | string;
+  created_at: Date;
+  updated_at: Date;
+};
+
+function parseJsonField<T>(value: unknown, defaultValue: T): T {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return defaultValue;
+    }
+  }
+  if (typeof value === "object") {
+    return value as T;
+  }
+  return defaultValue;
+}
+
+const mapTournament = (row: TournamentRow): TournamentRecord => {
+  const divisions = parseJsonField<TournamentDivision[]>(row.divisions, []);
+  const brackets = parseJsonField<Record<string, TournamentBracket>>(row.brackets, {});
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    name: row.name,
+    status: row.status,
+    divisions: Array.isArray(divisions) ? divisions : [],
+    brackets: typeof brackets === "object" && brackets !== null ? brackets : {},
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
 
 const mapGroup = (row: GroupRow): GroupRecord => ({
   id: row.id,
@@ -950,4 +994,60 @@ export class PostgresRepositories implements DomainRepository {
       }
     }
   }
+
+  async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
+    const rows = await this.query<TournamentRow[]>`
+      select id, group_id, name, status, divisions, brackets, created_at, updated_at
+      from tournaments
+      where id = ${tournamentId}
+    `;
+    return rows[0] ? mapTournament(rows[0]) : null;
+  }
+
+  async listTournaments(groupId: string): Promise<readonly TournamentRecord[]> {
+    const rows = await this.query<TournamentRow[]>`
+      select id, group_id, name, status, divisions, brackets, created_at, updated_at
+      from tournaments
+      where group_id = ${groupId}
+      order by created_at desc
+    `;
+    return rows.map(mapTournament);
+  }
+
+  async createTournament(tournament: TournamentRecord): Promise<void> {
+    await this.query`
+      insert into tournaments (
+        id, group_id, name, status, divisions, brackets, created_at, updated_at
+      ) values (
+        ${tournament.id},
+        ${tournament.groupId},
+        ${tournament.name},
+        ${tournament.status},
+        ${JSON.stringify(tournament.divisions)},
+        ${JSON.stringify(tournament.brackets)},
+        ${tournament.createdAt},
+        ${tournament.updatedAt}
+      )
+    `;
+  }
+
+  async updateTournament(tournament: TournamentRecord): Promise<void> {
+    await this.query`
+      update tournaments set
+        name = ${tournament.name},
+        status = ${tournament.status},
+        divisions = ${JSON.stringify(tournament.divisions)},
+        brackets = ${JSON.stringify(tournament.brackets)},
+        updated_at = ${tournament.updatedAt}
+      where id = ${tournament.id}
+    `;
+  }
+
+  async deleteTournament(tournamentId: string, groupId: string): Promise<void> {
+    await this.query`
+      delete from tournaments
+      where id = ${tournamentId} and group_id = ${groupId}
+    `;
+  }
 }
+
