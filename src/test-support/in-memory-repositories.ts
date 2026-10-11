@@ -16,6 +16,7 @@ import type {
   RoundSitRecord,
   SessionRecord,
   StartedRoundRecord,
+  TournamentRecord,
 } from "@/lib/domain/types";
 import { calculateSynergyScore } from "@/lib/synergy/calculator";
 
@@ -33,6 +34,7 @@ interface InMemoryState {
   replayMatches: ReplayMatch[];
   ratingSnapshots: Map<string, readonly RatingSnapshot[]>;
   synergies: PlayerSynergyRecord[];
+  tournaments: TournamentRecord[];
 }
 
 type InMemorySeed = Partial<Omit<InMemoryState, "ratingSnapshots">> & {
@@ -59,6 +61,7 @@ export class InMemoryRepositories implements DomainRepository {
       replayMatches: structuredClone(seed.replayMatches ?? []),
       ratingSnapshots: new Map(seed.ratingSnapshots ?? []),
       synergies: structuredClone(seed.synergies ?? []),
+      tournaments: structuredClone(seed.tournaments ?? []),
     };
   }
 
@@ -584,4 +587,39 @@ export class InMemoryRepositories implements DomainRepository {
       .filter((a) => a.username.toLowerCase().includes(trimmed) || a.name.toLowerCase().includes(trimmed))
       .slice(0, limit);
   }
+
+  async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
+    const found = this.state.tournaments.find((t) => t.id === tournamentId);
+    return found ? structuredClone(found) : null;
+  }
+
+  async listTournaments(groupId: string): Promise<readonly TournamentRecord[]> {
+    return structuredClone(
+      this.state.tournaments
+        .filter((t) => t.groupId === groupId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    );
+  }
+
+  async createTournament(tournament: TournamentRecord): Promise<void> {
+    this.state.tournaments.push(structuredClone(tournament));
+    this.writeCount += 1;
+  }
+
+  async updateTournament(tournament: TournamentRecord): Promise<void> {
+    const idx = this.state.tournaments.findIndex((t) => t.id === tournament.id);
+    if (idx !== -1) {
+      this.state.tournaments[idx] = structuredClone(tournament);
+      this.writeCount += 1;
+    }
+  }
+
+  async deleteTournament(tournamentId: string, groupId: string): Promise<void> {
+    const idx = this.state.tournaments.findIndex((t) => t.id === tournamentId && t.groupId === groupId);
+    if (idx !== -1) {
+      this.state.tournaments.splice(idx, 1);
+      this.writeCount += 1;
+    }
+  }
 }
+

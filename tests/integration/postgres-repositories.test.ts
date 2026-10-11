@@ -5,8 +5,13 @@ import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import type { StartedRoundRecord } from "@/lib/domain/types";
 
+const testDbUrl = process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+if (process.env.DATABASE_URL && testDbUrl === process.env.DATABASE_URL) {
+  throw new Error("SAFETY ABORT: Refusing to run destructive integration test truncate against DATABASE_URL. Use a separate TEST_DATABASE_URL.");
+}
+
 const sql = postgres(
-  process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+  testDbUrl,
   { prepare: false, onnotice: () => undefined },
 );
 const repository = new PostgresRepositories(sql);
@@ -194,4 +199,39 @@ describe("PostgresRepositories", () => {
 
     expect(matches.map((match) => match.id)).toEqual(["match-a", "match-b"]);
   });
+
+  it("creates, reads, and updates tournaments with JSON serialization", async () => {
+    const tournament = {
+      id: "tr_test_1",
+      groupId: "group-1",
+      name: "Summer Championship",
+      status: "active" as const,
+      divisions: ["mens_singles" as const, "womens_doubles" as const],
+      brackets: {
+        mens_singles: {
+          division: "mens_singles" as const,
+          participants: [
+            { id: "a", name: "A", playerIds: ["a"] },
+            { id: "b", name: "B", playerIds: ["b"] },
+          ],
+          matches: [],
+          roundNames: ["Finals"],
+        },
+      },
+      createdAt: new Date("2026-10-10T12:00:00.000Z"),
+      updatedAt: new Date("2026-10-10T12:00:00.000Z"),
+    };
+
+    await repository.createTournament(tournament);
+
+    const fetched = await repository.getTournament("tr_test_1");
+    expect(fetched).not.toBeNull();
+    expect(fetched?.name).toBe("Summer Championship");
+    expect(fetched?.divisions).toEqual(["mens_singles", "womens_doubles"]);
+    expect(fetched?.brackets["mens_singles"]?.participants.length).toBe(2);
+
+    const list = await repository.listTournaments("group-1");
+    expect(list.some((t) => t.id === "tr_test_1")).toBe(true);
+  });
 });
+
