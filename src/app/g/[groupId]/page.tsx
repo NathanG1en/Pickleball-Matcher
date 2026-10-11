@@ -17,6 +17,7 @@ import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
+import { PastSessionsList } from "@/components/groups/past-sessions-list";
 import type { MatchRecord } from "@/lib/domain/types";
 
 export default async function GroupDashboardPage({
@@ -59,8 +60,13 @@ export default async function GroupDashboardPage({
 
   const organizers = await repository.listGroupOrganizers(groupId);
 
+  const playerNameMap: Record<string, string> = {};
+  for (const p of players) {
+    playerNameMap[p.id] = p.name;
+  }
+
   const activeSession = sessions.find((s) => s.status === "active");
-  const recentSessions = sessions.slice(0, 10);
+  const pastSessions = sessions.filter((s) => s.id !== activeSession?.id);
 
   let currentRoundMatches: readonly MatchRecord[] = [];
   let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
@@ -73,10 +79,53 @@ export default async function GroupDashboardPage({
     }
   }
 
-  const playerNameMap: Record<string, string> = {};
-  for (const p of players) {
-    playerNameMap[p.id] = p.name;
-  }
+  const pastSessionsData = await Promise.all(
+    pastSessions.map(async (s) => {
+      const startedRounds = await repository.listStartedRounds(s.id);
+      let totalGames = 0;
+      const rounds = startedRounds.map((sr) => {
+        const roundMatches = sr.matches.map((m) => {
+          const t1 = sr.matchPlayers
+            .filter((mp) => mp.matchId === m.id && mp.team === 1)
+            .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+          const t2 = sr.matchPlayers
+            .filter((mp) => mp.matchId === m.id && mp.team === 2)
+            .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+          return {
+            id: m.id,
+            courtNumber: m.courtNumber,
+            team1Names: t1,
+            team2Names: t2,
+            team1Score: m.team1Score,
+            team2Score: m.team2Score,
+            status: m.status,
+          };
+        });
+        totalGames += roundMatches.length;
+
+        const sittingNames = sr.sits.map((sit) => playerNameMap[sit.playerId] ?? sit.playerId);
+
+        return {
+          id: sr.round.id,
+          roundNumber: sr.round.roundNumber,
+          status: sr.round.status,
+          matches: roundMatches,
+          sittingNames,
+        };
+      });
+
+      return {
+        id: s.id,
+        courtCount: s.courtCount,
+        currentRoundNumber: s.currentRoundNumber,
+        status: s.status,
+        startedAt: s.startedAt.toISOString(),
+        endedAt: s.endedAt ? s.endedAt.toISOString() : null,
+        rounds,
+        totalGames,
+      };
+    }),
+  );
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 pb-24 text-black">
@@ -190,34 +239,10 @@ export default async function GroupDashboardPage({
             </section>
           )}
 
-          {/* Recent Sessions */}
+          {/* Past Sessions */}
           <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
             <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
-            {recentSessions.length === 0 ? (
-              <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
-            ) : (
-              <div className="divide-y-2 divide-neutral-100">
-                {recentSessions.map((s) => (
-                  <div key={s.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-black text-sm block">
-                        {new Date(s.startedAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                      <span className="text-xs font-bold text-neutral-500">
-                        {s.courtCount} court{s.courtCount > 1 ? "s" : ""} · {s.currentRoundNumber} rounds
-                      </span>
-                    </div>
-                    <Badge variant={s.status === "active" ? "warning" : "muted"}>
-                      {s.status === "active" ? "Active" : "Completed"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PastSessionsList groupId={groupId} sessions={pastSessionsData} />
           </section>
         </>
       )}

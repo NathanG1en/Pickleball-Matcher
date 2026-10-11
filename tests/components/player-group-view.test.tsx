@@ -364,6 +364,147 @@ describe("Player View for Groups and Sessions", () => {
         })
       ).rejects.toThrow("REDIRECT:/players");
     });
+
+    it("allows members to view completed sessions with full page info and back button", async () => {
+      const completedSessionId = "ses_completed";
+      const repo = new InMemoryRepositories({
+        groups: [
+          {
+            id: groupId,
+            name: "Pickleball Squad",
+            organizerPinHash: "hash",
+            createdAt: new Date(),
+            isPublic: true,
+            ownerAccountId: hostAccountId,
+          },
+        ],
+        playerAccounts: [
+          {
+            id: hostAccountId,
+            username: "host_pro",
+            name: "Host Pro",
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            createdAt: new Date(),
+          },
+          {
+            id: memberAccountId,
+            username: "member_joe",
+            name: "Member Joe",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+        ],
+        players: [
+          {
+            id: "p_host",
+            groupId,
+            name: "Host Pro",
+            initialRating: 1200,
+            rating: 1200,
+            ratedGamesPlayed: 10,
+            active: true,
+            accountId: hostAccountId,
+            username: "host_pro",
+          },
+          {
+            id: "p_member",
+            groupId,
+            name: "Member Joe",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 5,
+            active: true,
+            accountId: memberAccountId,
+            username: "member_joe",
+          },
+        ],
+        sessions: [
+          {
+            id: completedSessionId,
+            groupId,
+            startedAt: new Date("2026-10-10T14:00:00Z"),
+            endedAt: new Date("2026-10-10T15:30:00Z"),
+            status: "completed",
+            courtCount: 1,
+            currentRoundNumber: 1,
+            version: 2,
+          },
+        ],
+        rounds: [
+          {
+            id: "rnd_c1",
+            sessionId: completedSessionId,
+            roundNumber: 1,
+            status: "completed",
+            seed: 999,
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: new Date(),
+            startedAt: new Date(),
+            completedAt: new Date(),
+            version: 1,
+          },
+        ],
+        matches: [
+          {
+            id: "m_c1",
+            roundId: "rnd_c1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+            completedAt: new Date(),
+            version: 2,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_c1", playerId: "p_host", team: 1, ratingBefore: 1200, ratingAfter: 1208 },
+          { matchId: "m_c1", playerId: "p_member", team: 2, ratingBefore: 1000, ratingAfter: 992 },
+        ],
+      });
+      setActionRepository(repo);
+
+      const pageJsx = await ActiveSessionPage({
+        params: Promise.resolve({ groupId, sessionId: completedSessionId }),
+      });
+      const html = renderToStaticMarkup(pageJsx);
+
+      // Does not redirect, renders completed session view
+      expect(html).toContain("Session Summary");
+      expect(html).toContain("Completed Session");
+
+      // Back button returning to group
+      expect(html).toContain("← Back to Group");
+      expect(html).toContain('aria-label="Go back"');
+
+      // Overview stats
+      expect(html).toContain("Courts");
+      expect(html).toContain("Rounds");
+      expect(html).toContain("Total Games");
+      expect(html).toContain("Players");
+
+      // Player summary
+      expect(html).toContain("Player Summary");
+      expect(html).toContain("Host Pro");
+      expect(html).toContain("Member Joe");
+
+      // Rounds & Matchups
+      expect(html).toContain("All Rounds &amp; Matchups");
+      expect(html).toContain("Round 1");
+      expect(html).toContain("Court 1");
+      expect(html).toContain("11 – 9");
+    });
   });
 
   describe("GroupPlayersPage", () => {
