@@ -2,7 +2,15 @@
 
 import { useRouter } from "next/navigation";
 
-export function BackButton({ fallbackHref = "/" }: { fallbackHref?: string }) {
+export function BackButton({
+  fallbackHref = "/",
+  label = "← Back",
+  className,
+}: {
+  fallbackHref?: string;
+  label?: string;
+  className?: string;
+}) {
   const router = useRouter();
 
   const handleBack = () => {
@@ -17,10 +25,13 @@ export function BackButton({ fallbackHref = "/" }: { fallbackHref?: string }) {
     <button
       type="button"
       onClick={handleBack}
-      className="inline-flex items-center font-black uppercase text-xs text-black active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+      className={
+        className ??
+        "inline-flex items-center font-black uppercase text-xs text-black active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+      }
       aria-label="Go back"
     >
-      ← Back
+      {label}
     </button>
   );
 }
