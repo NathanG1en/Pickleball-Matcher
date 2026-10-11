@@ -23,12 +23,16 @@ export default async function GroupPlayersPage({
 
   if (!group) redirect("/setup");
 
-  const accountId = await getActivePlayerAccountId();
+  const [accountId, guestPlayerId] = await Promise.all([
+    getActivePlayerAccountId(),
+    (await import("@/lib/auth/guest-session")).getGuestPlayerIdForGroup(groupId),
+  ]);
   const organizerSession = await getActiveOrganizerSession();
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
   const isOrganizer = isAccountOrganizer || isSessionOrganizer;
-  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+  const isGuestMember = Boolean(guestPlayerId && players.some((player) => player.id === guestPlayerId && player.active));
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
   const isPartOfGroup = isOrganizer || isMember;
 
   if (!isPartOfGroup && !group.isPublic) {

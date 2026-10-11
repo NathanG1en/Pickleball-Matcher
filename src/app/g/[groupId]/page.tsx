@@ -16,8 +16,10 @@ import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
+import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
+import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
 export default async function GroupDashboardPage({
@@ -37,7 +39,10 @@ export default async function GroupDashboardPage({
     repository.listSessions(groupId),
   ]);
   let players = initialPlayers;
-  const accountId = await getActivePlayerAccountId();
+  const [accountId, guestPlayerId] = await Promise.all([
+    getActivePlayerAccountId(),
+    getGuestPlayerIdForGroup(groupId),
+  ]);
   const isAccountOrganizer = Boolean(accountId && await repository.isGroupOrganizer(groupId, accountId));
   const organizerSession = await getActiveOrganizerSession();
   const isSessionOrganizer = Boolean(organizerSession && organizerSession.groupId === groupId);
@@ -48,7 +53,8 @@ export default async function GroupDashboardPage({
     players = await repository.listPlayers(groupId);
   }
 
-  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active));
+  const isGuestMember = Boolean(guestPlayerId && players.some((p) => p.id === guestPlayerId && p.active));
+  const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
   const isPartOfGroup = isOrganizer || isMember;
 
   if (!isPartOfGroup && !group.isPublic) {
@@ -133,14 +139,17 @@ export default async function GroupDashboardPage({
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref={accountId && isMember ? "/players" : "/players/groups"} />
-          {isOrganizer && (
-            <GroupOptionsMenu
-              groupId={groupId}
-              groupName={group.name}
-              isAccountOrganizer={isAccountOrganizer}
-            />
-          )}
+          <BackButton fallbackHref={accountId && isMember ? "/players" : "/"} />
+          <div className="flex items-center gap-2">
+            <ShareGroupButton groupId={groupId} groupName={group.name} />
+            {isOrganizer && (
+              <GroupOptionsMenu
+                groupId={groupId}
+                groupName={group.name}
+                isAccountOrganizer={isAccountOrganizer}
+              />
+            )}
+          </div>
         </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
         <p className="text-xs font-bold text-neutral-600 mt-1">

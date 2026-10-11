@@ -110,6 +110,11 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 }
 
 function getReturnPath(): string | null {
+  if (typeof window === "undefined") return null;
   const requested = new URLSearchParams(window.location.search).get("next");
-  return requested?.startsWith("/temporary") ? requested : null;
+  if (!requested) return null;
+  if (requested.startsWith("/") && !requested.startsWith("//") && !requested.includes("\\")) {
+    return requested;
+  }
+  return null;
 }
