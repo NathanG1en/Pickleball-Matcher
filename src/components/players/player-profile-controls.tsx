@@ -403,36 +403,36 @@ export function PlayerProfileHeader({
         </p>
       </div>
 
-      <div className="mt-2 rounded-2xl border-2 border-black bg-neutral-50 p-3 shadow-[2px_2px_0px_0px_#000]">
+      <div className="mt-3 rounded-2xl border-2 border-black bg-neutral-50 p-3.5 shadow-[2px_2px_0px_0px_#000]">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-black uppercase tracking-wider">Account Visibility</p>
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${
-                  isPublic
-                    ? "bg-[#ccff00] text-black"
-                    : "bg-neutral-200 text-neutral-700"
-                }`}
-              >
-                {isPublic ? "🌐 Public" : "🔒 Private"}
-              </span>
-            </div>
-            <p className="mt-0.5 text-xs font-bold text-neutral-600">
-              {isPublic
-                ? "Your profile and stats are discoverable by @username search."
-                : "Your profile is private (🔒); stats are hidden from public search."}
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+              Account Visibility
             </p>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-3.5 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] ${
+                isPublic
+                  ? "bg-[#ccff00] text-black"
+                  : "bg-neutral-200 text-neutral-700"
+              }`}
+            >
+              {isPublic ? "🌐 Public" : "🔒 Private"}
+            </span>
           </div>
           <button
             type="button"
             onClick={handleTogglePrivacy}
             disabled={privacySaving}
-            className="shrink-0 rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
+            className="shrink-0 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
           >
             {privacySaving ? "Saving…" : isPublic ? "Make private" : "Make public"}
           </button>
         </div>
+        <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
+          {isPublic
+            ? "Your profile and stats are discoverable by @username search."
+            : "Your profile is private (🔒); stats are hidden from public search."}
+        </p>
         {privacyError && (
           <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
             {privacyError}
@@ -469,36 +469,36 @@ export function PlayerVisibilityControl({
   };
 
   return (
-    <div className="mt-2 rounded-2xl border-2 border-black bg-neutral-50 p-3 shadow-[2px_2px_0px_0px_#000]">
+    <div className="mt-3 rounded-2xl border-2 border-black bg-neutral-50 p-3.5 shadow-[2px_2px_0px_0px_#000]">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-black uppercase tracking-wider">Account Visibility</p>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full border border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${
-                isPublic
-                  ? "bg-[#ccff00] text-black"
-                  : "bg-neutral-200 text-neutral-700"
-              }`}
-            >
-              {isPublic ? "🌐 Public" : "🔒 Private"}
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs font-bold text-neutral-600">
-            {isPublic
-              ? "Your profile and stats are discoverable by @username search."
-              : "Your profile is private (🔒); stats are hidden from public search."}
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+            Account Visibility
           </p>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-3.5 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] ${
+              isPublic
+                ? "bg-[#ccff00] text-black"
+                : "bg-neutral-200 text-neutral-700"
+            }`}
+          >
+            {isPublic ? "🌐 Public" : "🔒 Private"}
+          </span>
         </div>
         <button
           type="button"
           onClick={toggle}
           disabled={pending}
-          className="shrink-0 rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
+          className="shrink-0 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
         >
           {pending ? "Saving…" : isPublic ? "Make private" : "Make public"}
         </button>
       </div>
+      <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
+        {isPublic
+          ? "Your profile and stats are discoverable by @username search."
+          : "Your profile is private (🔒); stats are hidden from public search."}
+      </p>
       {error && (
         <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
           {error}
