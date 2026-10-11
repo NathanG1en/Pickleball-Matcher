@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   searchPlayersByUsernameAction,
   updatePlayerPrivacyAction,
-  addPlayerByAccountIdAction,
 } from "@/app/actions/players";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";

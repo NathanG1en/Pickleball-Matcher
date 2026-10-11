@@ -36,7 +36,7 @@ export function SynergyExplainerButton() {
               </button>
             </div>
             <p className="text-[11px] font-medium leading-relaxed text-neutral-700">
-              It's magic. Pure magic that measures the power of your friendship
+              It&apos;s magic. Pure magic that measures the power of your friendship
             </p>
           </div>
         </>
