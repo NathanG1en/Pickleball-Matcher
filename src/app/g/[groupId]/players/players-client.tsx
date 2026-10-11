@@ -19,13 +19,15 @@ export function PlayersClient({
   canManage?: boolean;
 }) {
   const router = useRouter();
+  const [prevInitialPlayers, setPrevInitialPlayers] = useState(initialPlayers);
   const [players, setPlayers] = useState<readonly PlayerRecord[]>(initialPlayers);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  React.useEffect(() => {
+  if (initialPlayers !== prevInitialPlayers) {
+    setPrevInitialPlayers(initialPlayers);
     setPlayers(initialPlayers);
-  }, [initialPlayers]);
+  }
 
   const handleAddPlayer = async (name: string, initialRating: number) => {
     setIsPending(true);

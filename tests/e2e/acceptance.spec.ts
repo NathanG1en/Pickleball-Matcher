@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { createAndSignInPlayer } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
-    // 1. Visit setup page
-    await page.goto("/setup");
+    // 1. Authenticate player and visit setup page
+    await createAndSignInPlayer(page);
     await expect(page.locator("h1")).toContainText("Create Group");
 
     // Accessibility check on setup page
@@ -16,8 +17,6 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     // 2. Submit setup form
     const groupName = `Acceptance Test League ${Date.now()}`;
     await page.fill("#group-name", groupName);
-    await page.fill("#organizer-pin", "1234");
-    await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
     await page.click("button[type='submit']");
 
     // Should navigate to group dashboard
@@ -25,12 +24,12 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator("h1")).toContainText(groupName);
 
     // 3. Add players to roster until we have 14 players
-    await page.click("a[href*='/players']");
+    await page.click("a:has-text('Manage Roster')");
     await expect(page).toHaveURL(/\/players/);
 
     const playerNames = [
       "Alex", "Blake", "Casey", "Drew", "Ellis", "Finley", "Glenn",
-      "Harper", "Jamie", "Kendall", "Logan", "Morgan", "Peyton", "Reese"
+      "Harper", "Jamie", "Kendall", "Logan", "Morgan", "Peyton"
     ];
 
     for (const name of playerNames) {

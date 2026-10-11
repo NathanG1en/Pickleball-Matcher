@@ -141,7 +141,7 @@ export default async function GroupDashboardPage({
       {/* Group Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="mb-4 flex items-center justify-between">
-          <BackButton fallbackHref={accountId && isMember ? "/players" : "/"} />
+          <BackButton href={accountId ? "/players" : "/"} fallbackHref={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
             {isOrganizer && (
@@ -154,9 +154,20 @@ export default async function GroupDashboardPage({
           </div>
         </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
-        <p className="text-xs font-bold text-neutral-600 mt-1">
-          {players.length} players on roster
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs font-bold text-neutral-600">
+            {players.length} players on roster
+          </p>
+          {isOrganizer && (
+            <Link
+              href={`/g/${groupId}/players`}
+              data-testid="manage-roster-link"
+              className="text-xs font-black uppercase text-black hover:underline"
+            >
+              Manage Roster →
+            </Link>
+          )}
+        </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
         {isOrganizer && (
@@ -239,7 +250,7 @@ export default async function GroupDashboardPage({
                   href={`/g/${groupId}/sessions/new`}
                   className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
                 >
-                  Start Session
+                  Start New Session
                 </Link>
                 <Link
                   href={`/g/${groupId}/tournaments/new`}

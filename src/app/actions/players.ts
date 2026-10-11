@@ -23,9 +23,12 @@ const searchPlayersSchema = z.object({
   groupId: z.string(),
 });
 
-const updatePrivacySchema = z.object({
-  isPublic: z.boolean(),
-});
+const updatePrivacySchema = z.union([
+  z.boolean().transform((isPublic) => ({ isPublic })),
+  z.object({
+    isPublic: z.boolean(),
+  }),
+]);
 
 const addPlayerByAccountSchema = z.object({
   groupId: z.string(),
@@ -184,7 +187,11 @@ export async function updatePlayerPrivacyAction(
     }
     const repository = getActionRepository();
     await repository.updatePlayerPrivacy(accountId, parsed.data.isPublic);
-    revalidatePath("/players");
+    try {
+      revalidatePath("/players");
+    } catch {
+      // Non-request test contexts.
+    }
     return { ok: true, data: undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update privacy";
