@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerSignupAction } from "@/app/actions/player-account";
@@ -13,6 +13,8 @@ import {
   VisibilityToggle,
 } from "@/components/ui";
 
+const emptySubscribe = () => () => {};
+
 const ratings = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
 const skillDescriptions = {
   beginner: "You know the basic rules and can serve and return, but placement and rally consistency are still developing. Dinks and third-shot drops or drives are not reliable yet.",
@@ -22,9 +24,10 @@ const skillDescriptions = {
 
 export function PlayerSignupForm() {
   const router = useRouter();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
-  const [gender, setGender] = useState<"male" | "female" | "">("");
+  const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [skillLevel, setSkillLevel] = useState<keyof typeof ratings>("intermediate");
@@ -51,7 +54,7 @@ export function PlayerSignupForm() {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4 text-left">
+    <form onSubmit={submit} noValidate className="space-y-4 text-left" data-hydrated={mounted ? "true" : undefined}>
       {error && Object.values(fieldErrors).every((messages) => messages.length === 0) && error !== "Please check your player details and try again." && (
         <Alert variant="danger-soft" size="md">
           {error}
@@ -109,7 +112,6 @@ export function PlayerSignupForm() {
           hasError={Boolean(fieldErrors.gender?.length)}
           aria-describedby={fieldErrors.gender?.length ? "player-gender-error" : undefined}
         >
-          <option value="" disabled>Select gender</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
         </Select>

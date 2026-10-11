@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import nextEnv from "@next/env";
+
+nextEnv.loadEnvConfig(process.cwd());
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://127.0.0.1:3000",
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [
@@ -22,8 +25,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npx next dev -p 3000 -H 127.0.0.1",
-    url: "http://127.0.0.1:3000",
+    command: process.env.CI ? "npx next start -p 3000" : "npm run dev",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {

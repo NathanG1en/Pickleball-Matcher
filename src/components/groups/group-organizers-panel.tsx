@@ -55,16 +55,13 @@ export function GroupOrganizersPanel({
   useEffect(() => {
     const trimmed = username.replace(/^@/, "").trim();
     if (trimmed.length < 2) {
-      setSearchResults([]);
-      setSearchHasRun(false);
-      setIsSearching(false);
       return;
     }
 
     let cancelled = false;
-    setIsSearching(true);
 
     const timer = setTimeout(async () => {
+      setIsSearching(true);
       try {
         const res = await searchPlayersByUsernameAction({ query: trimmed, groupId });
         if (!cancelled) {
@@ -285,8 +282,14 @@ export function GroupOrganizersPanel({
                     maxLength={24}
                     value={username}
                     onChange={(event) => {
-                      setUsername(event.target.value);
+                      const val = event.target.value;
+                      setUsername(val);
                       if (message) setMessage(null);
+                      if (val.replace(/^@/, "").trim().length < 2) {
+                        setSearchResults([]);
+                        setSearchHasRun(false);
+                        setIsSearching(false);
+                      }
                     }}
                     placeholder="Find player by username"
                     autoComplete="off"

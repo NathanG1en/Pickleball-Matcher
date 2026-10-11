@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { createTestGroup } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
   test("enforces PIN authentication and rate limits invalid attempts", async ({
@@ -6,13 +7,8 @@ test.describe("Permissions and Security Workflow", () => {
     browser,
   }) => {
     // 1. Create a test group
-    await page.goto("/setup");
     const groupName = `Security Test League ${Date.now()}`;
-    await page.fill("#group-name", groupName);
-    await page.fill("#organizer-pin", "9876");
-    await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
-    await page.click("button[type='submit']");
-    await expect(page).toHaveURL(/\/g\/grp_/);
+    await createTestGroup(page, groupName);
 
     const groupUrl = page.url();
     const groupId = groupUrl.split("/g/")[1].split("/")[0];

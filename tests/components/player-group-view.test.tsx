@@ -8,7 +8,6 @@ import { PublicGroupList } from "@/components/players/public-group-list";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
-import { redirect } from "next/navigation";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({

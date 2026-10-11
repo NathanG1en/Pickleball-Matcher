@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { createTestGroup } from "./test-helpers";
 
 test.describe("Resilience and Safe Drafts", () => {
   test("retains unsaved draft scores on validation failure, handles stale versions, and passes a11y audits", async ({
@@ -7,16 +8,11 @@ test.describe("Resilience and Safe Drafts", () => {
     context,
   }) => {
     // 1. Create group
-    await page.goto("/setup");
     const groupName = `Resilience League ${Date.now()}`;
-    await page.fill("#group-name", groupName);
-    await page.fill("#organizer-pin", "3456");
-    await page.fill("#setup-token", process.env.SETUP_TOKEN ?? "test-setup-token");
-    await page.click("button[type='submit']");
-    await expect(page).toHaveURL(/\/g\/grp_/);
+    await createTestGroup(page, groupName);
 
     // 2. Add 4 players
-    await page.click("a[href*='/players']");
+    await page.click("a:has-text('Manage Roster')");
     await expect(page).toHaveURL(/\/players/);
     const players = ["Harper", "Riley", "Jordan", "Taylor"];
     for (const name of players) {

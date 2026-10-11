@@ -109,4 +109,28 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
     expect(html).toContain("80% Synergy");
     expect(html).toContain("8 matches");
   });
+
+  it("PlayerProfilePage renders encouraging Doubles Synergy empty state when no partner exists yet", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "solo_player",
+          name: "Solo Player",
+          isPublic: true,
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const PageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(PageElement);
+
+    expect(html).toContain("Doubles Synergy");
+    expect(html).toContain("Play doubles matches with other registered accounts");
+  });
 });
