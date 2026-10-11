@@ -45,7 +45,7 @@ export function PlayerSignupForm() {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4 text-left">
+    <form action="#" onSubmit={submit} noValidate className="space-y-4 text-left">
       {error && Object.values(fieldErrors).every((messages) => messages.length === 0) && error !== "Please check your player details and try again." && <div role="alert" className="rounded-xl border-2 border-red-600 bg-red-50 p-3 text-sm font-black text-red-700">{error}</div>}
       <Field label="Username" id="player-username">
         <input id="player-username" required minLength={3} maxLength={24} pattern="[A-Za-z0-9_]+" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Letters, numbers, underscores" aria-invalid={Boolean(fieldErrors.username?.length)} aria-describedby={fieldErrors.username?.length ? "player-username-error" : undefined} className={fieldErrors.username?.length ? errorInputClass : inputClass} />
