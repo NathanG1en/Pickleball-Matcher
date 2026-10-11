@@ -129,37 +129,16 @@ export default async function GroupDashboardPage({
               <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
               <div className="grid grid-cols-1 gap-2">
                 {currentRoundMatches.map((m) => {
-                  const t1Mps = currentMatchPlayers.filter((mp) => mp.matchId === m.id && mp.team === 1);
-                  const t2Mps = currentMatchPlayers.filter((mp) => mp.matchId === m.id && mp.team === 2);
-                  const t1 = t1Mps.map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                  const t2 = t2Mps.map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                  const playerAccountMap = new Map(players.map((p) => [p.id, Boolean(p.accountId)]));
-                  const hasGuest = [...t1Mps, ...t2Mps].some((mp) => !playerAccountMap.get(mp.playerId));
-                  const isDoubles = t1.length === 2 || t2.length === 2;
-
+                  const t1 = currentMatchPlayers
+                    .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                  const t2 = currentMatchPlayers
+                    .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                    .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                   return (
                     <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
                       <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-black text-black">Court {m.courtNumber}</span>
-                          {isDoubles && (
-                            hasGuest ? (
-                              <span
-                                className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-900"
-                                title="Guest player on court: doubles synergy is paused for this pairing."
-                              >
-                                Guest in match · Synergy paused
-                              </span>
-                            ) : (
-                              <span
-                                className="rounded bg-[#ccff00]/40 border border-black/20 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-900"
-                                title="All players have registered accounts: doubles synergy will update on match completion."
-                              >
-                                ⚡ Synergy active
-                              </span>
-                            )
-                          )}
-                        </div>
+                        <span className="font-black text-black block">Court {m.courtNumber}</span>
                         <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                       </div>
                       <Badge variant={m.status === "completed" ? "success" : m.status === "cancelled" ? "muted" : "warning"}>

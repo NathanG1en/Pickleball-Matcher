@@ -233,33 +233,12 @@ export function GroupOrganizersPanel({
     setPendingPlayerId(null);
   };
 
-  const guestCount = players.filter((p) => !p.accountId).length;
-  const registeredCount = players.length - guestCount;
-
   return (
     <section className="space-y-3 rounded-2xl border-2 border-black bg-[#fef08a] p-4 shadow-[3px_3px_0px_0px_#000]">
       <div>
         <h2 className="font-display text-xl font-black uppercase">Roster ({players.length})</h2>
-        <p className="text-xs font-semibold text-neutral-700">
-          Players and group organizers{guestCount > 0 ? ` · ${registeredCount} registered, ${guestCount} guest${guestCount > 1 ? "s" : ""}` : ""}.
-        </p>
+        <p className="text-xs font-semibold text-neutral-700">Players and group organizers.</p>
       </div>
-
-      {guestCount > 0 && (isHost || isOrganizer) && (
-        <div className="rounded-xl border-2 border-black bg-white p-3 shadow-[2px_2px_0px_0px_#000] space-y-1 text-black">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-900">
-              ⚡ Synergy Notice
-            </span>
-            <span className="rounded-md border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-800">
-              {guestCount} Guest{guestCount > 1 ? "s" : ""} Ineligible
-            </span>
-          </div>
-          <p className="text-[11px] font-semibold leading-relaxed text-neutral-600">
-            Guest players earn match ratings, but <strong>doubles synergy chemistry is only tracked between registered player accounts</strong>. To enable synergy, have guests register and add them by @username using <em>Find Player</em>.
-          </p>
-        </div>
-      )}
       {isHost && (
         <div className="space-y-2">
           {/* Mode Switch Tabs */}
@@ -455,21 +434,6 @@ export function GroupOrganizersPanel({
                         }`}
                       >
                         {organizer.isHost ? "Host" : "Organizer"}
-                      </span>
-                    )}
-                    {!player.accountId ? (
-                      <span
-                        className="rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase text-amber-900"
-                        title="Guest player — unlinked to an account. Ineligible for doubles synergy tracking."
-                      >
-                        Guest · No Synergy
-                      </span>
-                    ) : (
-                      <span
-                        className="rounded-full border border-black/20 bg-[#ccff00]/40 px-2 py-0.5 text-[9px] font-black uppercase text-neutral-900"
-                        title="Registered player account — eligible for doubles synergy tracking."
-                      >
-                        ⚡ Synergy Ready
                       </span>
                     )}
                   </div>
