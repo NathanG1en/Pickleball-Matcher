@@ -73,16 +73,20 @@ export function PlayerProfileHeader({
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [privacySaving, setPrivacySaving] = useState(false);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
+  const [privacyToast, setPrivacyToast] = useState<string | null>(null);
 
   const handleTogglePrivacy = async () => {
     if (privacySaving) return;
     setPrivacySaving(true);
     setPrivacyError(null);
+    setPrivacyToast(null);
     const nextVal = !isPublic;
     const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
     if (res.ok) {
       setIsPublic(nextVal);
+      setPrivacyToast(nextVal ? "Profile is now Public (🌐)" : "Profile is now Private (🔒)");
       router.refresh();
+      setTimeout(() => setPrivacyToast(null), 3000);
     } else {
       setPrivacyError(res.error ?? "Failed to update privacy");
     }
@@ -433,6 +437,15 @@ export function PlayerProfileHeader({
             ? "Your profile and stats are discoverable by @username search."
             : "Your profile is private (🔒); stats are hidden from public search."}
         </p>
+        {privacyToast && (
+          <div
+            role="status"
+            className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
+          >
+            <span>✓</span>
+            <span>{privacyToast}</span>
+          </div>
+        )}
         {privacyError && (
           <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
             {privacyError}
@@ -452,16 +465,20 @@ export function PlayerVisibilityControl({
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const toggle = async () => {
     if (pending) return;
     setPending(true);
     setError(null);
+    setToast(null);
     const nextVal = !isPublic;
     const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
     if (res.ok) {
       setIsPublic(nextVal);
+      setToast(nextVal ? "Profile is now Public (🌐)" : "Profile is now Private (🔒)");
       router.refresh();
+      setTimeout(() => setToast(null), 3000);
     } else {
       setError(res.error ?? "Failed to update visibility.");
     }
@@ -499,6 +516,15 @@ export function PlayerVisibilityControl({
           ? "Your profile and stats are discoverable by @username search."
           : "Your profile is private (🔒); stats are hidden from public search."}
       </p>
+      {toast && (
+        <div
+          role="status"
+          className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
+        >
+          <span>✓</span>
+          <span>{toast}</span>
+        </div>
+      )}
       {error && (
         <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
           {error}
