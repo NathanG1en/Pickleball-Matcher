@@ -212,8 +212,8 @@ export class InMemoryRepositories implements DomainRepository {
       groupId,
       name: account.name,
       initialRating: account.initialRating,
-      rating: account.initialRating,
-      ratedGamesPlayed: 0,
+      rating: account.rating ?? account.initialRating,
+      ratedGamesPlayed: account.ratedGamesPlayed ?? 0,
       active: true,
       accountId,
       username: account.username,
@@ -258,7 +258,8 @@ export class InMemoryRepositories implements DomainRepository {
         const matchIds = new Set(this.state.matches.filter((match) => roundIds.has(match.roundId) && match.status === "completed").map((match) => match.id));
         let wins = 0;
         let losses = 0;
-        let rating = player.initialRating;
+        const account = this.state.playerAccounts.find((item) => item.id === accountId);
+        let rating = account?.rating ?? account?.initialRating ?? player.initialRating;
         const playerMatches = this.state.matchPlayers
           .filter((membership) => membership.playerId === player.id && matchIds.has(membership.matchId))
           .sort((first, second) => (this.state.matches.find((match) => match.id === first.matchId)?.completedAt?.getTime() ?? 0) - (this.state.matches.find((match) => match.id === second.matchId)?.completedAt?.getTime() ?? 0));
@@ -328,7 +329,18 @@ export class InMemoryRepositories implements DomainRepository {
     if (existing) {
       if (player.name !== undefined) Object.assign(existing, { name: player.name });
       if (player.active !== undefined) Object.assign(existing, { active: player.active });
-      if (player.initialRating !== undefined) Object.assign(existing, { initialRating: player.initialRating });
+      if (player.initialRating !== undefined) {
+        Object.assign(existing, { initialRating: player.initialRating });
+        if (existing.accountId) {
+          const account = this.state.playerAccounts.find((a) => a.id === existing.accountId);
+          if (account) (account as { initialRating: number }).initialRating = player.initialRating;
+          for (const p of this.state.players) {
+            if (p.accountId === existing.accountId) {
+              Object.assign(p, { initialRating: player.initialRating });
+            }
+          }
+        }
+      }
       this.writeCount += 1;
     }
   }
@@ -360,15 +372,20 @@ export class InMemoryRepositories implements DomainRepository {
     return this.state.sessions.find((session) => session.id === sessionId) ?? null;
   }
 
-  async listPlayers(groupId: string, options?: { includeInactive?: boolean }) {
+  async listPlayers(groupId?: string, options?: { includeInactive?: boolean }) {
     return this.state.players
-      .filter((player) => player.groupId === groupId && (options?.includeInactive ? true : player.active))
+      .filter((player) => (!groupId || player.groupId === groupId) && (options?.includeInactive ? true : player.active))
       .map((player) => {
-        if (player.username) return player;
         if (player.accountId) {
           const account = this.state.playerAccounts.find((a) => a.id === player.accountId);
-          if (account?.username) {
-            return { ...player, username: account.username };
+          if (account) {
+            return {
+              ...player,
+              username: account.username ?? player.username,
+              rating: account.rating ?? player.rating,
+              ratedGamesPlayed: account.ratedGamesPlayed ?? player.ratedGamesPlayed,
+              gender: player.gender ?? account.gender ?? null,
+            };
           }
         }
         return player;
@@ -461,10 +478,10 @@ export class InMemoryRepositories implements DomainRepository {
     this.writeCount += 1;
   }
 
-  async listReplayMatches(groupId: string): Promise<readonly ReplayMatch[]> {
+  async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
     const sessions = new Map(
       this.state.sessions
-        .filter((session) => session.groupId === groupId)
+        .filter((session) => !groupId || session.groupId === groupId)
         .map((session) => [session.id, session]),
     );
     const rounds = new Map(
@@ -474,6 +491,8 @@ export class InMemoryRepositories implements DomainRepository {
     );
     const actual = this.state.matches.flatMap((match): ReplayMatch[] => {
       if (!rounds.has(match.roundId) || match.status === "pending" || !match.completedAt) return [];
+      const session = sessions.get(rounds.get(match.roundId)!.sessionId);
+      if (!session) return [];
       const members = this.state.matchPlayers.filter((item) => item.matchId === match.id);
       const team1 = members.filter((item) => item.team === 1).map((item) => item.playerId);
       const team2 = members.filter((item) => item.team === 2).map((item) => item.playerId);
@@ -481,7 +500,7 @@ export class InMemoryRepositories implements DomainRepository {
       return [
         {
           id: match.id,
-          groupId,
+          groupId: session.groupId,
           status: match.status,
           completedAt: match.completedAt,
           team1: [team1[0], team1[1]],
@@ -491,7 +510,10 @@ export class InMemoryRepositories implements DomainRepository {
         },
       ];
     });
-    return [...this.state.replayMatches.filter((match) => match.groupId === groupId), ...actual];
+    return [
+      ...this.state.replayMatches.filter((match) => !groupId || match.groupId === groupId),
+      ...actual,
+    ];
   }
 
   async replaceRatingState(
@@ -500,10 +522,31 @@ export class InMemoryRepositories implements DomainRepository {
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ) {
     const ratings = new Map(players.map((player) => [player.id, player]));
+    const accountRatings = new Map<string, Pick<PlayerRecord, "rating" | "ratedGamesPlayed">>();
+
+    for (const player of this.state.players) {
+      const updated = ratings.get(player.id);
+      if (updated && player.accountId) {
+        accountRatings.set(player.accountId, updated);
+      }
+    }
+
+    this.state.playerAccounts = this.state.playerAccounts.map((account) => {
+      const updated = accountRatings.get(account.id);
+      if (!updated) return account;
+      return { ...account, rating: updated.rating, ratedGamesPlayed: updated.ratedGamesPlayed };
+    });
+
     this.state.players = this.state.players.map((player) => {
-      if (player.groupId !== groupId) return player;
-      const rating = ratings.get(player.id)!;
-      return { ...player, rating: rating.rating, ratedGamesPlayed: rating.ratedGamesPlayed };
+      if (player.accountId && accountRatings.has(player.accountId)) {
+        const updated = accountRatings.get(player.accountId)!;
+        return { ...player, rating: updated.rating, ratedGamesPlayed: updated.ratedGamesPlayed };
+      }
+      const updated = ratings.get(player.id);
+      if (updated) {
+        return { ...player, rating: updated.rating, ratedGamesPlayed: updated.ratedGamesPlayed };
+      }
+      return player;
     });
     this.state.ratingSnapshots = new Map(snapshots);
     this.state.matchPlayers = this.state.matchPlayers.map((item) => {

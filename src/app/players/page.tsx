@@ -20,8 +20,6 @@ export default async function PlayerProfilePage() {
   if (!account) redirect("/player-login");
   const wins = history.reduce((total, session) => total + session.wins, 0);
   const losses = history.reduce((total, session) => total + session.losses, 0);
-  const byGroup = new Map<string, typeof history[number][]>();
-  for (const item of history) byGroup.set(item.groupId, [...(byGroup.get(item.groupId) ?? []), item]);
 
   return <main className="min-h-screen p-4 sm:p-6">
     <section className="mx-auto max-w-2xl space-y-5">
@@ -96,7 +94,7 @@ export default async function PlayerProfilePage() {
 
       <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
         <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
-        {byGroup.size === 0 ? <ScoreHistoryChart history={[]} /> : [...byGroup.entries()].map(([groupId, entries]) => <div key={groupId} className="rounded-2xl border-2 border-black p-4"><h3 className="mb-2 font-black">{entries[0].groupName}</h3><ScoreHistoryChart history={entries} /></div>)}
+        <ScoreHistoryChart history={history} />
       </section>
 
       <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
