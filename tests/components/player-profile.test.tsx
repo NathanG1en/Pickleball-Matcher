@@ -529,5 +529,59 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain(">X<");
     expect(html).toContain('aria-label="Cancel"');
   });
+
+  it("renders a single unified rating over time section across sessions in multiple groups", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "chart_user",
+          name: "Chart User",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          rating: 1050,
+          ratedGamesPlayed: 4,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [
+        { id: "grp-1", name: "Group One", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        { id: "grp-2", name: "Group Two", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+      ],
+      players: [
+        { id: "p1", groupId: "grp-1", accountId: testAccountId, name: "Chart User", initialRating: 1000, rating: 1050, ratedGamesPlayed: 4, active: true },
+        { id: "p2", groupId: "grp-2", accountId: testAccountId, name: "Chart User", initialRating: 1000, rating: 1050, ratedGamesPlayed: 4, active: true },
+      ],
+    });
+    repository.state.sessions.push(
+      { id: "s1", groupId: "grp-1", courtCount: 1, status: "completed", currentRoundNumber: 1, startedAt: new Date("2026-10-01T10:00:00Z"), endedAt: new Date("2026-10-01T11:00:00Z"), version: 1 },
+      { id: "s2", groupId: "grp-2", courtCount: 1, status: "completed", currentRoundNumber: 1, startedAt: new Date("2026-10-02T10:00:00Z"), endedAt: new Date("2026-10-02T11:00:00Z"), version: 1 },
+    );
+    repository.state.attendance.push(
+      { sessionId: "s1", playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId: "s2", playerId: "p2", joinedRound: 1, leftRound: null },
+    );
+    repository.state.rounds.push(
+      { id: "r1", sessionId: "s1", roundNumber: 1, status: "completed", seed: 1, scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 }, createdAt: new Date(), startedAt: new Date(), completedAt: new Date(), version: 1 },
+      { id: "r2", sessionId: "s2", roundNumber: 1, status: "completed", seed: 1, scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 }, createdAt: new Date(), startedAt: new Date(), completedAt: new Date(), version: 1 },
+    );
+    repository.state.matches.push(
+      { id: "m1", roundId: "r1", courtNumber: 1, status: "completed", team1Score: 11, team2Score: 7, completedAt: new Date(), version: 1 },
+      { id: "m2", roundId: "r2", courtNumber: 1, status: "completed", team1Score: 11, team2Score: 9, completedAt: new Date(), version: 1 },
+    );
+    repository.state.matchPlayers.push(
+      { matchId: "m1", playerId: "p1", team: 1, ratingBefore: 1000, ratingAfter: 1025 },
+      { matchId: "m2", playerId: "p2", team: 1, ratingBefore: 1025, ratingAfter: 1050 },
+    );
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    const occurrences = html.split("Rating over time").length - 1;
+    expect(occurrences).toBe(1);
+    expect(html).not.toContain("Rating over time —");
+  });
 });
 

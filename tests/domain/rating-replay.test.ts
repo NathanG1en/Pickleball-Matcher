@@ -91,4 +91,109 @@ describe("replayRatings", () => {
       snapshots: [...repository.state.ratingSnapshots],
     }).toEqual(first);
   });
+
+  it("maintains a unified rating across multiple groups for a player account", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: "account-user-1",
+          username: "alice",
+          name: "Alice",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1_000,
+          rating: 1_000,
+          ratedGamesPlayed: 0,
+          createdAt: new Date(),
+        },
+      ],
+      players: [
+        // Alice in Group 1
+        {
+          id: "p1-alice",
+          groupId: "group-1",
+          accountId: "account-user-1",
+          name: "Alice",
+          initialRating: 1_000,
+          rating: 1_000,
+          ratedGamesPlayed: 0,
+          active: true,
+        },
+        // Alice in Group 2
+        {
+          id: "p2-alice",
+          groupId: "group-2",
+          accountId: "account-user-1",
+          name: "Alice",
+          initialRating: 1_000,
+          rating: 1_000,
+          ratedGamesPlayed: 0,
+          active: true,
+        },
+        // Group 1 other players
+        { id: "b1", groupId: "group-1", name: "B", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+        { id: "c1", groupId: "group-1", name: "C", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+        { id: "d1", groupId: "group-1", name: "D", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+        // Group 2 other players
+        { id: "b2", groupId: "group-2", name: "B2", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+        { id: "c2", groupId: "group-2", name: "C2", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+        { id: "d2", groupId: "group-2", name: "D2", initialRating: 1_000, rating: 1_000, ratedGamesPlayed: 0, active: true },
+      ],
+      replayMatches: [
+        // Alice plays in group-1 and wins
+        {
+          id: "m-g1-1",
+          groupId: "group-1",
+          status: "completed",
+          completedAt: new Date("2026-10-06T12:00:00.000Z"),
+          team1: ["p1-alice", "b1"],
+          team2: ["c1", "d1"],
+          team1Score: 11,
+          team2Score: 5,
+        },
+      ],
+    });
+
+    await replayRatings("group-1", repository);
+
+    // Check account rating
+    const account = await repository.getPlayerAccount("account-user-1");
+    expect(account?.rating).toBeGreaterThan(1_000);
+    expect(account?.ratedGamesPlayed).toBe(1);
+
+    // Group 1 player record
+    const g1Players = await repository.listPlayers("group-1");
+    const aliceG1 = g1Players.find((p) => p.id === "p1-alice");
+    expect(aliceG1?.rating).toBe(account?.rating);
+    expect(aliceG1?.ratedGamesPlayed).toBe(1);
+
+    // Group 2 player record should also reflect the same rating
+    const g2Players = await repository.listPlayers("group-2");
+    const aliceG2 = g2Players.find((p) => p.id === "p2-alice");
+    expect(aliceG2?.rating).toBe(account?.rating);
+    expect(aliceG2?.ratedGamesPlayed).toBe(1);
+
+    // Now, if Alice plays in group-2, her rating progresses further and syncs back
+    repository.state.replayMatches.push({
+      id: "m-g2-1",
+      groupId: "group-2",
+      status: "completed",
+      completedAt: new Date("2026-10-06T13:00:00.000Z"),
+      team1: ["p2-alice", "b2"],
+      team2: ["c2", "d2"],
+      team1Score: 11,
+      team2Score: 7,
+    });
+
+    await replayRatings("group-2", repository);
+
+    const updatedAccount = await repository.getPlayerAccount("account-user-1");
+    expect(updatedAccount?.rating).toBeGreaterThan(account!.rating!);
+    expect(updatedAccount?.ratedGamesPlayed).toBe(2);
+
+    const updatedG1Alice = (await repository.listPlayers("group-1")).find((p) => p.id === "p1-alice");
+    const updatedG2Alice = (await repository.listPlayers("group-2")).find((p) => p.id === "p2-alice");
+    expect(updatedG1Alice?.rating).toBe(updatedAccount?.rating);
+    expect(updatedG2Alice?.rating).toBe(updatedAccount?.rating);
+  });
 });

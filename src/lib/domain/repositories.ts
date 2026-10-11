@@ -48,7 +48,7 @@ export interface DomainRepository {
   insertGroup(group: GroupRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;
-  listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]>;
+  listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]>;
   createPlayer(player: PlayerRecord): Promise<void>;
   updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;
   deletePlayer(playerId: string, groupId: string): Promise<void>;
@@ -64,10 +64,10 @@ export interface DomainRepository {
   updateMatch(match: MatchRecord): Promise<void>;
   updateRound(round: RoundRecord): Promise<void>;
   deleteRound(roundId: string): Promise<void>;
-  listReplayMatches(groupId: string): Promise<readonly ReplayMatch[]>;
+  listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]>;
   replaceRatingState(
     groupId: string,
-    players: readonly Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed">[],
+    players: readonly (Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed"> & { accountId?: string | null })[],
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ): Promise<void>;
   getTournament(tournamentId: string): Promise<TournamentRecord | null>;

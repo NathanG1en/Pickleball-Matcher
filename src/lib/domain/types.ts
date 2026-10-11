@@ -21,6 +21,8 @@ export interface PlayerAccountRecord {
   readonly passwordHash: string;
   readonly skillLevel: PlayerSkillLevel;
   readonly initialRating: number;
+  rating?: number;
+  ratedGamesPlayed?: number;
   readonly createdAt: Date;
 }
 
