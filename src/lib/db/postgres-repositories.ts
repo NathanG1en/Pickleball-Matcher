@@ -78,6 +78,8 @@ type PlayerAccountRow = {
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
+  rating?: number;
+  rated_games_played?: number;
   created_at: Date;
 };
 
@@ -216,6 +218,8 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   passwordHash: row.password_hash,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
+  rating: row.rating ?? row.initial_rating,
+  ratedGamesPlayed: row.rated_games_played ?? 0,
   createdAt: row.created_at,
 });
 
@@ -398,7 +402,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from players where id = ${accountId} and username is not null
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -406,7 +410,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from players where username = ${username.trim().toLowerCase()}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -517,7 +521,7 @@ export class PostgresRepositories implements DomainRepository {
     if (!trimmed) return [];
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, created_at
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from players
       where username is not null
         and (username ilike ${searchTerm} or name ilike ${searchTerm})
@@ -531,36 +535,91 @@ export class PostgresRepositories implements DomainRepository {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
-             g.id, a.name, a.gender, a.initial_rating, a.initial_rating, 0, true, a.id
+             g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join players a
       where g.id = ${groupId} and a.id = ${accountId} and a.username is not null
-      on conflict (group_id, account_id) where account_id is not null do update set active = true
+      on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
       returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
     if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
-      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
-      from players where account_id = ${accountId} and group_id = ${groupId}
+      select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
+             coalesce(a.rating, p.rating) as rating,
+             coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
+             p.active, p.account_id
+      from players p
+      left join players a on a.id = p.account_id and a.username is not null
+      where p.account_id = ${accountId} and p.group_id = ${groupId}
     `;
     return existing[0] ? mapPlayer(existing[0]) : null;
+  }
+
+  async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
+    const accountRows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      from players
+      where id = ${accountId} and username is not null
+    `;
+    if (!accountRows[0]) return null;
+    const account = mapPlayerAccount(accountRows[0]);
+
+    const guestRows = await this.query<PlayerRow[]>`
+      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+      from players
+      where id = ${playerId} and group_id = ${groupId}
+    `;
+    if (!guestRows[0] || guestRows[0].account_id !== null) {
+      return null;
+    }
+
+    const existingInGroup = await this.query<{ id: string }[]>`
+      select id from players
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
+    if (existingInGroup.length > 0) {
+      return null;
+    }
+
+    const updatedRows = await this.query<PlayerRow[]>`
+      update players
+      set account_id = ${accountId},
+          name = ${account.name},
+          gender = coalesce(players.gender, ${account.gender ?? null}),
+          initial_rating = ${account.initialRating},
+          rating = coalesce(${account.rating ?? null}, initial_rating),
+          rated_games_played = ${account.ratedGamesPlayed ?? 0}
+      where id = ${playerId} and group_id = ${groupId} and account_id is null
+      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+    `;
+    if (!updatedRows[0]) return null;
+
+    return {
+      ...mapPlayer(updatedRows[0]),
+      username: account.username,
+    };
   }
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
-             g.id, a.name, a.gender, a.initial_rating, a.initial_rating, 0, true, a.id
+             g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join players a
       where g.id = ${groupId} and (g.is_public = true or g.owner_account_id = ${accountId}) and a.id = ${accountId} and a.username is not null
-      on conflict (group_id, account_id) where account_id is not null do update set active = true
+      on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
       returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
     if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
-      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
-      from players where account_id = ${accountId} and group_id = ${groupId}
+      select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
+             coalesce(a.rating, p.rating) as rating,
+             coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
+             p.active, p.account_id
+      from players p
+      left join players a on a.id = p.account_id and a.username is not null
+      where p.account_id = ${accountId} and p.group_id = ${groupId}
     `;
     return existing[0] ? mapPlayer(existing[0]) : null;
   }
@@ -690,6 +749,20 @@ export class PostgresRepositories implements DomainRepository {
         update players set initial_rating = ${player.initialRating}
         where id = ${player.id} and group_id = ${player.groupId}
       `;
+      const accountRows = await this.query<{ account_id: string | null }[]>`
+        select account_id from players where id = ${player.id}
+      `;
+      const accountId = accountRows[0]?.account_id;
+      if (accountId) {
+        await this.query`
+          update players set initial_rating = ${player.initialRating}
+          where id = ${accountId} and username is not null
+        `;
+        await this.query`
+          update players set initial_rating = ${player.initialRating}
+          where account_id = ${accountId}
+        `;
+      }
     }
   }
 
@@ -733,21 +806,30 @@ export class PostgresRepositories implements DomainRepository {
     return rows[0] ? mapSession(rows[0]) : null;
   }
 
-  async listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
+  async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
     const rows = options?.includeInactive
       ? await this.query<PlayerRow[]>`
-          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
+                 coalesce(a.rating, p.rating) as rating,
+                 coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
+                 p.active, p.account_id,
                  coalesce(a.username, p.username) as username
           from players p
           left join players a on a.id = p.account_id and a.username is not null
-          where p.group_id = ${groupId} order by p.created_at, p.id
+          where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`p.group_id is not null`}
+          order by p.created_at, p.id
         `
       : await this.query<PlayerRow[]>`
-          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating, p.rating, p.rated_games_played, p.active, p.account_id,
+          select p.id, p.group_id, p.name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
+                 coalesce(a.rating, p.rating) as rating,
+                 coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
+                 p.active, p.account_id,
                  coalesce(a.username, p.username) as username
           from players p
           left join players a on a.id = p.account_id and a.username is not null
-          where p.group_id = ${groupId} and p.active = true order by p.created_at, p.id
+          where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`p.group_id is not null`}
+            and p.active = true
+          order by p.created_at, p.id
         `;
     return rows.map(mapPlayer);
   }
@@ -928,7 +1010,7 @@ export class PostgresRepositories implements DomainRepository {
     await this.query`delete from rounds where id = ${roundId}`;
   }
 
-  async listReplayMatches(groupId: string): Promise<readonly ReplayMatch[]> {
+  async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
     type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2 };
     const rows = await this.query<ReplayRow[]>`
       select m.id, m.round_id, m.court_number, m.status, m.team1_score,
@@ -938,7 +1020,7 @@ export class PostgresRepositories implements DomainRepository {
       join rounds r on r.id = m.round_id
       join sessions s on s.id = r.session_id
       join match_players mp on mp.match_id = m.id
-      where s.group_id = ${groupId}
+      where ${groupId ? this.query`s.group_id = ${groupId}` : this.query`1=1`}
         and m.status in ('completed', 'cancelled')
         and m.rated = true
         and m.completed_at is not null
@@ -969,29 +1051,75 @@ export class PostgresRepositories implements DomainRepository {
 
   async replaceRatingState(
     groupId: string,
-    players: readonly Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed">[],
+    players: readonly (Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed"> & { accountId?: string | null })[],
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ) {
-    for (const player of players) {
+    if (players.length > 0) {
+      const ids = players.map((p) => p.id);
+      const ratings = players.map((p) => p.rating);
+      const games = players.map((p) => p.ratedGamesPlayed);
       await this.query`
-        update players set rating = ${player.rating}, rated_games_played = ${player.ratedGamesPlayed}
-        where id = ${player.id} and group_id = ${groupId}
+        update players as p
+        set rating = v.rating,
+            rated_games_played = v.games
+        from unnest(${ids}::text[], ${ratings}::float8[], ${games}::int[]) as v(id, rating, games)
+        where p.id = v.id
       `;
+
+      const accountMap = new Map<string, { rating: number; ratedGamesPlayed: number }>();
+      for (const p of players) {
+        if (p.accountId) {
+          accountMap.set(p.accountId, { rating: p.rating, ratedGamesPlayed: p.ratedGamesPlayed });
+        }
+      }
+      if (accountMap.size > 0) {
+        const accountIds = [...accountMap.keys()];
+        const accRatings = accountIds.map((id) => accountMap.get(id)!.rating);
+        const accGames = accountIds.map((id) => accountMap.get(id)!.ratedGamesPlayed);
+        await this.query`
+          update players as p
+          set rating = v.rating,
+              rated_games_played = v.games
+          from unnest(${accountIds}::text[], ${accRatings}::float8[], ${accGames}::int[]) as v(account_id, rating, games)
+          where p.id = v.account_id or p.account_id = v.account_id
+        `;
+      }
     }
+
     await this.query`
       update match_players mp set rating_before = null, rating_after = null
       from matches m, rounds r, sessions s
       where mp.match_id = m.id and m.round_id = r.id and r.session_id = s.id
-        and s.group_id = ${groupId}
+        and ${groupId ? this.query`s.group_id = ${groupId}` : this.query`1=1`}
     `;
+
+    const snapshotMatchIds: string[] = [];
+    const snapshotPlayerIds: string[] = [];
+    const snapshotRatingBefores: (number | null)[] = [];
+    const snapshotRatingAfters: (number | null)[] = [];
+
     for (const [matchId, entries] of snapshots) {
       for (const entry of entries) {
-        await this.query`
-          update match_players set
-            rating_before = ${entry.ratingBefore}, rating_after = ${entry.ratingAfter}
-          where match_id = ${matchId} and player_id = ${entry.playerId}
-        `;
+        snapshotMatchIds.push(matchId);
+        snapshotPlayerIds.push(entry.playerId);
+        snapshotRatingBefores.push(entry.ratingBefore);
+        snapshotRatingAfters.push(entry.ratingAfter);
       }
+    }
+
+    if (snapshotMatchIds.length > 0) {
+      await this.query`
+        update match_players as mp
+        set rating_before = v.rating_before,
+            rating_after = v.rating_after
+        from unnest(
+          ${snapshotMatchIds}::text[],
+          ${snapshotPlayerIds}::text[],
+          ${snapshotRatingBefores}::float8[],
+          ${snapshotRatingAfters}::float8[]
+        ) as v(match_id, player_id, rating_before, rating_after)
+        where mp.match_id = v.match_id and mp.player_id = v.player_id
+      `;
     }
   }
 

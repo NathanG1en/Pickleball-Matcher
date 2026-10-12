@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
+import { SmartphoneIcon, XIcon } from "@/components/ui/icons";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -99,15 +100,16 @@ export function HomeScreenTip() {
     >
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
-          📱 Courtside Pro Tip
+          <SmartphoneIcon className="h-3.5 w-3.5 shrink-0" />
+          <span>Courtside Pro Tip</span>
         </span>
         <button
           type="button"
           onClick={handleDismiss}
           aria-label="Dismiss tip"
-          className="w-7 h-7 flex items-center justify-center rounded-lg border border-black bg-white hover:bg-neutral-100 text-sm font-black text-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-lg border border-black bg-white hover:bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
         >
-          ×
+          <XIcon className="h-3.5 w-3.5" />
         </button>
       </div>
 

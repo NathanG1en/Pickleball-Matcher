@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { TrophyIcon, ShuffleIcon, CheckIcon } from "@/components/ui/icons";
 import {
   TOURNAMENT_DIVISION_LABELS,
   type TournamentDivision,
@@ -339,7 +340,7 @@ export function TournamentBracketManager({
       {/* Champion Celebration Banner */}
       {championParticipant && (
         <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] text-center space-y-2">
-          <span className="text-3xl block">🏆</span>
+          <TrophyIcon className="h-10 w-10 mx-auto text-black" />
           <h2 className="font-display text-2xl font-black uppercase text-black">
             {TOURNAMENT_DIVISION_LABELS[effectiveActiveDivision]} Champion
           </h2>
@@ -366,9 +367,10 @@ export function TournamentBracketManager({
             size="sm"
             onClick={handleReshuffle}
             disabled={isPending}
-            className="font-display uppercase text-xs"
+            className="font-display uppercase text-xs inline-flex items-center gap-1.5"
           >
-            🎲 Reshuffle Matchups
+            <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>Reshuffle Matchups</span>
           </Button>
         )}
       </div>
@@ -389,8 +391,10 @@ export function TournamentBracketManager({
               size="sm"
               onClick={handleReshuffle}
               disabled={isPending}
+              className="inline-flex items-center gap-1.5"
             >
-              🎲 Generate Matchups
+              <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Generate Matchups</span>
             </Button>
           )}
         </div>
@@ -470,7 +474,7 @@ export function TournamentBracketManager({
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {m.winnerId === m.participant1Id && m.winnerId !== null && (
-                              <span className="text-sm">✓</span>
+                              <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                             )}
                             <span className="font-bold text-sm truncate">
                               {p1 ? p1.name : isBye ? "BYE" : "TBD"}
@@ -505,7 +509,7 @@ export function TournamentBracketManager({
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {m.winnerId === m.participant2Id && m.winnerId !== null && (
-                              <span className="text-sm">✓</span>
+                              <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                             )}
                             <span className="font-bold text-sm truncate">
                               {p2 ? p2.name : isBye ? "BYE" : "TBD"}

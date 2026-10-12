@@ -1,4 +1,5 @@
 import React from "react";
+import { XIcon } from "@/components/ui/icons";
 
 export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   variant?: "danger" | "danger-soft" | "warning" | "success" | "info" | "muted";
@@ -48,7 +49,7 @@ export function Alert({
             aria-label="Dismiss alert"
             className="shrink-0 -mr-1 -mt-1 p-1 rounded-md hover:bg-black/10 active:bg-black/20 text-current font-bold"
           >
-            ✕
+            <XIcon className="h-4 w-4" />
           </button>
         )}
       </div>

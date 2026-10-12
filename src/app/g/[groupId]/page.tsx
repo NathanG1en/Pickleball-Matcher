@@ -20,6 +20,7 @@ import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
 import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
+import { TrophyIcon } from "@/components/ui/icons";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
@@ -158,15 +159,6 @@ export default async function GroupDashboardPage({
           <p className="text-xs font-bold text-neutral-600">
             {players.length} players on roster
           </p>
-          {isOrganizer && (
-            <Link
-              href={`/g/${groupId}/players`}
-              data-testid="manage-roster-link"
-              className="text-xs font-black uppercase text-black hover:underline"
-            >
-              Manage Roster →
-            </Link>
-          )}
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
@@ -243,20 +235,14 @@ export default async function GroupDashboardPage({
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
               <p className="text-sm font-bold text-neutral-700 mb-5">
-                Check attendance and generate fair courts, or create a tournament bracket.
+                Check attendance and generate fair courts.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex justify-center">
                 <Link
                   href={`/g/${groupId}/sessions/new`}
-                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+                  className="inline-block text-center w-full sm:w-auto min-w-[240px] py-3.5 px-8 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
                 >
                   Start New Session
-                </Link>
-                <Link
-                  href={`/g/${groupId}/tournaments/new`}
-                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
-                >
-                  🏆 Tournament
                 </Link>
               </div>
             </section>

@@ -450,12 +450,46 @@ export class SqliteDomainRepository implements DomainRepository {
       accountId,
       name: account.name,
       initialRating: account.initialRating,
-      rating: account.initialRating,
-      ratedGamesPlayed: 0,
+      rating: account.rating ?? account.initialRating,
+      ratedGamesPlayed: account.ratedGamesPlayed ?? 0,
       active: true,
     };
     await this.createPlayer(player);
     return player;
+  }
+
+  async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
+    const account = await this.getPlayerAccount(accountId);
+    if (!account) return null;
+
+    const guest = this.db.prepare("SELECT * FROM players WHERE id = ? AND group_id = ?").get(playerId, groupId) as PlayerRow | undefined;
+    if (!guest || guest.account_id !== null) return null;
+
+    const existing = this.db.prepare("SELECT id FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId);
+    if (existing) return null;
+
+    this.db.prepare(`
+      UPDATE players
+      SET account_id = ?,
+          name = ?,
+          gender = COALESCE(gender, ?),
+          initial_rating = ?,
+          rating = COALESCE(?, initial_rating),
+          rated_games_played = ?
+      WHERE id = ? AND group_id = ? AND account_id IS NULL
+    `).run(
+      accountId,
+      account.name,
+      account.gender ?? null,
+      account.initialRating,
+      account.rating ?? null,
+      account.ratedGamesPlayed ?? 0,
+      playerId,
+      groupId,
+    );
+
+    const updated = this.db.prepare("SELECT * FROM players WHERE id = ?").get(playerId) as PlayerRow | undefined;
+    return updated ? { ...this.mapPlayerRecord(updated), username: account.username } : null;
   }
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
@@ -501,9 +535,10 @@ export class SqliteDomainRepository implements DomainRepository {
           WHERE mp2.player_id = p.id AND r2.session_id = s.id AND m2.status = 'completed'
             AND mp2.rating_after IS NOT NULL
           ORDER BY m2.completed_at DESC LIMIT 1
-        ), p.initial_rating) AS rating
+        ), acc.rating, p.initial_rating) AS rating
       FROM players p
       JOIN groups g ON g.id = p.group_id
+      LEFT JOIN players acc ON acc.id = p.account_id AND acc.username IS NOT NULL
       JOIN session_attendance sa ON sa.player_id = p.id
       JOIN sessions s ON s.id = sa.session_id
       LEFT JOIN rounds r ON r.session_id = s.id
@@ -592,26 +627,31 @@ export class SqliteDomainRepository implements DomainRepository {
     }));
   }
 
-  async listPlayers(groupId: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
-    const rows = (options?.includeInactive
-      ? this.db
-          .prepare(`
-            SELECT p.*, COALESCE(a.username, p.username) AS username
-            FROM players p
-            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
-            WHERE p.group_id = ?
-            ORDER BY p.created_at, p.id
-          `)
-          .all(groupId)
-      : this.db
-          .prepare(`
-            SELECT p.*, COALESCE(a.username, p.username) AS username
-            FROM players p
-            LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
-            WHERE p.group_id = ? AND p.active = 1
-            ORDER BY p.created_at, p.id
-          `)
-          .all(groupId)) as unknown as PlayerRow[];
+  async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
+    const whereConditions: string[] = [];
+    const params: (string | number)[] = [];
+    if (groupId) {
+      whereConditions.push("p.group_id = ?");
+      params.push(groupId);
+    } else {
+      whereConditions.push("p.group_id IS NOT NULL");
+    }
+    if (!options?.includeInactive) {
+      whereConditions.push("p.active = 1");
+    }
+    const whereClause = whereConditions.join(" AND ");
+    const rows = this.db
+      .prepare(`
+        SELECT p.*,
+               COALESCE(a.username, p.username) AS username,
+               COALESCE(a.rating, p.rating) AS rating,
+               COALESCE(a.rated_games_played, p.rated_games_played) AS rated_games_played
+        FROM players p
+        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+        WHERE ${whereClause}
+        ORDER BY p.created_at, p.id
+      `)
+      .all(...params) as unknown as PlayerRow[];
     return rows.map((row) => this.mapPlayerRecord(row));
   }
 
@@ -648,6 +688,13 @@ export class SqliteDomainRepository implements DomainRepository {
       this.db
         .prepare("UPDATE players SET initial_rating = ? WHERE id = ? AND group_id = ?")
         .run(player.initialRating, player.id, player.groupId);
+      const row = this.db
+        .prepare("SELECT account_id FROM players WHERE id = ? AND group_id = ?")
+        .get(player.id, player.groupId) as { account_id: string | null } | undefined;
+      if (row?.account_id) {
+        this.db.prepare("UPDATE players SET initial_rating = ? WHERE id = ? AND username IS NOT NULL").run(player.initialRating, row.account_id);
+        this.db.prepare("UPDATE players SET initial_rating = ? WHERE account_id = ?").run(player.initialRating, row.account_id);
+      }
     }
   }
 
@@ -944,7 +991,7 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("DELETE FROM rounds WHERE id = ?").run(roundId);
   }
 
-  async listReplayMatches(groupId: string): Promise<readonly ReplayMatch[]> {
+  async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
     type Row = {
       id: string;
       group_id: string;
@@ -956,6 +1003,9 @@ export class SqliteDomainRepository implements DomainRepository {
       team: number;
     };
 
+    const whereClause = groupId ? "WHERE s.group_id = ?" : "WHERE 1=1";
+    const params = groupId ? [groupId] : [];
+
     const rows = this.db
       .prepare(
         `SELECT m.id, s.group_id, m.status, m.team1_score, m.team2_score,
@@ -964,13 +1014,13 @@ export class SqliteDomainRepository implements DomainRepository {
          JOIN rounds r ON r.id = m.round_id
          JOIN sessions s ON s.id = r.session_id
          JOIN match_players mp ON mp.match_id = m.id
-         WHERE s.group_id = ?
+         ${whereClause}
            AND m.status IN ('completed', 'cancelled')
            AND m.rated = 1
            AND m.completed_at IS NOT NULL
          ORDER BY m.completed_at ASC, m.id ASC, mp.team ASC, mp.player_id ASC`,
       )
-      .all(groupId) as Row[];
+      .all(...params) as Row[];
 
     const grouped = new Map<string, Row[]>();
     for (const row of rows) {
@@ -1002,24 +1052,44 @@ export class SqliteDomainRepository implements DomainRepository {
     players: readonly Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed">[],
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ): Promise<void> {
-    const updatePlayer = this.db.prepare(
-      "UPDATE players SET rating = ?, rated_games_played = ? WHERE id = ? AND group_id = ?",
+    const updateAccount = this.db.prepare(
+      "UPDATE players SET rating = ?, rated_games_played = ? WHERE id = ? AND username IS NOT NULL",
     );
+    const updateMemberships = this.db.prepare(
+      "UPDATE players SET rating = ?, rated_games_played = ? WHERE account_id = ?",
+    );
+    const updatePlayer = this.db.prepare(
+      "UPDATE players SET rating = ?, rated_games_played = ? WHERE id = ?",
+    );
+
     for (const player of players) {
-      updatePlayer.run(player.rating, player.ratedGamesPlayed, player.id, groupId);
+      const row = this.db
+        .prepare("SELECT account_id FROM players WHERE id = ?")
+        .get(player.id) as { account_id: string | null } | undefined;
+      const accountId = row?.account_id;
+      if (accountId) {
+        updateAccount.run(player.rating, player.ratedGamesPlayed, accountId);
+        updateMemberships.run(player.rating, player.ratedGamesPlayed, accountId);
+      } else {
+        updatePlayer.run(player.rating, player.ratedGamesPlayed, player.id);
+      }
     }
 
-    this.db
-      .prepare(
-        `UPDATE match_players SET rating_before = NULL, rating_after = NULL
-         WHERE match_id IN (
+    const resetWhere = groupId
+      ? `WHERE match_id IN (
            SELECT m.id FROM matches m
            JOIN rounds r ON r.id = m.round_id
            JOIN sessions s ON s.id = r.session_id
            WHERE s.group_id = ?
-         )`,
+         )`
+      : "";
+    const resetParams = groupId ? [groupId] : [];
+
+    this.db
+      .prepare(
+        `UPDATE match_players SET rating_before = NULL, rating_after = NULL ${resetWhere}`,
       )
-      .run(groupId);
+      .run(...resetParams);
 
     const updateMP = this.db.prepare(
       "UPDATE match_players SET rating_before = ?, rating_after = ? WHERE match_id = ? AND player_id = ?",
