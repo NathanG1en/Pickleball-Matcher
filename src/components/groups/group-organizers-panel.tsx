@@ -16,6 +16,7 @@ import {
 } from "@/app/actions/players";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import { LinkGuestModal } from "./link-guest-modal";
 
 export function GroupOrganizersPanel({
   groupId,
@@ -32,6 +33,7 @@ export function GroupOrganizersPanel({
 }) {
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
+  const [linkingPlayer, setLinkingPlayer] = useState<PlayerRecord | null>(null);
 
   // Mode switch: "search" | "guest"
   const [addMode, setAddMode] = useState<"search" | "guest">("search");
@@ -462,25 +464,44 @@ export function GroupOrganizersPanel({
                             {isHost && (
                               <>
                                 {organizer ? (
-                                  <button
-                                    type="button"
-                                    disabled={pendingPlayerId === player.id}
-                                    onClick={() => void removeOrganizer(player.id)}
-                                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    disabled={!player.accountId || pendingPlayerId === player.id}
-                                    onClick={() => void makeOrganizer(player.id)}
-                                    title={!player.accountId ? "This player needs a linked account to become an organizer." : undefined}
-                                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
-                                  </button>
-                                )}
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={pendingPlayerId === player.id}
+                                      onClick={() => void removeOrganizer(player.id)}
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
+                                    </button>
+                                    <div className="my-1 border-t border-neutral-200" />
+                                  </>
+                                ) : player.accountId ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={pendingPlayerId === player.id}
+                                      onClick={() => void makeOrganizer(player.id)}
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
+                                    </button>
+                                    <div className="my-1 border-t border-neutral-200" />
+                                  </>
+                                ) : null}
+                              </>
+                            )}
+                            {!player.accountId && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeAllMenus();
+                                    setLinkingPlayer(player);
+                                  }}
+                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                >
+                                  Link to public player
+                                </button>
                                 <div className="my-1 border-t border-neutral-200" />
                               </>
                             )}
@@ -514,6 +535,18 @@ export function GroupOrganizersPanel({
         </ul>
       )}
       {message && <p role="status" className="text-xs font-bold">{message}</p>}
+      <LinkGuestModal
+        key={linkingPlayer?.id ?? "none"}
+        isOpen={Boolean(linkingPlayer)}
+        onClose={() => setLinkingPlayer(null)}
+        guestPlayer={linkingPlayer}
+        groupId={groupId}
+        onLinked={(linkedAccountName) => {
+          setMessage(`Successfully linked ${linkingPlayer?.name ?? "guest"} to ${linkedAccountName}.`);
+          setLinkingPlayer(null);
+          router.refresh();
+        }}
+      />
     </section>
   );
 }
