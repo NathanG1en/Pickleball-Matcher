@@ -20,7 +20,6 @@ import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
 import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
-import { TrophyIcon } from "@/components/ui/icons";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
@@ -159,6 +158,15 @@ export default async function GroupDashboardPage({
           <p className="text-xs font-bold text-neutral-600">
             {players.length} players on roster
           </p>
+          {isOrganizer && (
+            <Link
+              href={`/g/${groupId}/players`}
+              data-testid="manage-roster-link"
+              className="text-xs font-black uppercase text-black hover:underline"
+            >
+              Manage Roster →
+            </Link>
+          )}
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
