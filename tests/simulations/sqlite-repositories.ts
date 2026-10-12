@@ -16,6 +16,7 @@ import type {
   RoundRecord,
   RoundSitRecord,
   SessionRecord,
+  SessionType,
   StartedRoundRecord,
   TournamentRecord,
 } from "@/lib/domain/types";
@@ -66,6 +67,7 @@ interface SessionRow {
   started_at: string;
   ended_at: string | null;
   version: number;
+  type?: "regular" | "open_play" | null;
 }
 
 interface PlayerRow {
@@ -179,7 +181,8 @@ export class SqliteDomainRepository implements DomainRepository {
         current_round_number INTEGER NOT NULL,
         started_at TEXT NOT NULL,
         ended_at TEXT,
-        version INTEGER NOT NULL
+        version INTEGER NOT NULL,
+        type TEXT NOT NULL DEFAULT 'regular'
       );
 
       CREATE TABLE IF NOT EXISTS session_attendance (
@@ -525,7 +528,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
     const rows = this.db.prepare(`
       SELECT s.id AS session_id, g.id AS group_id, g.name AS group_name,
-        s.started_at,
+        s.started_at, s.type,
         SUM(CASE WHEN (mp.team = 1 AND m.team1_score > m.team2_score) OR (mp.team = 2 AND m.team2_score > m.team1_score) THEN 1 ELSE 0 END) AS wins,
         SUM(CASE WHEN (mp.team = 1 AND m.team1_score < m.team2_score) OR (mp.team = 2 AND m.team2_score < m.team1_score) THEN 1 ELSE 0 END) AS losses,
         COALESCE((
@@ -548,7 +551,7 @@ export class SqliteDomainRepository implements DomainRepository {
       GROUP BY p.id, s.id, g.id
       ORDER BY s.started_at DESC
     `).all(accountId) as unknown as {
-      session_id: string; group_id: string; group_name: string; started_at: string;
+      session_id: string; group_id: string; group_name: string; started_at: string; type?: string | null;
       wins: number | null; losses: number | null; rating: number;
     }[];
     return rows.map((row) => ({
@@ -559,6 +562,7 @@ export class SqliteDomainRepository implements DomainRepository {
       wins: row.wins ?? 0,
       losses: row.losses ?? 0,
       rating: row.rating,
+      type: (row.type as SessionType) ?? "regular",
     }));
   }
 
@@ -607,6 +611,7 @@ export class SqliteDomainRepository implements DomainRepository {
       startedAt: new Date(row.started_at),
       endedAt: row.ended_at ? new Date(row.ended_at) : null,
       version: row.version,
+      type: (row.type as SessionType) ?? "regular",
     };
   }
 
@@ -624,6 +629,7 @@ export class SqliteDomainRepository implements DomainRepository {
       startedAt: new Date(row.started_at),
       endedAt: row.ended_at ? new Date(row.ended_at) : null,
       version: row.version,
+      type: (row.type as SessionType) ?? "regular",
     }));
   }
 
@@ -840,7 +846,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         session.id,
@@ -852,6 +858,7 @@ export class SqliteDomainRepository implements DomainRepository {
         session.startedAt.toISOString(),
         session.endedAt ? session.endedAt.toISOString() : null,
         session.version,
+        session.type ?? "regular",
       );
     for (const item of attendance) {
       await this.saveAttendance(item);
@@ -951,6 +958,34 @@ export class SqliteDomainRepository implements DomainRepository {
     );
     for (const sit of record.sits) {
       insertSit.run(sit.roundId, sit.playerId);
+    }
+  }
+
+  async insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
+    this.db.prepare(
+      "INSERT INTO matches (id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      match.id,
+      match.roundId,
+      match.courtNumber,
+      match.status,
+      match.team1Score,
+      match.team2Score,
+      match.completedAt ? match.completedAt.toISOString() : null,
+      match.version,
+      match.rated === false ? 0 : 1,
+    );
+    const insertMP = this.db.prepare(
+      "INSERT INTO match_players (match_id, player_id, team, rating_before, rating_after) VALUES (?, ?, ?, ?, ?)",
+    );
+    for (const member of matchPlayers) {
+      insertMP.run(
+        member.matchId,
+        member.playerId,
+        member.team,
+        member.ratingBefore,
+        member.ratingAfter,
+      );
     }
   }
 

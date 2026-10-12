@@ -300,7 +300,7 @@ export class InMemoryRepositories implements DomainRepository {
           else losses += 1;
           if (matchPlayer.ratingAfter !== null) rating = matchPlayer.ratingAfter ?? rating;
         }
-        history.push({ sessionId: session.id, groupId: group.id, groupName: group.name, startedAt: session.startedAt, wins, losses, rating });
+        history.push({ sessionId: session.id, groupId: group.id, groupName: group.name, startedAt: session.startedAt, wins, losses, rating, type: session.type ?? "regular" });
       }
     }
     return history.sort((first, second) => second.startedAt.getTime() - first.startedAt.getTime());
@@ -476,6 +476,12 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.matches.push(...structuredClone(record.matches));
     this.state.matchPlayers.push(...structuredClone(record.matchPlayers));
     this.state.roundSits.push(...structuredClone(record.sits));
+    this.writeCount += 1;
+  }
+
+  async insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]) {
+    this.state.matches.push(structuredClone(match));
+    this.state.matchPlayers.push(...structuredClone(matchPlayers));
     this.writeCount += 1;
   }
 

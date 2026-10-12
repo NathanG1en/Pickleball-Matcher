@@ -20,6 +20,7 @@ import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
 import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
+import { StartOpenPlayButton } from "@/components/groups/start-open-play-button";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
@@ -131,6 +132,7 @@ export default async function GroupDashboardPage({
         endedAt: s.endedAt ? s.endedAt.toISOString() : null,
         rounds,
         totalGames,
+        type: s.type ?? "regular",
       };
     }),
   );
@@ -193,15 +195,21 @@ export default async function GroupDashboardPage({
           {activeSession ? (
             <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
               <div className="flex items-center justify-between">
-                <Badge variant="default" className="bg-black text-[#ccff00]">Active Game</Badge>
+                <Badge variant="default" className="bg-black text-[#ccff00]">
+                  {activeSession.type === "open_play" ? "Open Play" : "Active Game"}
+                </Badge>
                 <span className="text-xs font-black uppercase tracking-wider text-black">
-                  Round {activeSession.currentRoundNumber}
+                  {activeSession.type === "open_play" ? "Casual Games" : `Round ${activeSession.currentRoundNumber}`}
                 </span>
               </div>
               <div>
-                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Session In Progress</h2>
+                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
+                  {activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress"}
+                </h2>
                 <p className="text-sm font-bold text-neutral-900">
-                  Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
+                  {activeSession.type === "open_play"
+                    ? "Check in and submit games."
+                    : `Running on ${activeSession.courtCount} court${activeSession.courtCount > 1 ? "s" : ""}.`}
                 </p>
               </div>
 
@@ -236,7 +244,9 @@ export default async function GroupDashboardPage({
                 href={`/g/${groupId}/sessions/${activeSession.id}`}
                 className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
               >
-                {isOrganizer ? "Resume Session →" : "View Live Session →"}
+                {activeSession.type === "open_play"
+                  ? isOrganizer ? "Manage Open Play →" : "View Open Play →"
+                  : isOrganizer ? "Resume Session →" : "View Live Session →"}
               </Link>
             </section>
           ) : isOrganizer ? (
@@ -245,13 +255,17 @@ export default async function GroupDashboardPage({
               <p className="text-sm font-bold text-neutral-700 mb-5">
                 Check attendance and generate fair courts.
               </p>
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link
                   href={`/g/${groupId}/sessions/new`}
-                  className="inline-block text-center w-full sm:w-auto min-w-[240px] py-3.5 px-8 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+                  data-testid="start-new-session-button"
+                  className="inline-block text-center w-full sm:w-auto min-w-[200px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
                 >
                   Start New Session
                 </Link>
+                {isHost && (
+                  <StartOpenPlayButton groupId={groupId} />
+                )}
               </div>
             </section>
           ) : (

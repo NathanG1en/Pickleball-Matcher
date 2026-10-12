@@ -64,6 +64,8 @@ export interface PlayerRecord {
   gender?: PlayerGender | null;
 }
 
+export type SessionType = "regular" | "open_play";
+
 export interface PlayerSessionHistoryRecord {
   readonly sessionId: string;
   readonly groupId: string;
@@ -72,6 +74,7 @@ export interface PlayerSessionHistoryRecord {
   readonly wins: number;
   readonly losses: number;
   readonly rating: number;
+  readonly type?: SessionType;
 }
 
 export interface SessionRecord {
@@ -84,6 +87,7 @@ export interface SessionRecord {
   readonly startedAt: Date;
   endedAt: Date | null;
   version: number;
+  type?: SessionType;
 }
 
 export interface AttendanceRecord {

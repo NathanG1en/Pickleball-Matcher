@@ -101,7 +101,35 @@ export default async function PlayerProfilePage() {
 
       <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
         <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
-        {history.length === 0 ? <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p> : history.map((item) => <article key={`${item.groupId}-${item.sessionId}`} className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"><div><h3 className="font-black">{item.groupName}</h3><p className="text-xs font-bold text-neutral-600">{item.startedAt.toLocaleDateString()} · Rating {formatDupr(item.rating)}</p></div><p className="whitespace-nowrap text-sm font-black">{item.wins}W – {item.losses}L</p></article>)}
+        {history.length === 0 ? (
+          <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>
+        ) : (
+          history.map((item) => (
+            <article
+              key={`${item.groupId}-${item.sessionId}`}
+              data-testid={`player-session-${item.sessionId}`}
+              className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
+            >
+              <div>
+                <h3 className="font-black">
+                  <Link
+                    href={`/g/${item.groupId}/sessions/${item.sessionId}`}
+                    className="hover:underline text-black"
+                  >
+                    {item.type === "open_play" ? "Open Play" : item.groupName}
+                  </Link>
+                </h3>
+                <p className="text-xs font-bold text-neutral-600">
+                  {item.type === "open_play" ? `${item.groupName} · ` : ""}
+                  {item.startedAt.toLocaleDateString()} · Rating {formatDupr(item.rating)}
+                </p>
+              </div>
+              <p className="whitespace-nowrap text-sm font-black">
+                {item.wins}W – {item.losses}L
+              </p>
+            </article>
+          ))
+        )}
       </section>
     </section>
   </main>;

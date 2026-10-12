@@ -14,5 +14,6 @@ export default defineConfig({
     environment: "node",
     include: ["tests/simulations/**/*.test.ts"],
     testTimeout: 90_000,
+    fileParallelism: false,
   },
 });
