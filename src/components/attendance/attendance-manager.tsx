@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { formatDupr } from "@/lib/domain/rating-display";
 
 export interface AttendancePlayer {
   readonly id: string;
@@ -210,7 +211,7 @@ export function AttendanceManager({
                   className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer"
                 />
                 <span className="font-black text-base flex-1">{player.name}</span>
-                <span className="text-xs font-bold text-neutral-600">{Math.round(player.rating)}</span>
+                <span className="text-xs font-bold text-neutral-600">{formatDupr(player.rating)}</span>
               </label>
             );
           })}

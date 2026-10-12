@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerSignupAction } from "@/app/actions/player-account";
 import {
+  duprToElo,
+  getSkillTier,
+} from "@/lib/domain/rating-display";
+import {
   Alert,
   Button,
   FormField,
@@ -15,13 +19,6 @@ import {
 
 const emptySubscribe = () => () => {};
 
-const ratings = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
-const skillDescriptions = {
-  beginner: "You know the basic rules and can serve and return, but placement and rally consistency are still developing. Dinks and third-shot drops or drives are not reliable yet.",
-  intermediate: "You can sustain rallies, use dinks and volleys, and move toward the kitchen line. You are developing control and learning when to drive or drop the third shot.",
-  advanced: "You consistently control pace and placement, use dinks, resets, volleys, and third-shot drops or drives deliberately, and adjust strategy to opponents.",
-} as const;
-
 export function PlayerSignupForm() {
   const router = useRouter();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -30,19 +27,38 @@ export function PlayerSignupForm() {
   const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [skillLevel, setSkillLevel] = useState<keyof typeof ratings>("intermediate");
+  const [selectedPreset, setSelectedPreset] = useState("3.500");
   const [customRating, setCustomRating] = useState(false);
-  const [initialRating, setInitialRating] = useState(1_000);
+  const [customDuprInput, setCustomDuprInput] = useState("3.500");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [pending, setPending] = useState(false);
+
+  const activeDupr = customRating
+    ? parseFloat(customDuprInput) || 3.5
+    : parseFloat(selectedPreset);
+  const activeTier = getSkillTier(activeDupr);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setPending(true);
     setError(null);
     setFieldErrors({});
-    const result = await playerSignupAction({ username, name, gender, password, skillLevel, customRating, initialRating });
+
+    const duprValue = customRating ? parseFloat(customDuprInput) : parseFloat(selectedPreset);
+    const initialRatingElo = duprToElo(isNaN(duprValue) ? 3.5 : duprValue);
+    const skillLevel: "beginner" | "intermediate" | "advanced" =
+      duprValue < 3.0 ? "beginner" : duprValue < 4.0 ? "intermediate" : "advanced";
+
+    const result = await playerSignupAction({
+      username,
+      name,
+      gender,
+      password,
+      skillLevel,
+      customRating: true,
+      initialRating: initialRatingElo,
+    });
     if (result.ok) {
       router.push(getReturnPath() ?? "/players/groups");
       router.refresh();
@@ -152,21 +168,24 @@ export function PlayerSignupForm() {
       >
         <Select
           id="player-skill"
-          value={skillLevel}
+          value={selectedPreset}
+          disabled={customRating}
           onChange={(event) => {
-            const level = event.target.value as keyof typeof ratings;
-            setSkillLevel(level);
-            if (!customRating) setInitialRating(ratings[level]);
+            setSelectedPreset(event.target.value);
+            if (!customRating) setCustomDuprInput(event.target.value);
           }}
           hasError={Boolean(fieldErrors.skillLevel?.length)}
           aria-describedby={fieldErrors.skillLevel?.length ? "player-skill-error" : undefined}
         >
-          <option value="beginner">Beginner — developing consistency (900)</option>
-          <option value="intermediate">Intermediate — rallies and basic shot choices (1,000)</option>
-          <option value="advanced">Advanced — consistent control and strategy (1,100)</option>
+          <option value="2.000">Beginner Level (2.000 – 2.499)</option>
+          <option value="2.500">Advanced Beginner Level (2.500 – 2.999)</option>
+          <option value="3.000">Intermediate Level (3.000 – 3.499)</option>
+          <option value="3.500">Advanced Intermediate Level (3.500 – 3.999)</option>
+          <option value="4.000">Competitive Level (4.000 – 4.499)</option>
+          <option value="4.500">Advanced Competitive Level (4.500 – 4.999)</option>
         </Select>
         <p aria-live="polite" className="mt-1.5 text-xs font-semibold leading-relaxed text-neutral-600">
-          {skillDescriptions[skillLevel]}
+          {activeTier.description}
         </p>
       </FormField>
 
@@ -176,28 +195,28 @@ export function PlayerSignupForm() {
           checked={customRating}
           onChange={(event) => {
             setCustomRating(event.target.checked);
-            if (!event.target.checked) setInitialRating(ratings[skillLevel]);
+            if (!event.target.checked) setCustomDuprInput(selectedPreset);
           }}
           className="h-4 w-4 accent-black"
         />
-        Enter my own starting rating
+        Enter custom rating (e.g. 5.000+ or specific rating)
       </label>
 
       {customRating && (
         <FormField
           id="custom-rating"
-          label="Starting rating (internal scale)"
+          label="Custom rating (2.000 – 8.000)"
           error={fieldErrors.initialRating?.[0]}
         >
           <Input
             id="custom-rating"
             type="number"
             required
-            min={100}
-            max={3000}
-            step={1}
-            value={initialRating}
-            onChange={(event) => setInitialRating(Number(event.target.value))}
+            min={2.0}
+            max={8.0}
+            step={0.001}
+            value={customDuprInput}
+            onChange={(event) => setCustomDuprInput(event.target.value)}
             hasError={Boolean(fieldErrors.initialRating?.length)}
             aria-describedby={fieldErrors.initialRating?.length ? "custom-rating-error" : undefined}
           />

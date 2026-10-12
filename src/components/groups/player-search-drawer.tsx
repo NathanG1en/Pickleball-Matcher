@@ -8,6 +8,7 @@ import {
   type SearchPlayerResult,
 } from "@/app/actions/players";
 import { Alert, Button, Input } from "@/components/ui";
+import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
 
 interface PlayerSearchDrawerProps {
   readonly groupId: string;
@@ -131,10 +132,10 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                   {!player.isRestricted && (
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-600 font-bold">
                       {player.rating !== undefined && (
-                        <span>Rating: {Math.round(player.rating)}</span>
+                        <span>Rating: {formatDupr(player.rating)}</span>
                       )}
-                      {player.skillLevel && (
-                        <span className="capitalize">· {player.skillLevel}</span>
+                      {player.rating !== undefined && (
+                        <span>· {getSkillTier(eloToDupr(player.rating)).name}</span>
                       )}
                       {player.bestPartner && (
                         <span className="text-amber-700">

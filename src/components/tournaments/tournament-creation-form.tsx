@@ -13,6 +13,7 @@ import {
 import { createTournamentAction } from "@/app/actions/tournaments";
 import { createPlayerAction } from "@/app/actions/players";
 import { createParticipantsForDivision } from "@/lib/tournament/bracket";
+import { formatDupr } from "@/lib/domain/rating-display";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 
 interface TournamentCreationFormProps {
@@ -331,7 +332,7 @@ export function TournamentCreationForm({
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
-                <span className="text-xs font-bold text-neutral-600">{Math.round(player.rating)}</span>
+                <span className="text-xs font-bold text-neutral-600">{formatDupr(player.rating)}</span>
               </div>
             );
           })}
