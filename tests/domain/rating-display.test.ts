@@ -6,6 +6,7 @@ import {
   eloToDupr,
   formatDupr,
   formatDuprDelta,
+  formatDuprValue,
   getSkillTier,
   normalizeInitialRating,
 } from "@/lib/domain/rating-display";
@@ -60,28 +61,40 @@ describe("rating-display", () => {
     });
   });
 
+  describe("formatDuprValue", () => {
+    it("cuts off at 3 decimals and removes unnecessary trailing zeros", () => {
+      expect(formatDuprValue(3.5)).toBe("3.5");
+      expect(formatDuprValue(3.52)).toBe("3.52");
+      expect(formatDuprValue(3.525)).toBe("3.525");
+      expect(formatDuprValue(3.5256)).toBe("3.526");
+      expect(formatDuprValue(4.0)).toBe("4");
+    });
+  });
+
   describe("formatDupr", () => {
-    it("formats Elo as a 3-decimal string", () => {
-      expect(formatDupr(1000)).toBe("3.500");
-      expect(formatDupr(900)).toBe("3.250");
-      expect(formatDupr(1100)).toBe("3.750");
+    it("formats Elo as a string with up to 3 decimals without trailing zeros", () => {
+      expect(formatDupr(1000)).toBe("3.5");
+      expect(formatDupr(900)).toBe("3.25");
+      expect(formatDupr(1100)).toBe("3.75");
       expect(formatDupr(1010)).toBe("3.525");
+      expect(formatDupr(1008)).toBe("3.52");
+      expect(formatDupr(1200)).toBe("4");
     });
   });
 
   describe("formatDuprDelta", () => {
-    it("formats positive deltas with a plus sign and 3 decimals", () => {
+    it("formats positive deltas with a plus sign and up to 3 decimals without trailing zeros", () => {
       expect(formatDuprDelta(10)).toBe("+0.025");
-      expect(formatDuprDelta(20)).toBe("+0.050");
+      expect(formatDuprDelta(20)).toBe("+0.05");
     });
 
-    it("formats negative deltas with a minus sign and 3 decimals", () => {
+    it("formats negative deltas with a minus sign and up to 3 decimals without trailing zeros", () => {
       expect(formatDuprDelta(-10)).toBe("-0.025");
-      expect(formatDuprDelta(-20)).toBe("-0.050");
+      expect(formatDuprDelta(-20)).toBe("-0.05");
     });
 
     it("formats zero delta with a sign", () => {
-      expect(formatDuprDelta(0)).toBe("+0.000");
+      expect(formatDuprDelta(0)).toBe("+0");
     });
   });
 
