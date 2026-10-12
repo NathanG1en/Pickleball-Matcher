@@ -3,6 +3,7 @@ import type {
   GroupRecord,
   GroupOrganizerRecord,
   PublicGroupRecord,
+  MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
   PlayerAccountRecord,
@@ -62,6 +63,7 @@ export interface DomainRepository {
   updateSession(session: SessionRecord): Promise<void>;
   saveAttendance(attendance: AttendanceRecord): Promise<void>;
   insertStartedRound(record: StartedRoundRecord): Promise<void>;
+  insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void>;
   updateMatch(match: MatchRecord): Promise<void>;
   updateRound(round: RoundRecord): Promise<void>;
   deleteRound(roundId: string): Promise<void>;

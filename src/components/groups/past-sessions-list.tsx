@@ -31,6 +31,7 @@ export interface PastSessionData {
   readonly endedAt: string | null;
   readonly rounds: readonly PastSessionRoundData[];
   readonly totalGames: number;
+  readonly type?: "regular" | "open_play";
 }
 
 export interface PastSessionsListProps {
@@ -87,11 +88,13 @@ export function PastSessionsList({
                 aria-expanded={isExpanded}
                 aria-label={`Session from ${formattedDate}`}
               >
-                <span className="font-bold text-black text-sm block">{formattedDate}</span>
+                <span className="font-bold text-black text-sm block">
+                  {session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate}
+                </span>
                 <span className="text-xs font-bold text-neutral-500">
-                  {session.courtCount} court{session.courtCount > 1 ? "s" : ""} · {session.rounds.length} round
-                  {session.rounds.length !== 1 ? "s" : ""} · {session.totalGames} game
-                  {session.totalGames !== 1 ? "s" : ""}
+                  {session.type === "open_play"
+                    ? `${session.totalGames} game${session.totalGames !== 1 ? "s" : ""}`
+                    : `${session.courtCount} court${session.courtCount > 1 ? "s" : ""} · ${session.rounds.length} round${session.rounds.length !== 1 ? "s" : ""} · ${session.totalGames} game${session.totalGames !== 1 ? "s" : ""}`}
                 </span>
               </div>
 
