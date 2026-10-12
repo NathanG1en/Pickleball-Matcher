@@ -50,6 +50,8 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       />
     );
     expect(htmlPublic).toContain("Public");
+    expect(htmlPublic).not.toContain("Account Visibility");
+    expect(htmlPublic).toContain('aria-label="Account visibility details"');
 
     const htmlPrivate = renderToStaticMarkup(
       <PlayerProfileHeader
@@ -62,6 +64,8 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       />
     );
     expect(htmlPrivate).toContain("Private");
+    expect(htmlPrivate).not.toContain("Account Visibility");
+    expect(htmlPrivate).toContain('aria-label="Account visibility details"');
   });
 
   it("PlayerProfilePage renders Best Partner card when synergy exists", async () => {
