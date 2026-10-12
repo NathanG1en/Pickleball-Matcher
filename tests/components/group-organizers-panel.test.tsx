@@ -252,7 +252,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Remove player");
       expect(html).not.toContain("···");
       expect(html).not.toContain("Find Player");
-      expect(html).not.toContain("+ Add Guest");
+      expect(html).not.toContain("Add Guest");
     });
   });
 
