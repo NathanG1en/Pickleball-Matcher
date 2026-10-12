@@ -27,9 +27,9 @@ export function PlayerSignupForm() {
   const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState("3.500");
+  const [selectedPreset, setSelectedPreset] = useState("3.5");
   const [customRating, setCustomRating] = useState(false);
-  const [customDuprInput, setCustomDuprInput] = useState("3.500");
+  const [customDuprInput, setCustomDuprInput] = useState("3.5");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [pending, setPending] = useState(false);
@@ -177,12 +177,12 @@ export function PlayerSignupForm() {
           hasError={Boolean(fieldErrors.skillLevel?.length)}
           aria-describedby={fieldErrors.skillLevel?.length ? "player-skill-error" : undefined}
         >
-          <option value="2.000">Beginner Level (2.000 – 2.499)</option>
-          <option value="2.500">Advanced Beginner Level (2.500 – 2.999)</option>
-          <option value="3.000">Intermediate Level (3.000 – 3.499)</option>
-          <option value="3.500">Advanced Intermediate Level (3.500 – 3.999)</option>
-          <option value="4.000">Competitive Level (4.000 – 4.499)</option>
-          <option value="4.500">Advanced Competitive Level (4.500 – 4.999)</option>
+          <option value="2.0">Beginner Level (2.0 – 2.499)</option>
+          <option value="2.5">Advanced Beginner Level (2.5 – 2.999)</option>
+          <option value="3.0">Intermediate Level (3.0 – 3.499)</option>
+          <option value="3.5">Advanced Intermediate Level (3.5 – 3.999)</option>
+          <option value="4.0">Competitive Level (4.0 – 4.499)</option>
+          <option value="4.5">Advanced Competitive Level (4.5 – 4.999)</option>
         </Select>
         <p aria-live="polite" className="mt-1.5 text-xs font-semibold leading-relaxed text-neutral-600">
           {activeTier.description}
@@ -199,13 +199,13 @@ export function PlayerSignupForm() {
           }}
           className="h-4 w-4 accent-black"
         />
-        Enter custom rating (e.g. 5.000+ or specific rating)
+        Enter custom rating (e.g. 5.0+ or specific rating)
       </label>
 
       {customRating && (
         <FormField
           id="custom-rating"
-          label="Custom rating (2.000 – 8.000)"
+          label="Custom rating (2.0 – 8.0)"
           error={fieldErrors.initialRating?.[0]}
         >
           <Input
