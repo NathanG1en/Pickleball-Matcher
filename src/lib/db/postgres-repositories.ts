@@ -18,6 +18,7 @@ import type {
   RoundRecord,
   RoundSitRecord,
   SessionRecord,
+  SessionType,
   StartedRoundRecord,
   TournamentRecord,
   TournamentDivision,
@@ -52,6 +53,7 @@ type SessionRow = {
   started_at: Date;
   ended_at: Date | null;
   version: number;
+  type?: "regular" | "open_play" | null;
 };
 
 type PlayerRow = {
@@ -194,6 +196,7 @@ const mapSession = (row: SessionRow): SessionRecord => ({
   startedAt: row.started_at,
   endedAt: row.ended_at,
   version: row.version,
+  type: (row.type as SessionType) ?? "regular",
 });
 
 const mapPlayer = (row: PlayerRow): PlayerRecord => ({
@@ -663,6 +666,7 @@ export class PostgresRepositories implements DomainRepository {
       wins: number;
       losses: number;
       rating: number;
+      type?: string | null;
     }[]>`
       with memberships as (
         select id, group_id, initial_rating from players where account_id = ${accountId}
@@ -688,7 +692,8 @@ export class PostgresRepositories implements DomainRepository {
       select s.id as session_id, g.id as group_id, g.name as group_name,
         s.started_at, coalesce(res.wins, 0)::int as wins,
         coalesce(res.losses, 0)::int as losses,
-        coalesce(res.rating, membership.initial_rating)::float8 as rating
+        coalesce(res.rating, membership.initial_rating)::float8 as rating,
+        s.type as type
       from memberships membership
       join groups g on g.id = membership.group_id
       join session_attendance sa on sa.player_id = membership.id
@@ -704,6 +709,7 @@ export class PostgresRepositories implements DomainRepository {
       wins: row.wins,
       losses: row.losses,
       rating: row.rating,
+      type: (row.type as SessionType) ?? "regular",
     }));
   }
 
@@ -717,7 +723,7 @@ export class PostgresRepositories implements DomainRepository {
   async listSessions(groupId: string): Promise<readonly SessionRecord[]> {
     const rows = await this.query<SessionRow[]>`
       select id, group_id, court_count, court_player_counts, status, current_round_number,
-             started_at, ended_at, version
+             started_at, ended_at, version, type
       from sessions where group_id = ${groupId}
       order by started_at desc
     `;
@@ -800,7 +806,7 @@ export class PostgresRepositories implements DomainRepository {
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const rows = await this.query<SessionRow[]>`
       select id, group_id, court_count, court_player_counts, status, current_round_number,
-             started_at, ended_at, version
+             started_at, ended_at, version, type
       from sessions where id = ${sessionId}
     `;
     return rows[0] ? mapSession(rows[0]) : null;
@@ -903,10 +909,11 @@ export class PostgresRepositories implements DomainRepository {
     await this.query`
       insert into sessions (
         id, group_id, court_count, court_player_counts, status, current_round_number,
-        started_at, ended_at, version
+        started_at, ended_at, version, type
       ) values (
         ${session.id}, ${session.groupId}, ${session.courtCount}, ${session.courtPlayerCounts ?? []}, ${session.status},
-        ${session.currentRoundNumber}, ${session.startedAt}, ${session.endedAt}, ${session.version}
+        ${session.currentRoundNumber}, ${session.startedAt}, ${session.endedAt}, ${session.version},
+        ${session.type ?? "regular"}
       )
     `;
     for (const item of attendance) await this.saveAttendance(item);
@@ -979,6 +986,27 @@ export class PostgresRepositories implements DomainRepository {
     for (const sit of record.sits) {
       await this.query`
         insert into round_sits (round_id, player_id) values (${sit.roundId}, ${sit.playerId})
+      `;
+    }
+  }
+
+  async insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
+    await this.query`
+      insert into matches (
+        id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
+      ) values (
+        ${match.id}, ${match.roundId}, ${match.courtNumber}, ${match.status},
+        ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
+      )
+    `;
+    for (const member of matchPlayers) {
+      await this.query`
+        insert into match_players (
+          match_id, player_id, team, rating_before, rating_after
+        ) values (
+          ${member.matchId}, ${member.playerId}, ${member.team},
+          ${member.ratingBefore}, ${member.ratingAfter}
+        )
       `;
     }
   }
