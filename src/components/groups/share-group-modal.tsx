@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { QRCodeDisplay } from "./qr-code";
+import { CheckIcon, CopyIcon, XIcon } from "@/components/ui/icons";
 
 export function ShareGroupModal({
   isOpen,
@@ -78,9 +79,9 @@ export function ShareGroupModal({
           type="button"
           onClick={onClose}
           aria-label="Close share dialog"
-          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-xl font-black leading-none hover:bg-[#fde047] cursor-pointer"
+          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white hover:bg-[#fde047] cursor-pointer"
         >
-          ×
+          <XIcon className="h-4 w-4" />
         </button>
 
         <div className="space-y-1 pr-6 text-left">
@@ -117,9 +118,19 @@ export function ShareGroupModal({
             <button
               type="button"
               onClick={handleCopy}
-              className="shrink-0 px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display font-black uppercase text-xs tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display font-black uppercase text-xs tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
-              {copied ? "Copied! ✓" : "Copy Link"}
+              {copied ? (
+                <>
+                  <CheckIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <CopyIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Copy Link</span>
+                </>
+              )}
             </button>
           </div>
 

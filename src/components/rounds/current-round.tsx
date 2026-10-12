@@ -4,6 +4,15 @@ import React, { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SynergyRevealModal, type CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
+import {
+  LockIcon,
+  PencilIcon,
+  ZapIcon,
+  AlertTriangleIcon,
+  TargetIcon,
+  ArrowDownToLineIcon,
+  XIcon,
+} from "@/components/ui/icons";
 
 export interface RoundCourtData {
   readonly courtNumber: number;
@@ -331,17 +340,19 @@ export function CurrentRoundView({
                   <button
                     type="button"
                     onClick={() => setIsUnlocked(false)}
-                    className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
                   >
-                    🔒 Lock Lineup
+                    <LockIcon className="h-3.5 w-3.5" />
+                    <span>Lock Lineup</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="px-3 py-1 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
                   >
-                    ✏️ Customize Lineup
+                    <PencilIcon className="h-3.5 w-3.5" />
+                    <span>Customize Lineup</span>
                   </button>
                 )}
               </>
@@ -353,9 +364,10 @@ export function CurrentRoundView({
             <button
               type="button"
               onClick={() => setShowSynergyModal(true)}
-              className="px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
             >
-              ⚡ Reveal Synergy
+              <ZapIcon className="h-3.5 w-3.5" />
+              <span>Reveal Synergy</span>
             </button>
           )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
@@ -368,7 +380,7 @@ export function CurrentRoundView({
         <div className="p-4 bg-amber-100 border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xl">⚡</span>
+              <ZapIcon className="h-5 w-5 text-black shrink-0" />
               <div>
                 <h4 className="font-display text-sm font-black uppercase tracking-wide text-black">
                   Manual Adjustments Mode Active
@@ -393,8 +405,9 @@ export function CurrentRoundView({
           </div>
 
           {hasModifications && (
-            <div className="inline-block px-2.5 py-1 rounded-lg bg-amber-300 border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000]">
-              ⚠️ {modificationCount} manual position {modificationCount === 1 ? "change" : "changes"} active
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-300 border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+              <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>{modificationCount} manual position {modificationCount === 1 ? "change" : "changes"} active</span>
             </div>
           )}
         </div>
@@ -404,7 +417,10 @@ export function CurrentRoundView({
       {selectedPlayerId && (
         <div className="sticky top-4 z-30 p-3 bg-[#ccff00] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-between gap-3 animate-pulse">
           <div className="flex items-center gap-2">
-            <span className="text-base font-black uppercase">🎯 Selected:</span>
+            <span className="text-base font-black uppercase flex items-center gap-1.5">
+              <TargetIcon className="h-4 w-4 shrink-0" />
+              <span>Selected:</span>
+            </span>
             <span className="px-2 py-0.5 rounded-lg bg-white border-2 border-black font-black text-sm">
               {nameFor(selectedPlayerId)}
             </span>
@@ -425,8 +441,9 @@ export function CurrentRoundView({
       {/* Unbalanced Court Validation Error */}
       {!isValidLineup && (
         <div role="alert" className="p-4 bg-[#ff6b6b] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] text-black">
-          <h4 className="font-display font-black uppercase text-sm mb-1">
-            ⚠️ Unbalanced Matchups Detected
+          <h4 className="font-display font-black uppercase text-sm mb-1 flex items-center gap-1.5">
+            <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+            <span>Unbalanced Matchups Detected</span>
           </h4>
           <ul className="text-xs font-bold list-disc list-inside space-y-0.5">
             {validationErrors.map((err, i) => (
@@ -513,12 +530,14 @@ export function CurrentRoundView({
                     </span>
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score !== undefined) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                        ⚡ {partnerSynergy!.score}% Synergy
+                        <ZapIcon className="h-3 w-3 shrink-0" />
+                        <span>{partnerSynergy!.score}% Synergy</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] === null) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
-                        ⚠️ Guest Partner
+                        <AlertTriangleIcon className="h-3 w-3 shrink-0" />
+                        <span>Guest Partner</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
@@ -574,14 +593,15 @@ export function CurrentRoundView({
                             <button
                               type="button"
                               title="Bench to sitting pool"
+                              aria-label="Bench to sitting pool"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 moveToSitting(pId);
                                 if (selectedPlayerId === pId) setSelectedPlayerId(null);
                               }}
-                              className="ml-1 text-xs text-neutral-400 hover:text-black font-black px-1 rounded hover:bg-neutral-200"
+                              className="ml-1 p-0.5 text-neutral-400 hover:text-black rounded hover:bg-neutral-200"
                             >
-                              ✕
+                              <XIcon className="h-3 w-3" />
                             </button>
                           )}
                         </div>
@@ -653,12 +673,14 @@ export function CurrentRoundView({
                     </span>
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score !== undefined) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                        ⚡ {partnerSynergy!.score}% Synergy
+                        <ZapIcon className="h-3 w-3 shrink-0" />
+                        <span>{partnerSynergy!.score}% Synergy</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] === null) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
-                        ⚠️ Guest Partner
+                        <AlertTriangleIcon className="h-3 w-3 shrink-0" />
+                        <span>Guest Partner</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
@@ -714,14 +736,15 @@ export function CurrentRoundView({
                             <button
                               type="button"
                               title="Bench to sitting pool"
+                              aria-label="Bench to sitting pool"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 moveToSitting(pId);
                                 if (selectedPlayerId === pId) setSelectedPlayerId(null);
                               }}
-                              className="ml-1 text-xs text-neutral-400 hover:text-black font-black px-1 rounded hover:bg-neutral-200"
+                              className="ml-1 p-0.5 text-neutral-400 hover:text-black rounded hover:bg-neutral-200"
                             >
-                              ✕
+                              <XIcon className="h-3 w-3" />
                             </button>
                           )}
                         </div>
@@ -814,13 +837,14 @@ export function CurrentRoundView({
         {/* Sitting Drop Zone Callout when dragging */}
         {isUnlocked && (
           <div
-            className={`mb-3 p-3 rounded-xl border-2 border-dashed border-black text-center text-xs font-black uppercase transition-all ${
+            className={`mb-3 p-3 rounded-xl border-2 border-dashed border-black text-center text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
               activeDropZone === "sitting-pool"
                 ? "bg-[#fde047] border-black scale-[1.01]"
                 : "bg-neutral-50 text-neutral-600"
             }`}
           >
-            📥 Drag players here to sit out (or tap player, then tap here)
+            <ArrowDownToLineIcon className="h-4 w-4 shrink-0" />
+            <span>Drag players here to sit out (or tap player, then tap here)</span>
           </div>
         )}
 
@@ -875,8 +899,8 @@ export function CurrentRoundView({
       {showUnlockModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⚠️</span>
+            <div className="flex items-center gap-2.5">
+              <AlertTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
               <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
                 Override Matchmaking Algorithm?
               </h3>
@@ -928,8 +952,9 @@ export function CurrentRoundView({
             {hasModifications ? (
               <div className="space-y-3">
                 <div className="p-3 bg-amber-100 rounded-xl border-2 border-black text-xs font-bold text-neutral-900 space-y-1 shadow-[2px_2px_0px_0px_#000]">
-                  <p className="font-black uppercase text-amber-950">
-                    ⚠️ Manual Overrides Active ({modificationCount} modifications)
+                  <p className="font-black uppercase text-amber-950 flex items-center gap-1.5">
+                    <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+                    <span>Manual Overrides Active ({modificationCount} modifications)</span>
                   </p>
                   <p>
                     You have manually changed court assignments from the recommended algorithm proposal.

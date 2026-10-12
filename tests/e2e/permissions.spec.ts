@@ -61,7 +61,7 @@ test.describe("Permissions and Security Workflow", () => {
     await createTestGroup(page, groupName);
 
     // 3. Switch to "+ Add Guest" tab on dashboard
-    await page.click("button:has-text('👤 + Add Guest')");
+    await page.click("button[type='button']:has-text('+ Add Guest')");
     await page.fill("#guest-player-name", "Guest Taylor");
     await page.click("form button[type='submit']:has-text('+ Add Guest')");
 

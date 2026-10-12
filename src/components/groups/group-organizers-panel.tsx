@@ -17,6 +17,7 @@ import {
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 import { LinkGuestModal } from "./link-guest-modal";
+import { SearchIcon, UserPlusIcon, LockIcon, HandshakeIcon, CheckIcon } from "@/components/ui/icons";
 
 export function GroupOrganizersPanel({
   groupId,
@@ -248,13 +249,14 @@ export function GroupOrganizersPanel({
                 setAddMode("search");
                 setMessage(null);
               }}
-              className={`px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
                 addMode === "search"
                   ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                   : "text-neutral-800 hover:bg-black/10"
               }`}
             >
-              🔍 Find Player
+              <SearchIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Find Player</span>
             </button>
             <button
               type="button"
@@ -262,13 +264,14 @@ export function GroupOrganizersPanel({
                 setAddMode("guest");
                 setMessage(null);
               }}
-              className={`px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
                 addMode === "guest"
                   ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                   : "text-neutral-800 hover:bg-black/10"
               }`}
             >
-              👤 + Add Guest
+              <UserPlusIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Add Guest</span>
             </button>
           </div>
 
@@ -341,7 +344,10 @@ export function GroupOrganizersPanel({
                                 @{result.username}
                               </span>
                               {result.isRestricted && (
-                                <span className="text-[10px] font-bold text-neutral-500">🔒 Private</span>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">
+                                  <LockIcon className="h-3 w-3 shrink-0" />
+                                  <span>Private</span>
+                                </span>
                               )}
                             </div>
                             {!result.isRestricted && (
@@ -350,8 +356,10 @@ export function GroupOrganizersPanel({
                                   <span>Rating {Math.round(result.rating)}</span>
                                 )}
                                 {result.bestPartner && (
-                                  <span className="text-amber-700">
-                                    · 🤝 Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore}%)
+                                  <span className="inline-flex items-center gap-1 text-amber-700">
+                                    <span>·</span>
+                                    <HandshakeIcon className="h-3 w-3 shrink-0" />
+                                    <span>Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore}%)</span>
                                   </span>
                                 )}
                               </div>
@@ -367,11 +375,16 @@ export function GroupOrganizersPanel({
                                 : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
                             }`}
                           >
-                            {result.alreadyInGroup
-                              ? "In Roster ✓"
-                              : addingAccountId === result.accountId
-                              ? "Adding…"
-                              : "+ Add"}
+                            {result.alreadyInGroup ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span>In Roster</span>
+                                <CheckIcon className="h-3 w-3 shrink-0" />
+                              </span>
+                            ) : addingAccountId === result.accountId ? (
+                              "Adding…"
+                            ) : (
+                              "+ Add"
+                            )}
                           </button>
                         </li>
                       ))}
@@ -390,7 +403,7 @@ export function GroupOrganizersPanel({
                   maxLength={60}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Guest / temporary name (e.g. Jordan)"
+                  placeholder="Guest Name"
                   className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
                 <select
@@ -407,11 +420,11 @@ export function GroupOrganizersPanel({
                   disabled={guestSaving || !guestName.trim()}
                   className="rounded-lg border-2 border-black bg-[#ccff00] px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
                 >
-                  {guestSaving ? "Adding…" : "+ Add Guest"}
+                  {guestSaving ? "Adding…" : "Add"}
                 </button>
               </div>
               <p className="text-[11px] font-bold text-neutral-600">
-                Temporary players don&apos;t need an account. They can play and earn game ratings right away.
+                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
               </p>
             </form>
           )}

@@ -18,6 +18,7 @@ import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/res
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/groups/back-button";
+import { XIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
   PlayerRecord,
@@ -1012,9 +1013,10 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={() => setShowAttendanceModal(false)}
-                className="text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
               >
-                ✕ Close
+                <XIcon className="h-4 w-4" />
+                <span>Close</span>
               </button>
             </div>
             <p className="text-xs font-bold text-neutral-600">
