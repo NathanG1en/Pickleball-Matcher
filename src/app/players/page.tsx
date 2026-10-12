@@ -4,6 +4,7 @@ import { getActionRepository } from "@/app/actions/action-context";
 import { getActivePlayerAccountId } from "@/app/actions/action-context";
 import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
+import { formatDupr } from "@/lib/domain/rating-display";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 
@@ -101,7 +102,7 @@ export default async function PlayerProfilePage() {
 
       <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
         <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
-        {history.length === 0 ? <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p> : history.map((item) => <article key={`${item.groupId}-${item.sessionId}`} className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"><div><h3 className="font-black">{item.groupName}</h3><p className="text-xs font-bold text-neutral-600">{item.startedAt.toLocaleDateString()} · Rating {Math.round(item.rating)}</p></div><p className="whitespace-nowrap text-sm font-black">{item.wins}W – {item.losses}L</p></article>)}
+        {history.length === 0 ? <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p> : history.map((item) => <article key={`${item.groupId}-${item.sessionId}`} className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"><div><h3 className="font-black">{item.groupName}</h3><p className="text-xs font-bold text-neutral-600">{item.startedAt.toLocaleDateString()} · Rating {formatDupr(item.rating)}</p></div><p className="whitespace-nowrap text-sm font-black">{item.wins}W – {item.losses}L</p></article>)}
       </section>
     </section>
   </main>;

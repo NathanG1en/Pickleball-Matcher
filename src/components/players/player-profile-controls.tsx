@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/player-account";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups } from "@/lib/storage/recent-groups";
+import { formatDupr } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
 
 function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -403,7 +404,7 @@ export function PlayerProfileHeader({
 
       <div className="pt-2 border-t-2 border-neutral-100">
         <p className="text-xs font-bold uppercase text-neutral-600">
-          {skillLevel} · starting rating {initialRating}
+          {skillLevel} · starting rating {formatDupr(initialRating)}
         </p>
       </div>
 

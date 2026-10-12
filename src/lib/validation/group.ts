@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 export const entityIdSchema = z
   .string()
@@ -60,7 +61,14 @@ export const playerSignupSchema = z.object({
   password: z.string().min(10).max(72),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
   customRating: z.boolean().default(false),
-  initialRating: z.coerce.number().finite().min(100).max(3_000).default(1_000),
+  initialRating: z.coerce
+    .number()
+    .finite()
+    .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+      message: "Initial rating must be between 2.000 and 8.000.",
+    })
+    .default(3.5)
+    .transform(normalizeInitialRating),
 }).strict();
 
 export const playerLoginSchema = z.object({
@@ -95,7 +103,14 @@ export const joinAsGuestSchema = z.object({
   groupId: entityIdSchema,
   name: z.string().trim().min(1, "Name is required").max(80, "Name must be 80 characters or fewer"),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional().default("intermediate"),
-  initialRating: z.coerce.number().finite().min(100).max(3_000).optional(),
+  initialRating: z.coerce
+    .number()
+    .finite()
+    .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+      message: "Initial rating must be between 2.000 and 8.000.",
+    })
+    .optional()
+    .transform((val) => (val === undefined ? undefined : normalizeInitialRating(val))),
 }).strict();
 
 export const updateGroupVisibilitySchema = z.object({
@@ -117,7 +132,14 @@ export const createPlayerSchema = z
   .object({
     groupId: entityIdSchema,
     name: z.string().trim().min(1).max(80),
-    initialRating: z.coerce.number().finite().min(100).max(3_000).default(1_000),
+    initialRating: z.coerce
+      .number()
+      .finite()
+      .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+        message: "Initial rating must be between 2.000 and 8.000.",
+      })
+      .default(3.5)
+      .transform(normalizeInitialRating),
     idempotencyKey: entityIdSchema,
   })
   .strict();
@@ -128,7 +150,14 @@ export const updatePlayerSchema = z
     playerId: entityIdSchema,
     name: z.string().trim().min(1).max(80).optional(),
     active: z.boolean().optional(),
-    initialRating: z.coerce.number().finite().min(100).max(3_000).optional(),
+    initialRating: z.coerce
+      .number()
+      .finite()
+      .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+        message: "Initial rating must be between 2.000 and 8.000.",
+      })
+      .optional()
+      .transform((val) => (val === undefined ? undefined : normalizeInitialRating(val))),
     idempotencyKey: entityIdSchema,
   })
   .strict()

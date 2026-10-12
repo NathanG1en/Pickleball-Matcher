@@ -303,7 +303,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
     expect(html).toContain('aria-label="Edit gender"');
-    expect(html).toContain("advanced · starting rating 1100");
+    expect(html).toContain("advanced · starting rating 3.750");
   });
 
   it("checks username availability against database (identifies taken usernames and permits current user)", async () => {

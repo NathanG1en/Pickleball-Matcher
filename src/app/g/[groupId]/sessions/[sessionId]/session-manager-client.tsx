@@ -18,6 +18,7 @@ import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/res
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/groups/back-button";
+import { formatDupr } from "@/lib/domain/rating-display";
 import type {
   AttendanceRecord,
   PlayerRecord,
@@ -1037,7 +1038,7 @@ export function SessionManagerClient({
                   >
                     <div>
                       <span className="font-black text-black text-sm block">{p.name}</span>
-                      <span className="text-xs font-bold text-neutral-500">Rating: {Math.round(p.rating)}</span>
+                      <span className="text-xs font-bold text-neutral-500">Rating: {formatDupr(p.rating)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={isPresent ? "success" : "muted"}>

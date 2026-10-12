@@ -396,9 +396,12 @@ export function GroupOrganizersPanel({
                   onChange={(e) => setGuestRating(Number(e.target.value))}
                   className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 >
-                  <option value={900}>Beginner (~900)</option>
-                  <option value={1000}>Intermediate (~1000)</option>
-                  <option value={1100}>Advanced (~1100)</option>
+                  <option value={400}>Beginner (2.000)</option>
+                  <option value={600}>Adv. Beginner (2.500)</option>
+                  <option value={800}>Intermediate (3.000)</option>
+                  <option value={1000}>Adv. Intermediate (3.500)</option>
+                  <option value={1200}>Competitive (4.000)</option>
+                  <option value={1400}>Adv. Competitive (4.500)</option>
                 </select>
                 <button
                   type="submit"
