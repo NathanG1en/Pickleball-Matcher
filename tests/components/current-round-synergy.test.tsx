@@ -68,7 +68,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
       />
     );
-    expect(html).toContain("⚡ Court Synergy &amp; Chemistry");
+    expect(html).toContain("Court Synergy &amp; Chemistry");
     expect(html).toContain("84% (10 games)");
     expect(html).toContain("Alice &amp; Bob");
     // All calculated -> no ineligibility notice

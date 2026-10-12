@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
+import { XIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
   PlayerRecord,
@@ -75,11 +76,6 @@ export function SessionManagerClient({
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
 
-  useEffect(() => {
-    if (session.status === "completed" || isEnded) {
-      router.replace(`/g/${groupId}`);
-    }
-  }, [session.status, isEnded, groupId, router]);
 
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
@@ -407,10 +403,10 @@ export function SessionManagerClient({
   // Convert started round matches to MatchScoreEntry
   const scoreEntries: MatchScoreEntry[] = latestStarted
     ? latestStarted.matches.map((match) => {
-        const team1Players = latestStarted.matchPlayers
+        const team1Players = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 1)
           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-        const team2Players = latestStarted.matchPlayers
+        const team2Players = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 2)
           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
 
@@ -437,10 +433,10 @@ export function SessionManagerClient({
     attendeePlayerIds.add(att.playerId);
   }
   for (const sr of allSessionRounds) {
-    for (const mp of sr.matchPlayers) {
+    for (const mp of sr.matchPlayers ?? []) {
       attendeePlayerIds.add(mp.playerId);
     }
-    for (const sit of sr.sits) {
+    for (const sit of sr.sits ?? []) {
       attendeePlayerIds.add(sit.playerId);
     }
   }
@@ -455,7 +451,7 @@ export function SessionManagerClient({
       for (const sr of allSessionRounds) {
         for (const m of sr.matches) {
           if (m.status !== "completed" || m.team1Score === null || m.team2Score === null) continue;
-          const mp = sr.matchPlayers.find((entry) => entry.matchId === m.id && entry.playerId === pId);
+          const mp = (sr.matchPlayers ?? []).find((entry) => entry.matchId === m.id && entry.playerId === pId);
           if (!mp) continue;
           gamesPlayed += 1;
           if (
@@ -681,18 +677,18 @@ export function SessionManagerClient({
                       </Badge>
                     </div>
 
-                    {sr.sits.length > 0 && (
+                    {(sr.sits ?? []).length > 0 && (
                       <p className="text-xs font-bold text-neutral-600">
-                        Sitting out: {sr.sits.map((s) => playerNames[s.playerId] ?? s.playerId).join(", ")}
+                        Sitting out: {(sr.sits ?? []).map((s) => playerNames[s.playerId] ?? s.playerId).join(", ")}
                       </p>
                     )}
 
                     <div className="space-y-2">
                       {sr.matches.map((m) => {
-                        const t1 = sr.matchPlayers
+                        const t1 = (sr.matchPlayers ?? [])
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
                           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-                        const t2 = sr.matchPlayers
+                        const t2 = (sr.matchPlayers ?? [])
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
                         const isEditing = editingHistoricalMatchId === m.id;
@@ -911,10 +907,10 @@ export function SessionManagerClient({
                     </div>
                     <div className="space-y-2 pt-1">
                       {past.matches.map((m) => {
-                        const t1 = past.matchPlayers
+                        const t1 = (past.matchPlayers ?? [])
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
                           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-                        const t2 = past.matchPlayers
+                        const t2 = (past.matchPlayers ?? [])
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
                         const isEditing = editingHistoricalMatchId === m.id;
@@ -1018,9 +1014,10 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={() => setShowAttendanceModal(false)}
-                className="text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
               >
-                ✕ Close
+                <XIcon className="h-4 w-4" />
+                <span>Close</span>
               </button>
             </div>
             <p className="text-xs font-bold text-neutral-600">

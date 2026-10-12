@@ -76,31 +76,6 @@ export function GroupOptionsMenu({
             type="button"
             onClick={() => {
               setMenuOpen(false);
-              setShowShareModal(true);
-            }}
-            className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-neutral-100 flex items-center gap-2 cursor-pointer"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-3.5 h-3.5"
-              aria-hidden="true"
-            >
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-              <polyline points="16 6 12 2 8 6" />
-              <line x1="12" y1="2" x2="12" y2="15" />
-            </svg>
-            Share Group
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
               setConfirmName("");
               setDeleteError(null);
               setShowDeleteModal(true);

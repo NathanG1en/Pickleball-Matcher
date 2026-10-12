@@ -14,24 +14,7 @@ import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups } from "@/lib/storage/recent-groups";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
-
-function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-      <path d="m15 5 4 4" />
-    </svg>
-  );
-}
+import { PencilIcon, LockIcon, GlobeIcon, CheckIcon } from "@/components/ui/icons";
 
 export function PlayerProfileHeader({
   initialName,
@@ -85,7 +68,7 @@ export function PlayerProfileHeader({
     const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
     if (res.ok) {
       setIsPublic(nextVal);
-      setPrivacyToast(nextVal ? "Profile is now Public (🌐)" : "Profile is now Private (🔒)");
+      setPrivacyToast(nextVal ? "Profile is now Public" : "Profile is now Private");
       router.refresh();
       setTimeout(() => setPrivacyToast(null), 3000);
     } else {
@@ -421,7 +404,17 @@ export function PlayerProfileHeader({
                   : "bg-neutral-200 text-neutral-700"
               }`}
             >
-              {isPublic ? "🌐 Public" : "🔒 Private"}
+              {isPublic ? (
+                <>
+                  <GlobeIcon className="h-4 w-4 shrink-0" />
+                  <span>Public</span>
+                </>
+              ) : (
+                <>
+                  <LockIcon className="h-4 w-4 shrink-0" />
+                  <span>Private</span>
+                </>
+              )}
             </span>
           </div>
           <button
@@ -436,14 +429,14 @@ export function PlayerProfileHeader({
         <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
           {isPublic
             ? "Your profile and stats are discoverable by @username search."
-            : "Your profile is private (🔒); stats are hidden from public search."}
+            : "Your profile is private; stats are hidden from public search."}
         </p>
         {privacyToast && (
           <div
             role="status"
             className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
           >
-            <span>✓</span>
+            <CheckIcon className="h-3.5 w-3.5 shrink-0" />
             <span>{privacyToast}</span>
           </div>
         )}
@@ -477,7 +470,7 @@ export function PlayerVisibilityControl({
     const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
     if (res.ok) {
       setIsPublic(nextVal);
-      setToast(nextVal ? "Profile is now Public (🌐)" : "Profile is now Private (🔒)");
+      setToast(nextVal ? "Profile is now Public" : "Profile is now Private");
       router.refresh();
       setTimeout(() => setToast(null), 3000);
     } else {
@@ -500,7 +493,17 @@ export function PlayerVisibilityControl({
                 : "bg-neutral-200 text-neutral-700"
             }`}
           >
-            {isPublic ? "🌐 Public" : "🔒 Private"}
+            {isPublic ? (
+              <>
+                <GlobeIcon className="h-4 w-4 shrink-0" />
+                <span>Public</span>
+              </>
+            ) : (
+              <>
+                <LockIcon className="h-4 w-4 shrink-0" />
+                <span>Private</span>
+              </>
+            )}
           </span>
         </div>
         <button
@@ -515,14 +518,14 @@ export function PlayerVisibilityControl({
       <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
         {isPublic
           ? "Your profile and stats are discoverable by @username search."
-          : "Your profile is private (🔒); stats are hidden from public search."}
+          : "Your profile is private; stats are hidden from public search."}
       </p>
       {toast && (
         <div
           role="status"
           className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
         >
-          <span>✓</span>
+          <CheckIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{toast}</span>
         </div>
       )}

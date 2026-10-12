@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/players";
 import { Alert, Button, Input } from "@/components/ui";
 import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
+import { LockIcon, HandshakeIcon, ZapIcon, CheckIcon } from "@/components/ui/icons";
 
 interface PlayerSearchDrawerProps {
   readonly groupId: string;
@@ -123,8 +124,9 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                       @{player.username}
                     </span>
                     {player.isRestricted && (
-                      <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                        🔒 Private Profile
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                        <LockIcon className="h-3 w-3 shrink-0" />
+                        <span>Private Profile</span>
                       </span>
                     )}
                   </div>
@@ -138,13 +140,17 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                         <span>· {getSkillTier(eloToDupr(player.rating)).name}</span>
                       )}
                       {player.bestPartner && (
-                        <span className="text-amber-700">
-                          · 🤝 Best: @{player.bestPartner.username} ({player.bestPartner.synergyScore}% synergy)
+                        <span className="inline-flex items-center gap-1 text-amber-700">
+                          <span>·</span>
+                          <HandshakeIcon className="h-3 w-3 shrink-0" />
+                          <span>Best: @{player.bestPartner.username} ({player.bestPartner.synergyScore}% synergy)</span>
                         </span>
                       )}
                       {player.viewerSynergyScore !== null && player.viewerSynergyScore !== undefined && (
-                        <span className="text-emerald-700">
-                          · ⚡ Chemistry with you: {player.viewerSynergyScore}%
+                        <span className="inline-flex items-center gap-1 text-emerald-700">
+                          <span>·</span>
+                          <ZapIcon className="h-3 w-3 shrink-0" />
+                          <span>Chemistry with you: {player.viewerSynergyScore}%</span>
                         </span>
                       )}
                     </div>
@@ -167,11 +173,16 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                       : "bg-[#ccff00] hover:bg-[#b8e600]"
                   }`}
                 >
-                  {player.alreadyInGroup
-                    ? "In Group ✓"
-                    : addingAccountId === player.accountId
-                      ? "Adding..."
-                      : "Add to Group"}
+                  {player.alreadyInGroup ? (
+                    <span className="inline-flex items-center gap-1">
+                      <span>In Group</span>
+                      <CheckIcon className="h-3 w-3 shrink-0" />
+                    </span>
+                  ) : addingAccountId === player.accountId ? (
+                    "Adding..."
+                  ) : (
+                    "Add to Group"
+                  )}
                 </button>
               </div>
             </li>

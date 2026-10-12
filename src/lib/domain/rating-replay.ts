@@ -6,14 +6,21 @@ export async function replayRatings(
   groupId: string,
   repository: DomainRepository,
 ): Promise<RatingReplayResult> {
-  const players = await repository.listPlayers(groupId, { includeInactive: true });
-  const current = new Map(
-    players.map((player) => [
-      player.id,
-      { rating: player.initialRating, ratedGamesPlayed: 0 },
-    ]),
-  );
-  const matches = (await repository.listReplayMatches(groupId))
+  const players = await repository.listPlayers(undefined, { includeInactive: true });
+  const playerMap = new Map(players.map((player) => [player.id, player]));
+
+  const entityStates = new Map<string, { rating: number; ratedGamesPlayed: number }>();
+  for (const player of players) {
+    const key = player.accountId ?? player.id;
+    if (!entityStates.has(key)) {
+      entityStates.set(key, {
+        rating: player.initialRating,
+        ratedGamesPlayed: 0,
+      });
+    }
+  }
+
+  const matches = (await repository.listReplayMatches())
     .filter((match) => match.status === "completed")
     .toSorted(
       (first, second) =>
@@ -26,19 +33,27 @@ export async function replayRatings(
     if (match.team1.length !== 2 || match.team2.length !== 2) {
       continue;
     }
-    const team1 = match.team1.map((playerId) => ({
-      id: playerId,
-      rating: current.get(playerId)!.rating,
-      ratedGames: current.get(playerId)!.ratedGamesPlayed,
-    })) as [
+    const team1 = match.team1.map((playerId) => {
+      const key = playerMap.get(playerId)?.accountId ?? playerId;
+      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0 };
+      return {
+        id: playerId,
+        rating: state.rating,
+        ratedGames: state.ratedGamesPlayed,
+      };
+    }) as [
       { id: string; rating: number; ratedGames: number },
       { id: string; rating: number; ratedGames: number },
     ];
-    const team2 = match.team2.map((playerId) => ({
-      id: playerId,
-      rating: current.get(playerId)!.rating,
-      ratedGames: current.get(playerId)!.ratedGamesPlayed,
-    })) as [
+    const team2 = match.team2.map((playerId) => {
+      const key = playerMap.get(playerId)?.accountId ?? playerId;
+      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0 };
+      return {
+        id: playerId,
+        rating: state.rating,
+        ratedGames: state.ratedGamesPlayed,
+      };
+    }) as [
       { id: string; rating: number; ratedGames: number },
       { id: string; rating: number; ratedGames: number },
     ];
@@ -56,22 +71,43 @@ export async function replayRatings(
       })),
     );
     for (const update of updates) {
-      const player = current.get(update.playerId)!;
-      current.set(update.playerId, {
+      const key = playerMap.get(update.playerId)?.accountId ?? update.playerId;
+      const playerState = entityStates.get(key) ?? { rating: update.ratingBefore, ratedGamesPlayed: 0 };
+      entityStates.set(key, {
         rating: update.ratingAfter,
-        ratedGamesPlayed: player.ratedGamesPlayed + 1,
+        ratedGamesPlayed: playerState.ratedGamesPlayed + 1,
       });
     }
   }
 
+  const updatedPlayers = players.map((player) => {
+    const key = player.accountId ?? player.id;
+    const state = entityStates.get(key) ?? { rating: player.initialRating, ratedGamesPlayed: 0 };
+    return {
+      id: player.id,
+      accountId: player.accountId,
+      rating: state.rating,
+      ratedGamesPlayed: state.ratedGamesPlayed,
+    };
+  });
+
   await repository.replaceRatingState(
     groupId,
-    [...current].map(([id, state]) => ({ id, ...state })),
+    updatedPlayers,
     snapshots,
   );
 
   return {
-    processedMatchIds: matches.map((match) => match.id),
-    playerRatings: new Map([...current].map(([id, state]) => [id, state.rating])),
+    processedMatchIds: matches
+      .filter((match) => !groupId || match.groupId === groupId)
+      .map((match) => match.id),
+    playerRatings: new Map(
+      players
+        .filter((player) => !groupId || player.groupId === groupId)
+        .map((player) => {
+          const key = player.accountId ?? player.id;
+          return [player.id, entityStates.get(key)?.rating ?? player.initialRating];
+        }),
+    ),
   };
 }

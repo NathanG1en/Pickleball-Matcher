@@ -47,7 +47,7 @@ export function resolveProfileVisibility(
     isPublic: targetAccount.isPublic ?? true,
     isRestricted: false,
     skillLevel: targetAccount.skillLevel,
-    rating: targetAccount.initialRating,
+    rating: targetAccount.rating ?? targetAccount.initialRating,
     bestPartner: stats.bestPartner,
     viewerSynergyScore: stats.viewerSynergyScore,
   };

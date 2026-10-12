@@ -28,6 +28,22 @@ describe("player account group membership and history", () => {
     expect(await repository.listPublicGroups("group", account.id)).toMatchObject([{ id: "public", isMember: true }]);
   });
 
+  it("inherits current rating when joining subsequent groups", async () => {
+    const repository = new InMemoryRepositories({
+      groups: [
+        { id: "group-1", name: "Group 1", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        { id: "group-2", name: "Group 2", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+      ],
+      playerAccounts: [{ ...account, rating: 1150, ratedGamesPlayed: 5 }],
+    });
+
+    const joined = await repository.joinPublicGroup(account.id, "group-1");
+    expect(joined).toMatchObject({ groupId: "group-1", accountId: account.id, initialRating: 900, rating: 1150, ratedGamesPlayed: 5 });
+
+    const joined2 = await repository.joinPublicGroup(account.id, "group-2");
+    expect(joined2).toMatchObject({ groupId: "group-2", accountId: account.id, initialRating: 900, rating: 1150, ratedGamesPlayed: 5 });
+  });
+
   it("updates a player name across memberships and retains per-session results", async () => {
     const repository = new InMemoryRepositories({
       groups: [{ id: "public", name: "Public Group", organizerPinHash: "hash", createdAt: new Date(), isPublic: true }],
