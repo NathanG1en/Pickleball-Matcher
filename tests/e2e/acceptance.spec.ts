@@ -24,7 +24,9 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator("h1")).toContainText(groupName);
 
     // 3. Add players to roster until we have 14 players
-    await page.click("a:has-text('Manage Roster')");
+    const rosterLink = page.locator("a:has-text('Manage Roster')");
+    await expect(rosterLink).toBeVisible();
+    await rosterLink.click();
     await expect(page).toHaveURL(/\/players/);
 
     const playerNames = [
@@ -111,5 +113,33 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
         expect(round2Sitters).not.toContain(sitter);
       }
     }
+
+    // 8. End the session and verify completed session summary remains visible without returning to group
+    const sessionUrl = page.url();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.click("button:has-text('End Session')");
+
+    // After ending session, user is redirected to group dashboard
+    await page.waitForURL(/\/g\/[^/]+$/);
+
+    // Expand past sessions list and navigate to full session summary
+    const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();
+    await expect(expandArrow).toBeVisible();
+    await expandArrow.click();
+
+    const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();
+    await expect(viewFullLink).toBeVisible();
+    await viewFullLink.click();
+
+    // Verify full session summary renders and stays visible
+    await page.waitForURL(/\/sessions\/[^/]+$/);
+    const summaryCard = page.locator("[data-testid='completed-session-full-view']");
+    await expect(summaryCard).toBeVisible();
+    await expect(page.locator("h2:has-text('Session Summary')")).toBeVisible();
+
+    // Wait 1.5s to ensure it does NOT redirect back to the group dashboard
+    await page.waitForTimeout(1500);
+    expect(page.url()).toBe(sessionUrl);
+    await expect(summaryCard).toBeVisible();
   });
 });
