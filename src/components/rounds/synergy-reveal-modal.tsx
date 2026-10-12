@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { RoundCourtData } from "@/components/rounds/current-round";
+import { ZapIcon, AlertTriangleIcon, InfoIcon, XIcon } from "@/components/ui/icons";
 
 export type TeamSynergyStatus = "calculated" | "new_duo" | "guest_ineligible" | "solo";
 
@@ -39,9 +40,10 @@ function resolveTeamSynergy(
     return {
       status: "solo" as const,
       badgeText: "Singles / Solo",
+      badgeIcon: undefined,
       badgeStyle: "border-neutral-300 bg-white text-neutral-500",
       message: "Doubles synergy requires a 2-player team.",
-      icon: "ℹ️",
+      iconType: "info" as const,
     };
   }
 
@@ -62,29 +64,32 @@ function resolveTeamSynergy(
 
     return {
       status: "guest_ineligible" as const,
-      badgeText: "⚠️ Guest Ineligible",
+      badgeText: "Guest Ineligible",
+      badgeIcon: "warning" as const,
       badgeStyle: "border-amber-400 bg-amber-100 text-amber-900",
       message,
-      icon: "⚠️",
+      iconType: "warning" as const,
     };
   }
 
   if (synInfo?.score !== undefined && synInfo?.matchesPlayed !== undefined) {
     return {
       status: "calculated" as const,
-      badgeText: `⚡ ${synInfo.score}% (${synInfo.matchesPlayed} games)`,
+      badgeText: `${synInfo.score}% (${synInfo.matchesPlayed} games)`,
+      badgeIcon: "zap" as const,
       badgeStyle: "border-black bg-[#ccff00] text-black",
       message: undefined,
-      icon: undefined,
+      iconType: undefined,
     };
   }
 
   return {
     status: "new_duo" as const,
     badgeText: "New Duo (0 games)",
+    badgeIcon: undefined,
     badgeStyle: "border-neutral-300 bg-white text-neutral-600",
     message: "First match together — chemistry unlocks after 1st match.",
-    icon: "ℹ️",
+    iconType: "info" as const,
   };
 }
 
@@ -111,22 +116,26 @@ export function SynergyRevealModal({
       <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_0px_#000] text-black">
         <div className="mb-4 flex items-center justify-between border-b-2 border-neutral-100 pb-3">
           <div>
-            <h2 className="font-display text-2xl font-black uppercase">⚡ Court Synergy &amp; Chemistry</h2>
+            <h2 className="font-display text-2xl font-black uppercase flex items-center gap-2">
+              <ZapIcon className="h-6 w-6 text-black shrink-0" />
+              <span>Court Synergy &amp; Chemistry</span>
+            </h2>
             <p className="text-xs font-bold text-neutral-600">Historical doubles chemistry across active courts</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border-2 border-black bg-neutral-100 px-3 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-[1px] active:translate-y-[1px]"
+            aria-label="Close"
+            className="rounded-xl border-2 border-black bg-neutral-100 p-2 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-[1px] active:translate-y-[1px]"
           >
-            ✕
+            <XIcon className="h-4 w-4" />
           </button>
         </div>
 
         {hasUncalculated && (
           <div className="mb-4 rounded-2xl border-2 border-black bg-amber-50 p-4 shadow-[3px_3px_0px_0px_#000] text-black">
             <div className="flex items-start gap-2.5">
-              <span className="text-xl select-none leading-none">⚠️</span>
+              <AlertTriangleIcon className="h-5 w-5 text-amber-900 shrink-0 select-none mt-0.5" />
               <div className="space-y-1 text-xs">
                 <h4 className="font-display font-black uppercase tracking-wider text-amber-950">
                   Notice: Synergy Not Yet Available For Some Duos
@@ -168,13 +177,19 @@ export function SynergyRevealModal({
                     <div className="rounded-xl border border-black/20 bg-[#e0f2fe] p-2.5 space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-black text-sky-950 truncate">{t1Names}</span>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${t1Res.badgeStyle}`}>
-                          {t1Res.badgeText}
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t1Res.badgeStyle}`}>
+                          {t1Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
+                          {t1Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
+                          <span>{t1Res.badgeText}</span>
                         </span>
                       </div>
                       {t1Res.message && (
                         <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
-                          <span>{t1Res.icon}</span>
+                          {t1Res.iconType === "warning" ? (
+                            <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
+                          ) : (
+                            <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
+                          )}
                           <span>{t1Res.message}</span>
                         </p>
                       )}
@@ -184,13 +199,19 @@ export function SynergyRevealModal({
                     <div className="rounded-xl border border-black/20 bg-[#ffedd5] p-2.5 space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-black text-amber-950 truncate">{t2Names}</span>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] ${t2Res.badgeStyle}`}>
-                          {t2Res.badgeText}
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t2Res.badgeStyle}`}>
+                          {t2Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
+                          {t2Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
+                          <span>{t2Res.badgeText}</span>
                         </span>
                       </div>
                       {t2Res.message && (
                         <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
-                          <span>{t2Res.icon}</span>
+                          {t2Res.iconType === "warning" ? (
+                            <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
+                          ) : (
+                            <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
+                          )}
                           <span>{t2Res.message}</span>
                         </p>
                       )}

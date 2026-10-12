@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { TrophyIcon } from "@/components/ui/icons";
 import {
   TOURNAMENT_DIVISION_LABELS,
   type TournamentRecord,
@@ -20,7 +21,7 @@ export function GroupTournamentsList({
   if (tournaments.length === 0) {
     return (
       <div className="text-center py-6 px-4 rounded-2xl bg-neutral-50 border-2 border-dashed border-neutral-300 space-y-3">
-        <span className="text-2xl block">🏆</span>
+        <TrophyIcon className="h-8 w-8 mx-auto text-neutral-400" />
         <p className="text-sm font-bold text-neutral-600">
           No tournaments created yet.
         </p>

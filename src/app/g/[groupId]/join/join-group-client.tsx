@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { joinAsGuestAction, joinGroupViaInviteAction } from "@/app/actions/player-account";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
+import { ZapIcon } from "@/components/ui/icons";
 
 interface AccountSummary {
   id: string;
@@ -231,8 +232,9 @@ export function JoinGroupClient({
       {/* Option 1: Guest Join Form */}
       <div className="rounded-2xl border-2 border-black bg-[#fefce8] p-4 text-left shadow-[3px_3px_0px_0px_#000] space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-black uppercase tracking-wider text-black">
-            ⚡ Quick Guest Join
+          <span className="text-xs font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+            <ZapIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>Quick Guest Join</span>
           </span>
           <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-black text-[#ccff00]">
             No Password

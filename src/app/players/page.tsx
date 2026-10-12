@@ -6,6 +6,7 @@ import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/com
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
+import { HandshakeIcon } from "@/components/ui/icons";
 
 export default async function PlayerProfilePage() {
   const accountId = await getActivePlayerAccountId();
@@ -74,8 +75,8 @@ export default async function PlayerProfilePage() {
                 Play doubles matches with other registered accounts in your groups to discover your best partner and unlock mutual chemistry scores.
               </p>
             </div>
-            <span className="rounded-2xl border-2 border-black bg-neutral-100 px-3 py-2 text-2xl shadow-[2px_2px_0px_0px_#000]">
-              🤝
+            <span className="flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 p-3 shadow-[2px_2px_0px_0px_#000]">
+              <HandshakeIcon className="h-6 w-6 text-black" />
             </span>
           </div>
         </section>

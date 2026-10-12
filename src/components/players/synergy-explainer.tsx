@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { InfoIcon, XIcon } from "@/components/ui/icons";
 
 export function SynergyExplainerButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,9 +13,9 @@ export function SynergyExplainerButton() {
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="How synergy is calculated"
         title="How synergy is calculated"
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-white/80 text-[10px] font-black text-black hover:bg-white active:scale-95 transition-all cursor-pointer"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-white/80 text-black hover:bg-white active:scale-95 transition-all cursor-pointer"
       >
-        ℹ
+        <InfoIcon className="h-2.5 w-2.5" />
       </button>
 
       {isOpen && (
@@ -30,9 +31,10 @@ export function SynergyExplainerButton() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
+                aria-label="Close"
+                className="text-neutral-500 hover:text-black cursor-pointer p-0.5"
               >
-                ✕
+                <XIcon className="h-3.5 w-3.5" />
               </button>
             </div>
             <p className="text-[11px] font-medium leading-relaxed text-neutral-700">

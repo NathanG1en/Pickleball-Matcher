@@ -7,6 +7,7 @@ import {
   type SearchPlayerResult,
 } from "@/app/actions/players";
 import type { PlayerRecord } from "@/lib/domain/types";
+import { LockIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 
 export interface LinkGuestModalProps {
   isOpen: boolean;
@@ -151,9 +152,9 @@ export function LinkGuestModal({
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-xl font-black leading-none hover:bg-[#fde047] cursor-pointer"
+          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white hover:bg-[#fde047] cursor-pointer"
         >
-          ×
+          <XIcon className="h-4 w-4" />
         </button>
 
         <div className="space-y-1 pr-6 text-left">
@@ -246,7 +247,10 @@ export function LinkGuestModal({
                           @{result.username}
                         </span>
                         {result.isRestricted && (
-                          <span className="text-[10px] font-bold text-neutral-500">🔒 Private</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">
+                            <LockIcon className="h-3 w-3 shrink-0" />
+                            <span>Private</span>
+                          </span>
                         )}
                       </div>
                       {!result.isRestricted && result.rating !== undefined && (
@@ -267,11 +271,16 @@ export function LinkGuestModal({
                           : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
                       }`}
                     >
-                      {result.alreadyInGroup
-                        ? "In Roster ✓"
-                        : linkingAccountId === result.accountId
-                        ? "Linking…"
-                        : "Link Player"}
+                      {result.alreadyInGroup ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span>In Roster</span>
+                          <CheckIcon className="h-3 w-3 shrink-0" />
+                        </span>
+                      ) : linkingAccountId === result.accountId ? (
+                        "Linking…"
+                      ) : (
+                        "Link Player"
+                      )}
                     </button>
                   </li>
                 ))}
