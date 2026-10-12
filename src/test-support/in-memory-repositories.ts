@@ -223,6 +223,35 @@ export class InMemoryRepositories implements DomainRepository {
     return player;
   }
 
+  async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return null;
+
+    const playerIndex = this.state.players.findIndex(
+      (item) => item.id === playerId && item.groupId === groupId && !item.accountId,
+    );
+    if (playerIndex === -1) return null;
+
+    const alreadyInGroup = this.state.players.some(
+      (item) => item.groupId === groupId && item.accountId === accountId,
+    );
+    if (alreadyInGroup) return null;
+
+    const existingPlayer = this.state.players[playerIndex];
+    const updated: PlayerRecord = {
+      ...existingPlayer,
+      accountId: account.id,
+      username: account.username,
+      name: account.name,
+      gender: existingPlayer.gender ?? account.gender ?? null,
+      initialRating: account.initialRating,
+      rating: account.rating ?? account.initialRating,
+      ratedGamesPlayed: account.ratedGamesPlayed ?? 0,
+    };
+    this.state.players[playerIndex] = updated;
+    return updated;
+  }
+
   async joinPublicGroup(accountId: string, groupId: string) {
     const group = this.state.groups.find((item) => item.id === groupId && (item.isPublic === true || item.ownerAccountId === accountId));
     if (!group) return null;

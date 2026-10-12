@@ -458,6 +458,40 @@ export class SqliteDomainRepository implements DomainRepository {
     return player;
   }
 
+  async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
+    const account = await this.getPlayerAccount(accountId);
+    if (!account) return null;
+
+    const guest = this.db.prepare("SELECT * FROM players WHERE id = ? AND group_id = ?").get(playerId, groupId) as PlayerRow | undefined;
+    if (!guest || guest.account_id !== null) return null;
+
+    const existing = this.db.prepare("SELECT id FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId);
+    if (existing) return null;
+
+    this.db.prepare(`
+      UPDATE players
+      SET account_id = ?,
+          name = ?,
+          gender = COALESCE(gender, ?),
+          initial_rating = ?,
+          rating = COALESCE(?, initial_rating),
+          rated_games_played = ?
+      WHERE id = ? AND group_id = ? AND account_id IS NULL
+    `).run(
+      accountId,
+      account.name,
+      account.gender ?? null,
+      account.initialRating,
+      account.rating ?? null,
+      account.ratedGamesPlayed ?? 0,
+      playerId,
+      groupId,
+    );
+
+    const updated = this.db.prepare("SELECT * FROM players WHERE id = ?").get(playerId) as PlayerRow | undefined;
+    return updated ? { ...this.mapPlayerRecord(updated), username: account.username } : null;
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const group = await this.getGroup(groupId);
     if (!group?.isPublic && group?.ownerAccountId !== accountId) return null;

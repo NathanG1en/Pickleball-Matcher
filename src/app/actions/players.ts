@@ -6,13 +6,20 @@ import { z } from "zod";
 
 import {
   getActionRepository,
+  getActiveOrganizerSession,
   getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
 import type { PlayerRecord } from "@/lib/domain/types";
+import { replayRatings } from "@/lib/domain/rating-replay";
 import { resolveProfileVisibility, type SanitizedProfileView } from "@/lib/privacy/profile-visibility";
-import { createPlayerSchema, deletePlayerSchema, updatePlayerSchema } from "@/lib/validation/group";
+import {
+  createPlayerSchema,
+  deletePlayerSchema,
+  linkGuestPlayerSchema,
+  updatePlayerSchema,
+} from "@/lib/validation/group";
 
 export interface SearchPlayerResult extends SanitizedProfileView {
   readonly alreadyInGroup: boolean;
@@ -225,6 +232,82 @@ export async function addPlayerByAccountIdAction(
     return { ok: true, data: player };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to add player to group";
+    return { ok: false, error: message };
+  }
+}
+
+export async function linkGuestPlayerAction(
+  input: unknown,
+): Promise<ActionResult<PlayerRecord>> {
+  const parsed = linkGuestPlayerSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "Group not found." };
+
+    const callerAccountId = await getActivePlayerAccountId();
+    const isHost = Boolean(callerAccountId && group.ownerAccountId === callerAccountId);
+    const isAccountOrganizer = Boolean(
+      callerAccountId && (await repository.isGroupOrganizer(parsed.data.groupId, callerAccountId)),
+    );
+    const organizerSession = await getActiveOrganizerSession();
+    const isSessionOrganizer = Boolean(
+      organizerSession && organizerSession.groupId === parsed.data.groupId,
+    );
+
+    if (!isHost && !isAccountOrganizer && !isSessionOrganizer) {
+      return { ok: false, error: "Only the host or a group organizer can link players." };
+    }
+
+    const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
+    const targetPlayer = groupPlayers.find((p) => p.id === parsed.data.playerId);
+    if (!targetPlayer) {
+      return { ok: false, error: "Player not found." };
+    }
+    if (targetPlayer.accountId) {
+      return { ok: false, error: "This player is already linked to an account." };
+    }
+    const accountAlreadyInGroup = groupPlayers.some((p) => p.accountId === parsed.data.targetAccountId);
+    if (accountAlreadyInGroup) {
+      return { ok: false, error: "That player account is already on the roster." };
+    }
+    const targetAccount = await repository.getPlayerAccount(parsed.data.targetAccountId);
+    if (!targetAccount) {
+      return { ok: false, error: "Player account not found." };
+    }
+
+    const linked = await repository.linkGuestPlayer(
+      parsed.data.groupId,
+      parsed.data.playerId,
+      parsed.data.targetAccountId,
+    );
+
+    if (!linked) {
+      return { ok: false, error: "Unable to link guest player to that account." };
+    }
+
+    try {
+      await replayRatings(parsed.data.groupId, repository);
+    } catch {
+      // Replay rating fallback
+    }
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+
+    return { ok: true, data: linked };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to link guest player";
     return { ok: false, error: message };
   }
 }

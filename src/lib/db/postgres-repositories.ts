@@ -555,6 +555,51 @@ export class PostgresRepositories implements DomainRepository {
     return existing[0] ? mapPlayer(existing[0]) : null;
   }
 
+  async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
+    const accountRows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      from players
+      where id = ${accountId} and username is not null
+    `;
+    if (!accountRows[0]) return null;
+    const account = mapPlayerAccount(accountRows[0]);
+
+    const guestRows = await this.query<PlayerRow[]>`
+      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+      from players
+      where id = ${playerId} and group_id = ${groupId}
+    `;
+    if (!guestRows[0] || guestRows[0].account_id !== null) {
+      return null;
+    }
+
+    const existingInGroup = await this.query<{ id: string }[]>`
+      select id from players
+      where group_id = ${groupId} and account_id = ${accountId}
+    `;
+    if (existingInGroup.length > 0) {
+      return null;
+    }
+
+    const updatedRows = await this.query<PlayerRow[]>`
+      update players
+      set account_id = ${accountId},
+          name = ${account.name},
+          gender = coalesce(players.gender, ${account.gender ?? null}),
+          initial_rating = ${account.initialRating},
+          rating = coalesce(${account.rating ?? null}, initial_rating),
+          rated_games_played = ${account.ratedGamesPlayed ?? 0}
+      where id = ${playerId} and group_id = ${groupId} and account_id is null
+      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+    `;
+    if (!updatedRows[0]) return null;
+
+    return {
+      ...mapPlayer(updatedRows[0]),
+      username: account.username,
+    };
+  }
+
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)

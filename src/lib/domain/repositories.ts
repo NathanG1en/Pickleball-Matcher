@@ -39,6 +39,7 @@ export interface DomainRepository {
   recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void>;
   searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
+  linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null>;
   joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;

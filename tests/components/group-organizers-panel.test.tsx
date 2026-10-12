@@ -9,6 +9,7 @@ import {
 import {
   addPlayerByAccountIdAction,
   createPlayerAction,
+  linkGuestPlayerAction,
 } from "@/app/actions/players";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
@@ -147,13 +148,16 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Remove player");
       expect(html).toContain("data-player-menu");
 
+      // Verify Link to public player option exists for guest player
+      expect(html).toContain("Link to public player");
+
       // Verify Find Player and Add Guest options exist for host
       expect(html).toContain("Find Player");
       expect(html).toContain("+ Add Guest");
       expect(html).toContain("Find player by username");
     });
 
-    it("renders add player/guest and remove player options for group organizers, but not make organizer", () => {
+    it("renders add player/guest, link guest, and remove player options for group organizers, but not make organizer", () => {
       const html = renderToStaticMarkup(
         <GroupOrganizersPanel
           groupId="g1"
@@ -167,6 +171,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Regular Member (@member_user)");
       expect(html).toContain("···");
       expect(html).toContain("Remove player");
+      expect(html).toContain("Link to public player");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Remove group organizer");
 
@@ -174,6 +179,58 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Find Player");
       expect(html).toContain("+ Add Guest");
       expect(html).toContain("Find player by username");
+    });
+
+    it("renders Link to public player for guest players, and omits make organizer for guests", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={[
+            {
+              id: "guest1",
+              groupId: "g1",
+              name: "Only Guest",
+              initialRating: 1000,
+              rating: 1000,
+              ratedGamesPlayed: 0,
+              active: true,
+              accountId: null,
+            },
+          ]}
+          organizers={[]}
+          isHost={true}
+        />
+      );
+
+      expect(html).toContain("Link to public player");
+      expect(html).toContain("Remove player");
+      expect(html).not.toContain("Make a group organizer");
+    });
+
+    it("does not render Link to public player for players who already have an account", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={[
+            {
+              id: "p_acc",
+              groupId: "g1",
+              name: "Account Player",
+              initialRating: 1000,
+              rating: 1000,
+              ratedGamesPlayed: 0,
+              active: true,
+              accountId: "some_acc",
+              username: "acc_user",
+            },
+          ]}
+          organizers={[]}
+          isHost={true}
+        />
+      );
+
+      expect(html).toContain("Make a group organizer");
+      expect(html).not.toContain("Link to public player");
     });
 
     it("does not render organizer options when user is not the host or organizer", () => {
@@ -191,6 +248,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Organizer Player (@org_user)");
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Make a group organizer");
+      expect(html).not.toContain("Link to public player");
       expect(html).not.toContain("Remove player");
       expect(html).not.toContain("···");
       expect(html).not.toContain("Find Player");
@@ -635,5 +693,201 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(guest?.rating).toBe(900);
     });
   });
+
+  describe("linkGuestPlayerAction", () => {
+    let repository: InMemoryRepositories;
+    const targetAccountId = "acc_target";
+
+    beforeEach(() => {
+      repository = new InMemoryRepositories({
+        groups: [
+          {
+            id: "g1",
+            name: "Test Group",
+            organizerPinHash: "hash",
+            createdAt: new Date(),
+            isPublic: false,
+            ownerAccountId: hostAccountId,
+          },
+        ],
+        playerAccounts: [
+          {
+            id: hostAccountId,
+            username: "host_user",
+            name: "Host Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: orgAccountId,
+            username: "org_user",
+            name: "Organizer Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: memberAccountId,
+            username: "member_user",
+            name: "Member Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: targetAccountId,
+            username: "target_user",
+            name: "Target Public Player",
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            rating: 1250,
+            ratedGamesPlayed: 5,
+            createdAt: new Date(),
+          },
+        ],
+        groupOrganizers: [
+          { groupId: "g1", accountId: orgAccountId },
+        ],
+        players: [
+          {
+            id: "p1",
+            groupId: "g1",
+            name: "Host Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: hostAccountId,
+            username: "host_user",
+          },
+          {
+            id: "p2",
+            groupId: "g1",
+            name: "Organizer Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: orgAccountId,
+            username: "org_user",
+          },
+          {
+            id: "p_guest",
+            groupId: "g1",
+            name: "Guest Alex",
+            initialRating: 900,
+            rating: 900,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: null,
+          },
+        ],
+      });
+      setActionRepository(repository);
+    });
+
+    it("allows host to link a guest player to a public player account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p_guest",
+        targetAccountId,
+      });
+
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("g1");
+      const linked = roster.find((p) => p.id === "p_guest");
+      expect(linked).toBeDefined();
+      expect(linked?.accountId).toBe(targetAccountId);
+      expect(linked?.username).toBe("target_user");
+      expect(linked?.name).toBe("Target Public Player");
+      expect(linked?.rating).toBe(1200);
+      expect(linked?.ratedGamesPlayed).toBe(0);
+    });
+
+    it("allows an organizer to link a guest player to a public player account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(orgAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p_guest",
+        targetAccountId,
+      });
+
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("g1");
+      const linked = roster.find((p) => p.id === "p_guest");
+      expect(linked?.accountId).toBe(targetAccountId);
+    });
+
+    it("rejects non-organizers from linking a guest player", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(memberAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p_guest",
+        targetAccountId,
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("Only the host or a group organizer");
+      }
+    });
+
+    it("rejects linking a player that already has an account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p2",
+        targetAccountId,
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("already linked to an account");
+      }
+    });
+
+    it("rejects linking to an account already in the group roster", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p_guest",
+        targetAccountId: orgAccountId,
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("already on the roster");
+      }
+    });
+
+    it("rejects non-existent target account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      const result = await linkGuestPlayerAction({
+        groupId: "g1",
+        playerId: "p_guest",
+        targetAccountId: "non_existent_acc",
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("account not found");
+      }
+    });
+  });
 });
+
 
