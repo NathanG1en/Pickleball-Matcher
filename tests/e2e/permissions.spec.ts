@@ -60,10 +60,10 @@ test.describe("Permissions and Security Workflow", () => {
     const groupName = `Link Guest Test Group ${Date.now()}`;
     await createTestGroup(page, groupName);
 
-    // 3. Switch to "+ Add Guest" tab on dashboard
-    await page.click("button[type='button']:has-text('+ Add Guest')");
+    // 3. Switch to "Add Guest" tab on dashboard
+    await page.click("button[type='button']:has-text('Add Guest')");
     await page.fill("#guest-player-name", "Guest Taylor");
-    await page.click("form button[type='submit']:has-text('+ Add Guest')");
+    await page.click("form button[type='submit']:has-text('Add')");
 
     // Guest Taylor should appear in the roster
     const guestItem = page.locator("li").filter({ hasText: "Guest Taylor" });
