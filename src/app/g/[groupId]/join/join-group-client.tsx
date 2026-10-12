@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { joinAsGuestAction, joinGroupViaInviteAction } from "@/app/actions/player-account";
+import { formatDupr } from "@/lib/domain/rating-display";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
 import { ZapIcon } from "@/components/ui/icons";
 
@@ -168,7 +169,7 @@ export function JoinGroupClient({
             @{account.username}
           </div>
           <div className="text-xs font-bold text-neutral-700">
-            {account.name} (Starting Rating: {account.initialRating})
+            {account.name} (Starting Rating: {formatDupr(account.initialRating)})
           </div>
         </div>
 
@@ -277,9 +278,9 @@ export function JoinGroupClient({
               onChange={(e) => setGuestSkill(e.target.value as "beginner" | "intermediate" | "advanced")}
               className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none"
             >
-              <option value="beginner">Beginner (900 rating)</option>
-              <option value="intermediate">Intermediate (1,000 rating)</option>
-              <option value="advanced">Advanced (1,100 rating)</option>
+              <option value="beginner">Beginner (2.000 – 2.999)</option>
+              <option value="intermediate">Intermediate (3.000 – 3.999)</option>
+              <option value="advanced">Advanced (4.000+)</option>
             </select>
           </div>
 

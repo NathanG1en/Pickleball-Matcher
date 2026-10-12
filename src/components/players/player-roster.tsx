@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
+import { formatDupr, eloToDupr, getSkillTier, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
 
 export interface PlayerRosterProps {
@@ -21,15 +22,21 @@ export function PlayerRoster({
   canManage = true,
 }: PlayerRosterProps) {
   const [name, setName] = useState("");
-  const [initialRating, setInitialRating] = useState(1000);
+  const [selectedPreset, setSelectedPreset] = useState("3.500");
+  const [customRating, setCustomRating] = useState(false);
+  const [customRatingInput, setCustomRatingInput] = useState("3.500");
   const [playerToDelete, setPlayerToDelete] = useState<PlayerRecord | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && onAddPlayer) {
-      onAddPlayer(name.trim(), initialRating);
+      const dupr = customRating ? parseFloat(customRatingInput) || 3.5 : parseFloat(selectedPreset);
+      const elo = duprToElo(dupr);
+      onAddPlayer(name.trim(), elo);
       setName("");
-      setInitialRating(1000);
+      setSelectedPreset("3.500");
+      setCustomRating(false);
+      setCustomRatingInput("3.500");
     }
   };
 
@@ -67,14 +74,49 @@ export function PlayerRoster({
             </label>
             <select
               id="player-rating-select"
-              value={initialRating}
-              onChange={(e) => setInitialRating(Number(e.target.value))}
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow"
+              value={selectedPreset}
+              disabled={customRating}
+              onChange={(e) => {
+                setSelectedPreset(e.target.value);
+                if (!customRating) setCustomRatingInput(e.target.value);
+              }}
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-60"
             >
-              <option value={900}>Beginner / Learning (~900)</option>
-              <option value={1000}>Intermediate / Average (~1000)</option>
-              <option value={1100}>Advanced / Experienced (~1100)</option>
+              <option value="2.000">Beginner Level (2.000 – 2.499)</option>
+              <option value="2.500">Advanced Beginner Level (2.500 – 2.999)</option>
+              <option value="3.000">Intermediate Level (3.000 – 3.499)</option>
+              <option value="3.500">Advanced Intermediate Level (3.500 – 3.999)</option>
+              <option value="4.000">Competitive Level (4.000 – 4.499)</option>
+              <option value="4.500">Advanced Competitive Level (4.500 – 4.999)</option>
             </select>
+
+            <label className="flex items-center gap-2 text-xs font-bold text-black mt-2">
+              <input
+                type="checkbox"
+                checked={customRating}
+                onChange={(e) => {
+                  setCustomRating(e.target.checked);
+                  if (!e.target.checked) setCustomRatingInput(selectedPreset);
+                }}
+                className="h-4 w-4 accent-black"
+              />
+              Enter custom rating (e.g. 5.000+)
+            </label>
+
+            {customRating && (
+              <div className="mt-2">
+                <Input
+                  id="custom-player-rating"
+                  type="number"
+                  min={2.0}
+                  max={8.0}
+                  step={0.001}
+                  value={customRatingInput}
+                  onChange={(e) => setCustomRatingInput(e.target.value)}
+                  placeholder="e.g. 5.250"
+                />
+              </div>
+            )}
           </div>
 
           <Button type="submit" variant="primary" disabled={!name.trim() || isPending} className="font-display text-base uppercase tracking-wider">
@@ -99,7 +141,7 @@ export function PlayerRoster({
                   {player.username ? ` (@${player.username})` : ""}
                 </span>
                 <span className="text-xs font-bold text-neutral-600">
-                  Rating: {Math.round(player.rating)} · {player.ratedGamesPlayed} games played
+                  Rating: {formatDupr(player.rating)} ({getSkillTier(eloToDupr(player.rating)).name}) · {player.ratedGamesPlayed} games played
                 </span>
               </div>
               <div className="flex items-center gap-3">

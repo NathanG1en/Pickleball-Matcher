@@ -30,7 +30,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
-      TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
+      TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:54322/test_db
       ORGANIZER_SESSION_SECRET: ci-secret-that-is-at-least-thirty-two-bytes-long-now
       ORGANIZER_FINGERPRINT_SECRET: ci-fingerprint-secret-at-least-thirty-two-bytes
       SESSION_COOKIE_SECURE: "false"
@@ -61,8 +61,13 @@ jobs:
       - name: Matchmaking Fairness & Simulation Suite
         run: npm run test:simulation
 
+      - name: Setup Test Database
+        run: node scripts/create-test-db.js
+
       - name: Run Database Migrations
-        run: npm run db:migrate
+        run: |
+          npm run db:migrate
+          DATABASE_URL="$TEST_DATABASE_URL" npm run db:migrate
 
       - name: Integration Tests (Database & Server Actions)
         run: npm run test:integration
