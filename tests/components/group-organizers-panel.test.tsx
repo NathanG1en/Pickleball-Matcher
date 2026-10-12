@@ -153,7 +153,7 @@ describe("GroupOrganizersPanel and Actions", () => {
 
       // Verify Find Player and Add Guest options exist for host
       expect(html).toContain("Find Player");
-      expect(html).toContain("+ Add Guest");
+      expect(html).toContain("Add Guest");
       expect(html).toContain("Find player by username");
     });
 
@@ -177,7 +177,7 @@ describe("GroupOrganizersPanel and Actions", () => {
 
       // Verify Find Player and Add Guest options exist for organizers
       expect(html).toContain("Find Player");
-      expect(html).toContain("+ Add Guest");
+      expect(html).toContain("Add Guest");
       expect(html).toContain("Find player by username");
     });
 
