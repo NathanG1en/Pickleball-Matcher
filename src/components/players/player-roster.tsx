@@ -22,9 +22,9 @@ export function PlayerRoster({
   canManage = true,
 }: PlayerRosterProps) {
   const [name, setName] = useState("");
-  const [selectedPreset, setSelectedPreset] = useState("3.500");
+  const [selectedPreset, setSelectedPreset] = useState("3.5");
   const [customRating, setCustomRating] = useState(false);
-  const [customRatingInput, setCustomRatingInput] = useState("3.500");
+  const [customRatingInput, setCustomRatingInput] = useState("3.5");
   const [playerToDelete, setPlayerToDelete] = useState<PlayerRecord | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,9 +34,9 @@ export function PlayerRoster({
       const elo = duprToElo(dupr);
       onAddPlayer(name.trim(), elo);
       setName("");
-      setSelectedPreset("3.500");
+      setSelectedPreset("3.5");
       setCustomRating(false);
-      setCustomRatingInput("3.500");
+      setCustomRatingInput("3.5");
     }
   };
 
@@ -82,12 +82,12 @@ export function PlayerRoster({
               }}
               className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-60"
             >
-              <option value="2.000">Beginner Level (2.000 – 2.499)</option>
-              <option value="2.500">Advanced Beginner Level (2.500 – 2.999)</option>
-              <option value="3.000">Intermediate Level (3.000 – 3.499)</option>
-              <option value="3.500">Advanced Intermediate Level (3.500 – 3.999)</option>
-              <option value="4.000">Competitive Level (4.000 – 4.499)</option>
-              <option value="4.500">Advanced Competitive Level (4.500 – 4.999)</option>
+              <option value="2.0">Beginner Level (2.0 – 2.499)</option>
+              <option value="2.5">Advanced Beginner Level (2.5 – 2.999)</option>
+              <option value="3.0">Intermediate Level (3.0 – 3.499)</option>
+              <option value="3.5">Advanced Intermediate Level (3.5 – 3.999)</option>
+              <option value="4.0">Competitive Level (4.0 – 4.499)</option>
+              <option value="4.5">Advanced Competitive Level (4.5 – 4.999)</option>
             </select>
 
             <label className="flex items-center gap-2 text-xs font-bold text-black mt-2">
@@ -100,7 +100,7 @@ export function PlayerRoster({
                 }}
                 className="h-4 w-4 accent-black"
               />
-              Enter custom rating (e.g. 5.000+)
+              Enter custom rating (e.g. 5.0+)
             </label>
 
             {customRating && (
@@ -113,7 +113,7 @@ export function PlayerRoster({
                   step={0.001}
                   value={customRatingInput}
                   onChange={(e) => setCustomRatingInput(e.target.value)}
-                  placeholder="e.g. 5.250"
+                  placeholder="e.g. 5.25"
                 />
               </div>
             )}
