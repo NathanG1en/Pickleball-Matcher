@@ -14,7 +14,7 @@ import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups } from "@/lib/storage/recent-groups";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
-import { PencilIcon, LockIcon, GlobeIcon, CheckIcon } from "@/components/ui/icons";
+import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
 
 export function PlayerProfileHeader({
   initialName,
@@ -58,6 +58,7 @@ export function PlayerProfileHeader({
   const [privacySaving, setPrivacySaving] = useState(false);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [privacyToast, setPrivacyToast] = useState<string | null>(null);
+  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
 
   const handleTogglePrivacy = async () => {
     if (privacySaving) return;
@@ -385,66 +386,96 @@ export function PlayerProfileHeader({
         </div>
       )}
 
-      <div className="pt-2 border-t-2 border-neutral-100">
-        <p className="text-xs font-bold uppercase text-neutral-600">
-          {skillLevel} · starting rating {formatDupr(initialRating)}
-        </p>
-      </div>
-
-      <div className="mt-3 rounded-2xl border-2 border-black bg-neutral-50 p-3.5 shadow-[2px_2px_0px_0px_#000]">
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
-              Account Visibility
-            </p>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-3.5 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] ${
-                isPublic
-                  ? "bg-[#ccff00] text-black"
-                  : "bg-neutral-200 text-neutral-700"
-              }`}
-            >
-              {isPublic ? (
-                <>
-                  <GlobeIcon className="h-4 w-4 shrink-0" />
-                  <span>Public</span>
-                </>
-              ) : (
-                <>
-                  <LockIcon className="h-4 w-4 shrink-0" />
-                  <span>Private</span>
-                </>
-              )}
-            </span>
-          </div>
+      {/* Visibility control */}
+      <div className="flex flex-col gap-1.5 pt-0.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleTogglePrivacy}
             disabled={privacySaving}
-            className="shrink-0 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
+            aria-label={`Account visibility: currently ${isPublic ? "Public" : "Private"}. Click to switch.`}
+            title={isPublic ? "Click to switch to Private" : "Click to switch to Public"}
+            className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
           >
-            {privacySaving ? "Saving…" : isPublic ? "Make private" : "Make public"}
+            {privacySaving ? (
+              <span>Saving…</span>
+            ) : isPublic ? (
+              <>
+                <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
+                <span>Public</span>
+              </>
+            ) : (
+              <>
+                <LockIcon className="h-2.5 w-2.5 shrink-0" />
+                <span>Private</span>
+              </>
+            )}
           </button>
+
+          <div
+            className="relative inline-flex items-center"
+            onMouseEnter={() => setShowPrivacyTooltip(true)}
+            onMouseLeave={() => setShowPrivacyTooltip(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setShowPrivacyTooltip((prev) => !prev)}
+              onFocus={() => setShowPrivacyTooltip(true)}
+              onBlur={() => setShowPrivacyTooltip(false)}
+              aria-label="Account visibility details"
+              title="Account visibility details"
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+            >
+              <InfoIcon className="h-2.5 w-2.5" />
+            </button>
+
+            {showPrivacyTooltip && (
+              <>
+                <div
+                  className="fixed inset-0 z-40 sm:hidden"
+                  onClick={() => setShowPrivacyTooltip(false)}
+                  aria-hidden="true"
+                />
+                <div
+                  role="tooltip"
+                  className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+                >
+                  <div className="space-y-1.5 text-xs">
+                    <p className="font-bold leading-snug">
+                      <span className="font-black text-black uppercase">Public:</span>{" "}
+                      <span className="text-neutral-700">Your profile and stats are discoverable by @username search.</span>
+                    </p>
+                    <p className="font-bold leading-snug">
+                      <span className="font-black text-black uppercase">Private:</span>{" "}
+                      <span className="text-neutral-700">Your profile is private; stats are hidden from public search.</span>
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
-          {isPublic
-            ? "Your profile and stats are discoverable by @username search."
-            : "Your profile is private; stats are hidden from public search."}
-        </p>
+
         {privacyToast && (
           <div
             role="status"
-            className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
+            className="flex items-center gap-1.5 rounded-lg border border-black bg-neutral-200 px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000] w-fit"
           >
             <CheckIcon className="h-3.5 w-3.5 shrink-0" />
             <span>{privacyToast}</span>
           </div>
         )}
         {privacyError && (
-          <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">
+          <p role="alert" className="text-xs font-bold text-red-600">
             {privacyError}
           </p>
         )}
+      </div>
+
+      <div className="pt-2 border-t-2 border-neutral-100">
+        <p className="text-xs font-bold uppercase text-neutral-600">
+          {skillLevel} · starting rating {formatDupr(initialRating)}
+        </p>
       </div>
     </div>
   );
@@ -460,6 +491,7 @@ export function PlayerVisibilityControl({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const toggle = async () => {
     if (pending) return;
@@ -480,50 +512,79 @@ export function PlayerVisibilityControl({
   };
 
   return (
-    <div className="mt-3 rounded-2xl border-2 border-black bg-neutral-50 p-3.5 shadow-[2px_2px_0px_0px_#000]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
-            Account Visibility
-          </p>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-3.5 py-1 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] ${
-              isPublic
-                ? "bg-[#ccff00] text-black"
-                : "bg-neutral-200 text-neutral-700"
-            }`}
-          >
-            {isPublic ? (
-              <>
-                <GlobeIcon className="h-4 w-4 shrink-0" />
-                <span>Public</span>
-              </>
-            ) : (
-              <>
-                <LockIcon className="h-4 w-4 shrink-0" />
-                <span>Private</span>
-              </>
-            )}
-          </span>
-        </div>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={toggle}
           disabled={pending}
-          className="shrink-0 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 transition-all cursor-pointer"
+          aria-label={`Account visibility: currently ${isPublic ? "Public" : "Private"}. Click to switch.`}
+          title={isPublic ? "Click to switch to Private" : "Click to switch to Public"}
+          className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
         >
-          {pending ? "Saving…" : isPublic ? "Make private" : "Make public"}
+          {pending ? (
+            <span>Saving…</span>
+          ) : isPublic ? (
+            <>
+              <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
+              <span>Public</span>
+            </>
+          ) : (
+            <>
+              <LockIcon className="h-2.5 w-2.5 shrink-0" />
+              <span>Private</span>
+            </>
+          )}
         </button>
+
+        <div
+          className="relative inline-flex items-center"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setShowTooltip((prev) => !prev)}
+            onFocus={() => setShowTooltip(true)}
+            onBlur={() => setShowTooltip(false)}
+            aria-label="Account visibility details"
+            title="Account visibility details"
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+          >
+            <InfoIcon className="h-2.5 w-2.5" />
+          </button>
+
+          {showTooltip && (
+            <>
+              <div
+                className="fixed inset-0 z-40 sm:hidden"
+                onClick={() => setShowTooltip(false)}
+                aria-hidden="true"
+              />
+              <div
+                role="tooltip"
+                className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+              >
+                <div className="space-y-1.5 text-xs">
+                  <p className="font-bold leading-snug">
+                    <span className="font-black text-black uppercase">Public:</span>{" "}
+                    <span className="text-neutral-700">Your profile and stats are discoverable by @username search.</span>
+                  </p>
+                  <p className="font-bold leading-snug">
+                    <span className="font-black text-black uppercase">Private:</span>{" "}
+                    <span className="text-neutral-700">Your profile is private; stats are hidden from public search.</span>
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <p className="mt-2.5 text-xs font-semibold text-neutral-600 border-t border-black/10 pt-2">
-        {isPublic
-          ? "Your profile and stats are discoverable by @username search."
-          : "Your profile is private; stats are hidden from public search."}
-      </p>
+
       {toast && (
         <div
           role="status"
-          className="mt-2 flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000]"
+          className="flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000] w-fit"
         >
           <CheckIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{toast}</span>
