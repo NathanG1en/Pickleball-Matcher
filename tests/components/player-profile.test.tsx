@@ -583,5 +583,62 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(occurrences).toBe(1);
     expect(html).not.toContain("Rating over time —");
   });
+
+  it("lists open play sessions as Open Play with links and session info", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "openplay_user",
+          name: "OpenPlay User",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [
+        { id: "grp-1", name: "Metro Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+      ],
+      players: [
+        { id: "p1", groupId: "grp-1", accountId: testAccountId, name: "OpenPlay User", initialRating: 1000, rating: 1050, ratedGamesPlayed: 2, active: true },
+      ],
+    });
+
+    repository.state.sessions.push(
+      { id: "s-open", groupId: "grp-1", courtCount: 1, status: "completed", currentRoundNumber: 1, startedAt: new Date("2026-10-05T10:00:00Z"), endedAt: new Date("2026-10-05T11:00:00Z"), version: 1, type: "open_play" },
+      { id: "s-regular", groupId: "grp-1", courtCount: 1, status: "completed", currentRoundNumber: 1, startedAt: new Date("2026-10-01T10:00:00Z"), endedAt: new Date("2026-10-01T11:00:00Z"), version: 1, type: "regular" },
+    );
+    repository.state.attendance.push(
+      { sessionId: "s-open", playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId: "s-regular", playerId: "p1", joinedRound: 1, leftRound: null },
+    );
+    repository.state.rounds.push(
+      { id: "r-open", sessionId: "s-open", roundNumber: 1, status: "completed", seed: 1, scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 }, createdAt: new Date(), startedAt: new Date(), completedAt: new Date(), version: 1 },
+      { id: "r-regular", sessionId: "s-regular", roundNumber: 1, status: "completed", seed: 1, scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 }, createdAt: new Date(), startedAt: new Date(), completedAt: new Date(), version: 1 },
+    );
+    repository.state.matches.push(
+      { id: "m-open", roundId: "r-open", courtNumber: 1, status: "completed", team1Score: 11, team2Score: 9, completedAt: new Date(), version: 1 },
+      { id: "m-regular", roundId: "r-regular", courtNumber: 1, status: "completed", team1Score: 11, team2Score: 5, completedAt: new Date(), version: 1 },
+    );
+    repository.state.matchPlayers.push(
+      { matchId: "m-open", playerId: "p1", team: 1, ratingBefore: 1000, ratingAfter: 1025 },
+      { matchId: "m-regular", playerId: "p1", team: 1, ratingBefore: 1025, ratingAfter: 1050 },
+    );
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    // Open play session should be listed as "Open Play"
+    expect(html).toContain("Open Play");
+    // Regular session should show group name
+    expect(html).toContain("Metro Club");
+    // Both should link to their respective sessions
+    expect(html).toContain('href="/g/grp-1/sessions/s-open"');
+    expect(html).toContain('href="/g/grp-1/sessions/s-regular"');
+    // Win/loss info should be present
+    expect(html).toContain("1W – 0L");
+  });
 });
 
