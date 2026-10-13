@@ -10,17 +10,19 @@ test.describe("Corrections and Replay Workflow", () => {
     await createTestGroup(page, groupName);
 
     // 2. Add 8 players for 2 courts
-    await page.click("a:has-text('Manage Roster')");
-    await expect(page).toHaveURL(/\/players/);
+    await expect(page.locator("h2:has-text('Roster')")).toBeVisible();
+    await expect(page.locator("button:has-text('Find Player')")).toBeVisible();
+    const addGuestButton = page.locator("button:has-text('Add Guest')");
+    await expect(addGuestButton).toBeVisible();
+    await addGuestButton.click();
     const players = ["Charlie", "Dana", "Eli", "Frank", "Grace", "Henry", "Ivy"];
     for (const name of players) {
-      await page.fill("#player-name-input", name);
-      await page.click("button:has-text('Add Player')");
+      await page.fill("#guest-player-name", name);
+      await page.locator("button:text-is('Add')").click();
       await expect(page.locator(`text=${name}`)).toBeVisible();
     }
 
     // 3. Start a session with 2 courts and 8 players
-    await page.click("a:has-text('Group Dashboard')");
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
     await expect(page.locator("text=8 players selected")).toBeVisible();
