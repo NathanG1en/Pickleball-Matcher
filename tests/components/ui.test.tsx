@@ -214,6 +214,19 @@ describe("Reusable UI Components", () => {
       expect(html).toContain("← Custom Back");
       expect(html).toContain('aria-label="Go back"');
     });
+
+    it("supports custom ariaLabel and href as Link", () => {
+      const html = renderToStaticMarkup(
+        <BackButton
+          href="/g/group_1"
+          label="← Back to Group"
+          ariaLabel="Return to group dashboard"
+        />
+      );
+      expect(html).toContain("← Back to Group");
+      expect(html).toContain('href="/g/group_1"');
+      expect(html).toContain('aria-label="Return to group dashboard"');
+    });
   });
 });
 
