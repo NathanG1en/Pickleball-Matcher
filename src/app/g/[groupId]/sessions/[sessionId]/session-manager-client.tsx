@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 import {
   changeAttendanceAction,
@@ -17,11 +16,13 @@ import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/results-entry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { XIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
+  MatchRecord,
   PlayerRecord,
   RoundProposal,
   SessionRecord,
@@ -71,7 +72,8 @@ export function SessionManagerClient({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [isEnded, setIsEnded] = useState(false);
+  const [showInProgressModal, setShowInProgressModal] = useState(false);
+  const [doNotAskAgain, setDoNotAskAgain] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
@@ -275,10 +277,26 @@ export function SessionManagerClient({
     }
   };
 
-  const handleEndSession = async () => {
-    if (!confirm("End this session? Match history and ratings will be finalized.")) {
-      return;
-    }
+  const inProgressMatches = startedRounds
+    .filter((sr) => sr.round.status === "started")
+    .flatMap((sr) => sr.matches.filter((m) => m.status === "pending"));
+
+  const getMatchTeams = (match: MatchRecord) => {
+    const sr = startedRounds.find((r) => r.matches.some((m) => m.id === match.id));
+    if (!sr) return { team1: "Team 1", team2: "Team 2" };
+    const t1 = (sr.matchPlayers ?? [])
+      .filter((mp) => mp.matchId === match.id && mp.team === 1)
+      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+    const t2 = (sr.matchPlayers ?? [])
+      .filter((mp) => mp.matchId === match.id && mp.team === 2)
+      .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+    return {
+      team1: t1.length > 0 ? t1.join(" & ") : "Team 1",
+      team2: t2.length > 0 ? t2.join(" & ") : "Team 2",
+    };
+  };
+
+  const executeEndSession = async () => {
     setIsPending(true);
     setError(null);
     try {
@@ -289,7 +307,6 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("end"),
       });
       if (res.ok) {
-        setIsEnded(true);
         router.replace(`/g/${groupId}`);
         router.refresh();
       } else {
@@ -300,6 +317,36 @@ export function SessionManagerClient({
     } finally {
       setIsPending(false);
     }
+  };
+
+  const handleEndSession = async () => {
+    if (inProgressMatches.length > 0) {
+      const skipWarning =
+        typeof window !== "undefined" &&
+        window.localStorage.getItem("pickleball_skip_end_session_in_progress_warning") === "true";
+
+      if (!skipWarning) {
+        setShowInProgressModal(true);
+        return;
+      }
+    }
+
+    if (!confirm("End this session? Match history and ratings will be finalized.")) {
+      return;
+    }
+    await executeEndSession();
+  };
+
+  const handleConfirmEndSessionWithProgress = async () => {
+    if (doNotAskAgain && typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("pickleball_skip_end_session_in_progress_warning", "true");
+      } catch {
+        // ignore storage errors
+      }
+    }
+    setShowInProgressModal(false);
+    await executeEndSession();
   };
 
   const handleToggleAttendance = async (playerId: string, currentlyPresent: boolean) => {
@@ -497,23 +544,6 @@ export function SessionManagerClient({
 
   const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
 
-  if (isEnded) {
-    return (
-      <div className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] text-center space-y-4 max-w-xl mx-auto my-8 text-black">
-        <h2 className="text-xl font-black uppercase">Session Ended</h2>
-        <p className="text-sm font-bold text-neutral-600">
-          This session has already ended and match results have been finalized.
-        </p>
-        <Link
-          href={`/g/${groupId}`}
-          className="inline-block px-4 py-2 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
-        >
-          Return to Group Dashboard
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 text-black">
       {/* Top Header Controls */}
@@ -541,9 +571,10 @@ export function SessionManagerClient({
                 type="button"
                 onClick={handleEndSession}
                 disabled={isPending}
-                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                data-testid="end-session-button"
+                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
-                End Session
+                {isPending ? "Ending..." : "End Session"}
               </button>
             </div>
           )
@@ -1058,6 +1089,81 @@ export function SessionManagerClient({
             </div>
           </div>
         </div>
+      )}
+
+      {showInProgressModal && (
+        <Modal
+          isOpen={showInProgressModal}
+          onClose={() => !isPending && setShowInProgressModal(false)}
+          size="md"
+          role="alertdialog"
+          showCloseButton={false}
+          closeOnBackdropClick={!isPending}
+          closeOnEscape={!isPending}
+        >
+          <div className="space-y-4 text-black" data-testid="in-progress-warning-modal">
+            <h3 className="font-display text-xl font-black uppercase tracking-tight text-black">
+              End Session?
+            </h3>
+            <p className="text-sm font-bold text-neutral-800">
+              You have these games in progress:
+            </p>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1" data-testid="in-progress-match-list">
+              {inProgressMatches.map((match) => {
+                const { team1, team2 } = getMatchTeams(match);
+                return (
+                  <div
+                    key={match.id}
+                    className="p-3 bg-neutral-50 border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]"
+                  >
+                    <div>
+                      <span className="font-black text-black block">Court {match.courtNumber}</span>
+                      <span className="font-bold text-neutral-700">{team1} vs {team2}</span>
+                    </div>
+                    <Badge variant="warning">In Play</Badge>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-sm font-bold text-neutral-800">
+              Are you sure you want to end it?
+            </p>
+            <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={doNotAskAgain}
+                onChange={(e) => setDoNotAskAgain(e.target.checked)}
+                data-testid="do-not-ask-again-checkbox"
+                className="w-4 h-4 rounded border-2 border-black accent-black cursor-pointer"
+              />
+              <span className="text-xs font-bold text-neutral-700">
+                Do not ask me again
+              </span>
+            </label>
+            <div className="flex gap-3 justify-end pt-3 border-t-2 border-neutral-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowInProgressModal(false)}
+                disabled={isPending}
+                data-testid="cancel-end-session-button"
+                className="font-display uppercase tracking-wider text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={handleConfirmEndSessionWithProgress}
+                disabled={isPending}
+                data-testid="confirm-end-session-button"
+                className="font-display uppercase tracking-wider text-xs bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
+              >
+                {isPending ? "Ending..." : "End Session"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -11,17 +11,17 @@ test.describe("Open Play Workflow", () => {
     const { groupId } = await createTestGroup(page, groupName);
 
     // 2. Add player Bob to the group roster
-    const rosterLink = page.locator("a:has-text('Manage Roster')");
-    await expect(rosterLink).toBeVisible();
-    await rosterLink.click();
-    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/players`));
+    await expect(page.locator("h2:has-text('Roster')")).toBeVisible();
+    await expect(page.locator("button:has-text('Find Player')")).toBeVisible();
+    const addGuestButton = page.locator("button:has-text('Add Guest')");
+    await expect(addGuestButton).toBeVisible();
+    await addGuestButton.click();
 
-    await page.fill("#player-name-input", "Bob");
-    await page.click("button:has-text('Add Player')");
+    await page.fill("#guest-player-name", "Bob");
+    await page.locator("button:text-is('Add')").click();
     await expect(page.locator("text=Bob")).toBeVisible();
 
-    // 3. Navigate back to group dashboard
-    await page.goto(`/g/${groupId}`);
+    // 3. Verify group dashboard ready to play
     await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
 
     // 4. Verify Start Open Play button is next to Start New Session

@@ -24,10 +24,11 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator("h1")).toContainText(groupName);
 
     // 3. Add players to roster until we have 14 players
-    const rosterLink = page.locator("a:has-text('Manage Roster')");
-    await expect(rosterLink).toBeVisible();
-    await rosterLink.click();
-    await expect(page).toHaveURL(/\/players/);
+    await expect(page.locator("h2:has-text('Roster')")).toBeVisible();
+    await expect(page.locator("button:has-text('Find Player')")).toBeVisible();
+    const addGuestButton = page.locator("button:has-text('Add Guest')");
+    await expect(addGuestButton).toBeVisible();
+    await addGuestButton.click();
 
     const playerNames = [
       "Alex", "Blake", "Casey", "Drew", "Ellis", "Finley", "Glenn",
@@ -35,13 +36,12 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     ];
 
     for (const name of playerNames) {
-      await page.fill("#player-name-input", name);
-      await page.click("button:has-text('Add Player')");
+      await page.fill("#guest-player-name", name);
+      await page.locator("button:text-is('Add')").click();
       await expect(page.locator(`text=${name}`)).toBeVisible();
     }
 
     // 4. Start new session
-    await page.click("a:has-text('Group Dashboard')");
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
 
