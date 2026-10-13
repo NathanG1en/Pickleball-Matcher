@@ -160,15 +160,6 @@ export default async function GroupDashboardPage({
           <p className="text-xs font-bold text-neutral-600">
             {players.length} players on roster
           </p>
-          {isOrganizer && (
-            <Link
-              href={`/g/${groupId}/players`}
-              data-testid="manage-roster-link"
-              className="text-xs font-black uppercase text-black hover:underline"
-            >
-              Manage Roster →
-            </Link>
-          )}
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
