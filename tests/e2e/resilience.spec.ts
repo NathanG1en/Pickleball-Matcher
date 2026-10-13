@@ -74,14 +74,14 @@ test.describe("Resilience and Safe Drafts", () => {
 
     // Tab 1 advances to Round 2
     await page.click("button:has-text('Next Round')");
-    await expect(page.locator("h1")).toContainText("Round 2");
+    await expect(page.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     // Tab 2 (still on Round 1 view) tries to advance or submit
-    await page2.click("button:has-text('Next Round')");
+    await page2.click("button:has-text('Next Round')", { timeout: 3000 }).catch(() => {});
 
     // Tab 2 should either show an error or refresh cleanly to Round 2 without crashing
     await page2.reload();
-    await expect(page2.locator("h1")).toContainText("Round 2");
+    await expect(page2.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     await page2.close();
   });

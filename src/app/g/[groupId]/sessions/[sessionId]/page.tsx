@@ -8,6 +8,7 @@ import {
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import { SessionManagerClient } from "./session-manager-client";
+import { OpenPlayManagerClient } from "./open-play-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
 import type { CourtSynergiesMap, TeamSynergyInfo } from "@/components/rounds/synergy-reveal-modal";
 
@@ -49,6 +50,27 @@ export default async function ActiveSessionPage({
       redirect(`/g/${groupId}/login`);
     }
     redirect("/players");
+  }
+
+  const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+
+  if (sessionRecord.type === "open_play") {
+    return (
+      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+        <OpenPlayManagerClient
+          groupId={groupId}
+          groupName={group.name}
+          session={sessionRecord}
+          players={players}
+          attendance={attendance}
+          startedRounds={startedRounds}
+          isOrganizer={isOrganizer}
+          isHost={isHost}
+          isMember={isMember}
+          currentViewerPlayerId={viewerPlayer?.id ?? null}
+        />
+      </main>
+    );
   }
 
   let initialProposal: RoundProposal | null = null;
