@@ -37,9 +37,12 @@ interface PlayerAccountRow {
   username: string;
   name: string;
   gender?: "male" | "female" | null;
+  is_public?: number;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
+  rating?: number;
+  rated_games_played?: number;
   created_at: string;
 }
 
@@ -137,38 +140,49 @@ export class SqliteDomainRepository implements DomainRepository {
 
   private initSchema() {
     this.db.exec(`
+      CREATE TABLE IF NOT EXISTS player_accounts (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        gender TEXT,
+        is_public INTEGER NOT NULL DEFAULT 1,
+        password_hash TEXT NOT NULL,
+        skill_level TEXT NOT NULL,
+        initial_rating REAL NOT NULL,
+        rating REAL NOT NULL,
+        rated_games_played INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS player_accounts_username_case_insensitive_unique_idx
+        ON player_accounts(lower(username));
+
       CREATE TABLE IF NOT EXISTS groups (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
         organizer_pin_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
         is_public INTEGER NOT NULL DEFAULT 0,
-        owner_account_id TEXT REFERENCES players(id) ON DELETE SET NULL
+        owner_account_id TEXT REFERENCES player_accounts(id) ON DELETE SET NULL
       );
 
       CREATE TABLE IF NOT EXISTS players (
         id TEXT PRIMARY KEY,
-        group_id TEXT REFERENCES groups(id) ON DELETE CASCADE,
+        group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         gender TEXT,
         initial_rating REAL NOT NULL,
         rating REAL NOT NULL,
         rated_games_played INTEGER NOT NULL,
         active INTEGER NOT NULL,
-        account_id TEXT REFERENCES players(id) ON DELETE SET NULL,
-        username TEXT,
-        password_hash TEXT,
-        skill_level TEXT,
+        account_id TEXT REFERENCES player_accounts(id) ON DELETE SET NULL,
         created_at TEXT NOT NULL
       );
       CREATE UNIQUE INDEX IF NOT EXISTS players_group_account_unique_idx
         ON players(group_id, account_id) WHERE account_id IS NOT NULL;
-      CREATE UNIQUE INDEX IF NOT EXISTS players_username_case_insensitive_unique_idx
-        ON players(lower(username)) WHERE username IS NOT NULL;
 
       CREATE TABLE IF NOT EXISTS group_organizers (
         group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-        account_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES player_accounts(id) ON DELETE CASCADE,
         PRIMARY KEY (group_id, account_id)
       );
 
@@ -372,8 +386,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async addGroupOrganizer(groupId: string, accountId: string): Promise<void> {
     this.db.prepare(`INSERT OR IGNORE INTO group_organizers (group_id, account_id)
       SELECT ?, ? WHERE EXISTS (SELECT 1 FROM groups WHERE id = ?)
-      AND EXISTS (SELECT 1 FROM players WHERE id = ? AND username IS NOT NULL)`)
-      .run(groupId, accountId, groupId, accountId);
+      AND EXISTS (SELECT 1 FROM player_accounts WHERE id = ?)`).run(groupId, accountId, groupId, accountId);
   }
 
   async removeGroupOrganizer(groupId: string, accountId: string): Promise<void> {
@@ -383,12 +396,12 @@ export class SqliteDomainRepository implements DomainRepository {
   async listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]> {
     const rows = this.db.prepare(`
       SELECT p.id AS account_id, p.username, p.name, 1 AS is_host
-      FROM groups g JOIN players p ON p.id = g.owner_account_id
-      WHERE g.id = ? AND p.username IS NOT NULL
+      FROM groups g JOIN player_accounts p ON p.id = g.owner_account_id
+      WHERE g.id = ?
       UNION ALL
       SELECT p.id AS account_id, p.username, p.name, 0 AS is_host
-      FROM group_organizers o JOIN players p ON p.id = o.account_id
-      WHERE o.group_id = ? AND p.username IS NOT NULL
+      FROM group_organizers o JOIN player_accounts p ON p.id = o.account_id
+      WHERE o.group_id = ?
       ORDER BY is_host DESC, name
     `).all(groupId, groupId) as unknown as { account_id: string; username: string; name: string; is_host: number }[];
     return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: Boolean(row.is_host) }));
@@ -404,17 +417,17 @@ export class SqliteDomainRepository implements DomainRepository {
     if (oldHostAccountId) {
       this.db.prepare(`INSERT OR IGNORE INTO group_organizers (group_id, account_id)
         SELECT ?, ? WHERE EXISTS (SELECT 1 FROM groups WHERE id = ?)
-        AND EXISTS (SELECT 1 FROM players WHERE id = ? AND username IS NOT NULL)`).run(groupId, oldHostAccountId, groupId, oldHostAccountId);
+        AND EXISTS (SELECT 1 FROM player_accounts WHERE id = ?)`).run(groupId, oldHostAccountId, groupId, oldHostAccountId);
     }
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, password_hash, skill_level, initial_rating, created_at FROM players WHERE id = ? AND username IS NOT NULL").get(accountId) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE id = ?").get(accountId) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, password_hash, skill_level, initial_rating, created_at FROM players WHERE username = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE lower(username) = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
@@ -424,32 +437,50 @@ export class SqliteDomainRepository implements DomainRepository {
       username: row.username,
       name: row.name,
       gender: (row.gender as "male" | "female") ?? undefined,
+      isPublic: Boolean(row.is_public ?? 1),
       passwordHash: row.password_hash,
       skillLevel: row.skill_level,
       initialRating: row.initial_rating,
+      rating: row.rating ?? row.initial_rating,
+      ratedGamesPlayed: row.rated_games_played ?? 0,
       createdAt: new Date(row.created_at),
     };
   }
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     this.db.prepare(`
-      INSERT INTO players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id, username, password_hash, skill_level, created_at)
-      VALUES (?, NULL, ?, ?, ?, ?, 0, 1, NULL, ?, ?, ?, ?)
-    `).run(account.id, account.name, account.gender ?? null, account.initialRating, account.initialRating, account.username.trim().toLowerCase(), account.passwordHash, account.skillLevel, account.createdAt.toISOString());
+      INSERT INTO player_accounts (id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+    `).run(
+      account.id,
+      account.username.trim().toLowerCase(),
+      account.name,
+      account.gender ?? null,
+      account.isPublic !== false ? 1 : 0,
+      account.passwordHash,
+      account.skillLevel,
+      account.initialRating,
+      account.initialRating,
+      account.createdAt.toISOString(),
+    );
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
-    this.db.prepare("UPDATE players SET name = ? WHERE id = ? AND username IS NOT NULL").run(name, accountId);
+    this.db.prepare("UPDATE player_accounts SET name = ? WHERE id = ?").run(name, accountId);
     this.db.prepare("UPDATE players SET name = ? WHERE account_id = ?").run(name, accountId);
   }
 
   async updatePlayerAccountUsername(accountId: string, username: string): Promise<void> {
-    this.db.prepare("UPDATE players SET username = ? WHERE id = ? AND username IS NOT NULL").run(username.trim().toLowerCase(), accountId);
+    this.db.prepare("UPDATE player_accounts SET username = ? WHERE id = ?").run(username.trim().toLowerCase(), accountId);
   }
 
   async updatePlayerAccountGender(accountId: string, gender: "male" | "female"): Promise<void> {
-    this.db.prepare("UPDATE players SET gender = ? WHERE id = ? AND username IS NOT NULL").run(gender, accountId);
+    this.db.prepare("UPDATE player_accounts SET gender = ? WHERE id = ?").run(gender, accountId);
     this.db.prepare("UPDATE players SET gender = ? WHERE account_id = ?").run(gender, accountId);
+  }
+
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
+    this.db.prepare("UPDATE player_accounts SET is_public = ? WHERE id = ?").run(isPublic ? 1 : 0, accountId);
   }
 
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
@@ -555,7 +586,7 @@ export class SqliteDomainRepository implements DomainRepository {
         ), acc.rating, p.initial_rating) AS rating
       FROM players p
       JOIN groups g ON g.id = p.group_id
-      LEFT JOIN players acc ON acc.id = p.account_id AND acc.username IS NOT NULL
+      LEFT JOIN player_accounts acc ON acc.id = p.account_id
       JOIN session_attendance sa ON sa.player_id = p.id
       JOIN sessions s ON s.id = sa.session_id
       LEFT JOIN rounds r ON r.session_id = s.id
@@ -663,11 +694,12 @@ export class SqliteDomainRepository implements DomainRepository {
     const rows = this.db
       .prepare(`
         SELECT p.*,
-               COALESCE(a.username, p.username) AS username,
+               a.username AS username,
+               COALESCE(a.name, p.name) AS name,
                COALESCE(a.rating, p.rating) AS rating,
                COALESCE(a.rated_games_played, p.rated_games_played) AS rated_games_played
         FROM players p
-        LEFT JOIN players a ON a.id = p.account_id AND a.username IS NOT NULL
+        LEFT JOIN player_accounts a ON a.id = p.account_id
         WHERE ${whereClause}
         ORDER BY p.created_at, p.id
       `)
@@ -712,7 +744,7 @@ export class SqliteDomainRepository implements DomainRepository {
         .prepare("SELECT account_id FROM players WHERE id = ? AND group_id = ?")
         .get(player.id, player.groupId) as { account_id: string | null } | undefined;
       if (row?.account_id) {
-        this.db.prepare("UPDATE players SET initial_rating = ? WHERE id = ? AND username IS NOT NULL").run(player.initialRating, row.account_id);
+        this.db.prepare("UPDATE player_accounts SET initial_rating = ? WHERE id = ?").run(player.initialRating, row.account_id);
         this.db.prepare("UPDATE players SET initial_rating = ? WHERE account_id = ?").run(player.initialRating, row.account_id);
       }
     }
@@ -1102,7 +1134,7 @@ export class SqliteDomainRepository implements DomainRepository {
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ): Promise<void> {
     const updateAccount = this.db.prepare(
-      "UPDATE players SET rating = ?, rated_games_played = ? WHERE id = ? AND username IS NOT NULL",
+      "UPDATE player_accounts SET rating = ?, rated_games_played = ? WHERE id = ?",
     );
     const updateMemberships = this.db.prepare(
       "UPDATE players SET rating = ?, rated_games_played = ? WHERE account_id = ?",
@@ -1150,11 +1182,6 @@ export class SqliteDomainRepository implements DomainRepository {
     }
   }
 
-  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
-    void accountId;
-    void isPublic;
-  }
-
   async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
     void accountIdA;
     void accountIdB;
@@ -1171,9 +1198,17 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async searchPlayerAccounts(query: string, limit: number = 10): Promise<readonly PlayerAccountRecord[]> {
-    void query;
-    void limit;
-    return [];
+    const trimmed = query.trim().toLowerCase().replace(/^@/, "");
+    if (!trimmed) return [];
+    const searchTerm = `%${trimmed}%`;
+    const rows = this.db.prepare(`
+      SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      FROM player_accounts
+      WHERE username LIKE ? OR name LIKE ?
+      ORDER BY (lower(username) = ?) DESC, username ASC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, trimmed, limit) as unknown as PlayerAccountRow[];
+    return rows.map((row) => this.mapPlayerAccount(row));
   }
 
   async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
