@@ -7,6 +7,7 @@ import {
   type SearchPlayerResult,
 } from "@/app/actions/players";
 import type { PlayerRecord } from "@/lib/domain/types";
+import { formatDupr } from "@/lib/domain/rating-display";
 import { LockIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 
 export interface LinkGuestModalProps {
@@ -255,7 +256,7 @@ export function LinkGuestModal({
                       </div>
                       {!result.isRestricted && result.rating !== undefined && (
                         <div className="text-[11px] font-bold text-neutral-600 mt-0.5">
-                          Rating {Math.round(result.rating)}
+                          Rating: {formatDupr(result.rating)}
                         </div>
                       )}
                     </div>

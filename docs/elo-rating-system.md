@@ -4,13 +4,28 @@ This document outlines how individual player ratings (Elo) are calculated, adjus
 
 ---
 
-## 1. Initial Ratings & Calibration
+## 1. Internal Storage vs. User-Facing Presentation
 
-When players are added to a group or create an account, they start with an **Initial Rating**:
-- **Novice / Beginner**: `800`
-- **Recreational / Intermediate**: `1,000` (default)
-- **Advanced / Competitive**: `1,200`
-- **Custom Rating**: Any custom integer chosen by the organizer or player.
+Under the hood, all match calculations, replay systems, and database columns operate on a standard 1,000-centered Elo integer scale. **However, all user-facing screens and inputs exclusively display and accept decimal skill ratings aligned with standard DUPR ratings ($2.000$ to $8.000$)**:
+
+- **Beginner**: `2.000` ($400$ Elo)
+- **Advanced Beginner**: `2.500` ($600$ Elo)
+- **Intermediate**: `3.000` ($800$ Elo)
+- **Advanced Intermediate**: `3.500` ($1,000$ Elo default)
+- **Competitive**: `4.000` ($1,200$ Elo)
+- **Advanced Competitive**: `4.500` ($1,400$ Elo)
+- **Expert / Pro / World-Class**: `5.000` – `8.000` ($1,600$ – $2,800$ Elo)
+
+### Conversion Formula
+Implementation reference: [`src/lib/domain/rating-display.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-display.ts)
+
+$$\text{dupr}(\text{elo}) = 3.500 + \frac{\text{elo} - 1000}{400}$$
+
+$$\text{elo}(\text{dupr}) = 1000 + (\text{dupr} - 3.500) \times 400$$
+
+* Every **100 Elo points** corresponds to **0.250 DUPR points**.
+* An even-match outcome ($\pm 10$ Elo) translates to $\pm 0.025$ DUPR points.
+* Users never see or type raw 1,000s Elo numbers.
 
 ---
 
