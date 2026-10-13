@@ -64,7 +64,7 @@ export function NewSessionClient({
         return;
       }
 
-      router.push(`/g/${groupId}/sessions/${res.data.id}`);
+      router.replace(`/g/${groupId}/sessions/${res.data.id}`);
     } catch {
       setError("An unexpected error occurred while starting the session.");
       setIsPending(false);
