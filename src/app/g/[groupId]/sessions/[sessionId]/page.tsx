@@ -14,10 +14,14 @@ import type { CourtSynergiesMap, TeamSynergyInfo } from "@/components/rounds/syn
 
 export default async function ActiveSessionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ groupId: string; sessionId: string }>;
+  searchParams?: Promise<{ from?: string }>;
 }) {
   const { groupId, sessionId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const isFromProfile = resolvedSearchParams?.from === "profile";
   const repository = getActionRepository();
   const [accountId, guestPlayerId] = await Promise.all([
     getActivePlayerAccountId(),
@@ -68,6 +72,7 @@ export default async function ActiveSessionPage({
           isHost={isHost}
           isMember={isMember}
           currentViewerPlayerId={viewerPlayer?.id ?? null}
+          isFromProfile={isFromProfile}
         />
       </main>
     );
@@ -160,6 +165,7 @@ export default async function ActiveSessionPage({
         partnerSynergy={partnerSynergy}
         courtSynergies={courtSynergies}
         isOrganizer={isOrganizer}
+        isFromProfile={isFromProfile}
       />
     </main>
   );

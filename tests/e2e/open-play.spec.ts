@@ -42,13 +42,13 @@ test.describe("Open Play Workflow", () => {
 
     // 7. Add Guest player "Guest Gary"
     await page.fill("#guest-name-input", "Guest Gary");
-    await page.click("button:has-text('+ Guest')");
+    await page.click("button:has-text('Add')");
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
     // 8. Add group player Bob from roster
     const rosterSelect = page.locator("#roster-player-select");
     await rosterSelect.selectOption({ index: 1 });
-    await page.click("button:has-text('+ Add')");
+    await page.click("button:has-text('Add')");
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Bob")).toBeVisible();
 
     // 9. Second player signs up and joins open play in another browser context
@@ -114,19 +114,32 @@ test.describe("Open Play Workflow", () => {
     await page.goto("/players");
     await expect(page.locator("h2:has-text('Past Sessions')")).toBeVisible();
 
-    // Session must be listed as "Open Play"
-    const openPlayListing = page.locator("article h3 a:has-text('Open Play')");
-    await expect(openPlayListing).toBeVisible();
-
-    // Link must point to the session URL
+    // Session must be listed with (Open Play) next to group name
     const sessionId = sessionUrl.split("/sessions/")[1];
-    await expect(openPlayListing).toHaveAttribute("href", `/g/${groupId}/sessions/${sessionId}`);
-
-    // Must have all the same information as a normal session (group name, rating, W-L)
     const sessionArticle = page.locator(`article[data-testid='player-session-${sessionId}']`);
+    await expect(sessionArticle).toBeVisible();
+    await expect(sessionArticle).toContainText("Open Play");
     await expect(sessionArticle).toContainText(groupName);
     await expect(sessionArticle).toContainText("1W – 0L");
-    await expect(sessionArticle).toContainText("Rating");
+
+    // Session date title is plain text (not a link)
+    const sessionTitle = sessionArticle.locator("h3");
+    await expect(sessionTitle).toBeVisible();
+    await expect(sessionArticle.locator("h3 a")).toHaveCount(0);
+
+    // Go to session button must point to the session URL with ?from=profile
+    const goToSessionBtn = sessionArticle.locator("a:has-text('Go to session')");
+    await expect(goToSessionBtn).toBeVisible();
+    await expect(goToSessionBtn).toHaveAttribute("href", `/g/${groupId}/sessions/${sessionId}?from=profile`);
+
+    // Clicking Go to session navigates to session, where back button points to /players
+    await goToSessionBtn.click();
+    await expect(page).toHaveURL(`/g/${groupId}/sessions/${sessionId}?from=profile`);
+    const backBtn = page.locator("a:has-text('Back')");
+    await expect(backBtn).toBeVisible();
+    await expect(backBtn).toHaveAttribute("href", "/players");
+    await backBtn.click();
+    await expect(page).toHaveURL("/players");
 
     await playerContext.close();
   });

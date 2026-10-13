@@ -630,15 +630,19 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const pageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(pageElement);
 
-    // Open play session should be listed as "Open Play"
-    expect(html).toContain("Open Play");
+    // Open play session should be listed with (Open Play) next to group name
+    expect(html).toContain("Metro Club (Open Play)");
     // Regular session should show group name
     expect(html).toContain("Metro Club");
-    // Both should link to their respective sessions
-    expect(html).toContain('href="/g/grp-1/sessions/s-open"');
-    expect(html).toContain('href="/g/grp-1/sessions/s-regular"');
+    // Both should link to their respective sessions with ?from=profile
+    expect(html).toContain('href="/g/grp-1/sessions/s-open?from=profile"');
+    expect(html).toContain('href="/g/grp-1/sessions/s-regular?from=profile"');
     // Win/loss info should be present
     expect(html).toContain("1W – 0L");
+    // Go to session button should be present
+    expect(html).toContain("Go to session");
+    // Session title should not be a link
+    expect(html).not.toMatch(/<h3[^>]*><a/);
   });
 });
 

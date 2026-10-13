@@ -32,6 +32,7 @@ export interface OpenPlayManagerClientProps {
   readonly isHost?: boolean;
   readonly isMember?: boolean;
   readonly currentViewerPlayerId?: string | null;
+  readonly isFromProfile?: boolean;
 }
 
 export function OpenPlayManagerClient({
@@ -44,6 +45,7 @@ export function OpenPlayManagerClient({
   isOrganizer = false,
   isMember = false,
   currentViewerPlayerId = null,
+  isFromProfile = false,
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
 
@@ -308,7 +310,11 @@ export function OpenPlayManagerClient({
       {/* Header */}
       <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
         <div className="flex items-center justify-between">
-          <BackButton href={`/g/${groupId}`} />
+          <BackButton
+            href={isFromProfile ? "/players" : `/g/${groupId}`}
+            label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+            ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
+          />
           <div className="flex items-center gap-2">
             <Badge variant="default" className="bg-black text-[#ccff00]">
               Open Play
@@ -453,7 +459,7 @@ export function OpenPlayManagerClient({
                     disabled={!selectedRosterPlayerId || isAddingPlayer}
                     className="px-3 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-50 cursor-pointer"
                   >
-                    {isAddingPlayer ? "Adding..." : "+ Add"}
+                    {isAddingPlayer ? "Adding..." : "Add"}
                   </button>
                 </div>
               </form>
@@ -481,7 +487,7 @@ export function OpenPlayManagerClient({
                   disabled={!guestName.trim() || isAddingGuest}
                   className="px-3 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-50 cursor-pointer"
                 >
-                  {isAddingGuest ? "Adding..." : "+ Guest"}
+                  {isAddingGuest ? "Adding..." : "Add"}
                 </button>
               </div>
             </form>
