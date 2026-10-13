@@ -17,6 +17,7 @@ import {
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 import { LinkGuestModal } from "./link-guest-modal";
+import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { SearchIcon, UserPlusIcon, LockIcon, HandshakeIcon, CheckIcon } from "@/components/ui/icons";
 
 export function GroupOrganizersPanel({
@@ -49,7 +50,7 @@ export function GroupOrganizersPanel({
 
   // Guest mode state
   const [guestName, setGuestName] = useState("");
-  const [guestRating, setGuestRating] = useState<number>(1000);
+  const [guestRating, setGuestRating] = useState<number>(3.5);
   const [guestSaving, setGuestSaving] = useState(false);
 
   const [message, setMessage] = useState<string | null>(null);
@@ -159,7 +160,7 @@ export function GroupOrganizersPanel({
       if (res.ok) {
         setMessage(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
-        setGuestRating(1000);
+        setGuestRating(3.5);
         router.refresh();
       } else {
         setMessage(res.error ?? "Failed to add guest player.");
@@ -353,7 +354,7 @@ export function GroupOrganizersPanel({
                             {!result.isRestricted && (
                               <div className="flex items-center gap-2 text-[11px] font-bold text-neutral-600 mt-0.5">
                                 {result.rating !== undefined && (
-                                  <span>Rating {Math.round(result.rating)}</span>
+                                  <span>Rating: {formatDupr(result.rating)}</span>
                                 )}
                                 {result.bestPartner && (
                                   <span className="inline-flex items-center gap-1 text-amber-700">
@@ -411,12 +412,12 @@ export function GroupOrganizersPanel({
                   onChange={(e) => setGuestRating(Number(e.target.value))}
                   className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 >
-                  <option value={400}>Beginner (2.0)</option>
-                  <option value={600}>Adv. Beginner (2.5)</option>
-                  <option value={800}>Intermediate (3.0)</option>
-                  <option value={1000}>Adv. Intermediate (3.5)</option>
-                  <option value={1200}>Competitive (4.0)</option>
-                  <option value={1400}>Adv. Competitive (4.5)</option>
+                  <option value={2.0}>Beginner (2.0)</option>
+                  <option value={2.5}>Adv. Beginner (2.5)</option>
+                  <option value={3.0}>Intermediate (3.0)</option>
+                  <option value={3.5}>Adv. Intermediate (3.5)</option>
+                  <option value={4.0}>Competitive (4.0)</option>
+                  <option value={4.5}>Adv. Competitive (4.5)</option>
                 </select>
                 <button
                   type="submit"
@@ -459,7 +460,7 @@ export function GroupOrganizersPanel({
                     )}
                   </div>
                   <span className="block text-xs font-bold text-neutral-600">
-                    Rating: {Math.round(player.rating)} · {player.ratedGamesPlayed} games
+                    Rating: {formatDupr(player.rating)} ({getSkillTier(eloToDupr(player.rating)).name}) · {player.ratedGamesPlayed} games
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">

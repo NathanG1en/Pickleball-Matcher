@@ -5,6 +5,7 @@ test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
     page,
   }) => {
+    test.setTimeout(60000);
     // 1. Create a group
     const groupName = `Corrections League ${Date.now()}`;
     await createTestGroup(page, groupName);

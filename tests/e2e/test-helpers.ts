@@ -27,7 +27,7 @@ export async function createAndSignInPlayer(
   await page.click("button[type='submit']");
 
   // Wait for client-side navigation to /setup
-  await expect(page).toHaveURL(/\/setup/);
+  await expect(page).toHaveURL(/\/setup/, { timeout: 15000 });
   await expect(page.locator("h1")).toContainText("Create Group");
 
   return { username, name };

@@ -140,6 +140,10 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Organizer");
       expect(html).toContain("rounded-full border border-black px-2 py-1 text-[9px] font-black uppercase bg-[#fde047]");
 
+      // Verify player ratings are displayed on DUPR decimal scale rather than raw 1000s Elo
+      expect(html).toContain("Rating: 3.5 (Advanced Intermediate) · 0 games");
+      expect(html).not.toContain("Rating: 1000");
+
       // Verify "Remove group organizer" button exists for delegated organizer
       expect(html).toContain("Remove group organizer");
       // Verify "Make a group organizer" button exists for regular member

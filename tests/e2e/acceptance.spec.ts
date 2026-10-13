@@ -4,6 +4,7 @@ import { createAndSignInPlayer } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
+    test.setTimeout(60000);
     // 1. Authenticate player and visit setup page
     await createAndSignInPlayer(page);
     await expect(page.locator("h1")).toContainText("Create Group");

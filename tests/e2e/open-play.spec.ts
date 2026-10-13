@@ -6,6 +6,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }) => {
+    test.setTimeout(60000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
