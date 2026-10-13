@@ -8,6 +8,7 @@ export interface BackButtonProps {
   fallbackHref?: string;
   href?: string;
   label?: React.ReactNode;
+  ariaLabel?: string;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function BackButton({
   fallbackHref = "/",
   href,
   label = "← Back",
+  ariaLabel = "Go back",
   className,
 }: BackButtonProps) {
   const router = useRouter();
@@ -25,18 +27,25 @@ export function BackButton({
 
   if (href) {
     return (
-      <Link href={href} className={buttonClass} aria-label="Go back">
+      <Link href={href} className={buttonClass} aria-label={ariaLabel}>
         {label}
       </Link>
     );
   }
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(fallbackHref);
+    if (typeof window !== "undefined") {
+      const hasExternalReferrer =
+        typeof document !== "undefined" &&
+        Boolean(document.referrer) &&
+        !document.referrer.startsWith(window.location.origin);
+
+      if (window.history.length > 1 && !hasExternalReferrer) {
+        router.back();
+        return;
+      }
     }
+    router.push(fallbackHref);
   };
 
   return (
@@ -44,7 +53,7 @@ export function BackButton({
       type="button"
       onClick={handleBack}
       className={buttonClass}
-      aria-label="Go back"
+      aria-label={ariaLabel}
     >
       {label}
     </button>

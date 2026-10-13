@@ -519,7 +519,7 @@ export function SessionManagerClient({
       {/* Top Header Controls */}
       <div className="flex items-center justify-between">
         <BackButton
-          fallbackHref={`/g/${groupId}`}
+          href={`/g/${groupId}`}
           label="← Back to Group"
           className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
