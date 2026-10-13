@@ -42,6 +42,12 @@ export const removeGroupPlayerSchema = z.object({
   playerId: entityIdSchema,
 }).strict();
 
+export const transferGroupHostSchema = z.object({
+  groupId: entityIdSchema,
+  playerId: entityIdSchema,
+  confirmationName: z.string().trim().min(1, "Enter the group name to confirm."),
+}).strict();
+
 export const addGroupPlayerSchema = z.object({
   groupId: entityIdSchema,
   username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/),

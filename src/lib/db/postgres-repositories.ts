@@ -403,6 +403,24 @@ export class PostgresRepositories implements DomainRepository {
     return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: row.is_host }));
   }
 
+  async transferGroupHost(groupId: string, newHostAccountId: string): Promise<void> {
+    const current = await this.getGroup(groupId);
+    if (!current) return;
+    const oldHostAccountId = current.ownerAccountId;
+
+    await this.query`update groups set owner_account_id = ${newHostAccountId} where id = ${groupId}`;
+    await this.query`delete from group_organizers where group_id = ${groupId} and account_id = ${newHostAccountId}`;
+    if (oldHostAccountId) {
+      await this.query`
+        insert into group_organizers (group_id, account_id)
+        select ${groupId}, ${oldHostAccountId}
+        where exists (select 1 from groups where id = ${groupId})
+          and exists (select 1 from players where id = ${oldHostAccountId} and username is not null)
+        on conflict (group_id, account_id) do nothing
+      `;
+    }
+  }
+
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
       select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
