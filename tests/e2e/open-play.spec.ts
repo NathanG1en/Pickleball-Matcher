@@ -42,13 +42,13 @@ test.describe("Open Play Workflow", () => {
 
     // 7. Add Guest player "Guest Gary"
     await page.fill("#guest-name-input", "Guest Gary");
-    await page.click("button:has-text('Add')");
+    await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
     // 8. Add group player Bob from roster
     const rosterSelect = page.locator("#roster-player-select");
     await rosterSelect.selectOption({ index: 1 });
-    await page.click("button:has-text('Add')");
+    await page.locator("form").filter({ has: page.locator("#roster-player-select") }).locator("button[type='submit']").click();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Bob")).toBeVisible();
 
     // 9. Second player signs up and joins open play in another browser context

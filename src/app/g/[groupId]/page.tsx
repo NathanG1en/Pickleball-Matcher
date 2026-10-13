@@ -169,7 +169,7 @@ export default async function GroupDashboardPage({
 
       </header>
 
-      <GroupOrganizersPanel groupId={groupId} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+      <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
 
       {/* Mobile Add to Home Screen Tip */}
       <HomeScreenTip />

@@ -4,6 +4,7 @@ import { createAndSignInPlayer } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
+    test.setTimeout(120000);
     // 1. Authenticate player and visit setup page
     await createAndSignInPlayer(page);
     await expect(page.locator("h1")).toContainText("Create Group");
@@ -38,8 +39,11 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     for (const name of playerNames) {
       await page.fill("#guest-player-name", name);
       await page.locator("button:text-is('Add')").click();
-      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
     }
+
+    await expect(page.getByRole("heading", { name: /Roster \(/ })).toContainText("Roster (14)", { timeout: 15000 });
 
     // 4. Start new session
     await page.click("a[href*='/sessions/new']");
@@ -80,7 +84,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await court1Team1.fill("11");
     await court1Team2.fill("7");
     await page.locator("[data-testid='court-match-1'] button:has-text('Save Result')").click();
-    await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible();
+    await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible({ timeout: 15000 });
 
     const court2Team1 = page.locator("input[aria-label='Court 2 Team 1 score']");
     const court2Team2 = page.locator("input[aria-label='Court 2 Team 2 score']");

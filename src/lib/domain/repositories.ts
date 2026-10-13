@@ -28,6 +28,7 @@ export interface DomainRepository {
   addGroupOrganizer(groupId: string, accountId: string): Promise<void>;
   removeGroupOrganizer(groupId: string, accountId: string): Promise<void>;
   listGroupOrganizers(groupId: string): Promise<readonly GroupOrganizerRecord[]>;
+  transferGroupHost(groupId: string, newHostAccountId: string): Promise<void>;
   getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null>;
   getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;

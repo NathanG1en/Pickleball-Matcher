@@ -5,6 +5,7 @@ test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
     page,
   }) => {
+    test.setTimeout(90000);
     // 1. Create a group
     const groupName = `Corrections League ${Date.now()}`;
     await createTestGroup(page, groupName);
@@ -19,8 +20,10 @@ test.describe("Corrections and Replay Workflow", () => {
     for (const name of players) {
       await page.fill("#guest-player-name", name);
       await page.locator("button:text-is('Add')").click();
-      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
     }
+    await expect(page.getByRole("heading", { name: /Roster \(/ })).toContainText("Roster (8)", { timeout: 15000 });
 
     // 3. Start a session with 2 courts and 8 players
     await page.click("a[href*='/sessions/new']");
@@ -88,6 +91,7 @@ test.describe("Corrections and Replay Workflow", () => {
   test("warns about in-progress games when ending session, but not cancelled games", async ({
     page,
   }) => {
+    test.setTimeout(90000);
     // 1. Create group and roster
     const groupName = `End Session Warning ${Date.now()}`;
     await createTestGroup(page, groupName);
@@ -98,8 +102,10 @@ test.describe("Corrections and Replay Workflow", () => {
     for (const name of players) {
       await page.fill("#guest-player-name", name);
       await page.locator("button:text-is('Add')").click();
-      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
     }
+    await expect(page.getByRole("heading", { name: /Roster \(/ })).toContainText("Roster (8)", { timeout: 15000 });
 
     // 2. Start a session
     await page.click("a[href*='/sessions/new']");

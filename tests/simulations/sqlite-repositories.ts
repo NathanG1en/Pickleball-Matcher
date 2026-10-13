@@ -394,6 +394,20 @@ export class SqliteDomainRepository implements DomainRepository {
     return rows.map((row) => ({ accountId: row.account_id, username: row.username, name: row.name, isHost: Boolean(row.is_host) }));
   }
 
+  async transferGroupHost(groupId: string, newHostAccountId: string): Promise<void> {
+    const current = await this.getGroup(groupId);
+    if (!current) return;
+    const oldHostAccountId = current.ownerAccountId;
+
+    this.db.prepare("UPDATE groups SET owner_account_id = ? WHERE id = ?").run(newHostAccountId, groupId);
+    this.db.prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?").run(groupId, newHostAccountId);
+    if (oldHostAccountId) {
+      this.db.prepare(`INSERT OR IGNORE INTO group_organizers (group_id, account_id)
+        SELECT ?, ? WHERE EXISTS (SELECT 1 FROM groups WHERE id = ?)
+        AND EXISTS (SELECT 1 FROM players WHERE id = ? AND username IS NOT NULL)`).run(groupId, oldHostAccountId, groupId, oldHostAccountId);
+    }
+  }
+
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const row = this.db.prepare("SELECT id, username, name, gender, password_hash, skill_level, initial_rating, created_at FROM players WHERE id = ? AND username IS NOT NULL").get(accountId) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;

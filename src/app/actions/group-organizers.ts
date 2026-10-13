@@ -12,6 +12,7 @@ import {
   addGroupPlayerSchema,
   removeGroupOrganizerSchema,
   removeGroupPlayerSchema,
+  transferGroupHostSchema,
 } from "@/lib/validation/group";
 
 export async function addGroupPlayerByUsernameAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
@@ -134,6 +135,44 @@ export async function removeGroupPlayerAction(input: unknown): Promise<{ ok: boo
     return { ok: true };
   } catch {
     return { ok: false, error: "Unable to remove this player." };
+  }
+}
+
+export async function transferGroupHostAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
+  const parsed = transferGroupHostSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request." };
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "Group not found." };
+    if (group.ownerAccountId !== accountId) {
+      return { ok: false, error: "Only the host can transfer host privileges." };
+    }
+    if (group.name.trim().toLowerCase() !== parsed.data.confirmationName.trim().toLowerCase()) {
+      return { ok: false, error: "Group name does not match." };
+    }
+    const player = (await repository.listPlayers(group.id)).find(({ id }) => id === parsed.data.playerId);
+    if (!player) return { ok: false, error: "Player not found." };
+    if (!player.accountId) {
+      return { ok: false, error: "This player must have an account to become the host." };
+    }
+    if (player.accountId === accountId) {
+      return { ok: false, error: "You are already the host." };
+    }
+    const isTargetOrganizer = await repository.isGroupOrganizer(group.id, player.accountId);
+    if (!isTargetOrganizer) {
+      return { ok: false, error: "The new host must already be a group organizer." };
+    }
+
+    await repository.transferGroupHost(group.id, player.accountId);
+    revalidatePath(`/g/${group.id}`);
+    revalidatePath(`/g/${group.id}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Unable to transfer host privileges." };
   }
 }
 
