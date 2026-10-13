@@ -108,14 +108,22 @@ export function duprToElo(dupr: number): number {
   return Math.round(DUPR_BASE_ELO + (clamped - DUPR_BASE_RATING) * ELO_PER_DUPR);
 }
 
+export function formatDuprValue(dupr: number): string {
+  return Number(dupr.toFixed(3)).toString();
+}
+
 export function formatDupr(elo: number): string {
-  return eloToDupr(elo).toFixed(3);
+  return formatDuprValue(eloToDupr(elo));
 }
 
 export function formatDuprDelta(deltaElo: number): string {
   const deltaDupr = deltaElo / ELO_PER_DUPR;
-  const sign = deltaDupr >= 0 ? "+" : "";
-  return `${sign}${deltaDupr.toFixed(3)}`;
+  const rounded = Number(deltaDupr.toFixed(3));
+  if (rounded === 0) {
+    return "+0";
+  }
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toString()}`;
 }
 
 export function normalizeInitialRating(input: number): number {
