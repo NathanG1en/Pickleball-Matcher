@@ -145,7 +145,7 @@ export function TournamentCreationForm({
         return;
       }
 
-      router.push(`/g/${groupId}/tournaments/${result.data.id}`);
+      router.replace(`/g/${groupId}/tournaments/${result.data.id}`);
     } catch {
       setError("An unexpected error occurred while creating the tournament.");
       setIsSubmitting(false);
