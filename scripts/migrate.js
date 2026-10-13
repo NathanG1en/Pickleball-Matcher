@@ -5,9 +5,21 @@ import nextEnv from "@next/env";
 
 nextEnv.loadEnvConfig(process.cwd());
 
-const connectionString = process.env.DATABASE_URL;
+const isTest = process.argv.includes("--test");
+const connectionString = isTest
+  ? (process.env.TEST_DATABASE_URL || process.env.DATABASE_URL)
+  : process.env.DATABASE_URL;
+
 if (!connectionString) {
-  throw new Error("DATABASE_URL is required. Add it to .env or export it before running migrations.");
+  throw new Error(
+    isTest
+      ? "TEST_DATABASE_URL (or DATABASE_URL) is required. Add it to .env or export it before running migrations."
+      : "DATABASE_URL is required. Add it to .env or export it before running migrations."
+  );
+}
+
+if (isTest) {
+  console.log("Running migrations against TEST database...");
 }
 
 const sql = postgres(connectionString, { prepare: false });

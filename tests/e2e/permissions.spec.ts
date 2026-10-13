@@ -111,5 +111,82 @@ test.describe("Permissions and Security Workflow", () => {
     // "Make a group organizer" should now be available since they have an account
     await expect(linkedItem.locator("button:has-text('Make a group organizer')")).toBeVisible();
   });
+
+  test("allows host to transfer host role to another organizer with group name confirmation", async ({
+    page,
+    browser,
+  }) => {
+    // 1. Create a public player in another session to become organizer
+    const otherContext = await browser.newContext();
+    const otherPage = await otherContext.newPage();
+    const coHost = await createAndSignInPlayer(otherPage);
+    await otherContext.close();
+
+    // 2. Create a test group with host
+    const groupName = `Host Transfer League ${Date.now()}`;
+    const hostUser = await createAndSignInPlayer(page);
+    await page.waitForSelector("form[data-hydrated='true']");
+    await page.fill("#group-name", groupName);
+    await page.click("button[type='submit']");
+    await expect(page).toHaveURL(/\/g\/grp_/);
+
+    // 3. Find and add coHost to the group roster
+    await page.fill("#roster-player-username", coHost.username);
+    await page.click("button:has-text('Find & Add')");
+    const coHostItem = page.locator("li").filter({ hasText: coHost.name });
+    await expect(coHostItem).toBeVisible();
+
+    // 4. Open dropdown for coHost and make them an organizer
+    await coHostItem.locator("summary").click();
+    // Before becoming an organizer, "Transfer host" should NOT be visible
+    await expect(coHostItem.locator("button:has-text('Transfer host')")).not.toBeVisible();
+    await coHostItem.locator("button:has-text('Make a group organizer')").click();
+    await expect(coHostItem.getByText("Organizer", { exact: true })).toBeVisible();
+
+    // 5. Open dropdown again: "Transfer host" should now be present in the same menu as "Remove player"
+    await coHostItem.locator("summary").click();
+    const transferButton = coHostItem.locator("button:has-text('Transfer host')");
+    await expect(transferButton).toBeVisible();
+    await expect(coHostItem.locator("button:has-text('Remove player')")).toBeVisible();
+
+    // 6. Click "Transfer host"
+    await transferButton.click();
+
+    // 7. A confirmation popup modal should appear requiring group name
+    const modal = page.locator("div[role='alertdialog']");
+    await expect(modal).toBeVisible();
+    await expect(modal.locator("h2")).toContainText("Transfer Host");
+    const confirmButton = modal.locator("button[type='submit']:has-text('Transfer Host')");
+
+    // Initially disabled
+    await expect(confirmButton).toBeDisabled();
+
+    // Fill incorrect group name: stays disabled
+    const input = modal.locator("#confirm-group-name");
+    await input.fill("Wrong Group Name");
+    await expect(confirmButton).toBeDisabled();
+
+    // Fill exact group name: becomes enabled
+    await input.fill(groupName);
+    await expect(confirmButton).toBeEnabled();
+
+    // 8. Confirm transfer
+    await confirmButton.click();
+
+    // Modal should close
+    await expect(modal).not.toBeVisible();
+
+    // 9. CoHost now has the Host badge!
+    await expect(coHostItem.getByText("Host", { exact: true })).toBeVisible();
+
+    // 10. Original host now has Organizer badge and lost host privileges
+    const originalHostItem = page.locator("li").filter({ hasText: hostUser.name });
+    await expect(originalHostItem.getByText("Organizer", { exact: true })).toBeVisible();
+    await expect(originalHostItem.getByText("Host", { exact: true })).not.toBeVisible();
+
+    // Original host no longer has "Transfer host" in dropdown
+    await coHostItem.locator("summary").click();
+    await expect(coHostItem.locator("button:has-text('Transfer host')")).not.toBeVisible();
+  });
 });
 

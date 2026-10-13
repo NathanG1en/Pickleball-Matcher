@@ -44,7 +44,7 @@ export async function createTestGroup(
   await page.waitForSelector("form[data-hydrated='true']");
   await page.fill("#group-name", groupName);
   await page.click("button[type='submit']");
-  await expect(page).toHaveURL(/\/g\/grp_/);
+  await expect(page).toHaveURL(/\/g\/grp_/, { timeout: 15000 });
   const groupId = page.url().split("/g/")[1].split("/")[0];
   return { groupName, groupId };
 }

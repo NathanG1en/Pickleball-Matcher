@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import {
+  addGroupOrganizerAction,
   addGroupPlayerByUsernameAction,
   removeGroupOrganizerAction,
   removeGroupPlayerAction,
+  transferGroupHostAction,
 } from "@/app/actions/group-organizers";
 import {
   addPlayerByAccountIdAction,
@@ -146,6 +148,8 @@ describe("GroupOrganizersPanel and Actions", () => {
 
       // Verify "Remove group organizer" button exists for delegated organizer
       expect(html).toContain("Remove group organizer");
+      // Verify "Transfer host" button exists for delegated organizer
+      expect(html).toContain("Transfer host");
       // Verify "Make a group organizer" button exists for regular member
       expect(html).toContain("Make a group organizer");
       // Verify "Remove player" button exists in the dropdown
@@ -178,6 +182,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Link to public player");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Remove group organizer");
+      expect(html).not.toContain("Transfer host");
 
       // Verify Find Player and Add Guest options exist for organizers
       expect(html).toContain("Find Player");
@@ -890,6 +895,231 @@ describe("GroupOrganizersPanel and Actions", () => {
       if (!result.ok) {
         expect(result.error).toContain("account not found");
       }
+    });
+  });
+
+  describe("transferGroupHostAction", () => {
+    let repository: InMemoryRepositories;
+
+    beforeEach(() => {
+      repository = new InMemoryRepositories({
+        groups: [
+          {
+            id: "g1",
+            name: "Test Group",
+            organizerPinHash: "hash",
+            createdAt: new Date(),
+            isPublic: true,
+            ownerAccountId: hostAccountId,
+          },
+        ],
+        playerAccounts: [
+          {
+            id: hostAccountId,
+            username: "host_user",
+            name: "Host Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: orgAccountId,
+            username: "org_user",
+            name: "Organizer Player",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+          {
+            id: memberAccountId,
+            username: "member_user",
+            name: "Regular Member",
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+        ],
+        groupOrganizers: [
+          { groupId: "g1", accountId: orgAccountId },
+        ],
+        players: [
+          {
+            id: "p1",
+            groupId: "g1",
+            name: "Host Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: hostAccountId,
+            username: "host_user",
+          },
+          {
+            id: "p2",
+            groupId: "g1",
+            name: "Organizer Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: orgAccountId,
+            username: "org_user",
+          },
+          {
+            id: "p3",
+            groupId: "g1",
+            name: "Regular Member",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: memberAccountId,
+            username: "member_user",
+          },
+          {
+            id: "p4",
+            groupId: "g1",
+            name: "Guest Player",
+            initialRating: 1000,
+            rating: 1000,
+            ratedGamesPlayed: 0,
+            active: true,
+            accountId: null,
+          },
+        ],
+      });
+      setActionRepository(repository);
+    });
+
+    it("allows the host to transfer host privileges to another organizer with matching group name confirmation", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "Test Group",
+      });
+
+      expect(result.ok).toBe(true);
+      const group = await repository.getGroup("g1");
+      expect(group?.ownerAccountId).toBe(orgAccountId);
+
+      const organizers = await repository.listGroupOrganizers("g1");
+      const newHost = organizers.find((o) => o.accountId === orgAccountId);
+      expect(newHost?.isHost).toBe(true);
+
+      const oldHost = organizers.find((o) => o.accountId === hostAccountId);
+      expect(oldHost?.isHost).toBe(false);
+
+      // Once that happens, the original host loses their host privileges:
+      // Old host can no longer add organizers
+      const addOrgResult = await addGroupOrganizerAction({ groupId: "g1", playerId: "p3" });
+      expect(addOrgResult.ok).toBe(false);
+      expect(addOrgResult.error).toContain("Only the host can add organizers");
+
+      // Old host can no longer remove organizers
+      const removeOrgResult = await removeGroupOrganizerAction({ groupId: "g1", playerId: "p2" });
+      expect(removeOrgResult.ok).toBe(false);
+      expect(removeOrgResult.error).toContain("Only the host can remove organizers");
+
+      // Old host can no longer transfer host
+      const transferAgain = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p1",
+        confirmationName: "Test Group",
+      });
+      expect(transferAgain.ok).toBe(false);
+      expect(transferAgain.error).toContain("Only the host can transfer host privileges");
+
+      // But the new host CAN now perform host actions!
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(orgAccountId);
+      const newHostAddResult = await addGroupOrganizerAction({ groupId: "g1", playerId: "p3" });
+      expect(newHostAddResult.ok).toBe(true);
+    });
+
+    it("accepts case-insensitive group name confirmation", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "test group",
+      });
+
+      expect(result.ok).toBe(true);
+      const group = await repository.getGroup("g1");
+      expect(group?.ownerAccountId).toBe(orgAccountId);
+    });
+
+    it("rejects transfer when confirmation name does not match", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "Wrong Name",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Group name does not match");
+      const group = await repository.getGroup("g1");
+      expect(group?.ownerAccountId).toBe(hostAccountId);
+    });
+
+    it("rejects non-host caller from transferring host", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(orgAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "Test Group",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Only the host can transfer host privileges");
+    });
+
+    it("requires the recipient to be an organizer", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      // p3 is a regular member, not an organizer
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p3",
+        confirmationName: "Test Group",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("The new host must already be a group organizer");
+    });
+
+    it("rejects transferring host to self", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p1",
+        confirmationName: "Test Group",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("You are already the host");
+    });
+
+    it("rejects transferring host to guest player", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p4",
+        confirmationName: "Test Group",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("This player must have an account to become the host");
     });
   });
 });

@@ -227,6 +227,10 @@ export async function endSessionAction(
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
     const ended = await service.endSession(parsed.data.sessionId);
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: ended };
   } catch (err) {
     return {

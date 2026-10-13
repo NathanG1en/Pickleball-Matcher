@@ -149,6 +149,22 @@ export class InMemoryRepositories implements DomainRepository {
     });
   }
 
+  async transferGroupHost(groupId: string, newHostAccountId: string) {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    if (!group) return;
+    const oldHostAccountId = group.ownerAccountId;
+    this.state.groups = this.state.groups.map((item) =>
+      item.id === groupId ? { ...item, ownerAccountId: newHostAccountId } : item
+    );
+    this.state.groupOrganizers = this.state.groupOrganizers.filter(
+      (item) => !(item.groupId === groupId && item.accountId === newHostAccountId)
+    );
+    if (oldHostAccountId && !this.state.groupOrganizers.some((item) => item.groupId === groupId && item.accountId === oldHostAccountId)) {
+      this.state.groupOrganizers.push({ groupId, accountId: oldHostAccountId });
+    }
+    this.writeCount += 1;
+  }
+
   async getPlayerAccount(accountId: string) {
     return this.state.playerAccounts.find((account) => account.id === accountId) ?? null;
   }

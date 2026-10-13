@@ -7,6 +7,7 @@ import {
   addGroupPlayerByUsernameAction,
   removeGroupOrganizerAction,
   removeGroupPlayerAction,
+  transferGroupHostAction,
 } from "@/app/actions/group-organizers";
 import {
   searchPlayersByUsernameAction,
@@ -17,17 +18,20 @@ import {
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 import { LinkGuestModal } from "./link-guest-modal";
+import { ConfirmGroupNameModal } from "./confirm-group-name-modal";
 import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { SearchIcon, UserPlusIcon, LockIcon, HandshakeIcon, CheckIcon } from "@/components/ui/icons";
 
 export function GroupOrganizersPanel({
   groupId,
+  groupName = "",
   players,
   organizers,
   isHost,
   isOrganizer = false,
 }: {
   groupId: string;
+  groupName?: string;
   players: readonly PlayerRecord[];
   organizers: readonly GroupOrganizerRecord[];
   isHost: boolean;
@@ -36,6 +40,9 @@ export function GroupOrganizersPanel({
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const [linkingPlayer, setLinkingPlayer] = useState<PlayerRecord | null>(null);
+  const [transferTarget, setTransferTarget] = useState<PlayerRecord | null>(null);
+  const [transferPending, setTransferPending] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
   // Mode switch: "search" | "guest"
   const [addMode, setAddMode] = useState<"search" | "guest">("search");
@@ -232,6 +239,30 @@ export function GroupOrganizersPanel({
     setMessage(result.ok ? "Player removed from the group." : result.error ?? "Unable to remove player.");
     if (result.ok) router.refresh();
     setPendingPlayerId(null);
+  };
+
+  const handleTransferHost = async (confirmationName: string) => {
+    if (!transferTarget) return;
+    setTransferPending(true);
+    setTransferError(null);
+    try {
+      const res = await transferGroupHostAction({
+        groupId,
+        playerId: transferTarget.id,
+        confirmationName,
+      });
+      if (res.ok) {
+        setMessage(`Host privileges transferred to ${transferTarget.name}.`);
+        setTransferTarget(null);
+        router.refresh();
+      } else {
+        setTransferError(res.error ?? "Failed to transfer host privileges.");
+      }
+    } catch {
+      setTransferError("Failed to transfer host privileges.");
+    } finally {
+      setTransferPending(false);
+    }
   };
 
   return (
@@ -490,6 +521,18 @@ export function GroupOrganizersPanel({
                                     >
                                       {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
                                     </button>
+                                    <button
+                                      type="button"
+                                      disabled={pendingPlayerId === player.id}
+                                      onClick={() => {
+                                        closeAllMenus();
+                                        setTransferError(null);
+                                        setTransferTarget(player);
+                                      }}
+                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                    >
+                                      Transfer host
+                                    </button>
                                     <div className="my-1 border-t border-neutral-200" />
                                   </>
                                 ) : player.accountId ? (
@@ -563,6 +606,23 @@ export function GroupOrganizersPanel({
           setLinkingPlayer(null);
           router.refresh();
         }}
+      />
+      <ConfirmGroupNameModal
+        isOpen={Boolean(transferTarget)}
+        onClose={() => {
+          setTransferTarget(null);
+          setTransferError(null);
+        }}
+        onConfirm={handleTransferHost}
+        title="Transfer Host"
+        description="You are about to transfer host privileges. Are you sure? Enter in the name of the group to continue."
+        groupName={groupName}
+        confirmButtonText="Transfer Host"
+        pendingButtonText="Transferring…"
+        confirmVariant="danger"
+        error={transferError}
+        isPending={transferPending}
+        onClearError={() => setTransferError(null)}
       />
     </section>
   );

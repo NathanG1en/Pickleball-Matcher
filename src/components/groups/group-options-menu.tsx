@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteGroupAction } from "@/app/actions/group-settings";
-import { Button, Input, Label, Modal } from "@/components/ui";
 import { ShareGroupModal } from "@/components/groups/share-group-modal";
+import { ConfirmGroupNameModal } from "@/components/groups/confirm-group-name-modal";
 
 export function GroupOptionsMenu({
   groupId,
@@ -19,7 +19,6 @@ export function GroupOptionsMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [confirmName, setConfirmName] = useState("");
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -35,9 +34,8 @@ export function GroupOptionsMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
-  const handleDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (confirmName.trim().toLowerCase() !== groupName.trim().toLowerCase()) {
+  const handleDelete = async (confirmationName: string) => {
+    if (confirmationName.trim().toLowerCase() !== groupName.trim().toLowerCase()) {
       setDeleteError("Group name does not match.");
       return;
     }
@@ -45,7 +43,7 @@ export function GroupOptionsMenu({
     setDeleteError(null);
     const result = await deleteGroupAction({
       groupId,
-      confirmationName: confirmName.trim(),
+      confirmationName,
     });
     if (result.ok) {
       router.replace(isAccountOrganizer ? "/players" : "/");
@@ -55,8 +53,6 @@ export function GroupOptionsMenu({
       setDeletePending(false);
     }
   };
-
-  const isConfirmed = confirmName.trim().toLowerCase() === groupName.trim().toLowerCase();
 
   return (
     <div className="relative" ref={menuRef}>
@@ -76,7 +72,6 @@ export function GroupOptionsMenu({
             type="button"
             onClick={() => {
               setMenuOpen(false);
-              setConfirmName("");
               setDeleteError(null);
               setShowDeleteModal(true);
             }}
@@ -94,64 +89,20 @@ export function GroupOptionsMenu({
         groupName={groupName}
       />
 
-      {showDeleteModal && (
-        <Modal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          size="sm"
-          role="alertdialog"
-          showCloseButton={false}
-          title="Delete Group"
-          description="You are about to delete the group. Are you sure? Enter in the name of the group to continue."
-        >
-          <form onSubmit={handleDelete} className="space-y-3">
-            <div>
-              <Label htmlFor="confirm-group-name" className="text-neutral-600">
-                Type <span className="text-black font-black select-all">&quot;{groupName}&quot;</span> to confirm
-              </Label>
-              <Input
-                id="confirm-group-name"
-                type="text"
-                required
-                sizeVariant="sm"
-                value={confirmName}
-                onChange={(e) => {
-                  setConfirmName(e.target.value);
-                  if (deleteError) setDeleteError(null);
-                }}
-                placeholder={groupName}
-                autoFocus
-              />
-            </div>
-
-            {deleteError && (
-              <p role="alert" className="text-xs font-bold text-red-600">
-                {deleteError}
-              </p>
-            )}
-
-            <div className="flex gap-3 justify-end pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deletePending}
-                className="font-display text-xs uppercase tracking-wider"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="danger"
-                disabled={!isConfirmed || deletePending}
-                className="font-display text-xs uppercase tracking-wider"
-              >
-                {deletePending ? "Deleting…" : "Delete Group"}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <ConfirmGroupNameModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Group"
+        description="You are about to delete the group. Are you sure? Enter in the name of the group to continue."
+        groupName={groupName}
+        confirmButtonText="Delete Group"
+        pendingButtonText="Deleting…"
+        confirmVariant="danger"
+        error={deleteError}
+        isPending={deletePending}
+        onClearError={() => setDeleteError(null)}
+      />
     </div>
   );
 }
