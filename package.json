@@ -15,6 +15,7 @@
     "test:simulation": "vitest run --config vitest.simulation.config.ts",
     "test:e2e": "playwright test",
     "db:migrate": "node scripts/migrate.js",
+    "db:migrate:test": "node scripts/migrate.js --test",
     "db:reset": "node scripts/migrate.js --reset",
     "build:worker": "opennextjs-cloudflare build",
     "preview:worker": "opennextjs-cloudflare build && wrangler dev",
