@@ -44,6 +44,7 @@ export interface SessionManagerClientProps {
   readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
   readonly courtSynergies?: CourtSynergiesMap;
   readonly isOrganizer?: boolean;
+  readonly isFromProfile?: boolean;
 }
 
 export function SessionManagerClient({
@@ -59,8 +60,10 @@ export function SessionManagerClient({
   partnerSynergy = null,
   courtSynergies,
   isOrganizer = false,
+  isFromProfile = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
+
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
   const activeProposal = regeneratedProposal ?? initialProposal;
   const [prevAttendance, setPrevAttendance] = useState(attendance);
@@ -549,8 +552,9 @@ export function SessionManagerClient({
       {/* Top Header Controls */}
       <div className="flex items-center justify-between">
         <BackButton
-          href={`/g/${groupId}`}
-          label="← Back to Group"
+          href={isFromProfile ? "/players" : `/g/${groupId}`}
+          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
           className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (

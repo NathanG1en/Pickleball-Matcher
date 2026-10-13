@@ -4,7 +4,6 @@ import { getActionRepository } from "@/app/actions/action-context";
 import { getActivePlayerAccountId } from "@/app/actions/action-context";
 import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
-import { formatDupr } from "@/lib/domain/rating-display";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { HandshakeIcon } from "@/components/ui/icons";
@@ -111,22 +110,22 @@ export default async function PlayerProfilePage() {
               className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
             >
               <div>
-                <h3 className="font-black">
-                  <Link
-                    href={`/g/${item.groupId}/sessions/${item.sessionId}`}
-                    className="hover:underline text-black"
-                  >
-                    {item.type === "open_play" ? "Open Play" : item.groupName}
-                  </Link>
+                <h3 className="font-black text-black">
+                  {item.startedAt.toLocaleDateString()}
                 </h3>
                 <p className="text-xs font-bold text-neutral-600">
-                  {item.type === "open_play" ? `${item.groupName} · ` : ""}
-                  {item.startedAt.toLocaleDateString()} · Rating {formatDupr(item.rating)}
+                  {item.groupName}
+                  {item.type === "open_play" ? " (Open Play)" : ""}
+                  {" · "}
+                  {item.wins}W – {item.losses}L
                 </p>
               </div>
-              <p className="whitespace-nowrap text-sm font-black">
-                {item.wins}W – {item.losses}L
-              </p>
+              <Link
+                href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
+                className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+              >
+                Go to session
+              </Link>
             </article>
           ))
         )}

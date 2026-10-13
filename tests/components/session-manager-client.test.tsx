@@ -153,4 +153,21 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain('data-testid="completed-session-full-view"');
     expect(html).toContain("Session Summary");
   });
+
+  it("renders back button to profile when isFromProfile is true", () => {
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        initialProposal={null}
+        isFromProfile={true}
+      />
+    );
+
+    expect(html).toContain("← Back to Profile");
+    expect(html).toContain('href="/players"');
+  });
 });
