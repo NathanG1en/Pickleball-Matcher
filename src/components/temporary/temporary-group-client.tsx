@@ -217,7 +217,7 @@ export function TemporaryGroupClient({ accountId }: { accountId: string | null }
         <button type="submit" disabled={parsedNames.length < 2 || parsedNames.length > 24 || courtCapacity > parsedNames.length} className="w-full rounded-xl border-2 border-black bg-[#ccff00] px-4 py-3 font-display text-lg font-black uppercase shadow-[3px_3px_0px_0px_#000] disabled:opacity-40">Start Temporary Group</button>
       </form>}
 
-      {showExitWarning && <ExitWarning accountId={accountId} onStay={() => setShowExitWarning(false)} onLeave={() => { setShowExitWarning(false); router.push("/"); }} />}
+      {showExitWarning && <ExitWarning accountId={accountId} onStay={() => setShowExitWarning(false)} onLeave={() => { setShowExitWarning(false); router.replace("/"); }} />}
     </div>
   </main>;
 }

@@ -16,7 +16,7 @@ When players are added to a group or create an account, they start with an **Ini
 
 ## 2. The Doubles Elo Algorithm
 
-Implementation reference: [`src/lib/matchmaking/rating.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/matchmaking/rating.ts)
+Implementation reference: [`src/lib/matchmaking/rating.ts`](../src/lib/matchmaking/rating.ts)
 
 Because pickleball is typically played in doubles, ratings are calculated by evaluating two-player teams against each other.
 
