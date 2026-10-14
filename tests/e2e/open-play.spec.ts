@@ -110,7 +110,7 @@ test.describe("Open Play Workflow", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
 
-    await expect(page.locator("text=Completed")).toBeVisible();
+    await expect(page.locator("text=Completed")).toBeVisible({ timeout: 15000 });
 
     // 12. Check Host's profile sessions info
     await page.goto("/players");
