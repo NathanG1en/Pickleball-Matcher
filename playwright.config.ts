@@ -3,6 +3,11 @@ import nextEnv from "@next/env";
 
 nextEnv.loadEnvConfig(process.cwd());
 
+const testDbUrl =
+  process.env.TEST_DATABASE_URL ||
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -30,7 +35,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {
-      DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+      DATABASE_URL: testDbUrl,
       ORGANIZER_SESSION_SECRET: process.env.ORGANIZER_SESSION_SECRET ?? "test-organizer-session-secret-at-least-32-chars",
       ORGANIZER_FINGERPRINT_SECRET: process.env.ORGANIZER_FINGERPRINT_SECRET ?? "test-fingerprint-secret-at-least-32-chars",
       SESSION_COOKIE_SECURE: "false",
