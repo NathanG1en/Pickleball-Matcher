@@ -21,7 +21,8 @@ test.describe("Resilience and Safe Drafts", () => {
     for (const name of players) {
       await page.fill("#guest-player-name", name);
       await page.locator("button:text-is('Add')").click();
-      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
     }
 
     // 3. Start a session
