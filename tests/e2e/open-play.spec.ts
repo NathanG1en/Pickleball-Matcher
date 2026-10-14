@@ -20,7 +20,8 @@ test.describe("Open Play Workflow", () => {
 
     await page.fill("#guest-player-name", "Bob");
     await page.locator("button:text-is('Add')").click();
-    await expect(page.locator("text=Bob")).toBeVisible();
+    await expect(page.locator("p[role='status']")).toContainText('Guest player "Bob" added to the roster.', { timeout: 10000 });
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
 
     // 3. Verify group dashboard ready to play
     await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
