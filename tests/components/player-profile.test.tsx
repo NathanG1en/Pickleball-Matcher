@@ -303,7 +303,36 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
     expect(html).toContain('aria-label="Edit gender"');
-    expect(html).toContain("advanced · starting rating 3.75");
+    expect(html).toContain("advanced · current rating 3.75");
+  });
+
+  it("renders the player's current rating on their profile instead of their initial rating", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "ranked_user",
+          name: "Ranked Player",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          rating: 1100,
+          ratedGamesPlayed: 5,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [],
+      players: [],
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    expect(html).toContain("Ranked Player");
+    expect(html).toContain("intermediate · current rating 3.75");
+    expect(html).not.toContain("current rating 3.5");
+    expect(html).not.toContain("starting rating");
   });
 
   it("checks username availability against database (identifies taken usernames and permits current user)", async () => {

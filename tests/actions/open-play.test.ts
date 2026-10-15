@@ -271,11 +271,11 @@ describe("Open Play Server Actions", () => {
     });
     expect(delRes.ok).toBe(true);
     if (!delRes.ok) return;
-    expect(delRes.data.status).toBe("cancelled");
+    expect(delRes.data.id).toBe(gameRes.data.id);
 
     const rounds = await repository.listStartedRounds(startRes.data.id);
     const deletedMatch = rounds[0].matches.find((m) => m.id === gameRes.data.id);
-    expect(deletedMatch?.status).toBe("cancelled");
+    expect(deletedMatch).toBeUndefined();
   });
 });
 

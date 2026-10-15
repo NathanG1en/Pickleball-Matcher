@@ -34,7 +34,7 @@ export default async function PlayerProfilePage() {
           initialUsername={account.username}
           initialGender={account.gender}
           skillLevel={account.skillLevel}
-          initialRating={account.initialRating}
+          currentRating={account.rating ?? account.initialRating}
           initialIsPublic={account.isPublic ?? true}
         />
       </header>

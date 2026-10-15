@@ -1038,6 +1038,11 @@ export class PostgresRepositories implements DomainRepository {
     if (rows.length === 0) throw new RepositoryConflictError();
   }
 
+  async deleteMatch(matchId: string) {
+    await this.query`delete from match_players where match_id = ${matchId}`;
+    await this.query`delete from matches where id = ${matchId}`;
+  }
+
   async updateRound(round: RoundRecord) {
     const rows = await this.query<{ id: string }[]>`
       update rounds set

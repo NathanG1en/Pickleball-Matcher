@@ -638,7 +638,7 @@ const deleteOpenPlayGameSchema = z.object({
 
 export async function deleteOpenPlayGameAction(
   input: unknown,
-): Promise<ActionResult<MatchRecord>> {
+): Promise<ActionResult<{ id: string }>> {
   const parsed = deleteOpenPlayGameSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Invalid parameters" };
@@ -667,11 +667,11 @@ export async function deleteOpenPlayGameAction(
     }
 
     const service = getActionSessionService();
-    const match = await service.cancelMatch(parsed.data.matchId);
+    await service.deleteMatch(parsed.data.matchId);
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
-    return { ok: true, data: match };
+    return { ok: true, data: { id: parsed.data.matchId } };
   } catch (err) {
     return {
       ok: false,

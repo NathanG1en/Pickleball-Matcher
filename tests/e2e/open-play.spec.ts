@@ -154,16 +154,43 @@ test.describe("Open Play Workflow", () => {
     await expect(matchesList.locator("article")).toHaveCount(2);
     await expect(matchesList).toContainText("11 – 8");
 
+    // Check group dashboard while Open Play is in progress
+    await page.goto(`/g/${groupId}`);
+    await expect(page.locator("text=Open Play in Progress")).toBeVisible();
+    await expect(page.locator("h3:has-text('Recent Games')")).toBeVisible();
+    await expect(page.locator("h3:has-text('Current Matchups')")).toHaveCount(0);
+    const recentGamesContainer = page.locator("[data-testid='open-play-recent-games']");
+    await expect(recentGamesContainer).toBeVisible();
+    await expect(recentGamesContainer).toHaveClass(/max-h-\[136px\]/);
+    await expect(recentGamesContainer).toHaveClass(/overflow-y-auto/);
+    await expect(recentGamesContainer).toContainText("11 – 9");
+    await expect(recentGamesContainer).toContainText("11 – 8");
+
+    // Return to the session
+    await page.goto(sessionUrl);
+
     // Delete the second game
     const deleteBtn = matchesList.locator("button:has-text('Delete')").last();
     await expect(deleteBtn).toBeVisible();
     page.once("dialog", (dialog) => dialog.accept());
     await deleteBtn.click();
 
+    await expect(page.locator("text=Game deleted.")).toBeVisible();
+
     // Verify game 2 is removed from the screen (only 1 game remains, and 11-8 is gone)
     await expect(matchesList.locator("article")).toHaveCount(1);
     await expect(matchesList).not.toContainText("11 – 8");
     await expect(matchesList).toContainText("11 – 9");
+
+    // Verify group dashboard no longer displays the deleted game and has no cancelled match badges
+    await page.goto(`/g/${groupId}`);
+    await expect(page.locator("text=Open Play in Progress")).toBeVisible();
+    await expect(page.locator("[data-testid='open-play-recent-games']")).toContainText("11 – 9");
+    await expect(page.locator("[data-testid='open-play-recent-games']")).not.toContainText("11 – 8");
+    await expect(page.locator("text=Cancelled")).toHaveCount(0);
+
+    // Return to session to end it
+    await page.goto(sessionUrl);
 
     // 11. Host ends open play session
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
@@ -172,9 +199,11 @@ test.describe("Open Play Workflow", () => {
 
     await expect(page.locator("text=Completed")).toBeVisible({ timeout: 15000 });
 
-    // 12. Check Host's profile sessions info
+    // 12. Check Host's profile sessions info and current rating
     await page.goto("/players");
     await expect(page.locator("h2:has-text('Past Sessions')")).toBeVisible();
+    await expect(page.locator("text=current rating")).toBeVisible();
+    await expect(page.locator("text=starting rating")).toHaveCount(0);
 
     // Session must be listed with (Open Play) next to group name
     const sessionId = sessionUrl.split("/sessions/")[1];

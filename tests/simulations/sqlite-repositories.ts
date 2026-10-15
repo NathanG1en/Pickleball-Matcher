@@ -1068,6 +1068,11 @@ export class SqliteDomainRepository implements DomainRepository {
     if (result.changes === 0) throw new RepositoryConflictError();
   }
 
+  async deleteMatch(matchId: string): Promise<void> {
+    this.db.prepare("DELETE FROM match_players WHERE match_id = ?").run(matchId);
+    this.db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
+  }
+
   async deleteRound(roundId: string): Promise<void> {
     this.db.prepare("DELETE FROM rounds WHERE id = ?").run(roundId);
   }

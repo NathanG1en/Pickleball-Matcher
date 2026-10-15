@@ -66,6 +66,7 @@ export interface DomainRepository {
   insertStartedRound(record: StartedRoundRecord): Promise<void>;
   insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void>;
   updateMatch(match: MatchRecord): Promise<void>;
+  deleteMatch(matchId: string): Promise<void>;
   updateRound(round: RoundRecord): Promise<void>;
   deleteRound(roundId: string): Promise<void>;
   listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]>;

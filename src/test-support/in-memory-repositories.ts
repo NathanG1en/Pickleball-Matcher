@@ -508,6 +508,13 @@ export class InMemoryRepositories implements DomainRepository {
     this.writeCount += 1;
   }
 
+  async deleteMatch(matchId: string) {
+    this.state.matches = this.state.matches.filter((m) => m.id !== matchId);
+    this.state.matchPlayers = this.state.matchPlayers.filter((mp) => mp.matchId !== matchId);
+    this.state.ratingSnapshots.delete(matchId);
+    this.writeCount += 1;
+  }
+
   async updateRound(round: RoundRecord) {
     this.state.rounds = this.state.rounds.map((item) =>
       item.id === round.id ? structuredClone(round) : item,
