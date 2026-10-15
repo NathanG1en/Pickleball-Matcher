@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
 import { formatDupr, eloToDupr, getSkillTier, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
@@ -21,6 +21,13 @@ export function PlayerRoster({
   onDeletePlayer,
   canManage = true,
 }: PlayerRosterProps) {
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [players],
+  );
   const [name, setName] = useState("");
   const [selectedPreset, setSelectedPreset] = useState("3.5");
   const [customRating, setCustomRating] = useState(false);
@@ -133,7 +140,7 @@ export function PlayerRoster({
         </div>
 
         <div className="divide-y-2 divide-neutral-100">
-          {players.map((player) => (
+          {sortedPlayers.map((player) => (
             <div key={player.id} className="py-3 flex items-center justify-between">
               <div>
                 <span className="font-black text-black text-base block">

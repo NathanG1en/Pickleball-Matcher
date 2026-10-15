@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDupr } from "@/lib/domain/rating-display";
 
@@ -20,7 +20,7 @@ export interface AttendanceManagerProps {
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
   readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[] }) => void;
-  readonly onAddGuest?: (name: string) => void;
+  readonly onAddGuest?: (name: string, initialRating?: number) => void;
 }
 
 export function AttendanceManager({
@@ -33,6 +33,13 @@ export function AttendanceManager({
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [players],
+  );
   const initialSelectedCount = initialSelected.length || players.length;
   const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -48,6 +55,9 @@ export function AttendanceManager({
     });
   });
   const [guestName, setGuestName] = useState<string>("");
+  const [guestRatingPreset, setGuestRatingPreset] = useState<string>("3.5");
+  const [isCustomGuestRating, setIsCustomGuestRating] = useState<boolean>(false);
+  const [customGuestRating, setCustomGuestRating] = useState<string>("3.5");
 
   const togglePlayer = (id: string) => {
     setSelectedIds((prev) => {
@@ -81,8 +91,14 @@ export function AttendanceManager({
   const handleAddGuest = (e: React.FormEvent) => {
     e.preventDefault();
     if (guestName.trim() && onAddGuest) {
-      onAddGuest(guestName.trim());
+      const dupr = isCustomGuestRating
+        ? parseFloat(customGuestRating) || 3.5
+        : parseFloat(guestRatingPreset);
+      onAddGuest(guestName.trim(), dupr);
       setGuestName("");
+      setGuestRatingPreset("3.5");
+      setIsCustomGuestRating(false);
+      setCustomGuestRating("3.5");
     }
   };
 
@@ -191,7 +207,7 @@ export function AttendanceManager({
 
         {/* Player Roster Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {players.map((player) => {
+          {sortedPlayers.map((player) => {
             const isSelected = selectedIds.has(player.id);
             return (
               <label
@@ -218,17 +234,58 @@ export function AttendanceManager({
         </div>
 
         {/* Add Guest / Quick Player Form */}
-        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 flex gap-2">
-          <input
-            type="text"
-            placeholder="Add guest or new player..."
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
-          />
-          <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider">
-            + Add
-          </Button>
+        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-2">
+          <label className="block text-xs font-black uppercase tracking-wider text-black">
+            Add Guest Player
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              aria-label="Guest player name"
+              placeholder="Add guest or new player..."
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+            />
+            <select
+              id="normal-session-guest-rating"
+              aria-label="Guest rating"
+              value={isCustomGuestRating ? "custom" : guestRatingPreset}
+              onChange={(e) => {
+                if (e.target.value === "custom") {
+                  setIsCustomGuestRating(true);
+                } else {
+                  setIsCustomGuestRating(false);
+                  setGuestRatingPreset(e.target.value);
+                  setCustomGuestRating(e.target.value);
+                }
+              }}
+              className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000]"
+            >
+              <option value="2.0">2.0 (Beginner)</option>
+              <option value="2.5">2.5 (Adv. Beginner)</option>
+              <option value="3.0">3.0 (Intermediate)</option>
+              <option value="3.5">3.5 (Adv. Intermediate)</option>
+              <option value="4.0">4.0 (Competitive)</option>
+              <option value="4.5">4.5 (Adv. Competitive)</option>
+              <option value="custom">Custom...</option>
+            </select>
+            {isCustomGuestRating && (
+              <input
+                type="number"
+                aria-label="Custom guest rating"
+                min={2.0}
+                max={8.0}
+                step={0.1}
+                value={customGuestRating}
+                onChange={(e) => setCustomGuestRating(e.target.value)}
+                className="w-20 bg-white border-2 border-black rounded-xl px-2.5 py-2 text-black font-mono font-bold text-xs shadow-[2px_2px_0px_0px_#000]"
+              />
+            )}
+            <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider">
+              + Add
+            </Button>
+          </div>
         </form>
       </section>
 

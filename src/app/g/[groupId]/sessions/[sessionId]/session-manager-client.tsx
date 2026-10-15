@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -63,6 +63,14 @@ export function SessionManagerClient({
   isFromProfile = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
+
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [players],
+  );
 
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
   const activeProposal = regeneratedProposal ?? initialProposal;
@@ -1059,7 +1067,7 @@ export function SessionManagerClient({
               Manage player arrivals or early departures mid-session.
             </p>
             <div className="space-y-2">
-              {players.map((p) => {
+              {sortedPlayers.map((p) => {
                 const rec = currentAttendance.find((a) => a.playerId === p.id);
                 const isPresent = rec ? rec.leftRound === null : false;
                 return (

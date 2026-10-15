@@ -66,4 +66,20 @@ describe("AttendanceManager Component", () => {
     expect(html).toContain("mobile-action-bar");
     expect(html).toContain("Start Session");
   });
+
+  it("renders guest player input with rating selection options", () => {
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={samplePlayers}
+        selectedPlayerIds={["p1", "p2", "p3", "p4"]}
+        courtCount={1}
+      />
+    );
+
+    expect(html).toContain('aria-label="Guest player name"');
+    expect(html).toContain('aria-label="Guest rating"');
+    expect(html).toContain("3.5 (Adv. Intermediate)");
+    expect(html).toContain("2.0 (Beginner)");
+  });
 });

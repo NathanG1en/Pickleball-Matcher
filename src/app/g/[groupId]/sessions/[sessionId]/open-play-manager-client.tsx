@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +8,12 @@ import { formatDupr } from "@/lib/domain/rating-display";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
+  deleteOpenPlayGameAction,
   endOpenPlaySessionAction,
   joinOpenPlaySessionAction,
   removeOpenPlayPlayerAction,
   submitOpenPlayGameAction,
 } from "@/app/actions/open-play";
-import { cancelMatchAction } from "@/app/actions/results";
 import type {
   AttendanceRecord,
   PlayerRecord,
@@ -43,23 +43,200 @@ export function OpenPlayManagerClient({
   attendance = [],
   startedRounds,
   isOrganizer = false,
+  isHost = false,
   isMember = false,
   currentViewerPlayerId = null,
   isFromProfile = false,
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
 
-  // Match submission state
-  const [matchType, setMatchType] = useState<"doubles" | "singles">("doubles");
-  const [t1p1, setT1p1] = useState("");
-  const [t1p2, setT1p2] = useState("");
-  const [t2p1, setT2p1] = useState("");
-  const [t2p2, setT2p2] = useState("");
+  // Maps
+  const playerMap = useMemo(() => new Map<string, PlayerRecord>(players.map((p) => [p.id, p])), [players]);
+
+  // Checked-in players
+  const presentAttendance = attendance.filter((a) => a.leftRound === null);
+  const presentPlayerIds = useMemo(() => new Set(presentAttendance.map((a) => a.playerId)), [presentAttendance]);
+  const checkedInPlayers = useMemo(
+    () =>
+      players
+        .filter((p) => presentPlayerIds.has(p.id))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+    [players, presentPlayerIds],
+  );
+
+  // Group players not yet checked in
+  const availableRosterPlayers = useMemo(
+    () =>
+      players
+        .filter((p) => !presentPlayerIds.has(p.id) && p.active)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+    [players, presentPlayerIds],
+  );
+
+  const isViewerCheckedIn = Boolean(
+    currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
+  );
+
+  const isSessionActive = session.status === "active";
+
+  const [deletedMatchIds, setDeletedMatchIds] = useState<Set<string>>(() => new Set());
+
+  // Games list from started rounds (excludes deleted/cancelled games)
+  const allMatches = useMemo(() => startedRounds.flatMap((sr) =>
+    sr.matches
+      .filter((m) => m.status !== "cancelled" && !deletedMatchIds.has(m.id))
+      .map((m) => {
+        const t1MPs = sr.matchPlayers.filter((mp) => mp.matchId === m.id && mp.team === 1);
+        const t2MPs = sr.matchPlayers.filter((mp) => mp.matchId === m.id && mp.team === 2);
+        const t1 = t1MPs.map((mp) => playerMap.get(mp.playerId)?.name ?? mp.playerId);
+        const t2 = t2MPs.map((mp) => playerMap.get(mp.playerId)?.name ?? mp.playerId);
+        return {
+          ...m,
+          team1PlayerIds: t1MPs.map((mp) => mp.playerId),
+          team2PlayerIds: t2MPs.map((mp) => mp.playerId),
+          team1Names: t1,
+          team2Names: t2,
+        };
+      }),
+  ), [startedRounds, playerMap, deletedMatchIds]);
+
+  // Automatically find the last game in the session for the logged in user (or most recent game in session)
+  const lastSessionGame = useMemo(() => {
+    const recent = [...allMatches].reverse();
+    const candidate = currentViewerPlayerId
+      ? (recent.find(
+          (m) =>
+            m.status === "completed" &&
+            (m.team1PlayerIds.includes(currentViewerPlayerId) ||
+              m.team2PlayerIds.includes(currentViewerPlayerId)),
+        ) ?? recent.find((m) => m.status === "completed"))
+      : recent.find((m) => m.status === "completed");
+    if (!candidate) return null;
+    const allPids = [...candidate.team1PlayerIds, ...candidate.team2PlayerIds];
+    if (allPids.some((pid) => !presentPlayerIds.has(pid))) return null;
+    return candidate;
+  }, [allMatches, currentViewerPlayerId, presentPlayerIds]);
+
+  // Helper to compute autopopulated match slots, ensuring current viewer is always the first player (t1p1)
+  const getAutopopulatedSlots = (
+    game: typeof lastSessionGame,
+  ): {
+    matchType: "doubles" | "singles";
+    t1p1: string;
+    t1p2: string;
+    t2p1: string;
+    t2p2: string;
+  } => {
+    const isViewerPresent = Boolean(
+      currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
+    );
+
+    if (game) {
+      const isSingles = game.team1PlayerIds.length === 1;
+      let slotT1P1 = game.team1PlayerIds[0] ?? "";
+      let slotT1P2 = game.team1PlayerIds[1] ?? "";
+      let slotT2P1 = game.team2PlayerIds[0] ?? "";
+      let slotT2P2 = game.team2PlayerIds[1] ?? "";
+
+      if (isViewerPresent && currentViewerPlayerId) {
+        if (slotT1P1 === currentViewerPlayerId) {
+          // Already player 1
+        } else if (slotT1P2 === currentViewerPlayerId) {
+          // User was player 2 on Team 1 -> put user as player 1
+          slotT1P2 = slotT1P1;
+          slotT1P1 = currentViewerPlayerId;
+        } else if (slotT2P1 === currentViewerPlayerId) {
+          // User was player 1 on Team 2 -> put user's team as Team 1
+          const prevT1P1 = slotT1P1;
+          const prevT1P2 = slotT1P2;
+          slotT1P1 = currentViewerPlayerId;
+          slotT1P2 = isSingles ? "" : slotT2P2;
+          slotT2P1 = prevT1P1;
+          slotT2P2 = isSingles ? "" : prevT1P2;
+        } else if (slotT2P2 === currentViewerPlayerId) {
+          // User was player 2 on Team 2 -> put user's team as Team 1 with user as player 1
+          const prevT1P1 = slotT1P1;
+          const prevT1P2 = slotT1P2;
+          slotT1P1 = currentViewerPlayerId;
+          slotT1P2 = isSingles ? "" : slotT2P1;
+          slotT2P1 = prevT1P1;
+          slotT2P2 = isSingles ? "" : prevT1P2;
+        } else {
+          // User was not in this game, but is checked in -> user is always the autopopulated first player
+          slotT1P1 = currentViewerPlayerId;
+        }
+      }
+
+      return {
+        matchType: isSingles ? "singles" : "doubles",
+        t1p1: slotT1P1,
+        t1p2: slotT1P2,
+        t2p1: slotT2P1,
+        t2p2: slotT2P2,
+      };
+    }
+
+    return {
+      matchType: "doubles",
+      t1p1: isViewerPresent && currentViewerPlayerId ? currentViewerPlayerId : "",
+      t1p2: "",
+      t2p1: "",
+      t2p2: "",
+    };
+  };
+
+  const initialSlots = getAutopopulatedSlots(lastSessionGame);
+
+  // Match submission state (automatically populated from last game if available, user first)
+  const [matchType, setMatchType] = useState<"doubles" | "singles">(initialSlots.matchType);
+  const [t1p1, setT1p1] = useState(initialSlots.t1p1);
+  const [t1p2, setT1p2] = useState(initialSlots.t1p2);
+  const [t2p1, setT2p1] = useState(initialSlots.t2p1);
+  const [t2p2, setT2p2] = useState(initialSlots.t2p2);
   const [t1Score, setT1Score] = useState("");
   const [t2Score, setT2Score] = useState("");
 
+  // Automatically update when a new lastSessionGame is recorded/available
+  const [prevLastGameId, setPrevLastGameId] = useState(() => lastSessionGame?.id ?? null);
+  if (lastSessionGame && lastSessionGame.id !== prevLastGameId) {
+    setPrevLastGameId(lastSessionGame.id);
+    const slots = getAutopopulatedSlots(lastSessionGame);
+    setMatchType(slots.matchType);
+    setT1p1(slots.t1p1);
+    setT1p2(slots.t1p2);
+    setT2p1(slots.t2p1);
+    setT2p2(slots.t2p2);
+  }
+
+  // Automatically populate viewer as first player upon joining if not set
+  const [hasSetInitialViewer, setHasSetInitialViewer] = useState(() =>
+    Boolean(currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId)),
+  );
+  if (!hasSetInitialViewer && currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId)) {
+    setHasSetInitialViewer(true);
+    if (!t1p1) {
+      setT1p1(currentViewerPlayerId);
+    }
+  }
+
+  // Check if a player is selected in another slot in the current match
+  const isPlayerSelectedElsewhere = (
+    playerId: string,
+    currentSlot: "t1p1" | "t1p2" | "t2p1" | "t2p2",
+  ) => {
+    if (!playerId) return false;
+    if (currentSlot !== "t1p1" && t1p1 === playerId) return true;
+    if (currentSlot !== "t1p2" && matchType === "doubles" && t1p2 === playerId) return true;
+    if (currentSlot !== "t2p1" && t2p1 === playerId) return true;
+    if (currentSlot !== "t2p2" && matchType === "doubles" && t2p2 === playerId) return true;
+    return false;
+  };
+
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
+  const [guestPreset, setGuestPreset] = useState("3.5");
+  const [isCustomGuestRating, setIsCustomGuestRating] = useState(false);
+  const [customGuestRatingInput, setCustomGuestRatingInput] = useState("3.5");
   const [selectedRosterPlayerId, setSelectedRosterPlayerId] = useState("");
 
   // Loading & feedback states
@@ -75,42 +252,6 @@ export function OpenPlayManagerClient({
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 3000);
   };
-
-  // Maps
-  const playerMap = new Map<string, PlayerRecord>(players.map((p) => [p.id, p]));
-
-  // Checked-in players
-  const presentAttendance = attendance.filter((a) => a.leftRound === null);
-  const presentPlayerIds = new Set(presentAttendance.map((a) => a.playerId));
-  const checkedInPlayers = players.filter((p) => presentPlayerIds.has(p.id));
-
-  // Group players not yet checked in
-  const availableRosterPlayers = players.filter(
-    (p) => !presentPlayerIds.has(p.id) && p.active,
-  );
-
-  const isViewerCheckedIn = Boolean(
-    currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
-  );
-
-  const isSessionActive = session.status === "active";
-
-  // Games list from started rounds
-  const allMatches = startedRounds.flatMap((sr) =>
-    sr.matches.map((m) => {
-      const t1 = sr.matchPlayers
-        .filter((mp) => mp.matchId === m.id && mp.team === 1)
-        .map((mp) => playerMap.get(mp.playerId)?.name ?? mp.playerId);
-      const t2 = sr.matchPlayers
-        .filter((mp) => mp.matchId === m.id && mp.team === 2)
-        .map((mp) => playerMap.get(mp.playerId)?.name ?? mp.playerId);
-      return {
-        ...m,
-        team1Names: t1,
-        team2Names: t2,
-      };
-    }),
-  );
 
   // Handlers
   const handleJoin = async () => {
@@ -137,13 +278,20 @@ export function OpenPlayManagerClient({
     setIsAddingGuest(true);
     setError(null);
     try {
+      const rating = isCustomGuestRating
+        ? parseFloat(customGuestRatingInput) || 3.5
+        : parseFloat(guestPreset);
       const res = await addOpenPlayGuestAction({
         groupId,
         sessionId: session.id,
         guestName: guestName.trim(),
+        initialRating: rating,
       });
       if (res.ok) {
         setGuestName("");
+        setGuestPreset("3.5");
+        setIsCustomGuestRating(false);
+        setCustomGuestRatingInput("3.5");
         showToast(`Added guest ${res.data.name}!`);
         router.refresh();
       } else {
@@ -184,6 +332,10 @@ export function OpenPlayManagerClient({
 
   const handleRemovePlayer = async (playerId: string) => {
     setError(null);
+    if (t1p1 === playerId) setT1p1("");
+    if (t1p2 === playerId) setT1p2("");
+    if (t2p1 === playerId) setT2p1("");
+    if (t2p2 === playerId) setT2p2("");
     try {
       const res = await removeOpenPlayPlayerAction({
         groupId,
@@ -245,10 +397,6 @@ export function OpenPlayManagerClient({
       if (res.ok) {
         setT1Score("");
         setT2Score("");
-        setT1p1("");
-        setT1p2("");
-        setT2p1("");
-        setT2p2("");
         showToast("Game submitted successfully!");
         router.refresh();
       } else {
@@ -261,18 +409,33 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleCancelMatch = async (matchId: string) => {
-    if (!confirm("Are you sure you want to cancel this game result?")) return;
+  const handleDeleteMatch = async (matchId: string) => {
+    if (!confirm("Are you sure you want to delete this game result?")) return;
+    setDeletedMatchIds((prev) => new Set([...prev, matchId]));
     try {
-      const res = await cancelMatchAction({ groupId, matchId });
+      const res = await deleteOpenPlayGameAction({
+        groupId,
+        sessionId: session.id,
+        matchId,
+      });
       if (res.ok) {
-        showToast("Game cancelled.");
+        showToast("Game deleted.");
         router.refresh();
       } else {
-        setError(res.error ?? "Failed to cancel game.");
+        setDeletedMatchIds((prev) => {
+          const next = new Set(prev);
+          next.delete(matchId);
+          return next;
+        });
+        setError(res.error ?? "Failed to delete game.");
       }
     } catch {
-      setError("An unexpected error occurred.");
+      setDeletedMatchIds((prev) => {
+        const next = new Set(prev);
+        next.delete(matchId);
+        return next;
+      });
+      setError("An unexpected error occurred while deleting game.");
     }
   };
 
@@ -430,7 +593,7 @@ export function OpenPlayManagerClient({
 
         {/* Add Player / Guest Forms (if session is active) */}
         {isSessionActive && (
-          <div className="pt-4 border-t-2 border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-4">
             {/* Add from Roster */}
             {availableRosterPlayers.length > 0 && (
               <form onSubmit={handleAddPlayer} className="space-y-2">
@@ -473,7 +636,7 @@ export function OpenPlayManagerClient({
               >
                 Add Guest
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-name-input"
                   type="text"
@@ -482,6 +645,41 @@ export function OpenPlayManagerClient({
                   onChange={(e) => setGuestName(e.target.value)}
                   className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 />
+                <select
+                  id="guest-rating-select"
+                  aria-label="Guest rating"
+                  value={isCustomGuestRating ? "custom" : guestPreset}
+                  onChange={(e) => {
+                    if (e.target.value === "custom") {
+                      setIsCustomGuestRating(true);
+                    } else {
+                      setIsCustomGuestRating(false);
+                      setGuestPreset(e.target.value);
+                      setCustomGuestRatingInput(e.target.value);
+                    }
+                  }}
+                  className="p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                >
+                  <option value="2.0">2.0 (Beginner)</option>
+                  <option value="2.5">2.5 (Adv. Beginner)</option>
+                  <option value="3.0">3.0 (Intermediate)</option>
+                  <option value="3.5">3.5 (Adv. Intermediate)</option>
+                  <option value="4.0">4.0 (Competitive)</option>
+                  <option value="4.5">4.5 (Adv. Competitive)</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                {isCustomGuestRating && (
+                  <input
+                    type="number"
+                    aria-label="Custom guest rating"
+                    min={2.0}
+                    max={8.0}
+                    step={0.1}
+                    value={customGuestRatingInput}
+                    onChange={(e) => setCustomGuestRatingInput(e.target.value)}
+                    className="w-20 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#000]"
+                  />
+                )}
                 <button
                   type="submit"
                   disabled={!guestName.trim() || isAddingGuest}
@@ -524,7 +722,11 @@ export function OpenPlayManagerClient({
               </button>
               <button
                 type="button"
-                onClick={() => setMatchType("singles")}
+                onClick={() => {
+                  setMatchType("singles");
+                  setT1p2("");
+                  setT2p2("");
+                }}
                 className={`py-1 px-3 text-xs font-black uppercase border-l-2 border-black ${
                   matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                 }`}
@@ -549,30 +751,44 @@ export function OpenPlayManagerClient({
                     <select
                       aria-label="Team 1 Player 1"
                       value={t1p1}
-                      onChange={(e) => setT1p1(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (isPlayerSelectedElsewhere(val, "t1p1")) return;
+                        setT1p1(val);
+                      }}
                       className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                     >
                       <option value="">Select Player 1...</option>
-                      {checkedInPlayers.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
+                      {checkedInPlayers.map((p) => {
+                        const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p1");
+                        return (
+                          <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
+                            {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
 
                     {matchType === "doubles" && (
                       <select
                         aria-label="Team 1 Player 2"
                         value={t1p2}
-                        onChange={(e) => setT1p2(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (isPlayerSelectedElsewhere(val, "t1p2")) return;
+                          setT1p2(val);
+                        }}
                         className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                       >
                         <option value="">Select Player 2...</option>
-                        {checkedInPlayers.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
+                        {checkedInPlayers.map((p) => {
+                          const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p2");
+                          return (
+                            <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
+                              {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     )}
 
@@ -600,30 +816,44 @@ export function OpenPlayManagerClient({
                     <select
                       aria-label="Team 2 Player 1"
                       value={t2p1}
-                      onChange={(e) => setT2p1(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (isPlayerSelectedElsewhere(val, "t2p1")) return;
+                        setT2p1(val);
+                      }}
                       className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                     >
                       <option value="">Select Player 1...</option>
-                      {checkedInPlayers.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
+                      {checkedInPlayers.map((p) => {
+                        const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p1");
+                        return (
+                          <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
+                            {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
 
                     {matchType === "doubles" && (
                       <select
                         aria-label="Team 2 Player 2"
                         value={t2p2}
-                        onChange={(e) => setT2p2(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (isPlayerSelectedElsewhere(val, "t2p2")) return;
+                          setT2p2(val);
+                        }}
                         className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                       >
                         <option value="">Select Player 2...</option>
-                        {checkedInPlayers.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
+                        {checkedInPlayers.map((p) => {
+                          const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p2");
+                          return (
+                            <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
+                              {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     )}
 
@@ -703,17 +933,18 @@ export function OpenPlayManagerClient({
                       {isCompleted
                         ? `${m.team1Score} – ${m.team2Score}`
                         : isCancelled
-                        ? "Cancelled"
+                        ? "Deleted"
                         : "In Play"}
                     </Badge>
 
-                    {isSessionActive && isOrganizer && isCompleted && (
+                    {isSessionActive && (isOrganizer || isHost || isMember) && isCompleted && (
                       <button
                         type="button"
-                        onClick={() => handleCancelMatch(m.id)}
+                        onClick={() => handleDeleteMatch(m.id)}
+                        data-testid={`delete-game-button-${m.id}`}
                         className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
                       >
-                        Cancel
+                        Delete
                       </button>
                     )}
                   </div>
