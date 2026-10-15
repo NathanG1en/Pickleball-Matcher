@@ -6,10 +6,10 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }) => {
-    test.setTimeout(60000);
+    test.setTimeout(90000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
-    const { groupId } = await createTestGroup(page, groupName);
+    const { groupId, hostName } = await createTestGroup(page, groupName);
 
     // 2. Add player Bob to the group roster
     await expect(page.locator("h2:has-text('Roster')")).toBeVisible();
@@ -42,8 +42,9 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("h1")).toContainText("Open Play Session");
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
-    // 7. Add Guest player "Guest Gary"
+    // 7. Add Guest player "Guest Gary" with a selected rating
     await page.fill("#guest-name-input", "Guest Gary");
+    await page.selectOption("#guest-rating-select", "4.0");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
@@ -56,7 +57,7 @@ test.describe("Open Play Workflow", () => {
     // 9. Second player signs up and joins open play in another browser context
     const playerContext = await browser.newContext();
     const playerPage = await playerContext.newPage();
-    await createAndSignInPlayer(playerPage);
+    const secondPlayer = await createAndSignInPlayer(playerPage);
 
     // Second player joins group via invite page
     await playerPage.goto(`/g/${groupId}/join`);
@@ -78,21 +79,48 @@ test.describe("Open Play Workflow", () => {
     await page.reload();
     await expect(page.locator("[data-testid='open-play-attendees'] > div")).toHaveCount(4);
 
+    // Verify attendee chips are ordered alphabetically
+    const attendeeNames = await page.locator("[data-testid='open-play-attendees'] span.font-black.text-black").allInnerTexts();
+    const sortedAttendeeNames = [...attendeeNames].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    expect(attendeeNames).toEqual(sortedAttendeeNames);
+
     // 10. Submit a game (Doubles: Host & Bob vs Second Player & Guest Gary)
     const submitCard = page.locator("[data-testid='submit-game-card']");
     await expect(submitCard).toBeVisible();
 
+    // Verify manual autopopulate select card and repeat links are removed
+    await expect(page.locator("[data-testid='autopopulate-player-select']")).toHaveCount(0);
+    await expect(page.locator("button:has-text('Repeat')")).toHaveCount(0);
+
     // Team 1: Host and Bob
     const t1p1 = submitCard.locator("select[aria-label='Team 1 Player 1']");
     const t1p2 = submitCard.locator("select[aria-label='Team 1 Player 2']");
-    await t1p1.selectOption({ index: 1 });
-    await t1p2.selectOption({ index: 2 });
+
+    // Verify player dropdown options are ordered alphabetically (excluding prompt option)
+    const t1p1Options = await t1p1.locator("option").allInnerTexts();
+    const selectableOptions = t1p1Options.slice(1);
+    const sortedSelectableOptions = [...selectableOptions].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    expect(selectableOptions).toEqual(sortedSelectableOptions);
+
+    // Verify logged-in user is already autopopulated as the first player (t1p1)
+    const selectedHostOption = await t1p1.locator("option:checked").innerText();
+    expect(selectedHostOption).toContain(hostName);
+
+    // Verify player selected in t1p1 cannot be selected in other dropdowns (disabled)
+    await expect(t1p2.locator(`option:has-text('${hostName}')`)).toBeDisabled();
+
+    await t1p2.selectOption({ label: "Bob" });
 
     // Team 2: Second Player and Guest Gary
     const t2p1 = submitCard.locator("select[aria-label='Team 2 Player 1']");
     const t2p2 = submitCard.locator("select[aria-label='Team 2 Player 2']");
-    await t2p1.selectOption({ index: 3 });
-    await t2p2.selectOption({ index: 4 });
+
+    // Both players 1 and 2 should be disabled in t2p1
+    await expect(t2p1.locator(`option:has-text('${hostName}')`)).toBeDisabled();
+    await expect(t2p1.locator("option:has-text('Bob')")).toBeDisabled();
+
+    await t2p1.selectOption({ label: secondPlayer.name });
+    await t2p2.selectOption({ label: "Guest Gary" });
 
     // Scores: 11 to 9
     await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
@@ -103,6 +131,38 @@ test.describe("Open Play Workflow", () => {
     // Verify game is recorded in Games Played list
     const matchesList = page.locator("[data-testid='open-play-matches-list']");
     await expect(matchesList).toBeVisible();
+    await expect(matchesList).toContainText("11 – 9");
+
+    // 10b. Verify player selects automatically remain autopopulated from the logged in user's last game
+    // and logged-in user is still the first player (t1p1)
+    const t1p1AfterGame = await t1p1.locator("option:checked").innerText();
+    expect(t1p1AfterGame).toContain(hostName);
+    await expect(t1p2).not.toHaveValue("");
+    await expect(t2p1).not.toHaveValue("");
+    await expect(t2p2).not.toHaveValue("");
+
+    // Verify players are editable via select dropdown
+    const origT2P2 = await t2p2.inputValue();
+    expect(origT2P2).toBeTruthy();
+
+    // Submit second game with same teams and same order of players (11 to 8)
+    await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
+    await submitCard.locator("input[aria-label='Team 2 Score']").fill("8");
+    await submitCard.locator("button[data-testid='submit-game-button']").click();
+
+    // Verify both games are displayed in Games Played list
+    await expect(matchesList.locator("article")).toHaveCount(2);
+    await expect(matchesList).toContainText("11 – 8");
+
+    // Delete the second game
+    const deleteBtn = matchesList.locator("button:has-text('Delete')").last();
+    await expect(deleteBtn).toBeVisible();
+    page.once("dialog", (dialog) => dialog.accept());
+    await deleteBtn.click();
+
+    // Verify game 2 is removed from the screen (only 1 game remains, and 11-8 is gone)
+    await expect(matchesList.locator("article")).toHaveCount(1);
+    await expect(matchesList).not.toContainText("11 – 8");
     await expect(matchesList).toContainText("11 – 9");
 
     // 11. Host ends open play session

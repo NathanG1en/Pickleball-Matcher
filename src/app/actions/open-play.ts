@@ -6,6 +6,8 @@ import { z } from "zod";
 import {
   defaultDependencies,
   getActionRepository,
+  getActionSessionService,
+  getActiveOrganizerSession,
   getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
@@ -20,6 +22,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const startOpenPlaySessionSchema = z.object({
   groupId: z.string().min(1),
@@ -208,7 +211,15 @@ export async function addOpenPlayPlayerAction(
 const addOpenPlayGuestSchema = z.object({
   groupId: z.string().min(1),
   sessionId: z.string().min(1),
-  guestName: z.string().trim().min(1, "Guest name is required"),
+  guestName: z.string().trim().min(1, "Guest name is required").max(80, "Guest name must be 80 characters or fewer"),
+  initialRating: z.coerce
+    .number()
+    .finite()
+    .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+      message: "Initial rating must be between 2.000 and 8.000.",
+    })
+    .default(3.5)
+    .transform(normalizeInitialRating),
 });
 
 export async function addOpenPlayGuestAction(
@@ -227,12 +238,13 @@ export async function addOpenPlayGuestAction(
     }
 
     const playerId = `p_${randomUUID().slice(0, 10)}`;
+    const initialRating = parsed.data.initialRating ?? 1000;
     const guestPlayer: PlayerRecord = {
       id: playerId,
       groupId: parsed.data.groupId,
       name: parsed.data.guestName,
-      initialRating: 1000,
-      rating: 1000,
+      initialRating,
+      rating: initialRating,
       ratedGamesPlayed: 0,
       active: true,
     };
@@ -382,11 +394,15 @@ export async function submitOpenPlayGameAction(
       targetRound = newRound.round;
     }
 
+    const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
+    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+    const courtNumber = parsed.data.courtNumber ?? (maxCourtNumber + 1);
+
     const matchId = defaultDependencies.nextId("match");
     const match: MatchRecord = {
       id: matchId,
       roundId: targetRound.id,
-      courtNumber: parsed.data.courtNumber ?? 1,
+      courtNumber,
       status: "completed",
       team1Score: parsed.data.team1Score,
       team2Score: parsed.data.team2Score,
@@ -509,3 +525,158 @@ export async function endOpenPlaySessionAction(
     };
   }
 }
+
+const getPlayerLastOpenPlayGameSchema = z.object({
+  groupId: z.string().min(1),
+  sessionId: z.string().min(1),
+  playerId: z.string().min(1),
+});
+
+export async function getPlayerLastOpenPlayGameAction(
+  input: unknown,
+): Promise<ActionResult<{
+  matchType: "doubles" | "singles";
+  team1PlayerIds: string[];
+  team2PlayerIds: string[];
+} | null>> {
+  const parsed = getPlayerLastOpenPlayGameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid parameters" };
+  }
+
+  try {
+    const repository = getActionRepository();
+
+    // 1. Check current session's started rounds first
+    const startedRounds = await repository.listStartedRounds(parsed.data.sessionId);
+    const sessionMatches: { match: MatchRecord; matchPlayers: MatchPlayerRecord[] }[] = [];
+    for (const sr of startedRounds) {
+      for (const m of sr.matches) {
+        if (m.status === "completed") {
+          const mps = sr.matchPlayers.filter((mp) => mp.matchId === m.id);
+          sessionMatches.push({ match: m, matchPlayers: mps });
+        }
+      }
+    }
+
+    sessionMatches.sort((a, b) => {
+      const tA = a.match.completedAt?.getTime() ?? 0;
+      const tB = b.match.completedAt?.getTime() ?? 0;
+      return tB - tA;
+    });
+
+    const currentMatch = sessionMatches.find((sm) =>
+      sm.matchPlayers.some((mp) => mp.playerId === parsed.data.playerId),
+    );
+
+    if (currentMatch) {
+      const t1 = currentMatch.matchPlayers.filter((mp) => mp.team === 1).map((mp) => mp.playerId);
+      const t2 = currentMatch.matchPlayers.filter((mp) => mp.team === 2).map((mp) => mp.playerId);
+      return {
+        ok: true,
+        data: {
+          matchType: t1.length === 2 && t2.length === 2 ? "doubles" : "singles",
+          team1PlayerIds: t1,
+          team2PlayerIds: t2,
+        },
+      };
+    }
+
+    // 2. Check previous open play sessions for the group
+    const allSessions = await repository.listSessions(parsed.data.groupId);
+    const prevSessions = allSessions
+      .filter((s) => s.type === "open_play" && s.id !== parsed.data.sessionId)
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+
+    for (const prevSession of prevSessions) {
+      const prevRounds = await repository.listStartedRounds(prevSession.id);
+      const prevMatches: { match: MatchRecord; matchPlayers: MatchPlayerRecord[] }[] = [];
+      for (const sr of prevRounds) {
+        for (const m of sr.matches) {
+          if (m.status === "completed") {
+            const mps = sr.matchPlayers.filter((mp) => mp.matchId === m.id);
+            prevMatches.push({ match: m, matchPlayers: mps });
+          }
+        }
+      }
+      prevMatches.sort((a, b) => {
+        const tA = a.match.completedAt?.getTime() ?? 0;
+        const tB = b.match.completedAt?.getTime() ?? 0;
+        return tB - tA;
+      });
+      const matchFound = prevMatches.find((sm) =>
+        sm.matchPlayers.some((mp) => mp.playerId === parsed.data.playerId),
+      );
+      if (matchFound) {
+        const t1 = matchFound.matchPlayers.filter((mp) => mp.team === 1).map((mp) => mp.playerId);
+        const t2 = matchFound.matchPlayers.filter((mp) => mp.team === 2).map((mp) => mp.playerId);
+        return {
+          ok: true,
+          data: {
+            matchType: t1.length === 2 && t2.length === 2 ? "doubles" : "singles",
+            team1PlayerIds: t1,
+            team2PlayerIds: t2,
+          },
+        };
+      }
+    }
+
+    return { ok: true, data: null };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to find player's last game",
+    };
+  }
+}
+
+const deleteOpenPlayGameSchema = z.object({
+  groupId: z.string().min(1),
+  sessionId: z.string().min(1),
+  matchId: z.string().min(1),
+});
+
+export async function deleteOpenPlayGameAction(
+  input: unknown,
+): Promise<ActionResult<MatchRecord>> {
+  const parsed = deleteOpenPlayGameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid parameters" };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId || session.status !== "active") {
+      return { ok: false, error: "Active open play session not found." };
+    }
+
+    const accountId = await getActivePlayerAccountId();
+    const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+    const organizerSession = await getActiveOrganizerSession();
+    const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+
+    if (!isOrganizer && !hasOrgSession) {
+      const attendance = await repository.listAttendance(session.id);
+      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+      const callerPlayer = accountId ? groupPlayers.find((p) => p.accountId === accountId) : null;
+      const isCheckedIn = callerPlayer && attendance.some((a) => a.playerId === callerPlayer.id && a.leftRound === null);
+      if (!isCheckedIn) {
+        return { ok: false, error: "You must be an organizer or checked into this session to delete games." };
+      }
+    }
+
+    const service = getActionSessionService();
+    const match = await service.cancelMatch(parsed.data.matchId);
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    return { ok: true, data: match };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to delete game",
+    };
+  }
+}
+
