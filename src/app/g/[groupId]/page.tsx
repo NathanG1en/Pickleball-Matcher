@@ -160,7 +160,7 @@ export default async function GroupDashboardPage({
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs font-bold text-neutral-600">
-            {players.length} players on roster
+            {players.length} {players.length === 1 ? "player" : "players"} on roster
           </p>
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}

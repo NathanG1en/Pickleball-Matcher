@@ -45,8 +45,13 @@ export function PlayerSignupForm() {
     setError(null);
     setFieldErrors({});
 
-    const duprValue = customRating ? parseFloat(customDuprInput) : parseFloat(selectedPreset);
-    const initialRatingElo = duprToElo(isNaN(duprValue) ? 3.5 : duprValue);
+    const duprValue = Number(customRating ? customDuprInput : selectedPreset);
+    if (customRating && (!customDuprInput.trim() || !Number.isFinite(duprValue) || duprValue < 2 || duprValue > 8)) {
+      setFieldErrors({ initialRating: ["Enter a rating between 2.0 and 8.0."] });
+      setPending(false);
+      return;
+    }
+    const initialRatingElo = duprToElo(duprValue);
     const skillLevel: "beginner" | "intermediate" | "advanced" =
       duprValue < 3.0 ? "beginner" : duprValue < 4.0 ? "intermediate" : "advanced";
 
