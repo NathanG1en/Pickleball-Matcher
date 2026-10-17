@@ -316,7 +316,17 @@ export class InMemoryRepositories implements DomainRepository {
           else losses += 1;
           if (matchPlayer.ratingAfter !== null) rating = matchPlayer.ratingAfter ?? rating;
         }
-        history.push({ sessionId: session.id, groupId: group.id, groupName: group.name, startedAt: session.startedAt, wins, losses, rating, type: session.type ?? "regular" });
+        history.push({
+          sessionId: session.id,
+          groupId: group.id,
+          groupName: group.name,
+          startedAt: session.startedAt,
+          wins,
+          losses,
+          rating,
+          type: session.type ?? "regular",
+          sessionName: session.name ?? null,
+        });
       }
     }
     return history.sort((first, second) => second.startedAt.getTime() - first.startedAt.getTime());
@@ -477,6 +487,14 @@ export class InMemoryRepositories implements DomainRepository {
     this.writeCount += 1;
   }
 
+  async updateSessionName(sessionId: string, name: string) {
+    const session = this.state.sessions.find((item) => item.id === sessionId);
+    if (session) {
+      session.name = name;
+      this.writeCount += 1;
+    }
+  }
+
   async saveAttendance(attendance: AttendanceRecord) {
     const index = this.state.attendance.findIndex(
       (item) =>
@@ -505,6 +523,12 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.matches = this.state.matches.map((item) =>
       item.id === match.id ? structuredClone(match) : item,
     );
+    this.writeCount += 1;
+  }
+
+  async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]) {
+    this.state.matchPlayers = this.state.matchPlayers.filter((mp) => mp.matchId !== matchId);
+    this.state.matchPlayers.push(...structuredClone(matchPlayers));
     this.writeCount += 1;
   }
 

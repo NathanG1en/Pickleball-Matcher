@@ -28,6 +28,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
+import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
 
@@ -44,6 +45,7 @@ export interface SessionManagerClientProps {
   readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
   readonly courtSynergies?: CourtSynergiesMap;
   readonly isOrganizer?: boolean;
+  readonly isHost?: boolean;
   readonly isFromProfile?: boolean;
 }
 
@@ -60,6 +62,7 @@ export function SessionManagerClient({
   partnerSynergy = null,
   courtSynergies,
   isOrganizer = false,
+  isHost = false,
   isFromProfile = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
@@ -554,6 +557,12 @@ export function SessionManagerClient({
   }
 
   const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
+  const canEditSessionName = Boolean(canManage || isOrganizer || isHost);
+  const formattedSessionDate = new Date(session.startedAt).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6 text-black">
@@ -593,6 +602,23 @@ export function SessionManagerClient({
         )}
       </div>
 
+      {/* Active Session Header Card */}
+      {!isCompletedSession && (
+        <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-1">
+          <SessionNameEditor
+            groupId={groupId}
+            sessionId={session.id}
+            initialName={session.name || formattedSessionDate}
+            canEdit={canEditSessionName}
+            headingTag="h2"
+            className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
+          />
+          <p className="text-xs font-bold text-neutral-600">
+            {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
+          </p>
+        </header>
+      )}
+
       {error && (
         <div role="alert" className="p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
           {error}
@@ -610,9 +636,14 @@ export function SessionManagerClient({
                   {groupName}
                 </span>
               )}
-              <h2 className="font-display text-2xl font-black uppercase text-black">
-                Session Summary
-              </h2>
+              <SessionNameEditor
+                groupId={groupId}
+                sessionId={session.id}
+                initialName={session.name || formattedSessionDate}
+                canEdit={canEditSessionName}
+                headingTag="h2"
+                className="font-display text-2xl font-black uppercase text-black"
+              />
               <p className="text-sm font-bold text-neutral-600 mt-1">
                 {new Date(session.startedAt).toLocaleDateString(undefined, {
                   weekday: "long",

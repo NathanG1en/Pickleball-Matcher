@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
+import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
   addOpenPlayGuestAction,
@@ -13,6 +14,7 @@ import {
   joinOpenPlaySessionAction,
   removeOpenPlayPlayerAction,
   submitOpenPlayGameAction,
+  updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
 import type {
   AttendanceRecord,
@@ -78,6 +80,27 @@ export function OpenPlayManagerClient({
   );
 
   const isSessionActive = session.status === "active";
+  const canManage = Boolean(isOrganizer || isHost);
+  const canEditOrDelete = isSessionActive ? (canManage || isMember) : canManage;
+
+  const selectableGamePlayers = useMemo(() => {
+    if (canManage) {
+      const ids = new Set<string>();
+      const list: PlayerRecord[] = [];
+      for (const p of checkedInPlayers) {
+        ids.add(p.id);
+        list.push(p);
+      }
+      for (const p of players) {
+        if (p.active && !ids.has(p.id)) {
+          ids.add(p.id);
+          list.push(p);
+        }
+      }
+      return list;
+    }
+    return checkedInPlayers;
+  }, [canManage, checkedInPlayers, players]);
 
   const [deletedMatchIds, setDeletedMatchIds] = useState<Set<string>>(() => new Set());
 
@@ -409,6 +432,104 @@ export function OpenPlayManagerClient({
     }
   };
 
+  // Edit match state and handlers
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [editMatchType, setEditMatchType] = useState<"doubles" | "singles">("doubles");
+  const [editT1p1, setEditT1p1] = useState("");
+  const [editT1p2, setEditT1p2] = useState("");
+  const [editT2p1, setEditT2p1] = useState("");
+  const [editT2p2, setEditT2p2] = useState("");
+  const [editT1Score, setEditT1Score] = useState("");
+  const [editT2Score, setEditT2Score] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleStartEdit = (match: (typeof allMatches)[number]) => {
+    setEditingMatchId(match.id);
+    const isSingles = match.team1PlayerIds.length === 1 && match.team2PlayerIds.length === 1;
+    setEditMatchType(isSingles ? "singles" : "doubles");
+    setEditT1p1(match.team1PlayerIds[0] ?? "");
+    setEditT1p2(match.team1PlayerIds[1] ?? "");
+    setEditT2p1(match.team2PlayerIds[0] ?? "");
+    setEditT2p2(match.team2PlayerIds[1] ?? "");
+    setEditT1Score(String(match.team1Score ?? ""));
+    setEditT2Score(String(match.team2Score ?? ""));
+    setError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMatchId(null);
+    setError(null);
+  };
+
+  const isEditPlayerSelectedElsewhere = (
+    playerId: string,
+    currentSlot: "t1p1" | "t1p2" | "t2p1" | "t2p2",
+  ) => {
+    if (!playerId) return false;
+    if (currentSlot !== "t1p1" && editT1p1 === playerId) return true;
+    if (currentSlot !== "t1p2" && editMatchType === "doubles" && editT1p2 === playerId) return true;
+    if (currentSlot !== "t2p1" && editT2p1 === playerId) return true;
+    if (currentSlot !== "t2p2" && editMatchType === "doubles" && editT2p2 === playerId) return true;
+    return false;
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMatchId) return;
+    setError(null);
+
+    const team1Ids = editMatchType === "doubles" ? [editT1p1, editT1p2] : [editT1p1];
+    const team2Ids = editMatchType === "doubles" ? [editT2p1, editT2p2] : [editT2p1];
+
+    if (team1Ids.some((id) => !id) || team2Ids.some((id) => !id)) {
+      setError("Please select all players for both teams.");
+      return;
+    }
+
+    const allSelected = [...team1Ids, ...team2Ids];
+    if (new Set(allSelected).size !== allSelected.length) {
+      setError("A player cannot be selected more than once in the same game.");
+      return;
+    }
+
+    const s1 = parseInt(editT1Score, 10);
+    const s2 = parseInt(editT2Score, 10);
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) {
+      setError("Please enter valid scores (non-negative whole numbers).");
+      return;
+    }
+
+    if (s1 === s2) {
+      setError("Scores cannot be tied. Enter two different scores.");
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const res = await updateOpenPlayGameAction({
+        groupId,
+        sessionId: session.id,
+        matchId: editingMatchId,
+        team1PlayerIds: team1Ids,
+        team2PlayerIds: team2Ids,
+        team1Score: s1,
+        team2Score: s2,
+      });
+
+      if (res.ok) {
+        setEditingMatchId(null);
+        showToast("Game updated successfully!");
+        router.refresh();
+      } else {
+        setError(res.error ?? "Failed to update game.");
+      }
+    } catch {
+      setError("An unexpected error occurred while updating the game.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const handleDeleteMatch = async (matchId: string) => {
     if (!confirm("Are you sure you want to delete this game result?")) return;
     setDeletedMatchIds((prev) => new Set([...prev, matchId]));
@@ -490,9 +611,14 @@ export function OpenPlayManagerClient({
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-black uppercase text-black">
-              Open Play Session
-            </h1>
+            <SessionNameEditor
+              groupId={groupId}
+              sessionId={session.id}
+              initialName={session.name || "Open Play Session"}
+              canEdit={isOrganizer || isHost}
+              headingTag="h1"
+              className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
+            />
             <p className="text-xs font-bold text-neutral-600">
               {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
             </p>
@@ -591,8 +717,8 @@ export function OpenPlayManagerClient({
           </div>
         )}
 
-        {/* Add Player / Guest Forms (if session is active) */}
-        {isSessionActive && (
+        {/* Add Player / Guest Forms (if session is active or organizer/host) */}
+        {(isSessionActive || canManage) && (
           <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-4">
             {/* Add from Roster */}
             {availableRosterPlayers.length > 0 && (
@@ -694,7 +820,7 @@ export function OpenPlayManagerClient({
       </section>
 
       {/* Submit Game Section */}
-      {isSessionActive && (
+      {(isSessionActive || canManage) && (
         <section
           className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
           data-testid="submit-game-card"
@@ -702,10 +828,12 @@ export function OpenPlayManagerClient({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-display text-xl font-black uppercase text-black">
-                Submit Game
+                {isSessionActive ? "Submit Game" : "Add Game"}
               </h2>
               <p className="text-xs font-bold text-neutral-600">
-                Record a match played between session players.
+                {isSessionActive
+                  ? "Record a match played between session players."
+                  : "Record an additional match for this ended session."}
               </p>
             </div>
 
@@ -736,10 +864,9 @@ export function OpenPlayManagerClient({
             </div>
           </div>
 
-          {checkedInPlayers.length < (matchType === "doubles" ? 4 : 2) ? (
+          {selectableGamePlayers.length < (matchType === "doubles" ? 4 : 2) ? (
             <p className="text-xs font-bold text-neutral-500 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
-              Need at least {matchType === "doubles" ? "4 players" : "2 players"} checked into the
-              session to record a {matchType} game. Add or join players above!
+              Need at least {matchType === "doubles" ? "4 players" : "2 players"} to record a {matchType} game. Add or join players above!
             </p>
           ) : (
             <form onSubmit={handleSubmitGame} className="space-y-4">
@@ -759,7 +886,7 @@ export function OpenPlayManagerClient({
                       className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                     >
                       <option value="">Select Player 1...</option>
-                      {checkedInPlayers.map((p) => {
+                      {selectableGamePlayers.map((p) => {
                         const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p1");
                         return (
                           <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
@@ -781,7 +908,7 @@ export function OpenPlayManagerClient({
                         className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                       >
                         <option value="">Select Player 2...</option>
-                        {checkedInPlayers.map((p) => {
+                        {selectableGamePlayers.map((p) => {
                           const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p2");
                           return (
                             <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
@@ -824,7 +951,7 @@ export function OpenPlayManagerClient({
                       className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                     >
                       <option value="">Select Player 1...</option>
-                      {checkedInPlayers.map((p) => {
+                      {selectableGamePlayers.map((p) => {
                         const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p1");
                         return (
                           <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
@@ -846,7 +973,7 @@ export function OpenPlayManagerClient({
                         className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
                       >
                         <option value="">Select Player 2...</option>
-                        {checkedInPlayers.map((p) => {
+                        {selectableGamePlayers.map((p) => {
                           const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p2");
                           return (
                             <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
@@ -881,7 +1008,7 @@ export function OpenPlayManagerClient({
                 data-testid="submit-game-button"
                 className="w-full py-3.5 px-6 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer transition-all"
               >
-                {isSubmittingGame ? "Recording Game..." : "Record Game Result"}
+                {isSubmittingGame ? "Recording Game..." : isSessionActive ? "Record Game Result" : "Add Game Result"}
               </button>
             </form>
           )}
@@ -904,6 +1031,186 @@ export function OpenPlayManagerClient({
               const isT1Winner = (m.team1Score ?? 0) > (m.team2Score ?? 0);
               const isCompleted = m.status === "completed";
               const isCancelled = m.status === "cancelled";
+              const isEditing = editingMatchId === m.id;
+
+              if (isEditing) {
+                return (
+                  <form
+                    key={m.id}
+                    onSubmit={handleSaveEdit}
+                    data-testid={`edit-game-form-${m.id}`}
+                    className="p-4 bg-white border-2 border-black rounded-2xl space-y-4 shadow-[2px_2px_0px_0px_#000]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase text-black">
+                        Edit Game {idx + 1}
+                      </span>
+                      <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[1px_1px_0px_0px_#000]">
+                        <button
+                          type="button"
+                          onClick={() => setEditMatchType("doubles")}
+                          className={`py-0.5 px-2 text-[11px] font-black uppercase ${
+                            editMatchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
+                          }`}
+                        >
+                          Doubles
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditMatchType("singles");
+                            setEditT1p2("");
+                            setEditT2p2("");
+                          }}
+                          className={`py-0.5 px-2 text-[11px] font-black uppercase border-l-2 border-black ${
+                            editMatchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
+                          }`}
+                        >
+                          Singles
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Team 1 */}
+                      <div className="p-3 bg-[#ccff00]/20 border-2 border-black rounded-xl space-y-2">
+                        <span className="text-[11px] font-black uppercase text-black block">Team 1</span>
+                        <select
+                          aria-label="Edit Team 1 Player 1"
+                          value={editT1p1}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (isEditPlayerSelectedElsewhere(val, "t1p1")) return;
+                            setEditT1p1(val);
+                          }}
+                          className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
+                        >
+                          <option value="">Select Player 1...</option>
+                          {selectableGamePlayers.map((p) => {
+                            const isSelected = isEditPlayerSelectedElsewhere(p.id, "t1p1");
+                            return (
+                              <option key={p.id} value={p.id} disabled={isSelected}>
+                                {p.name}{isSelected ? " (Selected)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {editMatchType === "doubles" && (
+                          <select
+                            aria-label="Edit Team 1 Player 2"
+                            value={editT1p2}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (isEditPlayerSelectedElsewhere(val, "t1p2")) return;
+                              setEditT1p2(val);
+                            }}
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
+                          >
+                            <option value="">Select Player 2...</option>
+                            {selectableGamePlayers.map((p) => {
+                              const isSelected = isEditPlayerSelectedElsewhere(p.id, "t1p2");
+                              return (
+                                <option key={p.id} value={p.id} disabled={isSelected}>
+                                  {p.name}{isSelected ? " (Selected)" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
+                          <input
+                            type="number"
+                            min="0"
+                            aria-label="Edit Team 1 Score"
+                            value={editT1Score}
+                            onChange={(e) => setEditT1Score(e.target.value)}
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Team 2 */}
+                      <div className="p-3 bg-[#fde047]/20 border-2 border-black rounded-xl space-y-2">
+                        <span className="text-[11px] font-black uppercase text-black block">Team 2</span>
+                        <select
+                          aria-label="Edit Team 2 Player 1"
+                          value={editT2p1}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (isEditPlayerSelectedElsewhere(val, "t2p1")) return;
+                            setEditT2p1(val);
+                          }}
+                          className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
+                        >
+                          <option value="">Select Player 1...</option>
+                          {selectableGamePlayers.map((p) => {
+                            const isSelected = isEditPlayerSelectedElsewhere(p.id, "t2p1");
+                            return (
+                              <option key={p.id} value={p.id} disabled={isSelected}>
+                                {p.name}{isSelected ? " (Selected)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {editMatchType === "doubles" && (
+                          <select
+                            aria-label="Edit Team 2 Player 2"
+                            value={editT2p2}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (isEditPlayerSelectedElsewhere(val, "t2p2")) return;
+                              setEditT2p2(val);
+                            }}
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
+                          >
+                            <option value="">Select Player 2...</option>
+                            {selectableGamePlayers.map((p) => {
+                              const isSelected = isEditPlayerSelectedElsewhere(p.id, "t2p2");
+                              return (
+                                <option key={p.id} value={p.id} disabled={isSelected}>
+                                  {p.name}{isSelected ? " (Selected)" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
+                          <input
+                            type="number"
+                            min="0"
+                            aria-label="Edit Team 2 Score"
+                            value={editT2Score}
+                            onChange={(e) => setEditT2Score(e.target.value)}
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        disabled={isSavingEdit}
+                        data-testid={`cancel-edit-game-button-${m.id}`}
+                        className="py-1 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-xs font-black uppercase tracking-wider cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingEdit}
+                        data-testid={`save-edit-game-button-${m.id}`}
+                        className="py-1 px-4 rounded-xl border-2 border-black bg-black text-white hover:bg-neutral-900 text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
+                      >
+                        {isSavingEdit ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </form>
+                );
+              }
 
               return (
                 <article
@@ -937,15 +1244,25 @@ export function OpenPlayManagerClient({
                         : "In Play"}
                     </Badge>
 
-                    {isSessionActive && (isOrganizer || isHost || isMember) && isCompleted && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMatch(m.id)}
-                        data-testid={`delete-game-button-${m.id}`}
-                        className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
-                      >
-                        Delete
-                      </button>
+                    {canEditOrDelete && isCompleted && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(m)}
+                          data-testid={`edit-game-button-${m.id}`}
+                          className="text-xs font-bold text-neutral-700 hover:text-black hover:underline cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMatch(m.id)}
+                          data-testid={`delete-game-button-${m.id}`}
+                          className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                 </article>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  getActionRepository,
   getActionSessionService,
   requireOrganizer,
 } from "@/app/actions/action-context";
@@ -15,6 +16,7 @@ import {
   startRoundSchema,
   startSessionSchema,
   undoLatestRoundSchema,
+  updateSessionNameSchema,
 } from "@/lib/validation/session";
 
 export async function startSessionAction(
@@ -239,3 +241,41 @@ export async function endSessionAction(
     };
   }
 }
+
+export async function updateSessionNameAction(
+  input: unknown,
+): Promise<{ ok: boolean; error?: string }> {
+  const parsed = updateSessionNameSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Enter a valid session name.",
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+
+    const trimmed = parsed.data.name.trim();
+    if (trimmed === (session.name ?? "").trim()) {
+      return { ok: true };
+    }
+
+    await repository.updateSessionName(session.id, trimmed);
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Unable to update session name.",
+    };
+  }
+}
+

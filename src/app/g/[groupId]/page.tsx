@@ -14,6 +14,7 @@ import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
+import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
@@ -135,6 +136,7 @@ export default async function GroupDashboardPage({
         rounds,
         totalGames,
         type: s.type ?? "regular",
+        name: s.name ?? null,
       };
     }),
   );
@@ -196,10 +198,21 @@ export default async function GroupDashboardPage({
                 </span>
               </div>
               <div>
-                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
-                  {activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress"}
-                </h2>
+                <SessionNameEditor
+                  groupId={groupId}
+                  sessionId={activeSession.id}
+                  initialName={activeSession.name || (activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress")}
+                  canEdit={isOrganizer}
+                  headingTag="h2"
+                  className="font-display text-2xl font-black uppercase text-black mb-1"
+                />
                 <p className="text-sm font-bold text-neutral-900">
+                  Started {new Date(activeSession.startedAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  {" · "}
                   {activeSession.type === "open_play"
                     ? "Check in and submit games."
                     : `Running on ${activeSession.courtCount} court${activeSession.courtCount > 1 ? "s" : ""}.`}

@@ -139,7 +139,12 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.waitForURL(/\/sessions\/[^/]+$/);
     const summaryCard = page.locator("[data-testid='completed-session-full-view']");
     await expect(summaryCard).toBeVisible();
-    await expect(page.locator("h2:has-text('Session Summary')")).toBeVisible();
+    const todayFormatted = new Date().toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    await expect(page.locator(`h2:has-text('${todayFormatted}')`)).toBeVisible();
 
     // Wait 1.5s to ensure it does NOT redirect back to the group dashboard
     await page.waitForTimeout(1500);

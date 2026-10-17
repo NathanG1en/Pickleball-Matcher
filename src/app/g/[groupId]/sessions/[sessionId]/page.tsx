@@ -165,6 +165,7 @@ export default async function ActiveSessionPage({
         partnerSynergy={partnerSynergy}
         courtSynergies={courtSynergies}
         isOrganizer={isOrganizer}
+        isHost={isHost}
         isFromProfile={isFromProfile}
       />
     </main>

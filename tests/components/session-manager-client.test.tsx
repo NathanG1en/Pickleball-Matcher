@@ -94,7 +94,7 @@ describe("SessionManagerClient Component", () => {
 
     expect(html).toContain('data-testid="completed-session-full-view"');
     expect(html).toContain("Downtown Club");
-    expect(html).toContain("Session Summary");
+    expect(html).toContain("Oct 10, 2026");
     expect(html).toContain("Completed Session");
     expect(html).toContain("Rounds");
     expect(html).toContain("Total Games");
@@ -151,7 +151,26 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(html).toContain('data-testid="completed-session-full-view"');
-    expect(html).toContain("Session Summary");
+    expect(html).toContain("Oct 10, 2026");
+  });
+
+  it("renders custom session name when provided", () => {
+    const namedSession = {
+      ...completedSession,
+      name: "Championship Finals",
+    };
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={namedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        initialProposal={null}
+      />
+    );
+
+    expect(html).toContain("Championship Finals");
   });
 
   it("renders back button to profile when isFromProfile is true", () => {

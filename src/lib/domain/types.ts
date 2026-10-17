@@ -75,6 +75,7 @@ export interface PlayerSessionHistoryRecord {
   readonly losses: number;
   readonly rating: number;
   readonly type?: SessionType;
+  readonly sessionName?: string | null;
 }
 
 export interface SessionRecord {
@@ -88,6 +89,7 @@ export interface SessionRecord {
   endedAt: Date | null;
   version: number;
   type?: SessionType;
+  name?: string | null;
 }
 
 export interface AttendanceRecord {

@@ -32,6 +32,7 @@ export interface PastSessionData {
   readonly rounds: readonly PastSessionRoundData[];
   readonly totalGames: number;
   readonly type?: "regular" | "open_play";
+  readonly name?: string | null;
 }
 
 export interface PastSessionsListProps {
@@ -86,10 +87,10 @@ export function PastSessionsList({
                   }
                 }}
                 aria-expanded={isExpanded}
-                aria-label={`Session from ${formattedDate}`}
+                aria-label={session.name ? `${session.name} · ${formattedDate}` : `Session from ${formattedDate}`}
               >
                 <span className="font-bold text-black text-sm block">
-                  {session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate}
+                  {session.name ? `${session.name} · ${formattedDate}` : (session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate)}
                 </span>
                 <span className="text-xs font-bold text-neutral-500">
                   {session.type === "open_play"
@@ -241,7 +242,7 @@ export function PastSessionsList({
                 {/* Fully expandable: Link to full session page */}
                 <div className="pt-2 border-t-2 border-black/10 flex items-center justify-between">
                   <span className="text-[11px] font-bold text-neutral-500">
-                    {session.rounds.length} round{session.rounds.length !== 1 ? "s" : ""} · {session.totalGames} game{session.totalGames !== 1 ? "s" : ""}
+                    Started {formattedDate} · {session.rounds.length} round{session.rounds.length !== 1 ? "s" : ""} · {session.totalGames} game{session.totalGames !== 1 ? "s" : ""}
                   </span>
                   <Link
                     href={`/g/${groupId}/sessions/${session.id}`}
