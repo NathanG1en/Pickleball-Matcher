@@ -103,31 +103,38 @@ export default async function PlayerProfilePage() {
         {history.length === 0 ? (
           <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>
         ) : (
-          history.map((item) => (
-            <article
-              key={`${item.groupId}-${item.sessionId}`}
-              data-testid={`player-session-${item.sessionId}`}
-              className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
-            >
-              <div>
-                <h3 className="font-black text-black">
-                  {item.startedAt.toLocaleDateString()}
-                </h3>
-                <p className="text-xs font-bold text-neutral-600">
-                  {item.groupName}
-                  {item.type === "open_play" ? " (Open Play)" : ""}
-                  {" · "}
-                  {item.wins}W – {item.losses}L
-                </p>
-              </div>
-              <Link
-                href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+          history.map((item) => {
+            const formattedDate = item.startedAt.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+            return (
+              <article
+                key={`${item.groupId}-${item.sessionId}`}
+                data-testid={`player-session-${item.sessionId}`}
+                className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
               >
-                Go to session
-              </Link>
-            </article>
-          ))
+                <div>
+                  <h3 className="font-black text-black">
+                    {item.sessionName ? `${item.sessionName} · ${formattedDate}` : formattedDate}
+                  </h3>
+                  <p className="text-xs font-bold text-neutral-600">
+                    {item.groupName}
+                    {item.type === "open_play" ? " (Open Play)" : ""}
+                    {" · "}
+                    {item.wins}W – {item.losses}L
+                  </p>
+                </div>
+                <Link
+                  href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
+                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+                >
+                  Go to session
+                </Link>
+              </article>
+            );
+          })
         )}
       </section>
     </section>

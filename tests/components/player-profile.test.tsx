@@ -673,5 +673,81 @@ describe("PlayerProfilePage and Group Leaving", () => {
     // Session title should not be a link
     expect(html).not.toMatch(/<h3[^>]*><a/);
   });
+
+  it("includes the date when a player session has a custom name", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "player_named_session",
+          name: "Named Session Player",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [
+        { id: "grp-named", name: "Metro Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+      ],
+      players: [
+        { id: "p1", groupId: "grp-named", accountId: testAccountId, name: "Named Session Player", initialRating: 1000, rating: 1025, ratedGamesPlayed: 1, active: true },
+      ],
+    });
+
+    repository.state.sessions.push({
+      id: "s-named",
+      groupId: "grp-named",
+      name: "Spring Kickoff",
+      courtCount: 1,
+      status: "completed",
+      currentRoundNumber: 1,
+      startedAt: new Date("2026-04-12T10:00:00Z"),
+      endedAt: new Date("2026-04-12T11:00:00Z"),
+      version: 1,
+      type: "regular",
+    });
+    repository.state.attendance.push({
+      sessionId: "s-named",
+      playerId: "p1",
+      joinedRound: 1,
+      leftRound: null,
+    });
+    repository.state.rounds.push({
+      id: "r-named",
+      sessionId: "s-named",
+      roundNumber: 1,
+      status: "completed",
+      seed: 1,
+      scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+      createdAt: new Date(),
+      startedAt: new Date(),
+      completedAt: new Date(),
+      version: 1,
+    });
+    repository.state.matches.push({
+      id: "m-named",
+      roundId: "r-named",
+      courtNumber: 1,
+      status: "completed",
+      team1Score: 11,
+      team2Score: 7,
+      completedAt: new Date(),
+      version: 1,
+    });
+    repository.state.matchPlayers.push({
+      matchId: "m-named",
+      playerId: "p1",
+      team: 1,
+      ratingBefore: 1000,
+      ratingAfter: 1025,
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    expect(html).toContain("Spring Kickoff · Apr 12, 2026");
+  });
 });
 
