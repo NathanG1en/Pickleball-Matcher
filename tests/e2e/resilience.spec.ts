@@ -89,3 +89,19 @@ test.describe("Resilience and Safe Drafts", () => {
     await page2.close();
   });
 });
+
+test("guest skill selector has an accessible name and passes an Axe audit", async ({ page }) => {
+  await createTestGroup(page, `Guest accessibility ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  const audit = await new AxeBuilder({ page })
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(audit.violations).toEqual([]);
+  const skill = page.getByRole("combobox", { name: "Guest starting skill level", exact: true });
+  await expect(skill).toHaveValue("3.5");
+  await skill.selectOption("3");
+  await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill("Accessible Guest");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const guest = page.getByRole("listitem").filter({ hasText: "Accessible Guest" });
+  await expect(guest).toContainText("Rating: 3 (Intermediate)");
+});
