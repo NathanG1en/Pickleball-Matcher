@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomePickleball } from "@/components/home/home-pickleball";
 import { getActiveOrganizerSession, getActivePlayerAccountId, getActionRepository } from "@/app/actions/action-context";
 import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -64,10 +65,10 @@ export default async function HomePage() {
         </div>
 
         {/* Neobrutalist Court Divider */}
-        <div className="flex items-center justify-center gap-3 py-1" aria-hidden="true">
-          <div className="h-1 flex-1 bg-black rounded-full" />
-          <div className="w-4 h-4 rounded-full bg-[#ccff00] border-2 border-black shadow-[1px_1px_0px_0px_#000]" />
-          <div className="h-1 flex-1 bg-black rounded-full" />
+        <div className="flex items-center justify-center gap-3 py-1">
+          <div className="h-1 flex-1 bg-black rounded-full" aria-hidden="true" />
+          <HomePickleball />
+          <div className="h-1 flex-1 bg-black rounded-full" aria-hidden="true" />
         </div>
 
         {/* 3 Neobrutalist Feature Cards */}

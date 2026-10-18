@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
+import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SearchIcon } from "@/components/ui/icons";
 import { FilterablePlayerSelect } from "@/components/groups/filterable-player-select";
@@ -286,12 +287,22 @@ export function OpenPlayManagerClient({
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [justEndedSession, setJustEndedSession] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+  }, []);
 
   const showToast = (msg: string) => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
     setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(null), 3000);
+    toastTimeoutRef.current = setTimeout(() => {
+      setSuccessToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
   };
 
   // Handlers
@@ -594,7 +605,7 @@ export function OpenPlayManagerClient({
     try {
       const res = await endOpenPlaySessionAction({ groupId, sessionId: session.id });
       if (res.ok) {
-        showToast("Open Play session ended.");
+        setJustEndedSession(true);
         router.refresh();
       } else {
         setError(res.error ?? "Failed to end session.");
@@ -670,6 +681,13 @@ export function OpenPlayManagerClient({
           </div>
         )}
       </header>
+
+      {!isSessionActive && (
+        <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-4 py-2 text-sm font-bold">
+          <span>Session complete</span>
+          <SessionSignOff play={justEndedSession} />
+        </div>
+      )}
 
       {/* Attendance & Join Section */}
       <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
