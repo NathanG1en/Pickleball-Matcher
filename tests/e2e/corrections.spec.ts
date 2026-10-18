@@ -51,7 +51,30 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // Now correct the score to 11-9
     await court1Team2.fill("9");
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("end-session-button")).toBeDisabled();
+    await expect(page.getByRole("status")).toContainText("Save or revert your score changes before continuing.");
+
+    // Reverting to the stored score clears the guard without a save.
+    await court1Team2.fill("7");
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByTestId("end-session-button")).toBeEnabled();
+
+    // Blank and rejected corrections must keep the guard and the draft.
+    await court1Team2.fill("");
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await court1Team2.fill("11");
+    await page.getByRole("button", { name: "Update Score", exact: true }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
+    await expect(court1Team2).toHaveValue("11");
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("end-session-button")).toBeDisabled();
+
+    await court1Team2.fill("9");
     await page.locator("[data-testid='court-match-1'] button:has-text('Update Score')").click();
+    await expect(court1Team2).toHaveValue("9");
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await page.reload();
     await expect(court1Team2).toHaveValue("9");
 
     // 7. Advance to Round 2
