@@ -77,12 +77,37 @@ export function SessionManagerClient({
 
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
   const activeProposal = regeneratedProposal ?? initialProposal;
+  const [savingMatchIds, setSavingMatchIds] = useState<Set<string>>(() => new Set());
   const [prevAttendance, setPrevAttendance] = useState(attendance);
   const [currentAttendance, setCurrentAttendance] = useState(attendance);
   if (attendance !== prevAttendance) {
     setPrevAttendance(attendance);
     setCurrentAttendance(attendance);
   }
+
+  const [prevStartedRounds, setPrevStartedRounds] = useState(startedRounds);
+  const [localStartedRounds, setLocalStartedRounds] = useState<readonly StartedRoundRecord[]>(startedRounds);
+  if (startedRounds !== prevStartedRounds) {
+    setPrevStartedRounds(startedRounds);
+    setLocalStartedRounds(
+      startedRounds.map((sr) => {
+        const localSr = localStartedRounds.find((l) => l.round.id === sr.round.id);
+        if (!localSr) return sr;
+        return {
+          ...sr,
+          matches: sr.matches.map((serverMatch) => {
+            if (serverMatch.status !== "pending") return serverMatch;
+            const localMatch = localSr.matches.find((lm) => lm.id === serverMatch.id);
+            if (localMatch && (localMatch.status !== "pending" || savingMatchIds.has(serverMatch.id))) {
+              return localMatch;
+            }
+            return serverMatch;
+          }),
+        };
+      })
+    );
+  }
+
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
@@ -111,7 +136,7 @@ export function SessionManagerClient({
     playerAccounts[p.id] = p.accountId ?? null;
   }
 
-  const latestStarted = startedRounds.at(-1);
+  const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
   // Actions
@@ -177,7 +202,7 @@ export function SessionManagerClient({
     const match = latestStarted.matches.find((m) => m.id === matchId);
     if (!match) return;
 
-    setIsPending(true);
+    setSavingMatchIds((prev) => new Set([...prev, matchId]));
     setError(null);
     setFieldErrors((prev) => {
       const next = { ...prev };
@@ -195,7 +220,30 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`res_${matchId}`),
       });
       if (res.ok) {
-        router.refresh();
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) =>
+            sr.round.id === latestStarted.round.id
+              ? {
+                  ...sr,
+                  matches: sr.matches.map((m) =>
+                    m.id === matchId
+                      ? {
+                          ...m,
+                          status: "completed" as const,
+                          team1Score,
+                          team2Score,
+                        }
+                      : m
+                  ),
+                }
+              : sr
+          )
+        );
+        setScoreDrafts((prev) => {
+          const next = { ...prev };
+          delete next[matchId];
+          return next;
+        });
       } else {
         setFieldErrors((prev) => ({
           ...prev,
@@ -208,7 +256,11 @@ export function SessionManagerClient({
         [matchId]: "Failed to save match result.",
       }));
     } finally {
-      setIsPending(false);
+      setSavingMatchIds((prev) => {
+        const next = new Set(prev);
+        next.delete(matchId);
+        return next;
+      });
     }
   };
 
@@ -217,7 +269,7 @@ export function SessionManagerClient({
     const match = latestStarted.matches.find((m) => m.id === matchId);
     if (!match) return;
 
-    setIsPending(true);
+    setSavingMatchIds((prev) => new Set([...prev, matchId]));
     try {
       const res = await cancelMatchAction({
         groupId,
@@ -226,14 +278,29 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`cancel_${matchId}`),
       });
       if (res.ok) {
-        router.refresh();
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) =>
+            sr.round.id === latestStarted.round.id
+              ? {
+                  ...sr,
+                  matches: sr.matches.map((m) =>
+                    m.id === matchId ? { ...m, status: "cancelled" as const } : m
+                  ),
+                }
+              : sr
+          )
+        );
       } else {
         setError(res.error);
       }
     } catch {
       setError("Failed to cancel match.");
     } finally {
-      setIsPending(false);
+      setSavingMatchIds((prev) => {
+        const next = new Set(prev);
+        next.delete(matchId);
+        return next;
+      });
     }
   };
 
@@ -292,12 +359,12 @@ export function SessionManagerClient({
     }
   };
 
-  const inProgressMatches = startedRounds
+  const inProgressMatches = localStartedRounds
     .filter((sr) => sr.round.status === "started")
     .flatMap((sr) => sr.matches.filter((m) => m.status === "pending"));
 
   const getMatchTeams = (match: MatchRecord) => {
-    const sr = startedRounds.find((r) => r.matches.some((m) => m.id === match.id));
+    const sr = localStartedRounds.find((r) => r.matches.some((m) => m.id === match.id));
     if (!sr) return { team1: "Team 1", team2: "Team 2" };
     const t1 = (sr.matchPlayers ?? [])
       .filter((mp) => mp.matchId === match.id && mp.team === 1)
@@ -429,6 +496,16 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`hist_${matchId}`),
       });
       if (res.ok) {
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) =>
+              m.id === matchId
+                ? { ...m, team1Score: t1, team2Score: t2, status: "completed" as const }
+                : m
+            ),
+          }))
+        );
         setEditingHistoricalMatchId(null);
         router.refresh();
       } else {
@@ -452,6 +529,14 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`hist_cancel_${matchId}`),
       });
       if (res.ok) {
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) =>
+              m.id === matchId ? { ...m, status: "cancelled" as const } : m
+            ),
+          }))
+        );
         setEditingHistoricalMatchId(null);
         router.refresh();
       } else {
@@ -511,7 +596,7 @@ export function SessionManagerClient({
   };
 
   const isCompletedSession = session.status === "completed";
-  const allSessionRounds = startedRounds;
+  const allSessionRounds = localStartedRounds;
   const totalSessionMatches = allSessionRounds.reduce((acc, r) => acc + r.matches.length, 0);
 
   // Calculate participating player statistics for the session
@@ -582,7 +667,7 @@ export function SessionManagerClient({
     }
   }
 
-  const pastRounds = startedRounds.filter((r) => r.round.status === "completed");
+  const pastRounds = localStartedRounds.filter((r) => r.round.status === "completed");
   const canEditSessionName = Boolean(canManage || isOrganizer || isHost);
   const formattedSessionDate = new Date(session.startedAt).toLocaleDateString(undefined, {
     month: "short",
@@ -933,6 +1018,7 @@ export function SessionManagerClient({
                 matches={scoreEntries}
                 fieldErrors={fieldErrors}
                 isPending={isPending}
+                savingMatchIds={savingMatchIds}
                 onSubmitResult={canManage ? handleSaveResult : undefined}
                 onCancelMatch={canManage ? handleCancelMatch : undefined}
                 onNextRound={canManage ? handleNextRound : undefined}
