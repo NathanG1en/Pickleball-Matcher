@@ -69,6 +69,7 @@ export function TemporaryGroupClient({ accountId }: { accountId: string | null }
 
   const parsedNames = useMemo(() => playerNames.split(/[\n,]/).map((name) => name.trim()).filter(Boolean), [playerNames]);
   const courtCapacity = courtSizes.slice(0, courtCount).reduce((sum, size) => sum + size, 0);
+  const playingCapacity = state?.courtPlayerCounts.reduce((sum, size) => sum + size, 0) ?? 0;
   const hasTemporaryState = state !== null || Boolean(groupName.trim() || playerNames.trim());
 
   useEffect(() => {
@@ -187,7 +188,7 @@ export function TemporaryGroupClient({ accountId }: { accountId: string | null }
         <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
           <div className="flex items-center justify-between"><h2 className="font-display text-2xl font-black uppercase">Players</h2><span className="text-xs font-black uppercase">{state.players.length} total</span></div>
           <ul className="flex flex-wrap gap-2">{state.players.map((player) => <li key={player.id} className="rounded-full border border-black bg-[#e0f2fe] px-3 py-1 text-sm font-bold">{player.name}</li>)}</ul>
-          <p className="text-xs font-bold text-neutral-600">Courts: {state.courtPlayerCounts.join(" + ")} · {state.players.length - courtCapacity} sit out each round when the roster is larger than court capacity.</p>
+          <p className="text-xs font-bold text-neutral-600">{state.courtPlayerCounts.length} court{state.courtPlayerCounts.length === 1 ? "" : "s"} · {playingCapacity} playing · {state.players.length - playingCapacity} sitting out</p>
         </section>
 
         <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">

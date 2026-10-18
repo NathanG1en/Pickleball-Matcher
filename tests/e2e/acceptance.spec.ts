@@ -177,3 +177,40 @@ test("tournament final waits for both semifinal qualifiers", async ({ page }) =>
   await page.reload();
   await expect(page.getByRole("heading", { name: "Men's Singles Champion", exact: true })).toBeVisible();
 });
+
+for (const courtSizes of [[4], [4, 3, 2]]) {
+  test(`temporary group summarizes ${courtSizes.length} courts separately from player capacity`, async ({ page }) => {
+    const capacity = courtSizes.reduce((sum, size) => sum + size, 0);
+    await page.goto("/temporary");
+    await page.getByRole("textbox", { name: "Group name", exact: true }).fill("Court summary regression");
+    await page.getByRole("textbox", { name: "Player names · one per line", exact: true }).fill(
+      Array.from({ length: capacity + 1 }, (_, index) => `Player ${index + 1}`).join("\n"),
+    );
+    await page.getByRole("combobox", { name: "Number of courts", exact: true }).selectOption(String(courtSizes.length));
+    for (const [index, size] of courtSizes.entries()) {
+      await page.getByRole("combobox", { name: `Court ${index + 1}`, exact: true }).selectOption(String(size));
+    }
+    await page.getByRole("button", { name: "Start Temporary Group", exact: true }).click();
+    const summary = `${courtSizes.length} court${courtSizes.length === 1 ? "" : "s"} · ${capacity} playing · 1 sitting out`;
+    await expect(page.getByText(summary, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Generate First Round", exact: true }).click();
+    await expect(page.getByRole("spinbutton")).toHaveCount(courtSizes.length * 2);
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.reload();
+    await expect(page.getByText(summary, { exact: true })).toBeVisible();
+    await expect(page.getByRole("spinbutton")).toHaveCount(courtSizes.length * 2);
+  });
+}
+
+test("restored temporary group calculates capacity from saved courts without a setup draft", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("pickleball-temporary-group-v1", JSON.stringify({
+      name: "Restored mixed courts", isPublic: false, courtPlayerCounts: [4, 3, 2],
+      players: Array.from({ length: 10 }, (_, index) => ({ id: `p${index}`, name: `Player ${index}`, rating: 1000 })),
+      rounds: [], currentRound: null,
+    }));
+  });
+  await page.goto("/temporary");
+  await expect(page.getByRole("heading", { name: "Restored mixed courts", exact: true })).toBeVisible();
+  await expect(page.getByText("3 courts · 9 playing · 1 sitting out", { exact: true })).toBeVisible();
+});
