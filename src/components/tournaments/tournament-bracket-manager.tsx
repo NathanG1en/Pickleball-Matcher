@@ -490,7 +490,7 @@ export function TournamentBracketManager({
                               <button
                                 type="button"
                                 onClick={() => handleSetWinner(m.id, p1.id, m.score1, m.score2)}
-                                disabled={isPending}
+                                disabled={isPending || !p1 || !p2}
                                 className="text-[11px] font-black uppercase px-2 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 cursor-pointer transition-colors"
                               >
                                 Win
@@ -525,7 +525,7 @@ export function TournamentBracketManager({
                               <button
                                 type="button"
                                 onClick={() => handleSetWinner(m.id, p2.id, m.score1, m.score2)}
-                                disabled={isPending}
+                                disabled={isPending || !p1 || !p2}
                                 className="text-[11px] font-black uppercase px-2 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 cursor-pointer transition-colors"
                               >
                                 Win

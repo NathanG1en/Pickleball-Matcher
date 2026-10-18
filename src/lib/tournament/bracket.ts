@@ -325,6 +325,15 @@ export function setMatchWinner(
   const target = matches.find((m) => m.id === matchId);
   if (!target) return bracket;
 
+  if (winnerId !== null) {
+    if (!target.participant1Id || !target.participant2Id) {
+      throw new Error("Both participants must be known before recording a winner");
+    }
+    if (winnerId !== target.participant1Id && winnerId !== target.participant2Id) {
+      throw new Error("Winner must be a participant in this match");
+    }
+  }
+
   const previousWinnerId = target.winnerId;
   target.winnerId = winnerId;
   target.status = winnerId ? "completed" : "pending";
