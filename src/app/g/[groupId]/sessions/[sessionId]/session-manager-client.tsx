@@ -30,7 +30,7 @@ import type {
 } from "@/lib/domain/types";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
-import type { CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
+import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -42,8 +42,7 @@ export interface SessionManagerClientProps {
   readonly initialProposal: RoundProposal | null;
   readonly canManage?: boolean;
   readonly currentViewerPlayerId?: string | null;
-  readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
-  readonly courtSynergies?: CourtSynergiesMap;
+  readonly pairSynergies?: PairSynergiesMap;
   readonly isOrganizer?: boolean;
   readonly isHost?: boolean;
   readonly isFromProfile?: boolean;
@@ -59,8 +58,7 @@ export function SessionManagerClient({
   initialProposal,
   canManage = true,
   currentViewerPlayerId = null,
-  partnerSynergy = null,
-  courtSynergies,
+  pairSynergies = {},
   isOrganizer = false,
   isHost = false,
   isFromProfile = false,
@@ -972,8 +970,7 @@ export function SessionManagerClient({
               playerAccounts={playerAccounts}
               isPending={isPending}
               currentViewerPlayerId={currentViewerPlayerId}
-              partnerSynergy={partnerSynergy}
-              courtSynergies={courtSynergies}
+              pairSynergies={pairSynergies}
               isOrganizer={isOrganizer}
               onRegenerate={canManage ? handleRegenerate : undefined}
               onStartRound={canManage ? handleStartRound : undefined}

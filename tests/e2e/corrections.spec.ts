@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createTestGroup } from "./test-helpers";
+import { createTestGroup, createAndSignInPlayer } from "./test-helpers";
 
 test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
@@ -184,4 +184,91 @@ test.describe("Corrections and Replay Workflow", () => {
     const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();
     await expect(viewFullLink).toBeVisible();
   });
+});
+
+
+test("host synergy follows current partners after manual swaps and new proposals", async ({ page, browser }) => {
+  test.setTimeout(120000);
+  const { hostName } = await createTestGroup(page, `Pair synergy ${Date.now()}`);
+  const names = [hostName];
+  const otherContext = await browser.newContext();
+  try {
+    const otherPage = await otherContext.newPage();
+    for (const name of ["Synergy Blake", "Synergy Casey", "Synergy Drew"]) {
+      const account = await createAndSignInPlayer(otherPage, { name });
+      names.push(name);
+      await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(account.username);
+      await page.getByRole("button", { name: "Find & Add", exact: true }).click();
+      await expect(page.getByText(`${names.length} players on roster`, { exact: true })).toBeVisible();
+    }
+  } finally {
+    await otherContext.close();
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  const card = page.locator(".court-card");
+  const teamBox = (team: number) => card.getByText(`Team ${team}`, { exact: true }).locator("../..");
+  const teamNames = async (team: number) => (await teamBox(team).locator("[draggable] > span").allTextContents()).filter((name) => names.includes(name));
+  const winners = await teamNames(1);
+  const losers = await teamNames(2);
+  expect(winners).toHaveLength(2);
+  expect(losers).toHaveLength(2);
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
+  await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("5");
+  await page.getByRole("button", { name: "Save Result", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Next Round", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
+
+  const arrangeTeam1 = async (desired: string[]) => {
+    for (const name of desired) {
+      const current = await teamNames(1);
+      if (!current.includes(name)) {
+        const outgoing = current.find((player) => !desired.includes(player))!;
+        await card.getByText(name, { exact: true }).click();
+        await card.getByText(outgoing, { exact: true }).click();
+        await expect(teamBox(1).getByText(name, { exact: true })).toBeVisible();
+      }
+    }
+  };
+  const reveal = () => page.getByRole("button", { name: "Reveal Synergy", exact: true }).click();
+  const close = () => page.getByRole("button", { name: "Close Breakdown", exact: true }).click();
+  const expectCurrentSynergy = async (team: number, badge: string) => {
+    const pairNames = (await teamNames(team)).join(" & ");
+    await expect(page.getByText(pairNames, { exact: true }).locator("..")).toContainText(badge);
+  };
+
+  await arrangeTeam1(winners);
+  await reveal();
+  await expectCurrentSynergy(1, "67% (1 games)");
+  await expectCurrentSynergy(2, "33% (1 games)");
+  await close();
+
+  // Neither mixed partnership has ever played, so neither may inherit a saved score.
+  await card.getByText(winners[1], { exact: true }).click();
+  await card.getByText(losers[0], { exact: true }).click();
+  await reveal();
+  await expect(page.getByText("New Duo (0 games)", { exact: true })).toHaveCount(2);
+  await close();
+
+  // Moving a known partnership to the other team slot preserves its history.
+  await arrangeTeam1(losers);
+  await reveal();
+  await expectCurrentSynergy(1, "33% (1 games)");
+  await expectCurrentSynergy(2, "67% (1 games)");
+  await close();
+
+  // A fresh server proposal must agree with the same account-pair history.
+  await page.reload();
+  const pairKey = (pair: string[]) => [...pair].sort().join("|");
+  const expected = new Map([[pairKey(winners), "67% (1 games)"], [pairKey(losers), "33% (1 games)"]]);
+  await reveal();
+  for (const team of [1, 2]) {
+    await expectCurrentSynergy(team, expected.get(pairKey(await teamNames(team))) ?? "New Duo (0 games)");
+  }
 });

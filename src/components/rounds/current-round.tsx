@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SynergyRevealModal, type CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
+import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
+import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup";
 import {
   LockIcon,
   PencilIcon,
@@ -33,8 +34,7 @@ export interface CurrentRoundViewProps {
   readonly canRegenerate?: boolean;
   readonly isPending?: boolean;
   readonly currentViewerPlayerId?: string | null;
-  readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
-  readonly courtSynergies?: CourtSynergiesMap;
+  readonly pairSynergies?: PairSynergiesMap;
   readonly isOrganizer?: boolean;
   readonly playerAccounts?: Record<string, string | null>;
   readonly onStartRound?: (customProposal?: {
@@ -54,8 +54,7 @@ export function CurrentRoundView({
   canRegenerate = false,
   isPending = false,
   currentViewerPlayerId = null,
-  partnerSynergy = null,
-  courtSynergies,
+  pairSynergies = {},
   isOrganizer = false,
   playerAccounts,
   onStartRound,
@@ -86,6 +85,12 @@ export function CurrentRoundView({
     );
     setLocalSitting([...sittingPlayerIds]);
   }
+
+  const courtSynergies = buildCourtSynergies(localCourts, playerAccounts ?? {}, pairSynergies);
+  const viewerCourt = localCourts.find((court) => court.team1.includes(currentViewerPlayerId ?? "") || court.team2.includes(currentViewerPlayerId ?? ""));
+  const partnerSynergy = viewerCourt
+    ? courtSynergies[viewerCourt.courtNumber]?.[viewerCourt.team1.includes(currentViewerPlayerId ?? "") ? "team1" : "team2"]
+    : null;
 
   // Friction and interaction state
   const [isUnlocked, setIsUnlocked] = useState(false);

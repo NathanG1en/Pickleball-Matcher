@@ -648,6 +648,11 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
+  async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
+    const accounts = new Set(accountIds);
+    return this.state.synergies.filter((pair) => accounts.has(pair.accountId1) && accounts.has(pair.accountId2));
+  }
+
   async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
     if (accountIdA === accountIdB) return null;
     const [first, second] = accountIdA < accountIdB ? [accountIdA, accountIdB] : [accountIdB, accountIdA];
