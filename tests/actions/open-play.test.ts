@@ -3,11 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
+  deleteOpenPlayGameAction,
   endOpenPlaySessionAction,
+  getPlayerLastOpenPlayGameAction,
   joinOpenPlaySessionAction,
   removeOpenPlayPlayerAction,
   startOpenPlaySessionAction,
   submitOpenPlayGameAction,
+  updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
@@ -119,14 +122,16 @@ describe("Open Play Server Actions", () => {
     });
     expect(addPlayerRes.ok).toBe(true);
 
-    // Add guest player
+    // Add guest player with selected rating (4.0 DUPR -> 1200 Elo)
     const addGuestRes = await addOpenPlayGuestAction({
       groupId: "g1",
       sessionId: startRes.data.id,
       guestName: "Guest Gary",
+      initialRating: 4.0,
     });
     expect(addGuestRes.ok).toBe(true);
     if (!addGuestRes.ok) return;
+    expect(addGuestRes.data.rating).toBe(1200);
 
     const attendance = await repository.listAttendance(startRes.data.id);
     const attendedIds = attendance.map((a) => a.playerId);
@@ -155,7 +160,7 @@ describe("Open Play Server Actions", () => {
     await repository.saveAttendance({ sessionId: startRes.data.id, playerId: "p-user3", joinedRound: 1, leftRound: null });
     await repository.saveAttendance({ sessionId: startRes.data.id, playerId: "p-user4", joinedRound: 1, leftRound: null });
 
-    // Submit doubles game
+    // Submit doubles game 1
     const gameRes = await submitOpenPlayGameAction({
       groupId: "g1",
       sessionId: startRes.data.id,
@@ -169,26 +174,54 @@ describe("Open Play Server Actions", () => {
     if (!gameRes.ok) return;
 
     expect(gameRes.data.status).toBe("completed");
+    expect(gameRes.data.courtNumber).toBe(1);
     expect(gameRes.data.team1Score).toBe(11);
     expect(gameRes.data.team2Score).toBe(7);
+
+    // Verify ability to submit a 2nd game with the exact same teams and same order of players
+    const game2Res = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 9,
+      team2Score: 11,
+    });
+    expect(game2Res.ok).toBe(true);
+    if (!game2Res.ok) return;
+    expect(game2Res.data.courtNumber).toBe(2);
+
+    // Verify autopopulation of last game for p-host
+    const autopopulateRes = await getPlayerLastOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      playerId: "p-host",
+    });
+    expect(autopopulateRes.ok).toBe(true);
+    if (!autopopulateRes.ok) return;
+    expect(autopopulateRes.data).toEqual({
+      matchType: "doubles",
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+    });
 
     // Verify player history includes the session as open_play
     const historyHost = await repository.listPlayerSessionHistory("acc-host");
     expect(historyHost).toHaveLength(1);
     expect(historyHost[0].type).toBe("open_play");
     expect(historyHost[0].wins).toBe(1);
-    expect(historyHost[0].losses).toBe(0);
+    expect(historyHost[0].losses).toBe(1);
 
     const historyUser2 = await repository.listPlayerSessionHistory("acc-user2");
     expect(historyUser2).toHaveLength(1);
     expect(historyUser2[0].type).toBe("open_play");
     expect(historyUser2[0].wins).toBe(1);
-    expect(historyUser2[0].losses).toBe(0);
+    expect(historyUser2[0].losses).toBe(1);
 
     // Verify synergy between acc-host and acc-user2 was recorded
     const synergy = await repository.getPairSynergy("acc-host", "acc-user2");
     expect(synergy).not.toBeNull();
-    expect(synergy?.matchesPlayed).toBe(1);
+    expect(synergy?.matchesPlayed).toBe(2);
     expect(synergy?.wins).toBe(1);
   });
 
@@ -210,5 +243,172 @@ describe("Open Play Server Actions", () => {
     const rounds = await repository.listStartedRounds(startRes.data.id);
     expect(rounds[0].round.status).toBe("completed");
   });
+
+  it("deletes a recorded open play game and recalculates", async () => {
+    const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
+    expect(startRes.ok).toBe(true);
+    if (!startRes.ok) return;
+
+    await joinOpenPlaySessionAction({ groupId: "g1", sessionId: startRes.data.id });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user2" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user3" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user4" });
+
+    const gameRes = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 9,
+    });
+    expect(gameRes.ok).toBe(true);
+    if (!gameRes.ok) return;
+
+    const delRes = await deleteOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: gameRes.data.id,
+    });
+    expect(delRes.ok).toBe(true);
+    if (!delRes.ok) return;
+    expect(delRes.data.id).toBe(gameRes.data.id);
+
+    const rounds = await repository.listStartedRounds(startRes.data.id);
+    const deletedMatch = rounds[0].matches.find((m) => m.id === gameRes.data.id);
+    expect(deletedMatch).toBeUndefined();
+  });
+
+  it("allows group organizers and hosts to add, edit, and delete games after the session has ended, while blocking non-organizers", async () => {
+    // 1. Start open play session as host
+    const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
+    expect(startRes.ok).toBe(true);
+    if (!startRes.ok) return;
+
+    // Check in players and submit initial game
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user2" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user3" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user4" });
+
+    const game1Res = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 7,
+    });
+    expect(game1Res.ok).toBe(true);
+    if (!game1Res.ok) return;
+
+    // 2. End the session
+    const endRes = await endOpenPlaySessionAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+    });
+    expect(endRes.ok).toBe(true);
+
+    // 3. Verify non-organizer cannot add, edit, or delete games in ended session
+    mockActiveAccountId = "acc-user2"; // Regular player / non-organizer
+
+    // Non-organizer attempts to add game
+    const nonOrgAddRes = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-user2", "p-user3"],
+      team2PlayerIds: ["p-host", "p-user4"],
+      team1Score: 11,
+      team2Score: 5,
+    });
+    expect(nonOrgAddRes.ok).toBe(false);
+    if (!nonOrgAddRes.ok) {
+      expect(nonOrgAddRes.error).toContain("Only organizers can add games to an ended session");
+    }
+
+    // Non-organizer attempts to edit game
+    const nonOrgEditRes = await updateOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: game1Res.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 9,
+    });
+    expect(nonOrgEditRes.ok).toBe(false);
+    if (!nonOrgEditRes.ok) {
+      expect(nonOrgEditRes.error).toContain("Only organizers can edit games in an ended session");
+    }
+
+    // Non-organizer attempts to delete game
+    const nonOrgDeleteRes = await deleteOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: game1Res.data.id,
+    });
+    expect(nonOrgDeleteRes.ok).toBe(false);
+    if (!nonOrgDeleteRes.ok) {
+      expect(nonOrgDeleteRes.error).toContain("Only organizers can delete games from an ended session");
+    }
+
+    // 4. Switch back to host (organizer)
+    mockActiveAccountId = "acc-host";
+
+    // Organizer adds a new game after session is ended
+    const postEndAddRes = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user3"],
+      team2PlayerIds: ["p-user2", "p-user4"],
+      team1Score: 11,
+      team2Score: 6,
+    });
+    expect(postEndAddRes.ok).toBe(true);
+    if (!postEndAddRes.ok) return;
+
+    // Organizer edits the newly added game (update scores and team players)
+    const postEndEditRes = await updateOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: postEndAddRes.data.id,
+      team1PlayerIds: ["p-host", "p-user4"],
+      team2PlayerIds: ["p-user2", "p-user3"],
+      team1Score: 11,
+      team2Score: 8,
+    });
+    expect(postEndEditRes.ok).toBe(true);
+    if (!postEndEditRes.ok) return;
+    expect(postEndEditRes.data.team1Score).toBe(11);
+    expect(postEndEditRes.data.team2Score).toBe(8);
+
+    // Organizer edits the initial game (game1)
+    const editGame1Res = await updateOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: game1Res.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 12,
+      team2Score: 10,
+    });
+    expect(editGame1Res.ok).toBe(true);
+    if (!editGame1Res.ok) return;
+    expect(editGame1Res.data.team1Score).toBe(12);
+    expect(editGame1Res.data.team2Score).toBe(10);
+
+    // Organizer deletes the initial game from the ended session
+    const postEndDeleteRes = await deleteOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: game1Res.data.id,
+    });
+    expect(postEndDeleteRes.ok).toBe(true);
+
+    const roundsAfter = await repository.listStartedRounds(startRes.data.id);
+    const remainingMatches = roundsAfter.flatMap((r) => r.matches);
+    expect(remainingMatches.map((m) => m.id)).not.toContain(game1Res.data.id);
+    expect(remainingMatches.map((m) => m.id)).toContain(postEndAddRes.data.id);
+  });
 });
+
 

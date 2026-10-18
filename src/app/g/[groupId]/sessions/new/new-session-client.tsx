@@ -23,12 +23,12 @@ export function NewSessionClient({
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  const handleAddGuest = async (name: string) => {
+  const handleAddGuest = async (name: string, rating: number = 3.5) => {
     try {
       const res = await createPlayerAction({
         groupId,
         name,
-        initialRating: 1000,
+        initialRating: rating,
         idempotencyKey: createIdempotencyKey("guest"),
       });
       if (res.ok) {

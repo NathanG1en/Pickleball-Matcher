@@ -71,6 +71,7 @@ interface SessionRow {
   ended_at: string | null;
   version: number;
   type?: "regular" | "open_play" | null;
+  name?: string | null;
 }
 
 interface PlayerRow {
@@ -196,7 +197,8 @@ export class SqliteDomainRepository implements DomainRepository {
         started_at TEXT NOT NULL,
         ended_at TEXT,
         version INTEGER NOT NULL,
-        type TEXT NOT NULL DEFAULT 'regular'
+        type TEXT NOT NULL DEFAULT 'regular',
+        name TEXT
       );
 
       CREATE TABLE IF NOT EXISTS session_attendance (
@@ -657,6 +659,7 @@ export class SqliteDomainRepository implements DomainRepository {
       endedAt: row.ended_at ? new Date(row.ended_at) : null,
       version: row.version,
       type: (row.type as SessionType) ?? "regular",
+      name: row.name ?? null,
     };
   }
 
@@ -675,7 +678,14 @@ export class SqliteDomainRepository implements DomainRepository {
       endedAt: row.ended_at ? new Date(row.ended_at) : null,
       version: row.version,
       type: (row.type as SessionType) ?? "regular",
+      name: row.name ?? null,
     }));
+  }
+
+  async updateSessionName(sessionId: string, name: string): Promise<void> {
+    this.db
+      .prepare("UPDATE sessions SET name = ? WHERE id = ?")
+      .run(name, sessionId);
   }
 
   async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
@@ -892,7 +902,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version, type, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         session.id,
@@ -905,6 +915,7 @@ export class SqliteDomainRepository implements DomainRepository {
         session.endedAt ? session.endedAt.toISOString() : null,
         session.version,
         session.type ?? "regular",
+        session.name ?? null,
       );
     for (const item of attendance) {
       await this.saveAttendance(item);
@@ -914,7 +925,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateSession(session: SessionRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE sessions SET court_count = ?, court_player_counts = ?, status = ?, current_round_number = ?, ended_at = ?, version = ? WHERE id = ? AND version = ?",
+        "UPDATE sessions SET court_count = ?, court_player_counts = ?, status = ?, current_round_number = ?, ended_at = ?, version = ?, name = ? WHERE id = ? AND version = ?",
       )
       .run(
         session.courtCount,
@@ -923,6 +934,7 @@ export class SqliteDomainRepository implements DomainRepository {
         session.currentRoundNumber,
         session.endedAt ? session.endedAt.toISOString() : null,
         session.version,
+        session.name ?? null,
         session.id,
         session.version - 1,
       );
@@ -1053,6 +1065,22 @@ export class SqliteDomainRepository implements DomainRepository {
     if (result.changes === 0) throw new RepositoryConflictError();
   }
 
+  async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
+    this.db.prepare("DELETE FROM match_players WHERE match_id = ?").run(matchId);
+    const insert = this.db.prepare(
+      "INSERT INTO match_players (match_id, player_id, team, rating_before, rating_after) VALUES (?, ?, ?, ?, ?)",
+    );
+    for (const member of matchPlayers) {
+      insert.run(
+        member.matchId,
+        member.playerId,
+        member.team,
+        member.ratingBefore,
+        member.ratingAfter,
+      );
+    }
+  }
+
   async updateRound(round: RoundRecord): Promise<void> {
     const result = this.db
       .prepare(
@@ -1066,6 +1094,11 @@ export class SqliteDomainRepository implements DomainRepository {
         round.version - 1,
       );
     if (result.changes === 0) throw new RepositoryConflictError();
+  }
+
+  async deleteMatch(matchId: string): Promise<void> {
+    this.db.prepare("DELETE FROM match_players WHERE match_id = ?").run(matchId);
+    this.db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
   }
 
   async deleteRound(roundId: string): Promise<void> {

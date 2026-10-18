@@ -315,6 +315,17 @@ export class SessionService {
     });
   }
 
+  async deleteMatch(matchId: string): Promise<void> {
+    return this.repository.transaction(async (repository) => {
+      const match = await repository.getMatch(matchId);
+      if (!match) return;
+      const round = await requiredRound(repository, match.roundId);
+      const session = await requiredSession(repository, round.sessionId);
+      await repository.deleteMatch(matchId);
+      await replayRatings(session.groupId, repository);
+    });
+  }
+
   async completeRound(roundId: string): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
       const round = await requiredRound(repository, roundId);

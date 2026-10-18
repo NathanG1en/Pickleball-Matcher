@@ -90,18 +90,24 @@ test.describe("Resilience and Safe Drafts", () => {
   });
 });
 
-test("guest skill selector has an accessible name and passes an Axe audit", async ({ page }) => {
+test("guest roster form has accessible names and passes an accessibility audit", async ({ page }) => {
   await createTestGroup(page, `Guest accessibility ${Date.now()}`);
+  await expect(page.getByText("1 player on roster", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
-  const audit = await new AxeBuilder({ page })
-    .disableRules(["color-contrast"])
-    .analyze();
-  expect(audit.violations).toEqual([]);
+  await expect(page.getByRole("textbox", { name: "Guest Name", exact: true })).toBeVisible();
   const skill = page.getByRole("combobox", { name: "Guest starting skill level", exact: true });
   await expect(skill).toHaveValue("3.5");
-  await skill.selectOption("3");
-  await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill("Accessible Guest");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  const guest = page.getByRole("listitem").filter({ hasText: "Accessible Guest" });
-  await expect(guest).toContainText("Rating: 3 (Intermediate)");
+  const audit = await new AxeBuilder({ page }).disableRules(["color-contrast"]).analyze();
+  expect(audit.violations).toEqual([]);
+
+  for (const [index, guest] of [
+    { name: "Intermediate Guest", value: "3", rating: "Rating: 3 (Intermediate)" },
+    { name: "Competitive Guest", value: "4", rating: "Rating: 4 (Competitive)" },
+  ].entries()) {
+    await skill.selectOption(guest.value);
+    await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill(guest.name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByText(`${index + 2} players on roster`, { exact: true })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: guest.name })).toContainText(guest.rating);
+  }
 });

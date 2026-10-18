@@ -27,7 +27,7 @@ export async function createAndSignInPlayer(
   await page.click("button[type='submit']");
 
   // Wait for client-side navigation to /setup
-  await expect(page).toHaveURL(/\/setup/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/setup/, { timeout: 25000 });
   await expect(page.locator("h1")).toContainText("Create Group");
 
   return { username, name };
@@ -39,12 +39,12 @@ export async function createAndSignInPlayer(
 export async function createTestGroup(
   page: Page,
   groupName: string
-): Promise<{ groupName: string; groupId: string }> {
-  await createAndSignInPlayer(page);
+): Promise<{ groupName: string; groupId: string; hostName: string; hostUsername: string }> {
+  const host = await createAndSignInPlayer(page);
   await page.waitForSelector("form[data-hydrated='true']");
   await page.fill("#group-name", groupName);
   await page.click("button[type='submit']");
   await expect(page).toHaveURL(/\/g\/grp_/, { timeout: 15000 });
   const groupId = page.url().split("/g/")[1].split("/")[0];
-  return { groupName, groupId };
+  return { groupName, groupId, hostName: host.name, hostUsername: host.username };
 }

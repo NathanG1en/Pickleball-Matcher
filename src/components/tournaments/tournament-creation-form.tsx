@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,13 @@ export function TournamentCreationForm({
 }: TournamentCreationFormProps) {
   const router = useRouter();
   const [players, setPlayers] = useState<readonly PlayerRecord[]>(initialPlayers);
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [players],
+  );
   const [name, setName] = useState<string>(`${groupName} Championship`);
   const [selectedDivisions, setSelectedDivisions] = useState<Set<TournamentDivision>>(
     new Set(TOURNAMENT_DIVISIONS),
@@ -294,7 +301,7 @@ export function TournamentCreationForm({
 
         {/* Player Roster Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {players.map((player) => {
+          {sortedPlayers.map((player) => {
             const isSelected = selectedPlayerIds.has(player.id);
             return (
               <div

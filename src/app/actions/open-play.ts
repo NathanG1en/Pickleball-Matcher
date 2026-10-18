@@ -6,6 +6,8 @@ import { z } from "zod";
 import {
   defaultDependencies,
   getActionRepository,
+  getActionSessionService,
+  getActiveOrganizerSession,
   getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
@@ -20,6 +22,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const startOpenPlaySessionSchema = z.object({
   groupId: z.string().min(1),
@@ -178,8 +181,22 @@ export async function addOpenPlayPlayerAction(
   try {
     const repository = getActionRepository();
     const session = await repository.getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId || session.status !== "active") {
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+    const isCompleted = session.status === "completed";
+    if (session.status !== "active" && !isCompleted) {
       return { ok: false, error: "Active open play session not found." };
+    }
+
+    if (isCompleted) {
+      const accountId = await getActivePlayerAccountId();
+      const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+      const organizerSession = await getActiveOrganizerSession();
+      const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+      if (!isOrganizer && !hasOrgSession) {
+        return { ok: false, error: "Only organizers can add players to an ended session." };
+      }
     }
 
     const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
@@ -208,7 +225,15 @@ export async function addOpenPlayPlayerAction(
 const addOpenPlayGuestSchema = z.object({
   groupId: z.string().min(1),
   sessionId: z.string().min(1),
-  guestName: z.string().trim().min(1, "Guest name is required"),
+  guestName: z.string().trim().min(1, "Guest name is required").max(80, "Guest name must be 80 characters or fewer"),
+  initialRating: z.coerce
+    .number()
+    .finite()
+    .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+      message: "Initial rating must be between 2.000 and 8.000.",
+    })
+    .default(3.5)
+    .transform(normalizeInitialRating),
 });
 
 export async function addOpenPlayGuestAction(
@@ -222,17 +247,32 @@ export async function addOpenPlayGuestAction(
   try {
     const repository = getActionRepository();
     const session = await repository.getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId || session.status !== "active") {
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+    const isCompleted = session.status === "completed";
+    if (session.status !== "active" && !isCompleted) {
       return { ok: false, error: "Active open play session not found." };
     }
 
+    if (isCompleted) {
+      const accountId = await getActivePlayerAccountId();
+      const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+      const organizerSession = await getActiveOrganizerSession();
+      const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+      if (!isOrganizer && !hasOrgSession) {
+        return { ok: false, error: "Only organizers can add guests to an ended session." };
+      }
+    }
+
     const playerId = `p_${randomUUID().slice(0, 10)}`;
+    const initialRating = parsed.data.initialRating ?? 1000;
     const guestPlayer: PlayerRecord = {
       id: playerId,
       groupId: parsed.data.groupId,
       name: parsed.data.guestName,
-      initialRating: 1000,
-      rating: 1000,
+      initialRating,
+      rating: initialRating,
       ratedGamesPlayed: 0,
       active: true,
     };
@@ -330,8 +370,22 @@ export async function submitOpenPlayGameAction(
   try {
     const repository = getActionRepository();
     const session = await repository.getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId || session.status !== "active") {
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+    const isCompleted = session.status === "completed";
+    if (session.status !== "active" && !isCompleted) {
       return { ok: false, error: "Active open play session not found." };
+    }
+
+    const accountId = await getActivePlayerAccountId();
+    const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+    const organizerSession = await getActiveOrganizerSession();
+    const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+    const isOrganizerOrHost = isOrganizer || hasOrgSession;
+
+    if (isCompleted && !isOrganizerOrHost) {
+      return { ok: false, error: "Only organizers can add games to an ended session." };
     }
 
     const attendance = await repository.listAttendance(session.id);
@@ -340,12 +394,30 @@ export async function submitOpenPlayGameAction(
     );
 
     const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
-    for (const pid of allGamePlayerIds) {
-      if (!presentPlayerIds.has(pid)) {
-        return {
-          ok: false,
-          error: "All players in a game must be currently checked in to the open play session.",
-        };
+    if (isOrganizerOrHost) {
+      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+      const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
+      for (const pid of allGamePlayerIds) {
+        if (!groupPlayerMap.has(pid)) {
+          return { ok: false, error: "Player not found in group." };
+        }
+        if (!presentPlayerIds.has(pid)) {
+          await repository.saveAttendance({
+            sessionId: session.id,
+            playerId: pid,
+            joinedRound: 1,
+            leftRound: null,
+          });
+        }
+      }
+    } else {
+      for (const pid of allGamePlayerIds) {
+        if (!presentPlayerIds.has(pid)) {
+          return {
+            ok: false,
+            error: "All players in a game must be currently checked in to the open play session.",
+          };
+        }
       }
     }
 
@@ -382,11 +454,15 @@ export async function submitOpenPlayGameAction(
       targetRound = newRound.round;
     }
 
+    const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
+    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+    const courtNumber = parsed.data.courtNumber ?? (maxCourtNumber + 1);
+
     const matchId = defaultDependencies.nextId("match");
     const match: MatchRecord = {
       id: matchId,
       roundId: targetRound.id,
-      courtNumber: parsed.data.courtNumber ?? 1,
+      courtNumber,
       status: "completed",
       team1Score: parsed.data.team1Score,
       team2Score: parsed.data.team2Score,
@@ -458,6 +534,182 @@ export async function submitOpenPlayGameAction(
   }
 }
 
+const updateOpenPlayGameSchema = z
+  .object({
+    groupId: z.string().min(1),
+    sessionId: z.string().min(1),
+    matchId: z.string().min(1),
+    team1PlayerIds: z.array(z.string().min(1)).min(1).max(2),
+    team2PlayerIds: z.array(z.string().min(1)).min(1).max(2),
+    team1Score: z.number().int().min(0, "Score cannot be negative"),
+    team2Score: z.number().int().min(0, "Score cannot be negative"),
+  })
+  .refine((data) => data.team1PlayerIds.length === data.team2PlayerIds.length, {
+    message: "Both teams must have the same number of players (singles or doubles).",
+  })
+  .refine((data) => data.team1Score !== data.team2Score, {
+    message: "Scores cannot be tied. Enter two different scores.",
+  })
+  .refine(
+    (data) => {
+      const all = [...data.team1PlayerIds, ...data.team2PlayerIds];
+      return new Set(all).size === all.length;
+    },
+    { message: "A player cannot be selected more than once in the same game." },
+  );
+
+export async function updateOpenPlayGameAction(
+  input: unknown,
+): Promise<ActionResult<MatchRecord>> {
+  const parsed = updateOpenPlayGameSchema.safeParse(input);
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message ?? "Invalid game edit submission.";
+    return { ok: false, error: msg };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+    const isCompleted = session.status === "completed";
+    if (session.status !== "active" && !isCompleted) {
+      return { ok: false, error: "Active open play session not found." };
+    }
+
+    const accountId = await getActivePlayerAccountId();
+    const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+    const organizerSession = await getActiveOrganizerSession();
+    const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+    const isOrganizerOrHost = isOrganizer || hasOrgSession;
+
+    if (isCompleted) {
+      if (!isOrganizerOrHost) {
+        return { ok: false, error: "Only organizers can edit games in an ended session." };
+      }
+    } else {
+      if (!isOrganizerOrHost) {
+        const attendance = await repository.listAttendance(session.id);
+        const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+        const callerPlayer = accountId ? groupPlayers.find((p) => p.accountId === accountId) : null;
+        const isCheckedIn = callerPlayer && attendance.some((a) => a.playerId === callerPlayer.id && a.leftRound === null);
+        if (!isCheckedIn) {
+          return { ok: false, error: "You must be an organizer or checked into this session to edit games." };
+        }
+      }
+    }
+
+    const attendance = await repository.listAttendance(session.id);
+    const presentPlayerIds = new Set(
+      attendance.filter((a) => a.leftRound === null).map((a) => a.playerId),
+    );
+
+    const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
+    if (isOrganizerOrHost) {
+      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+      const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
+      for (const pid of allGamePlayerIds) {
+        if (!groupPlayerMap.has(pid)) {
+          return { ok: false, error: "Player not found in group." };
+        }
+        if (!presentPlayerIds.has(pid)) {
+          await repository.saveAttendance({
+            sessionId: session.id,
+            playerId: pid,
+            joinedRound: 1,
+            leftRound: null,
+          });
+        }
+      }
+    } else {
+      for (const pid of allGamePlayerIds) {
+        if (!presentPlayerIds.has(pid)) {
+          return {
+            ok: false,
+            error: "All players in a game must be currently checked in to the open play session.",
+          };
+        }
+      }
+    }
+
+    const match = await repository.getMatch(parsed.data.matchId);
+    if (!match) {
+      return { ok: false, error: "Match not found." };
+    }
+
+    const updatedMatch: MatchRecord = {
+      ...match,
+      team1Score: parsed.data.team1Score,
+      team2Score: parsed.data.team2Score,
+      status: "completed",
+      version: match.version + 1,
+      completedAt: match.completedAt ?? defaultDependencies.now(),
+    };
+    await repository.updateMatch(updatedMatch);
+
+    const matchPlayers: MatchPlayerRecord[] = [
+      ...parsed.data.team1PlayerIds.map((playerId) => ({
+        matchId: match.id,
+        playerId,
+        team: 1 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+      ...parsed.data.team2PlayerIds.map((playerId) => ({
+        matchId: match.id,
+        playerId,
+        team: 2 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+    ];
+    await repository.updateMatchPlayers(match.id, matchPlayers);
+
+    await replayRatings(parsed.data.groupId, repository);
+
+    if (parsed.data.team1PlayerIds.length === 2 && parsed.data.team2PlayerIds.length === 2) {
+      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
+      const playerAccountMap = new Map<string, string | null>(
+        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
+      );
+      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      const [t1A, t1B] = parsed.data.team1PlayerIds;
+      const [t2A, t2B] = parsed.data.team2PlayerIds;
+      const t1AccA = playerAccountMap.get(t1A);
+      const t1AccB = playerAccountMap.get(t1B);
+      if (t1AccA && t1AccB) {
+        pairResults.push({
+          accountIdA: t1AccA,
+          accountIdB: t1AccB,
+          won: parsed.data.team1Score > parsed.data.team2Score,
+        });
+      }
+      const t2AccA = playerAccountMap.get(t2A);
+      const t2AccB = playerAccountMap.get(t2B);
+      if (t2AccA && t2AccB) {
+        pairResults.push({
+          accountIdA: t2AccA,
+          accountIdB: t2AccB,
+          won: parsed.data.team2Score > parsed.data.team1Score,
+        });
+      }
+      if (pairResults.length > 0) {
+        await repository.recordMatchesSynergy(pairResults);
+      }
+    }
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    return { ok: true, data: updatedMatch };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to update game",
+    };
+  }
+}
+
 const endOpenPlaySessionSchema = z.object({
   groupId: z.string().min(1),
   sessionId: z.string().min(1),
@@ -509,3 +761,169 @@ export async function endOpenPlaySessionAction(
     };
   }
 }
+
+const getPlayerLastOpenPlayGameSchema = z.object({
+  groupId: z.string().min(1),
+  sessionId: z.string().min(1),
+  playerId: z.string().min(1),
+});
+
+export async function getPlayerLastOpenPlayGameAction(
+  input: unknown,
+): Promise<ActionResult<{
+  matchType: "doubles" | "singles";
+  team1PlayerIds: string[];
+  team2PlayerIds: string[];
+} | null>> {
+  const parsed = getPlayerLastOpenPlayGameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid parameters" };
+  }
+
+  try {
+    const repository = getActionRepository();
+
+    // 1. Check current session's started rounds first
+    const startedRounds = await repository.listStartedRounds(parsed.data.sessionId);
+    const sessionMatches: { match: MatchRecord; matchPlayers: MatchPlayerRecord[] }[] = [];
+    for (const sr of startedRounds) {
+      for (const m of sr.matches) {
+        if (m.status === "completed") {
+          const mps = sr.matchPlayers.filter((mp) => mp.matchId === m.id);
+          sessionMatches.push({ match: m, matchPlayers: mps });
+        }
+      }
+    }
+
+    sessionMatches.sort((a, b) => {
+      const tA = a.match.completedAt?.getTime() ?? 0;
+      const tB = b.match.completedAt?.getTime() ?? 0;
+      return tB - tA;
+    });
+
+    const currentMatch = sessionMatches.find((sm) =>
+      sm.matchPlayers.some((mp) => mp.playerId === parsed.data.playerId),
+    );
+
+    if (currentMatch) {
+      const t1 = currentMatch.matchPlayers.filter((mp) => mp.team === 1).map((mp) => mp.playerId);
+      const t2 = currentMatch.matchPlayers.filter((mp) => mp.team === 2).map((mp) => mp.playerId);
+      return {
+        ok: true,
+        data: {
+          matchType: t1.length === 2 && t2.length === 2 ? "doubles" : "singles",
+          team1PlayerIds: t1,
+          team2PlayerIds: t2,
+        },
+      };
+    }
+
+    // 2. Check previous open play sessions for the group
+    const allSessions = await repository.listSessions(parsed.data.groupId);
+    const prevSessions = allSessions
+      .filter((s) => s.type === "open_play" && s.id !== parsed.data.sessionId)
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+
+    for (const prevSession of prevSessions) {
+      const prevRounds = await repository.listStartedRounds(prevSession.id);
+      const prevMatches: { match: MatchRecord; matchPlayers: MatchPlayerRecord[] }[] = [];
+      for (const sr of prevRounds) {
+        for (const m of sr.matches) {
+          if (m.status === "completed") {
+            const mps = sr.matchPlayers.filter((mp) => mp.matchId === m.id);
+            prevMatches.push({ match: m, matchPlayers: mps });
+          }
+        }
+      }
+      prevMatches.sort((a, b) => {
+        const tA = a.match.completedAt?.getTime() ?? 0;
+        const tB = b.match.completedAt?.getTime() ?? 0;
+        return tB - tA;
+      });
+      const matchFound = prevMatches.find((sm) =>
+        sm.matchPlayers.some((mp) => mp.playerId === parsed.data.playerId),
+      );
+      if (matchFound) {
+        const t1 = matchFound.matchPlayers.filter((mp) => mp.team === 1).map((mp) => mp.playerId);
+        const t2 = matchFound.matchPlayers.filter((mp) => mp.team === 2).map((mp) => mp.playerId);
+        return {
+          ok: true,
+          data: {
+            matchType: t1.length === 2 && t2.length === 2 ? "doubles" : "singles",
+            team1PlayerIds: t1,
+            team2PlayerIds: t2,
+          },
+        };
+      }
+    }
+
+    return { ok: true, data: null };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to find player's last game",
+    };
+  }
+}
+
+const deleteOpenPlayGameSchema = z.object({
+  groupId: z.string().min(1),
+  sessionId: z.string().min(1),
+  matchId: z.string().min(1),
+});
+
+export async function deleteOpenPlayGameAction(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = deleteOpenPlayGameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid parameters" };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+    const isCompleted = session.status === "completed";
+    if (session.status !== "active" && !isCompleted) {
+      return { ok: false, error: "Active open play session not found." };
+    }
+
+    const accountId = await getActivePlayerAccountId();
+    const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+    const organizerSession = await getActiveOrganizerSession();
+    const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+    const isOrganizerOrHost = isOrganizer || hasOrgSession;
+
+    if (isCompleted) {
+      if (!isOrganizerOrHost) {
+        return { ok: false, error: "Only organizers can delete games from an ended session." };
+      }
+    } else {
+      if (!isOrganizerOrHost) {
+        const attendance = await repository.listAttendance(session.id);
+        const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+        const callerPlayer = accountId ? groupPlayers.find((p) => p.accountId === accountId) : null;
+        const isCheckedIn = callerPlayer && attendance.some((a) => a.playerId === callerPlayer.id && a.leftRound === null);
+        if (!isCheckedIn) {
+          return { ok: false, error: "You must be an organizer or checked into this session to delete games." };
+        }
+      }
+    }
+
+    const service = getActionSessionService();
+    await service.deleteMatch(parsed.data.matchId);
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    return { ok: true, data: { id: parsed.data.matchId } };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to delete game",
+    };
+  }
+}
+

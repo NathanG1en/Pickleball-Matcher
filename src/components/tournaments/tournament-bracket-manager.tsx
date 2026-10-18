@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,13 @@ export function TournamentBracketManager({
 
   const currentBracket = tournament.brackets[effectiveActiveDivision];
   const participants = currentBracket?.participants ?? [];
+  const sortedParticipants = useMemo(
+    () =>
+      [...(currentBracket?.participants ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [currentBracket?.participants],
+  );
   const matches = currentBracket?.matches ?? [];
   const roundNames = currentBracket?.roundNames ?? [];
 
@@ -581,7 +588,7 @@ export function TournamentBracketManager({
                 className="w-full bg-white border-2 border-black rounded-xl p-2.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000]"
               >
                 <option value="">(None / Empty)</option>
-                {participants.map((p) => (
+                {sortedParticipants.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -600,7 +607,7 @@ export function TournamentBracketManager({
                 className="w-full bg-white border-2 border-black rounded-xl p-2.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000]"
               >
                 <option value="">(None / Empty)</option>
-                {participants.map((p) => (
+                {sortedParticipants.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>

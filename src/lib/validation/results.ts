@@ -29,7 +29,7 @@ export const cancelMatchSchema = z
   .object({
     groupId: entityIdSchema,
     matchId: entityIdSchema,
-    matchVersion: z.coerce.number().int().positive(),
-    idempotencyKey: entityIdSchema,
+    matchVersion: z.coerce.number().int().positive().optional(),
+    idempotencyKey: entityIdSchema.optional(),
   })
   .strict();

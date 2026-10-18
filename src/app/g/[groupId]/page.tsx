@@ -14,6 +14,7 @@ import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
 import { GroupNameEditor } from "@/components/groups/group-name-editor";
+import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
@@ -83,7 +84,7 @@ export default async function GroupDashboardPage({
     const startedRounds = await repository.listStartedRounds(activeSession.id);
     const latestStarted = startedRounds.at(-1);
     if (latestStarted && latestStarted.round.status === "started") {
-      currentRoundMatches = latestStarted.matches;
+      currentRoundMatches = latestStarted.matches.filter((m) => m.status !== "cancelled");
       currentMatchPlayers = latestStarted.matchPlayers;
     }
   }
@@ -93,7 +94,9 @@ export default async function GroupDashboardPage({
       const startedRounds = await repository.listStartedRounds(s.id);
       let totalGames = 0;
       const rounds = startedRounds.map((sr) => {
-        const roundMatches = sr.matches.map((m) => {
+        const roundMatches = sr.matches
+          .filter((m) => m.status !== "cancelled")
+          .map((m) => {
           const t1 = sr.matchPlayers
             .filter((mp) => mp.matchId === m.id && mp.team === 1)
             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
@@ -133,6 +136,7 @@ export default async function GroupDashboardPage({
         rounds,
         totalGames,
         type: s.type ?? "regular",
+        name: s.name ?? null,
       };
     }),
   );
@@ -158,7 +162,7 @@ export default async function GroupDashboardPage({
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs font-bold text-neutral-600">
-            {players.length} players on roster
+            {players.length} {players.length === 1 ? "player" : "players"} on roster
           </p>
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
@@ -194,41 +198,89 @@ export default async function GroupDashboardPage({
                 </span>
               </div>
               <div>
-                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
-                  {activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress"}
-                </h2>
+                <SessionNameEditor
+                  groupId={groupId}
+                  sessionId={activeSession.id}
+                  initialName={activeSession.name || (activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress")}
+                  canEdit={isOrganizer}
+                  headingTag="h2"
+                  className="font-display text-2xl font-black uppercase text-black mb-1"
+                />
                 <p className="text-sm font-bold text-neutral-900">
+                  Started {new Date(activeSession.startedAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  {" · "}
                   {activeSession.type === "open_play"
                     ? "Check in and submit games."
                     : `Running on ${activeSession.courtCount} court${activeSession.courtCount > 1 ? "s" : ""}.`}
                 </p>
               </div>
 
-              {currentRoundMatches.length > 0 && (
-                <div className="space-y-2 pt-2 border-t-2 border-black/20">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {currentRoundMatches.map((m) => {
-                      const t1 = currentMatchPlayers
-                        .filter((mp) => mp.matchId === m.id && mp.team === 1)
-                        .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                      const t2 = currentMatchPlayers
-                        .filter((mp) => mp.matchId === m.id && mp.team === 2)
-                        .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
-                      return (
-                        <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
-                          <div>
-                            <span className="font-black text-black block">Court {m.courtNumber}</span>
-                            <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
+              {activeSession.type === "open_play" ? (
+                (() => {
+                  const recentGames = currentRoundMatches
+                    .filter((m) => m.status === "completed")
+                    .slice()
+                    .reverse()
+                    .slice(0, 5);
+                  if (recentGames.length === 0) return null;
+                  return (
+                    <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-black">Recent Games</h3>
+                      <div data-testid="open-play-recent-games" className="max-h-[136px] overflow-y-auto space-y-2 pr-1">
+                        {recentGames.map((m) => {
+                          const t1 = currentMatchPlayers
+                            .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                            .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                          const t2 = currentMatchPlayers
+                            .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                            .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                          return (
+                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
+                              <div className="min-w-0 pr-2">
+                                <span className="font-black text-black block">Court {m.courtNumber}</span>
+                                <span className="font-bold text-neutral-800 truncate block">{t1.join(" & ")} vs {t2.join(" & ")}</span>
+                              </div>
+                              <Badge variant="success">
+                                {m.team1Score} – {m.team2Score}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                currentRoundMatches.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {currentRoundMatches.map((m) => {
+                        const t1 = currentMatchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 1)
+                          .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                        const t2 = currentMatchPlayers
+                          .filter((mp) => mp.matchId === m.id && mp.team === 2)
+                          .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                        return (
+                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
+                            <div>
+                              <span className="font-black text-black block">Court {m.courtNumber}</span>
+                              <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
+                            </div>
+                            <Badge variant={m.status === "completed" ? "success" : "warning"}>
+                              {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : "In Play"}
+                            </Badge>
                           </div>
-                          <Badge variant={m.status === "completed" ? "success" : m.status === "cancelled" ? "muted" : "warning"}>
-                            {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : m.status === "cancelled" ? "Cancelled" : "In Play"}
-                          </Badge>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )
               )}
 
               <Link

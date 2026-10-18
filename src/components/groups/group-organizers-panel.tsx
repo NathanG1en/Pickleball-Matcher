@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   addGroupOrganizerAction,
@@ -43,6 +43,14 @@ export function GroupOrganizersPanel({
   const [transferTarget, setTransferTarget] = useState<PlayerRecord | null>(null);
   const [transferPending, setTransferPending] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
+
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [players],
+  );
 
   // Mode switch: "search" | "guest"
   const [addMode, setAddMode] = useState<"search" | "guest">("search");
@@ -431,6 +439,7 @@ export function GroupOrganizersPanel({
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-player-name"
+                  aria-label="Guest Name"
                   required
                   maxLength={60}
                   value={guestName}
@@ -473,7 +482,7 @@ export function GroupOrganizersPanel({
         <p className="rounded-lg border border-black bg-white px-3 py-3 text-sm font-bold text-neutral-700">No players on the roster yet.</p>
       ) : (
         <ul className="divide-y-2 divide-neutral-200 rounded-xl border-2 border-black bg-white px-3">
-          {players.map((player) => {
+          {sortedPlayers.map((player) => {
             const organizer = player.accountId ? organizers.find(({ accountId }) => accountId === player.accountId) : undefined;
             const playerUsername = player.username || organizer?.username;
             return (

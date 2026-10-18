@@ -124,6 +124,21 @@ describe("PastSessionsList Component", () => {
     expect(html).toContain('data-testid="view-full-session-link-ses_completed_1"');
     expect(html).toContain(`href="/g/${groupId}/sessions/ses_completed_1"`);
     expect(html).toContain("View Full Session");
+    expect(html).toContain("Started Oct 10, 2026");
+  });
+
+  it("includes the date when a session has a custom name", () => {
+    const namedSession: PastSessionData = {
+      ...sampleSession,
+      id: "ses_named_1",
+      name: "Fall Championship",
+    };
+    const html = renderToStaticMarkup(
+      <PastSessionsList groupId={groupId} sessions={[namedSession]} />
+    );
+
+    expect(html).toContain("Fall Championship · Oct 10, 2026");
+    expect(html).toContain('aria-label="Fall Championship · Oct 10, 2026"');
   });
 });
 
