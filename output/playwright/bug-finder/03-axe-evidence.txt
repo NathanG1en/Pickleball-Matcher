@@ -1,0 +1,20 @@
+### Result
+[
+  {
+    "id": "select-name",
+    "impact": "critical",
+    "nodes": [
+      {
+        "html": "<select class=\"rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none\">",
+        "target": [
+          "select"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+      }
+    ]
+  }
+]
+### Ran Playwright code
+```js
+await page.evaluate('async () => { const r = await window.axe.run(document.querySelector("main")); return r.violations.map(v => ({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({html:n.html,target:n.target,failureSummary:n.failureSummary}))})); }');
+```
