@@ -29,8 +29,9 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
+import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
-import type { CourtSynergiesMap } from "@/components/rounds/synergy-reveal-modal";
+import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -42,8 +43,7 @@ export interface SessionManagerClientProps {
   readonly initialProposal: RoundProposal | null;
   readonly canManage?: boolean;
   readonly currentViewerPlayerId?: string | null;
-  readonly partnerSynergy?: { readonly score: number; readonly matchesPlayed: number } | null;
-  readonly courtSynergies?: CourtSynergiesMap;
+  readonly pairSynergies?: PairSynergiesMap;
   readonly isOrganizer?: boolean;
   readonly isHost?: boolean;
   readonly isFromProfile?: boolean;
@@ -59,8 +59,7 @@ export function SessionManagerClient({
   initialProposal,
   canManage = true,
   currentViewerPlayerId = null,
-  partnerSynergy = null,
-  courtSynergies,
+  pairSynergies = {},
   isOrganizer = false,
   isHost = false,
   isFromProfile = false,
@@ -127,6 +126,7 @@ export function SessionManagerClient({
         seed: nextSeed,
       });
       if (res.ok) {
+        clearLineupDraft(lineupDraftKey(session.id));
         setRegeneratedProposal(res.data);
       } else {
         setError(res.error);
@@ -160,6 +160,7 @@ export function SessionManagerClient({
         manualSitting: customProposal ? [...customProposal.sitting] : undefined,
       });
       if (res.ok) {
+        clearLineupDraft(lineupDraftKey(session.id));
         setRegeneratedProposal(null);
         router.refresh();
       } else {
@@ -956,6 +957,8 @@ export function SessionManagerClient({
             </div>
           ) : activeProposal ? (
             <CurrentRoundView
+              draftKey={lineupDraftKey(session.id)}
+              draftContext={`${session.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}`}
               round={{
                 id: `proposal_${activeProposal.seed}`,
                 roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
@@ -972,8 +975,7 @@ export function SessionManagerClient({
               playerAccounts={playerAccounts}
               isPending={isPending}
               currentViewerPlayerId={currentViewerPlayerId}
-              partnerSynergy={partnerSynergy}
-              courtSynergies={courtSynergies}
+              pairSynergies={pairSynergies}
               isOrganizer={isOrganizer}
               onRegenerate={canManage ? handleRegenerate : undefined}
               onStartRound={canManage ? handleStartRound : undefined}

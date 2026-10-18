@@ -4,22 +4,8 @@ import React from "react";
 import type { RoundCourtData } from "@/components/rounds/current-round";
 import { ZapIcon, AlertTriangleIcon, InfoIcon, XIcon } from "@/components/ui/icons";
 
-export type TeamSynergyStatus = "calculated" | "new_duo" | "guest_ineligible" | "solo";
-
-export interface TeamSynergyInfo {
-  readonly score?: number;
-  readonly matchesPlayed?: number;
-  readonly status?: TeamSynergyStatus;
-  readonly reason?: string;
-  readonly hasGuest?: boolean;
-}
-
-export interface CourtSynergiesMap {
-  [courtNumber: number]: {
-    team1?: TeamSynergyInfo | null;
-    team2?: TeamSynergyInfo | null;
-  };
-}
+import type { CourtSynergiesMap, TeamSynergyInfo } from "@/lib/synergy/lineup";
+export type { CourtSynergiesMap, TeamSynergyInfo, TeamSynergyStatus } from "@/lib/synergy/lineup";
 
 export interface SynergyRevealModalProps {
   readonly isOpen: boolean;

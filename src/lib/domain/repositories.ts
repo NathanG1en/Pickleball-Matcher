@@ -36,6 +36,7 @@ export interface DomainRepository {
   updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
   updatePlayerAccountGender(accountId: string, gender: PlayerGender): Promise<void>;
   updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void>;
+  listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]>;
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;
   getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null>;
   recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void>;

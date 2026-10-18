@@ -10,7 +10,7 @@ import {
 import { SessionManagerClient } from "./session-manager-client";
 import { OpenPlayManagerClient } from "./open-play-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
-import type { CourtSynergiesMap, TeamSynergyInfo } from "@/components/rounds/synergy-reveal-modal";
+import { buildPairSynergies } from "@/lib/synergy/lineup";
 
 export default async function ActiveSessionPage({
   params,
@@ -92,63 +92,10 @@ export default async function ActiveSessionPage({
     }
   }
 
-  const courtSynergies: CourtSynergiesMap = {};
-  let partnerSynergy: { score: number; matchesPlayed: number } | null = null;
-
-  if (initialProposal) {
-    const playerAccountMap = new Map<string, string | null>(
-      players.map((p) => [p.id, p.accountId ?? null]),
-    );
-
-    for (const c of initialProposal.courts) {
-      let t1Syn: TeamSynergyInfo | null = null;
-      let t2Syn: TeamSynergyInfo | null = null;
-
-      if (c.team1.length === 2) {
-        const a1 = playerAccountMap.get(c.team1[0]);
-        const a2 = playerAccountMap.get(c.team1[1]);
-        if (a1 && a2) {
-          const syn = await repository.getPairSynergy(a1, a2);
-          if (syn) {
-            t1Syn = { score: syn.synergyScore, matchesPlayed: syn.matchesPlayed, status: "calculated" };
-          } else {
-            t1Syn = { status: "new_duo", reason: "First match together" };
-          }
-        } else {
-          t1Syn = { status: "guest_ineligible", hasGuest: true, reason: "Guest player without account" };
-        }
-      } else {
-        t1Syn = { status: "solo", reason: "Doubles synergy requires a 2-player team" };
-      }
-
-      if (c.team2.length === 2) {
-        const a1 = playerAccountMap.get(c.team2[0]);
-        const a2 = playerAccountMap.get(c.team2[1]);
-        if (a1 && a2) {
-          const syn = await repository.getPairSynergy(a1, a2);
-          if (syn) {
-            t2Syn = { score: syn.synergyScore, matchesPlayed: syn.matchesPlayed, status: "calculated" };
-          } else {
-            t2Syn = { status: "new_duo", reason: "First match together" };
-          }
-        } else {
-          t2Syn = { status: "guest_ineligible", hasGuest: true, reason: "Guest player without account" };
-        }
-      } else {
-        t2Syn = { status: "solo", reason: "Doubles synergy requires a 2-player team" };
-      }
-
-      courtSynergies[c.courtNumber] = { team1: t1Syn, team2: t2Syn };
-
-      if (viewerPlayer) {
-        if (c.team1.includes(viewerPlayer.id)) {
-          partnerSynergy = t1Syn?.score !== undefined ? { score: t1Syn.score, matchesPlayed: t1Syn.matchesPlayed! } : null;
-        } else if (c.team2.includes(viewerPlayer.id)) {
-          partnerSynergy = t2Syn?.score !== undefined ? { score: t2Syn.score, matchesPlayed: t2Syn.matchesPlayed! } : null;
-        }
-      }
-    }
-  }
+  const accountIds = [...new Set(players.flatMap((player) => player.accountId ? [player.accountId] : []))];
+  const pairSynergies = initialProposal
+    ? buildPairSynergies(await repository.listPairSynergies(accountIds))
+    : {};
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
@@ -162,8 +109,7 @@ export default async function ActiveSessionPage({
         initialProposal={initialProposal}
         canManage={isOrganizer}
         currentViewerPlayerId={viewerPlayer?.id ?? null}
-        partnerSynergy={partnerSynergy}
-        courtSynergies={courtSynergies}
+        pairSynergies={pairSynergies}
         isOrganizer={isOrganizer}
         isHost={isHost}
         isFromProfile={isFromProfile}

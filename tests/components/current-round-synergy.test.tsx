@@ -13,7 +13,8 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         sittingPlayerIds={[]}
         playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
         currentViewerPlayerId="p1"
-        partnerSynergy={{ score: 84, matchesPlayed: 10 }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+        pairSynergies={{ '["acc1","acc2"]': { score: 84, matchesPlayed: 10 } }}
       />
     );
     // Player's own team displays their partner synergy badge
@@ -31,7 +32,8 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         sittingPlayerIds={[]}
         playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
         isOrganizer={true}
-        courtSynergies={{ 1: { team1: { score: 84, matchesPlayed: 10 } } }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+        pairSynergies={{ '["acc1","acc2"]': { score: 84, matchesPlayed: 10 } }}
       />
     );
     // Court cards don't render synergy badges for organizer (revealed only via panel)
@@ -46,10 +48,26 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         sittingPlayerIds={[]}
         playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
         isOrganizer={true}
-        courtSynergies={{ 1: { team1: { score: 84, matchesPlayed: 10 } } }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+        pairSynergies={{ '["acc1","acc2"]': { score: 84, matchesPlayed: 10 } }}
       />
     );
     expect(html).toContain("Reveal Synergy");
+  });
+
+  it("follows the same account pair across courts, team slots, and player order", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView
+        round={{ id: "r2", roundNumber: 2, status: "proposed", seed: 2 }}
+        courts={[{ courtNumber: 2, team1: ["p3", "p4"], team2: ["p2", "p1"] }]}
+        sittingPlayerIds={[]}
+        playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+        currentViewerPlayerId="p1"
+        pairSynergies={{ '["acc1","acc2"]': { score: 67, matchesPlayed: 1 } }}
+      />
+    );
+    expect(html).toContain("67% Synergy");
   });
 
   it("displays the synergy score inside the reveal synergy modal card", () => {

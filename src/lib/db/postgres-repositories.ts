@@ -475,6 +475,17 @@ export class PostgresRepositories implements DomainRepository {
     `;
   }
 
+  async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
+    if (accountIds.length < 2) return [];
+    const rows = await this.query<PlayerSynergyRow[]>`
+      select account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at
+      from player_synergy
+      where account_id_1 = any(${[...accountIds]}::text[])
+        and account_id_2 = any(${[...accountIds]}::text[])
+    `;
+    return rows.map(mapPlayerSynergy);
+  }
+
   async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
     if (accountIdA === accountIdB) return null;
     const [first, second] = accountIdA < accountIdB ? [accountIdA, accountIdB] : [accountIdB, accountIdA];
