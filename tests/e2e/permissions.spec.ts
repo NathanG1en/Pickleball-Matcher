@@ -187,6 +187,107 @@ test.describe("Permissions and Security Workflow", () => {
     // Original host no longer has "Transfer host" in dropdown
     await coHostItem.locator("summary").click();
     await expect(coHostItem.locator("button:has-text('Transfer host')")).not.toBeVisible();
+
+    // 11. Add a guest player and verify organizer can edit guest name from three dots
+    const addGuestBtn = page.locator("button:has-text('Add Guest')");
+    await expect(addGuestBtn).toBeVisible();
+    await addGuestBtn.click();
+    await page.fill("#guest-player-name", "Guest Sam");
+    await page.locator("button:text-is('Add')").click();
+    await expect(page.locator("p[role='status']")).toContainText('Guest player "Guest Sam" added to the roster.', { timeout: 10000 });
+
+    const guestItem = page.locator("li").filter({ hasText: "Guest Sam" });
+    await expect(guestItem).toBeVisible();
+
+    // Organizer opens three dots for guest
+    await guestItem.locator("summary").click();
+    const editGuestBtn = guestItem.locator("button:has-text('Edit guest name')");
+    await expect(editGuestBtn).toBeVisible();
+    await expect(guestItem.locator("button:has-text('Remove player')")).toBeVisible();
+
+    // Click Edit guest name and update
+    await editGuestBtn.click();
+    const editModal = page.locator("div[role='dialog']:has-text('Edit Guest Name')");
+    await expect(editModal).toBeVisible();
+    const guestInput = editModal.locator("#edit-guest-name-input");
+    await expect(guestInput).toHaveValue("Guest Sam");
+    await guestInput.fill("Guest Samantha");
+    await editModal.locator("button:has-text('Save Changes')").click();
+
+    await expect(page.locator("p[role='status']")).toContainText('Guest name updated to "Guest Samantha".');
+    await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).toBeVisible();
+
+    // 12. Add a second guest player and verify organizer can merge 2+ guests together
+    await addGuestBtn.click();
+    await page.fill("#guest-player-name", "Guest Samuel");
+    await page.locator("button:text-is('Add')").click();
+    await expect(page.locator("p[role='status']")).toContainText('Guest player "Guest Samuel" added to the roster.', { timeout: 10000 });
+
+    const samanthaItem = page.locator("li").filter({ hasText: "Guest Samantha" });
+    const samuelItem = page.locator("li").filter({ hasText: "Guest Samuel" });
+    await expect(samanthaItem).toBeVisible();
+    await expect(samuelItem).toBeVisible();
+
+    // Open three dots for Guest Samantha
+    await samanthaItem.locator("summary").click();
+    const mergeBtn = samanthaItem.locator("button:has-text('Merge with another guest player')");
+    await expect(mergeBtn).toBeVisible();
+    await expect(samanthaItem.locator("button:has-text('Edit guest name')")).toBeVisible();
+    await expect(samanthaItem.locator("button:has-text('Remove player')")).toBeVisible();
+
+    // Click Merge with another guest player
+    await mergeBtn.click();
+    const mergeModal = page.locator("div[role='dialog']:has-text('Merge Guest Players')");
+    await expect(mergeModal).toBeVisible();
+
+    // Name field should be auto-populated with "Guest Samantha"
+    const mergedNameInput = mergeModal.locator("[data-testid='merge-guest-name-input']");
+    await expect(mergedNameInput).toHaveValue("Guest Samantha");
+
+    // Select second guest (Guest Samuel) to merge together
+    const samuelCheckbox = mergeModal.locator("input[type='checkbox']").nth(1);
+    await samuelCheckbox.check();
+
+    // Change merged name
+    await mergedNameInput.fill("Sam Master");
+
+    // Click Merge Players to open confirmation
+    const submitMergeBtn = mergeModal.locator("[data-testid='merge-guest-submit-button']");
+    await submitMergeBtn.click();
+
+    // Confirmation appears saying "Are you sure you want to merge these players together: ..."
+    const confirmDialog = page.locator("[data-testid='merge-confirm-dialog']");
+    await expect(confirmDialog).toBeVisible();
+    await expect(page.locator("[data-testid='merge-confirm-message']")).toContainText(
+      "Are you sure you want to merge these players together:",
+    );
+    await expect(page.locator("[data-testid='merge-confirm-message']")).toContainText("Guest Samantha");
+    await expect(page.locator("[data-testid='merge-confirm-message']")).toContainText("Guest Samuel");
+
+    // Test clicking "No" cancels confirmation and returns to the modal
+    const noBtn = page.locator("[data-testid='merge-confirm-no']");
+    await noBtn.click();
+    await expect(confirmDialog).not.toBeVisible();
+    await expect(submitMergeBtn).toBeVisible();
+
+    // Click Merge Players again, check "Do not ask me again", and click "Yes"
+    await submitMergeBtn.click();
+    await expect(confirmDialog).toBeVisible();
+    const doNotAskCheckbox = page.locator("[data-testid='merge-do-not-ask-again']");
+    await expect(doNotAskCheckbox).toBeVisible();
+    await doNotAskCheckbox.check();
+
+    const yesBtn = page.locator("[data-testid='merge-confirm-yes']");
+    await yesBtn.click();
+
+    // Modal closes and status confirms merge
+    await expect(mergeModal).not.toBeVisible();
+    await expect(page.locator("p[role='status']")).toContainText('Merged guest players into "Sam Master".');
+
+    // Roster should now contain "Sam Master" and neither "Guest Samantha" nor "Guest Samuel"
+    await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
+    await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).not.toBeVisible();
+    await expect(page.locator("li").filter({ hasText: "Guest Samuel" })).not.toBeVisible();
   });
 });
 

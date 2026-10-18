@@ -93,34 +93,63 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("button:has-text('Repeat')")).toHaveCount(0);
 
     // Team 1: Host and Bob
-    const t1p1 = submitCard.locator("select[aria-label='Team 1 Player 1']");
-    const t1p2 = submitCard.locator("select[aria-label='Team 1 Player 2']");
-
-    // Verify player dropdown options are ordered alphabetically (excluding prompt option)
-    const t1p1Options = await t1p1.locator("option").allInnerTexts();
-    const selectableOptions = t1p1Options.slice(1);
-    const sortedSelectableOptions = [...selectableOptions].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-    expect(selectableOptions).toEqual(sortedSelectableOptions);
+    const t1p1 = submitCard.locator("[data-testid='select-team-1-player-1']");
+    const t1p2 = submitCard.locator("[data-testid='select-team-1-player-2']");
 
     // Verify logged-in user is already autopopulated as the first player (t1p1)
-    const selectedHostOption = await t1p1.locator("option:checked").innerText();
-    expect(selectedHostOption).toContain(hostName);
+    await expect(t1p1).toContainText(hostName);
+
+    // Verify player dropdown options are ordered alphabetically
+    await t1p1.click();
+    const t1p1OptionElements = page.locator("[role='option'] span.truncate");
+    const selectableOptions = await t1p1OptionElements.allInnerTexts();
+    const sortedSelectableOptions = [...selectableOptions].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    expect(selectableOptions).toEqual(sortedSelectableOptions);
+    await page.keyboard.press("Escape");
+
+    // Verify player filter above team selection has been removed
+    await expect(page.locator("[data-testid='open-play-player-filter']")).toHaveCount(0);
+
+    // Open Team 1 Player 2 filterable dropdown
+    await t1p2.click();
 
     // Verify player selected in t1p1 cannot be selected in other dropdowns (disabled)
-    await expect(t1p2.locator(`option:has-text('${hostName}')`)).toBeDisabled();
+    await expect(page.locator("[role='option']").filter({ hasText: hostName })).toBeDisabled();
 
-    await t1p2.selectOption({ label: "Bob" });
+    // Verify player filter inside dropdown allows typing in to filter out players
+    const dropdownSearchInput = page.locator("[data-testid='filterable-select-search']");
+    await expect(dropdownSearchInput).toBeVisible();
+    await dropdownSearchInput.fill("Gary");
+    // Under filter "Gary", Gary is present in options, but Bob is filtered out
+    await expect(page.locator("[role='option']").filter({ hasText: "Guest Gary" })).toHaveCount(1);
+    await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toHaveCount(0);
+
+    // Clear filter: Bob reappears
+    await dropdownSearchInput.fill("");
+    await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toHaveCount(1);
+
+    // Select Bob from dropdown
+    await page.locator("[role='option']").filter({ hasText: "Bob" }).click();
+    await expect(t1p2).toContainText("Bob");
 
     // Team 2: Second Player and Guest Gary
-    const t2p1 = submitCard.locator("select[aria-label='Team 2 Player 1']");
-    const t2p2 = submitCard.locator("select[aria-label='Team 2 Player 2']");
+    const t2p1 = submitCard.locator("[data-testid='select-team-2-player-1']");
+    const t2p2 = submitCard.locator("[data-testid='select-team-2-player-2']");
 
-    // Both players 1 and 2 should be disabled in t2p1
-    await expect(t2p1.locator(`option:has-text('${hostName}')`)).toBeDisabled();
-    await expect(t2p1.locator("option:has-text('Bob')")).toBeDisabled();
+    // Open t2p1: Both players 1 and 2 should be disabled
+    await t2p1.click();
+    await expect(page.locator("[role='option']").filter({ hasText: hostName })).toBeDisabled();
+    await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toBeDisabled();
 
-    await t2p1.selectOption({ label: secondPlayer.name });
-    await t2p2.selectOption({ label: "Guest Gary" });
+    await page.locator("[data-testid='filterable-select-search']").fill(secondPlayer.name);
+    await page.locator("[role='option']").filter({ hasText: secondPlayer.name }).click();
+    await expect(t2p1).toContainText(secondPlayer.name);
+
+    // Open t2p2 and select Guest Gary
+    await t2p2.click();
+    await page.locator("[data-testid='filterable-select-search']").fill("Gary");
+    await page.locator("[role='option']").filter({ hasText: "Guest Gary" }).click();
+    await expect(t2p2).toContainText("Guest Gary");
 
     // Scores: 11 to 9
     await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
@@ -135,15 +164,12 @@ test.describe("Open Play Workflow", () => {
 
     // 10b. Verify player selects automatically remain autopopulated from the logged in user's last game
     // and logged-in user is still the first player (t1p1)
-    const t1p1AfterGame = await t1p1.locator("option:checked").innerText();
-    expect(t1p1AfterGame).toContain(hostName);
-    await expect(t1p2).not.toHaveValue("");
-    await expect(t2p1).not.toHaveValue("");
-    await expect(t2p2).not.toHaveValue("");
-
-    // Verify players are editable via select dropdown
-    const origT2P2 = await t2p2.inputValue();
-    expect(origT2P2).toBeTruthy();
+    await expect(t1p1).toContainText(hostName);
+    await expect(t1p2).toContainText("Bob");
+    const t2p1Text = await t2p1.innerText();
+    const t2p2Text = await t2p2.innerText();
+    expect([t2p1Text, t2p2Text].some((t) => t.includes(secondPlayer.name))).toBe(true);
+    expect([t2p1Text, t2p2Text].some((t) => t.includes("Guest Gary"))).toBe(true);
 
     // Submit second game with same teams and same order of players (11 to 8)
     await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
@@ -188,6 +214,31 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='open-play-recent-games']")).toContainText("11 – 9");
     await expect(page.locator("[data-testid='open-play-recent-games']")).not.toContainText("11 – 8");
     await expect(page.locator("text=Cancelled")).toHaveCount(0);
+
+    // Host edits a guest player's name from the group roster three dots menu
+    const bobRow = page.locator("li").filter({ hasText: "Bob" });
+    const bobMenu = bobRow.locator("summary[aria-label='Options for Bob']");
+    await expect(bobMenu).toBeVisible();
+    await bobMenu.click();
+
+    // Verify "Edit guest name" is present alongside "Remove player"
+    const editGuestBtn = bobRow.locator("button:has-text('Edit guest name')");
+    await expect(editGuestBtn).toBeVisible();
+    await expect(bobRow.locator("button:has-text('Remove player')")).toBeVisible();
+
+    await editGuestBtn.click();
+
+    // Verify modal is displayed with input prefilled
+    const editGuestModal = page.locator("div[role='dialog']:has-text('Edit Guest Name')");
+    await expect(editGuestModal).toBeVisible();
+    const guestNameInput = editGuestModal.locator("#edit-guest-name-input");
+    await expect(guestNameInput).toHaveValue("Bob");
+
+    await guestNameInput.fill("Bobby");
+    await editGuestModal.locator("button:has-text('Save Changes')").click();
+
+    await expect(page.locator("p[role='status']")).toContainText('Guest name updated to "Bobby".');
+    await expect(page.locator("li").filter({ hasText: "Bobby" })).toBeVisible();
 
     // Return to session to end it
     await page.goto(sessionUrl);
@@ -284,9 +335,21 @@ test.describe("Open Play Workflow", () => {
 
     // Host submits initial game 1 (Host & Bob vs Charlie & Dana: 11 - 5)
     const submitCard = page.locator("[data-testid='submit-game-card']");
-    await submitCard.locator("select[aria-label='Team 1 Player 2']").selectOption({ label: "Bob" });
-    await submitCard.locator("select[aria-label='Team 2 Player 1']").selectOption({ label: "Charlie" });
-    await submitCard.locator("select[aria-label='Team 2 Player 2']").selectOption({ label: "Dana" });
+    const t1p2 = submitCard.locator("[data-testid='select-team-1-player-2']");
+    await t1p2.click();
+    await page.locator("[data-testid='filterable-select-search']").fill("Bob");
+    await page.locator("[role='option']").filter({ hasText: "Bob" }).click();
+
+    const t2p1 = submitCard.locator("[data-testid='select-team-2-player-1']");
+    await t2p1.click();
+    await page.locator("[data-testid='filterable-select-search']").fill("Charlie");
+    await page.locator("[role='option']").filter({ hasText: "Charlie" }).click();
+
+    const t2p2 = submitCard.locator("[data-testid='select-team-2-player-2']");
+    await t2p2.click();
+    await page.locator("[data-testid='filterable-select-search']").fill("Dana");
+    await page.locator("[role='option']").filter({ hasText: "Dana" }).click();
+
     await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
     await submitCard.locator("input[aria-label='Team 2 Score']").fill("5");
     await submitCard.locator("button[data-testid='submit-game-button']").click();
@@ -400,6 +463,8 @@ test.describe("Open Play Workflow", () => {
     // Host checks group dashboard - active session card displays renamed session
     await page.goto(`/g/${groupId}`);
     await expect(page.locator("h2:has-text('Friday Night Open Play')")).toBeVisible();
+    // Host should NOT see edit session name button on main group page
+    await expect(page.locator("button[aria-label='Edit session name']")).toHaveCount(0);
 
     // End session
     await page.goto(sessionUrl);

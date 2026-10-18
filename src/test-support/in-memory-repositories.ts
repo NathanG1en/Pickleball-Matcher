@@ -19,6 +19,7 @@ import type {
   TournamentRecord,
 } from "@/lib/domain/types";
 import { calculateSynergyScore } from "@/lib/synergy/calculator";
+import { replayRatings } from "@/lib/domain/rating-replay";
 
 interface InMemoryState {
   groups: GroupRecord[];
@@ -422,6 +423,111 @@ export class InMemoryRepositories implements DomainRepository {
   async deletePlayer(playerId: string, groupId: string) {
     await this.removePlayerFromGroup(playerId, groupId);
   }
+
+  async mergeGuestPlayers(
+    groupId: string,
+    targetPlayerId: string,
+    sourcePlayerIds: readonly string[],
+    mergedName: string,
+  ): Promise<PlayerRecord> {
+    const targetPlayer = this.state.players.find((p) => p.id === targetPlayerId && p.groupId === groupId);
+    if (!targetPlayer || targetPlayer.accountId) {
+      throw new Error("Target player is not a valid guest player in this group.");
+    }
+
+    for (const sId of sourcePlayerIds) {
+      if (sId === targetPlayerId) continue;
+      const sPlayer = this.state.players.find((p) => p.id === sId && p.groupId === groupId);
+      if (!sPlayer || sPlayer.accountId) {
+        throw new Error("One or more players to merge are not valid guest players in this group.");
+      }
+
+      // session_attendance
+      const sAttendances = this.state.attendance.filter((a) => a.playerId === sId);
+      for (const sa of sAttendances) {
+        const targetAttIndex = this.state.attendance.findIndex(
+          (a) => a.sessionId === sa.sessionId && a.playerId === targetPlayerId,
+        );
+        if (targetAttIndex >= 0) {
+          const targetAtt = this.state.attendance[targetAttIndex];
+          const minJoined = Math.min(targetAtt.joinedRound, sa.joinedRound);
+          const mergedLeft =
+            targetAtt.leftRound === null || sa.leftRound === null
+              ? null
+              : Math.max(targetAtt.leftRound, sa.leftRound);
+          this.state.attendance[targetAttIndex] = {
+            ...targetAtt,
+            joinedRound: minJoined,
+            leftRound: mergedLeft,
+          };
+          this.state.attendance = this.state.attendance.filter(
+            (a) => !(a.sessionId === sa.sessionId && a.playerId === sId),
+          );
+        } else {
+          this.state.attendance = this.state.attendance.map((a) =>
+            a.sessionId === sa.sessionId && a.playerId === sId
+              ? { ...a, playerId: targetPlayerId }
+              : a,
+          );
+        }
+      }
+
+      // match_players
+      const sMatchPlayers = this.state.matchPlayers.filter((mp) => mp.playerId === sId);
+      for (const sm of sMatchPlayers) {
+        const existsTarget = this.state.matchPlayers.some(
+          (mp) => mp.matchId === sm.matchId && mp.playerId === targetPlayerId,
+        );
+        if (existsTarget) {
+          this.state.matchPlayers = this.state.matchPlayers.filter(
+            (mp) => !(mp.matchId === sm.matchId && mp.playerId === sId),
+          );
+        } else {
+          this.state.matchPlayers = this.state.matchPlayers.map((mp) =>
+            mp.matchId === sm.matchId && mp.playerId === sId
+              ? { ...mp, playerId: targetPlayerId }
+              : mp,
+          );
+        }
+      }
+
+      // round_sits
+      const sSits = this.state.roundSits.filter((s) => s.playerId === sId);
+      for (const ss of sSits) {
+        const existsTarget = this.state.roundSits.some(
+          (s) => s.roundId === ss.roundId && s.playerId === targetPlayerId,
+        );
+        if (existsTarget) {
+          this.state.roundSits = this.state.roundSits.filter(
+            (s) => !(s.roundId === ss.roundId && s.playerId === sId),
+          );
+        } else {
+          this.state.roundSits = this.state.roundSits.map((s) =>
+            s.roundId === ss.roundId && s.playerId === sId
+              ? { ...s, playerId: targetPlayerId }
+              : s,
+          );
+        }
+      }
+
+      // Delete duplicate guest player from players state
+      this.state.players = this.state.players.filter((p) => p.id !== sId);
+    }
+
+    // Update target player name
+    const targetIndex = this.state.players.findIndex((p) => p.id === targetPlayerId);
+    this.state.players[targetIndex] = {
+      ...this.state.players[targetIndex],
+      name: mergedName.trim(),
+    };
+
+    // Replay ratings
+    await replayRatings(groupId, this);
+
+    this.writeCount += 1;
+    return this.state.players.find((p) => p.id === targetPlayerId)!;
+  }
+
 
   async getSession(sessionId: string) {
     return this.state.sessions.find((session) => session.id === sessionId) ?? null;

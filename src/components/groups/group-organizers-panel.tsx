@@ -18,6 +18,8 @@ import {
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
 import { LinkGuestModal } from "./link-guest-modal";
+import { EditGuestModal } from "./edit-guest-modal";
+import { MergeGuestModal } from "./merge-guest-modal";
 import { ConfirmGroupNameModal } from "./confirm-group-name-modal";
 import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { SearchIcon, UserPlusIcon, LockIcon, HandshakeIcon, CheckIcon } from "@/components/ui/icons";
@@ -40,17 +42,24 @@ export function GroupOrganizersPanel({
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const [linkingPlayer, setLinkingPlayer] = useState<PlayerRecord | null>(null);
+  const [editingGuest, setEditingGuest] = useState<PlayerRecord | null>(null);
+  const [mergingGuest, setMergingGuest] = useState<PlayerRecord | null>(null);
   const [transferTarget, setTransferTarget] = useState<PlayerRecord | null>(null);
   const [transferPending, setTransferPending] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  const sortedPlayers = useMemo(
-    () =>
-      [...players].sort((a, b) =>
+  const sortedPlayers = useMemo(() => {
+    const seen = new Set<string>();
+    return [...players]
+      .filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      ),
-    [players],
-  );
+      );
+  }, [players]);
 
   // Mode switch: "search" | "guest"
   const [addMode, setAddMode] = useState<"search" | "guest">("search");
@@ -564,6 +573,26 @@ export function GroupOrganizersPanel({
                                   type="button"
                                   onClick={() => {
                                     closeAllMenus();
+                                    setEditingGuest(player);
+                                  }}
+                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                >
+                                  Edit guest name
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeAllMenus();
+                                    setMergingGuest(player);
+                                  }}
+                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                >
+                                  Merge with another guest player
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeAllMenus();
                                     setLinkingPlayer(player);
                                   }}
                                   className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
@@ -603,18 +632,49 @@ export function GroupOrganizersPanel({
         </ul>
       )}
       {message && <p role="status" className="text-xs font-bold">{message}</p>}
-      <LinkGuestModal
-        key={linkingPlayer?.id ?? "none"}
-        isOpen={Boolean(linkingPlayer)}
-        onClose={() => setLinkingPlayer(null)}
-        guestPlayer={linkingPlayer}
-        groupId={groupId}
-        onLinked={(linkedAccountName) => {
-          setMessage(`Successfully linked ${linkingPlayer?.name ?? "guest"} to ${linkedAccountName}.`);
-          setLinkingPlayer(null);
-          router.refresh();
-        }}
-      />
+      {linkingPlayer && (
+        <LinkGuestModal
+          key={linkingPlayer.id}
+          isOpen={true}
+          onClose={() => setLinkingPlayer(null)}
+          guestPlayer={linkingPlayer}
+          groupId={groupId}
+          onLinked={(linkedAccountName) => {
+            setMessage(`Successfully linked ${linkingPlayer.name} to ${linkedAccountName}.`);
+            setLinkingPlayer(null);
+            router.refresh();
+          }}
+        />
+      )}
+      {editingGuest && (
+        <EditGuestModal
+          key={editingGuest.id}
+          isOpen={true}
+          onClose={() => setEditingGuest(null)}
+          guestPlayer={editingGuest}
+          groupId={groupId}
+          onGuestUpdated={(updatedName) => {
+            setMessage(`Guest name updated to "${updatedName}".`);
+            setEditingGuest(null);
+            router.refresh();
+          }}
+        />
+      )}
+      {mergingGuest && (
+        <MergeGuestModal
+          key={mergingGuest.id}
+          isOpen={true}
+          onClose={() => setMergingGuest(null)}
+          guestPlayer={mergingGuest}
+          allPlayers={players}
+          groupId={groupId}
+          onMerged={(mergedPlayer) => {
+            setMessage(`Merged guest players into "${mergedPlayer.name}".`);
+            setMergingGuest(null);
+            router.refresh();
+          }}
+        />
+      )}
       <ConfirmGroupNameModal
         isOpen={Boolean(transferTarget)}
         onClose={() => {
