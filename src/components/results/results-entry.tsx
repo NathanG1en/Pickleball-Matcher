@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +24,7 @@ export interface ResultsEntryViewProps {
   readonly matches: readonly MatchScoreEntry[];
   readonly fieldErrors?: Record<string, string>;
   readonly isPending?: boolean;
+  readonly isGeneratingRound?: boolean;
   readonly onSubmitResult?: (matchId: string, team1Score: number, team2Score: number) => void;
   readonly onCancelMatch?: (matchId: string) => void;
   readonly onNextRound?: () => void;
@@ -37,6 +39,7 @@ export function ResultsEntryView({
   matches,
   fieldErrors = {},
   isPending = false,
+  isGeneratingRound = false,
   onSubmitResult,
   onCancelMatch,
   onNextRound,
@@ -247,12 +250,12 @@ export function ResultsEntryView({
               type="button"
               variant="primary"
               size="lg"
-              disabled={!allResolved || hasUnsavedScores || isPending}
+              disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound}
               aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
               onClick={onNextRound}
               className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
             >
-              Next Round
+              {isGeneratingRound ? <RoundGenerationIndicator /> : "Next Round"}
             </Button>
           </div>
         </div>

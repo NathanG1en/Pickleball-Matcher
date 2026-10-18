@@ -113,6 +113,127 @@ select {
   outline-offset: 2px;
 }
 
+/* Deliberate decorative motion; controls and text remain immediately usable.
+ * Quadratic ascent/descent curves model the ball, rather than UI entrances.
+ * Curve values: https://github.com/ai/easings.net/blob/master/src/easings.yml
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .home-pickleball[data-motion="dink"] {
+    animation: home-pickleball-dink 1200ms linear 1;
+  }
+
+  .home-pickleball[data-motion="dink"] .home-pickleball-hop {
+    animation: home-pickleball-hop 1200ms linear 1;
+  }
+}
+
+@keyframes home-pickleball-dink {
+  0% { transform: translateX(0) rotate(0deg); }
+  60% { transform: translateX(2px) rotate(12deg); }
+  90%, 100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes home-pickleball-hop {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  30% { transform: translateY(-10px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  60% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  75% { transform: translateY(-3px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  90%, 100% { transform: translateY(0); }
+}
+
+/* Mounted only for a real generation request; short requests never flash the art. */
+@media (prefers-reduced-motion: no-preference) {
+  .round-generation-art {
+    animation: round-generation-reveal 1ms linear 150ms both;
+  }
+
+  .round-generation-ball {
+    animation: round-generation-shuttle 1600ms cubic-bezier(0.37, 0, 0.63, 1) 150ms infinite;
+  }
+
+  .round-generation-hop {
+    animation: round-generation-hop 800ms linear 150ms infinite;
+  }
+}
+
+@keyframes round-generation-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes round-generation-shuttle {
+  0%, 100% { transform: translateX(-4px) rotate(-12deg); }
+  50% { transform: translateX(4px) rotate(12deg); }
+}
+
+@keyframes round-generation-hop {
+  0% { transform: translateY(1px); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  50% { transform: translateY(-2px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  100% { transform: translateY(1px); }
+}
+
+/* The court stays still while a ball arcs over the net, lands and settles. */
+.setup-court-ball-spin,
+.session-signoff-ball {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .setup-court[data-motion="settle"] {
+    animation: setup-court-arrive 1600ms linear 1;
+  }
+
+  .setup-court[data-motion="settle"] .setup-court-ball {
+    animation: setup-court-ball-settle 1600ms linear 1;
+  }
+
+  .setup-court[data-motion="settle"] .setup-court-ball-hop {
+    animation: setup-court-ball-hop 1600ms linear 1;
+  }
+
+  .setup-court[data-motion="settle"] .setup-court-ball-spin {
+    animation: setup-court-ball-spin 1600ms linear 1;
+  }
+}
+
+@keyframes setup-court-arrive {
+  0% { opacity: 0.85; }
+  15%, 100% { opacity: 1; }
+}
+
+@keyframes setup-court-ball-settle {
+  0% { transform: translateX(-54px); }
+  64% { transform: translateX(-10px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes setup-court-ball-hop {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  32% { transform: translateY(-22px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  64% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  78% { transform: translateY(-5px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  92%, 100% { transform: translateY(0); }
+}
+
+@keyframes setup-court-ball-spin {
+  0% { transform: rotate(-210deg); }
+  64% { transform: rotate(-45deg); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  100% { transform: rotate(0deg); }
+}
+
+/* A longer roll with spin proportional to travel, slowing beside the paddle. */
+@media (prefers-reduced-motion: no-preference) {
+  .session-signoff[data-motion="roll"] .session-signoff-ball {
+    animation: session-signoff-roll 1400ms cubic-bezier(0.33, 1, 0.68, 1) 1;
+  }
+}
+
+@keyframes session-signoff-roll {
+  from { transform: translateX(14px) rotate(100deg); }
+  to { transform: translateX(0) rotate(0deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

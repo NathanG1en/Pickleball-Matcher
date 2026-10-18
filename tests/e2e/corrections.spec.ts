@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createTestGroup, createAndSignInPlayer } from "./test-helpers";
+import { sampleReplayMotion, checkAnimationReplay, createTestGroup, createAndSignInPlayer } from "./test-helpers";
 
 test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
@@ -324,3 +324,65 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   await expect(savedTeam).toHaveCount(1);
   for (const name of edited[0]) await expect(savedTeam).toContainText(name);
 });
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`session sign-off only rolls after confirmed matchmaking completion (${reducedMotion})`, async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => {
+      document.addEventListener("animationstart", event => {
+        if (event.animationName === "session-signoff-roll") document.documentElement.dataset.sessionRolls = String(Number(document.documentElement.dataset.sessionRolls ?? "0") + 1);
+      });
+    });
+    const { groupId } = await createTestGroup(page, `Sign-off ${Date.now()}`);
+    await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+    await page.locator("#guest-player-name").fill("Signoff Guest");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+    await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByRole("button", { name: "Start Session", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+    const sessionUrl = page.url();
+    page.once("dialog", dialog => dialog.dismiss());
+    await page.getByTestId("end-session-button").click();
+    await expect(page.getByTestId("end-session-button")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+    if (reducedMotion === "no-preference") {
+      await page.route(sessionUrl, route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
+      page.once("dialog", dialog => dialog.accept());
+      await page.getByTestId("end-session-button").click();
+      await expect(page.getByRole("alert").filter({ hasText: "Failed to end session." })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByTestId("end-session-button").click();
+    await expect(page).toHaveURL(`/g/${groupId}`);
+    const art = page.getByTestId("session-signoff");
+    await expect(art).toBeInViewport();
+    await expect(art).toHaveAttribute("aria-hidden", "true");
+    if (reducedMotion === "no-preference") {
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBe("1");
+    }
+    await expect(art).toHaveAttribute("data-motion", "still");
+    expect(await art.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBe(reducedMotion === "reduce" ? undefined : "1");
+    await art.screenshot({ path: testInfo.outputPath("session-signoff.png") });
+    await page.reload();
+    await expect(art).toHaveAttribute("data-motion", "still");
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+    await page.goto(sessionUrl);
+    await expect(page.getByTestId("completed-session-full-view")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+    await page.goto(`/g/${groupId}`);
+    await expect(art).toHaveAttribute("data-motion", "still");
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+    if (reducedMotion === "no-preference") {
+      const motion = await sampleReplayMotion(art, ".session-signoff-ball");
+      expect(motion.duration).toBeGreaterThanOrEqual(1000);
+      expect(motion.frames[0].cx - motion.frames[4].cx).toBeGreaterThan(10);
+      expect(motion.frames[0].cx - motion.frames[2].cx).toBeGreaterThan(motion.frames[2].cx - motion.frames[4].cx);
+      expect(motion.frames[0].cy).toBeCloseTo(motion.frames[4].cy, 0);
+    }
+    await checkAnimationReplay(page, art, "Replay session sign-off", "sessionRolls", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
+  });
+}

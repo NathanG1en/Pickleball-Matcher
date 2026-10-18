@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import { clearLineupDraft, readLineupDraft, saveLineupDraft } from "@/lib/rounds/lineup-draft";
+import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
@@ -36,6 +37,7 @@ export interface CurrentRoundViewProps {
   readonly playerNames: Record<string, string>;
   readonly canRegenerate?: boolean;
   readonly isPending?: boolean;
+  readonly isGeneratingRound?: boolean;
   readonly currentViewerPlayerId?: string | null;
   readonly pairSynergies?: PairSynergiesMap;
   readonly isOrganizer?: boolean;
@@ -68,6 +70,7 @@ function CurrentRoundEditor({
   playerNames,
   canRegenerate = false,
   isPending = false,
+  isGeneratingRound = false,
   currentViewerPlayerId = null,
   pairSynergies = {},
   isOrganizer = false,
@@ -1046,7 +1049,7 @@ function CurrentRoundEditor({
                 disabled={isPending}
                 className="flex-1 font-display text-lg uppercase tracking-wider"
               >
-                Regenerate Round
+                {isGeneratingRound ? <RoundGenerationIndicator /> : "Regenerate Round"}
               </Button>
             )}
 

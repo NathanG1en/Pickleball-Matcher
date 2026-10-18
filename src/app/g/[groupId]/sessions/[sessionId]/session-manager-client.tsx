@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -12,6 +12,7 @@ import {
   undoLatestRoundAction,
 } from "@/app/actions/sessions";
 import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
+import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
+import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
@@ -82,7 +84,9 @@ export function SessionManagerClient({
     setPrevAttendance(attendance);
     setCurrentAttendance(attendance);
   }
-  const [isPending, setIsPending] = useState(false);
+  const [isActionPending, setIsPending] = useState(false);
+  const [isGeneratingRound, startGeneratingRound] = useTransition();
+  const isPending = isActionPending || isGeneratingRound;
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -114,28 +118,28 @@ export function SessionManagerClient({
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
   // Actions
-  const handleRegenerate = async () => {
-    setIsPending(true);
+  const handleRegenerate = () => {
+    if (isPending) return;
     setError(null);
-    try {
-      const nextSeed = Math.floor(Math.random() * 0xffff_ffff);
-      const res = await proposeRoundAction({
-        groupId,
-        sessionId: session.id,
-        sessionVersion: session.version,
-        seed: nextSeed,
-      });
-      if (res.ok) {
-        clearLineupDraft(lineupDraftKey(session.id));
-        setRegeneratedProposal(res.data);
-      } else {
-        setError(res.error);
+    startGeneratingRound(async () => {
+      try {
+        const nextSeed = Math.floor(Math.random() * 0xffff_ffff);
+        const res = await proposeRoundAction({
+          groupId,
+          sessionId: session.id,
+          sessionVersion: session.version,
+          seed: nextSeed,
+        });
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(session.id));
+          startGeneratingRound(() => setRegeneratedProposal(res.data));
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to regenerate round.");
       }
-    } catch {
-      setError("Failed to regenerate round.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
   const handleStartRound = async (customProposal?: {
@@ -238,30 +242,31 @@ export function SessionManagerClient({
     }
   };
 
-  const handleNextRound = async () => {
-    if (!latestStarted || hasUnsavedScores) return;
-    setIsPending(true);
+  const handleNextRound = () => {
+    if (!latestStarted || hasUnsavedScores || isPending) return;
     setError(null);
-    try {
-      const res = await completeRoundAction({
-        groupId,
-        sessionId: session.id,
-        sessionVersion: session.version,
-        roundId: latestStarted.round.id,
-        roundVersion: latestStarted.round.version,
-        idempotencyKey: createIdempotencyKey("next_rd"),
-      });
-      if (res.ok) {
-        setRegeneratedProposal(null);
-        router.refresh();
-      } else {
-        setError(res.error);
+    startGeneratingRound(async () => {
+      try {
+        const res = await completeRoundAction({
+          groupId,
+          sessionId: session.id,
+          sessionVersion: session.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          idempotencyKey: createIdempotencyKey("next_rd"),
+        });
+        if (res.ok) {
+          startGeneratingRound(() => {
+            setRegeneratedProposal(null);
+            router.refresh();
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to advance to next round.");
       }
-    } catch {
-      setError("Failed to advance to next round.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
   const handleUndo = async () => {
@@ -324,6 +329,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("end"),
       });
       if (res.ok) {
+        markSessionEnded(groupId, session.id);
         router.replace(`/g/${groupId}`);
         router.refresh();
       } else {
@@ -937,6 +943,7 @@ export function SessionManagerClient({
                 onSubmitResult={canManage ? handleSaveResult : undefined}
                 onCancelMatch={canManage ? handleCancelMatch : undefined}
                 onNextRound={canManage ? handleNextRound : undefined}
+                isGeneratingRound={isGeneratingRound}
                 canManage={canManage}
                 scoreDrafts={scoreDrafts}
                 onScoreChange={handleScoreChange}
@@ -977,6 +984,7 @@ export function SessionManagerClient({
               currentViewerPlayerId={currentViewerPlayerId}
               pairSynergies={pairSynergies}
               isOrganizer={isOrganizer}
+              isGeneratingRound={isGeneratingRound}
               onRegenerate={canManage ? handleRegenerate : undefined}
               onStartRound={canManage ? handleStartRound : undefined}
               canManage={canManage}
@@ -988,7 +996,7 @@ export function SessionManagerClient({
               </p>
               {canManage ? (
                 <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-                  Generate Round {(latestStarted?.round.roundNumber ?? 0) + 1}
+                  {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
                 </Button>
               ) : (
                 <p className="text-sm font-bold text-neutral-600">

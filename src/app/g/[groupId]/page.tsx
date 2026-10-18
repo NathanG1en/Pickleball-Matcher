@@ -7,6 +7,7 @@ import {
   getActiveOrganizerSession,
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
+import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { Badge } from "@/components/ui/badge";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
 import { GroupIdReveal } from "@/components/groups/group-id-reveal";
@@ -76,6 +77,8 @@ export default async function GroupDashboardPage({
 
   const activeSession = sessions.find((s) => s.status === "active");
   const pastSessions = sessions.filter((s) => s.id !== activeSession?.id);
+  const latestCompletedSession = sessions.filter(s => s.status === "completed")
+    .sort((a, b) => (b.endedAt ?? b.startedAt).getTime() - (a.endedAt ?? a.startedAt).getTime())[0];
 
   let currentRoundMatches: readonly MatchRecord[] = [];
   let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
@@ -163,6 +166,9 @@ export default async function GroupDashboardPage({
           <p className="text-xs font-bold text-neutral-600">
             {players.length} {players.length === 1 ? "player" : "players"} on roster
           </p>
+          {!activeSession && isOrganizer && latestCompletedSession && (
+            <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
+          )}
         </div>
         {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
