@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
 import { formatDupr } from "@/lib/domain/rating-display";
 
@@ -120,7 +121,10 @@ export function AttendanceManager({
     <div className="attendance-manager space-y-6 pb-28 text-black">
       {/* Court Count Card */}
       <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
-        <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Available Courts</h2>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
+          {!isEditingSession && <SetupCourtIllustration />}
+        </div>
         <p className="text-sm font-bold text-neutral-600 mb-4">
           Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
         </p>

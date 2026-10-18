@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { createTestGroup } from "./test-helpers";
+import { sampleReplayMotion, createTestGroup } from "./test-helpers";
 
 test.describe("Resilience and Safe Drafts", () => {
   test("retains unsaved draft scores on validation failure, handles stale versions, and passes a11y audits", async ({
@@ -110,4 +110,102 @@ test("guest roster form has accessible names and passes an accessibility audit",
     await expect(page.getByText(`${index + 2} players on roster`, { exact: true })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: guest.name })).toContainText(guest.rating);
   }
+});
+
+test("home pickleball bounces once per browser session and leaves navigation usable", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    document.addEventListener("animationstart", event => {
+      if (event.animationName === "home-pickleball-dink") {
+        document.documentElement.dataset.homeBounces = String(Number(document.documentElement.dataset.homeBounces ?? "0") + 1);
+      }
+    });
+  });
+  await page.goto("/");
+  const ball = page.getByTestId("home-pickleball");
+  await expect(ball).toBeVisible();
+  await expect(ball).toHaveAttribute("aria-hidden", "true");
+  await expect(page.getByRole("link", { name: "Sign In to Play →", exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeBounces)).toBe("1");
+  await expect.poll(() => ball.evaluate(element => element.getAnimations().length)).toBe(0);
+  await page.reload();
+  await expect(ball).toHaveAttribute("data-motion", "still");
+  expect(await page.evaluate(() => document.documentElement.dataset.homeBounces)).toBeUndefined();
+  await page.getByRole("link", { name: "Sign In to Play →", exact: true }).click();
+  await expect(page).toHaveURL(/\/player-login/);
+});
+
+test("home pickleball stays static with reduced motion or unavailable session storage", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const ball = page.getByTestId("home-pickleball");
+  await expect(ball).toBeVisible();
+  await expect(ball).toHaveAttribute("data-motion", "still");
+  expect(await ball.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  const audit = await new AxeBuilder({ page }).include("main").analyze();
+  expect(audit.violations).toEqual([]);
+
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "sessionStorage", { get() { throw new Error("Storage disabled"); } });
+  });
+  await page.reload();
+  await expect(ball).toHaveAttribute("data-motion", "still");
+  expect(await ball.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  await expect(page.getByRole("heading", { name: "FAIR ROUNDS. FRESH PARTNERS." })).toBeVisible();
+});
+
+test("home pickleball replays on hover, click and keyboard without looping", async ({ page, isMobile }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    sessionStorage.setItem("pickleball:home-dink:v1", "played");
+    document.addEventListener("animationstart", event => {
+      if (event.animationName === "home-pickleball-dink") {
+        document.documentElement.dataset.homeBounces = String(Number(document.documentElement.dataset.homeBounces ?? "0") + 1);
+      }
+    });
+  });
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Bounce pickleball", exact: true });
+  const ball = page.getByTestId("home-pickleball");
+  await expect(trigger).toBeVisible();
+  await expect(ball).toHaveAttribute("data-motion", "still");
+  await expect(ball).toHaveCSS("overflow", "visible");
+  let count = 0;
+  const expectBounce = async () => {
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeBounces)).toBe(String(++count));
+    await expect(ball).toHaveAttribute("data-motion", "still");
+    expect(await ball.evaluate(element => element.getAnimations().length)).toBe(0);
+  };
+  if (!isMobile) {
+    await trigger.hover();
+    await expectBounce();
+    // Keeping the pointer over the ball must not create a loop.
+    await trigger.hover();
+    expect(await page.evaluate(() => document.documentElement.dataset.homeBounces)).toBe(String(count));
+  }
+  await trigger.click();
+  await expectBounce();
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expectBounce();
+  await page.keyboard.press("Space");
+  await expectBounce();
+  // Rapid activation should finish the current bounce without stacking or restarting it.
+  await trigger.evaluate(element => {
+    if (!(element instanceof HTMLButtonElement)) throw new Error("Expected the bounce button");
+    element.click(); element.click(); element.click();
+  });
+  await expectBounce();
+  const motion = await sampleReplayMotion(ball, ".home-pickleball-hop");
+  expect(motion.duration).toBeGreaterThanOrEqual(1000);
+  expect(motion.frames[1].y).toBeLessThan(motion.frames[0].y - 6);
+  expect(motion.frames[4].y).toBeCloseTo(motion.frames[0].y, 0);
+  count++;
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeBounces)).toBe(String(count));
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await trigger.click();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => document.documentElement.dataset.homeBounces)).toBe(String(count));
+  expect(await ball.evaluate(element => element.getAnimations().length)).toBe(0);
 });

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
+import { sampleReplayMotion, checkAnimationReplay, createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
@@ -218,4 +218,160 @@ test("restored temporary group calculates capacity from saved courts without a s
   await page.goto("/temporary");
   await expect(page.getByRole("heading", { name: "Restored mixed courts", exact: true })).toBeVisible();
   await expect(page.getByText("3 courts · 9 playing · 1 sitting out", { exact: true })).toBeVisible();
+});
+
+test("round generation indicator follows pending requests and clears on success or failure", async ({ page }, testInfo) => {
+  test.setTimeout(90000);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await createTestGroup(page, `Generation feedback ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Generation Blake", "Generation Casey", "Generation Drew"]) {
+    await page.locator("#guest-player-name").fill(name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
+  await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("5");
+  const sessionUrl = page.url();
+  const indicator = page.getByRole("status").filter({ hasText: "Generating…" });
+  const pauseAction = async (abort = false) => {
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const handler = async (route: import("@playwright/test").Route) => {
+      if (route.request().method() !== "POST" || !route.request().headers()["next-action"]) return route.continue();
+      await gate;
+      if (abort) await route.abort();
+      else await route.continue();
+    };
+    await page.route(sessionUrl, handler);
+    return { release, dispose: async () => { release(); await page.unrouteAll({ behavior: "wait" }); } };
+  };
+
+  const save = await pauseAction();
+  try {
+    await page.getByRole("button", { name: "Save Result", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Save Result", exact: true })).toBeDisabled();
+    await expect(indicator).toHaveCount(0);
+    save.release();
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+  } finally { await save.dispose(); }
+
+  const failure = await pauseAction(true);
+  try {
+    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await expect(indicator).toBeVisible();
+    await expect(indicator.locator(".round-generation-art")).toHaveCSS("opacity", "1");
+    const position = await indicator.evaluate(element => {
+      const button = element.closest("button")?.getBoundingClientRect();
+      const art = element.querySelector(".round-generation-art")?.getBoundingClientRect();
+      const label = element.lastElementChild?.getBoundingClientRect();
+      if (!button || !art || !label) throw new Error("Expected pending button, ball and label");
+      return { labelOffset: Math.abs(label.x + label.width / 2 - button.x - button.width / 2), ballPosition: (art.x + art.width / 2 - button.x) / button.width, gap: label.x - art.right };
+    });
+    expect(position.labelOffset).toBeLessThanOrEqual(1);
+    expect(position.ballPosition).toBeLessThan(0.33);
+    expect(position.gap).toBeGreaterThanOrEqual(16);
+    await indicator.locator("..").screenshot({ path: testInfo.outputPath("generating-button.png") });
+    await expect(indicator.locator("svg")).toHaveCSS("animation-name", "round-generation-shuttle");
+    expect(await indicator.locator("svg").evaluate(element => Number.parseFloat(getComputedStyle(element).animationDuration))).toBeGreaterThanOrEqual(1);
+    failure.release();
+    await expect(page.getByRole("alert").filter({ hasText: "Failed to advance to next round." })).toBeVisible();
+    await expect(indicator).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+  } finally { await failure.dispose(); }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const success = await pauseAction();
+  try {
+    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await expect(indicator).toBeVisible();
+    await expect(indicator.locator("svg")).toHaveCSS("animation-name", "none");
+    success.release();
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
+    await expect(indicator).toHaveCount(0);
+  } finally { await success.dispose(); }
+});
+
+test("session setup court settles once without replaying during attendance or court edits", async ({ page }, testInfo) => {
+  test.setTimeout(90000);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    document.addEventListener("animationstart", event => {
+      if (event.animationName === "setup-court-ball-settle") {
+        document.documentElement.dataset.courtSettles = String(Number(document.documentElement.dataset.courtSettles ?? "0") + 1);
+      }
+    });
+  });
+  await createTestGroup(page, `Court illustration ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Court Canvas Blake", "Court Canvas Casey", "Court Canvas Drew"]) {
+    await page.locator("#guest-player-name").fill(name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  const court = page.getByTestId("setup-court");
+  await expect(court).toBeVisible();
+  await expect(court).toHaveAttribute("aria-hidden", "true");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.courtSettles)).toBe("1");
+  await expect(court).toHaveAttribute("data-motion", "still");
+  expect(await court.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  await page.getByRole("button", { name: "Increase courts", exact: true }).click();
+  await expect(page.getByLabel("Court count", { exact: true })).toHaveText("2");
+  await page.getByRole("button", { name: "Decrease courts", exact: true }).click();
+  const player = page.getByRole("checkbox", { name: /Court Canvas Blake/ });
+  await player.uncheck();
+  await expect(page.getByText("3 players selected", { exact: true })).toBeVisible();
+  await player.check();
+  await page.getByRole("combobox", { name: "Players on court 1", exact: true }).selectOption("2");
+  await page.getByRole("combobox", { name: "Players on court 1", exact: true }).selectOption("4");
+  expect(await page.evaluate(() => document.documentElement.dataset.courtSettles)).toBe("1");
+  await page.reload();
+  await expect(court).toHaveAttribute("data-motion", "still");
+  expect(await page.evaluate(() => document.documentElement.dataset.courtSettles)).toBeUndefined();
+  const motion = await sampleReplayMotion(court, ".setup-court-ball-hop");
+  expect(motion.duration).toBeGreaterThanOrEqual(1000);
+  expect(motion.frames[4].x - motion.frames[0].x).toBeGreaterThan(35);
+  expect(motion.frames[1].y).toBeLessThan(motion.frames[0].y - 10);
+  for (const frame of motion.frames) {
+    expect(frame.x).toBeGreaterThanOrEqual(frame.canvas.x);
+    expect(frame.right).toBeLessThanOrEqual(frame.canvas.right);
+    expect(frame.y).toBeGreaterThanOrEqual(frame.canvas.y);
+    expect(frame.bottom).toBeLessThanOrEqual(frame.canvas.bottom);
+  }
+  await checkAnimationReplay(page, court, "Replay court animation", "courtSettles", { touch: Boolean(testInfo.project.use.hasTouch) });
+  await page.screenshot({ path: testInfo.outputPath("setup-court.png"), fullPage: true });
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+});
+
+test("session setup court respects reduced motion and allows manual replay with blocked storage", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    document.addEventListener("animationstart", event => {
+      if (event.animationName === "setup-court-ball-settle") document.documentElement.dataset.courtSettles = String(Number(document.documentElement.dataset.courtSettles ?? "0") + 1);
+    });
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await createTestGroup(page, `Static court ${Date.now()}`);
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  const court = page.getByTestId("setup-court");
+  await expect(court).toBeVisible();
+  await expect(court).toHaveAttribute("data-motion", "still");
+  expect(await court.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  await checkAnimationReplay(page, court, "Replay court animation", "courtSettles", { reducedMotion: true, touch: Boolean(testInfo.project.use.hasTouch) });
+  const audit = await new AxeBuilder({ page }).include("main").analyze();
+  expect(audit.violations).toEqual([]);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "sessionStorage", { get() { throw new Error("Storage disabled"); } });
+  });
+  await page.reload();
+  await expect(court).toHaveAttribute("data-motion", "still");
+  expect(await court.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  await checkAnimationReplay(page, court, "Replay court animation", "courtSettles", { touch: Boolean(testInfo.project.use.hasTouch) });
+  await expect(page.getByRole("heading", { name: "Available Courts", exact: true })).toBeVisible();
 });

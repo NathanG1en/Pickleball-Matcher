@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
+import { sampleReplayMotion, checkAnimationReplay, createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("Open Play Workflow", () => {
   test("host starts open play session, adds guests and players, submits games, and views in profile", async ({
@@ -496,3 +496,51 @@ test.describe("Open Play Workflow", () => {
     await playerContext.close();
   });
 });
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`session sign-off only rolls after confirmed Open Play completion (${reducedMotion})`, async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => {
+      document.addEventListener("animationstart", event => {
+        if (event.animationName === "session-signoff-roll") document.documentElement.dataset.sessionRolls = String(Number(document.documentElement.dataset.sessionRolls ?? "0") + 1);
+      });
+    });
+    await createTestGroup(page, `Open Play sign-off ${Date.now()}`);
+    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await expect(page.getByTestId("end-session-button")).toBeVisible();
+    page.once("dialog", dialog => dialog.dismiss());
+    await page.getByTestId("end-session-button").click();
+    await expect(page.getByTestId("session-signoff")).toHaveCount(0);
+    if (reducedMotion === "no-preference") {
+      await page.route(page.url(), route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
+      page.once("dialog", dialog => dialog.accept());
+      await page.getByTestId("end-session-button").click();
+      await expect(page.getByRole("alert").filter({ hasText: "An unexpected error occurred while ending session." })).toBeVisible();
+      await expect(page.getByTestId("session-signoff")).toHaveCount(0);
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByTestId("end-session-button").click();
+    await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+    const art = page.getByTestId("session-signoff");
+    await expect(art).toBeInViewport();
+    await expect(art).toHaveAttribute("aria-hidden", "true");
+    if (reducedMotion === "no-preference") {
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBe("1");
+    }
+    await expect(art).toHaveAttribute("data-motion", "still");
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBe(reducedMotion === "reduce" ? undefined : "1");
+    expect(await art.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+    await page.reload();
+    await expect(art).toHaveAttribute("data-motion", "still");
+    expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
+    if (reducedMotion === "no-preference") {
+      const motion = await sampleReplayMotion(art, ".session-signoff-ball");
+      expect(motion.duration).toBeGreaterThanOrEqual(1000);
+      expect(motion.frames[0].cx - motion.frames[4].cx).toBeGreaterThan(10);
+      expect(motion.frames[0].cx - motion.frames[2].cx).toBeGreaterThan(motion.frames[2].cx - motion.frames[4].cx);
+      expect(motion.frames[0].cy).toBeCloseTo(motion.frames[4].cy, 0);
+    }
+    await checkAnimationReplay(page, art, "Replay session sign-off", "sessionRolls", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
+  });
+}

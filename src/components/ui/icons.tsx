@@ -223,3 +223,18 @@ export function ChevronDownIcon({ className = "h-4 w-4", ...props }: IconProps) 
 }
 
 
+
+export function PickleballIcon({ className = "h-6 w-6", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false" {...props}>
+      <circle cx="12" cy="12" r="10" fill="var(--neo-lime)" stroke="currentColor" strokeWidth="2" />
+      <g fill="currentColor">
+        <circle cx="9" cy="7" r="1.4" />
+        <circle cx="16" cy="9" r="1.4" />
+        <circle cx="11" cy="12" r="1.4" />
+        <circle cx="7" cy="16" r="1.4" />
+        <circle cx="15" cy="17" r="1.4" />
+      </g>
+    </svg>
+  );
+}
