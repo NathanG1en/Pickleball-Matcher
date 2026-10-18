@@ -25,6 +25,7 @@ export interface ResultsEntryViewProps {
   readonly fieldErrors?: Record<string, string>;
   readonly isPending?: boolean;
   readonly isGeneratingRound?: boolean;
+  readonly savingMatchIds?: ReadonlySet<string>;
   readonly onSubmitResult?: (matchId: string, team1Score: number, team2Score: number) => void;
   readonly onCancelMatch?: (matchId: string) => void;
   readonly onNextRound?: () => void;
@@ -40,6 +41,7 @@ export function ResultsEntryView({
   fieldErrors = {},
   isPending = false,
   isGeneratingRound = false,
+  savingMatchIds,
   onSubmitResult,
   onCancelMatch,
   onNextRound,
@@ -88,6 +90,7 @@ export function ResultsEntryView({
           const err = fieldErrors[match.id];
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
+          const isMatchSaving = isPending || Boolean(savingMatchIds?.has(match.id));
 
           const isSingles = match.team1Names.length === 1 && match.team2Names.length === 1;
 
@@ -135,7 +138,7 @@ export function ResultsEntryView({
                         min={0}
                         max={99}
                         aria-label={`Court ${match.courtNumber} Team 1 score`}
-                        disabled={isCancelled || isPending}
+                        disabled={isCancelled || isMatchSaving}
                         value={matchScores.team1}
                         onChange={(e) =>
                           onScoreChange?.(match.id, "team1", e.target.value)
@@ -169,7 +172,7 @@ export function ResultsEntryView({
                         min={0}
                         max={99}
                         aria-label={`Court ${match.courtNumber} Team 2 score`}
-                        disabled={isCancelled || isPending}
+                        disabled={isCancelled || isMatchSaving}
                         value={matchScores.team2}
                         onChange={(e) =>
                           onScoreChange?.(match.id, "team2", e.target.value)
@@ -206,8 +209,8 @@ export function ResultsEntryView({
                     <button
                       type="button"
                       onClick={() => onCancelMatch(match.id)}
-                      disabled={isPending}
-                      className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black hover:underline cursor-pointer"
+                      disabled={isMatchSaving}
+                      className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black hover:underline cursor-pointer disabled:opacity-40"
                     >
                       Cancel match
                     </button>
@@ -218,10 +221,10 @@ export function ResultsEntryView({
                       size="sm"
                       variant={isCompleted ? "secondary" : "primary"}
                       onClick={() => handleSaveMatch(match.id)}
-                      disabled={isPending || matchScores.team1 === "" || matchScores.team2 === ""}
+                      disabled={isMatchSaving || matchScores.team1 === "" || matchScores.team2 === ""}
                       className="ml-auto font-display text-base uppercase tracking-wider"
                     >
-                      {isCompleted ? "Update Score" : "Save Result"}
+                      {isMatchSaving ? "Saving..." : (isCompleted ? "Update Score" : "Save Result")}
                     </Button>
                   )}
                 </div>
@@ -250,7 +253,7 @@ export function ResultsEntryView({
               type="button"
               variant="primary"
               size="lg"
-              disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound}
+              disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
               aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
               onClick={onNextRound}
               className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"

@@ -21,6 +21,7 @@ import {
 } from "@/app/actions/open-play";
 import type {
   AttendanceRecord,
+  MatchPlayerRecord,
   PlayerRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -55,27 +56,46 @@ export function OpenPlayManagerClient({
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
 
+  // Local state for instant UI updates without waiting for router.refresh()
+  const [prevPlayers, setPrevPlayers] = useState(players);
+  const [localPlayers, setLocalPlayers] = useState<readonly PlayerRecord[]>(players);
+  if (players !== prevPlayers) {
+    setPrevPlayers(players);
+    const serverIds = new Set(players.map((p) => p.id));
+    const pendingLocal = localPlayers.filter((p) => !serverIds.has(p.id));
+    setLocalPlayers([...players, ...pendingLocal]);
+  }
+
+  const [prevAttendance, setPrevAttendance] = useState(attendance);
+  const [localAttendance, setLocalAttendance] = useState<readonly AttendanceRecord[]>(attendance);
+  if (attendance !== prevAttendance) {
+    setPrevAttendance(attendance);
+    const serverPids = new Set(attendance.map((a) => a.playerId));
+    const pendingLocal = localAttendance.filter((a) => !serverPids.has(a.playerId));
+    setLocalAttendance([...attendance, ...pendingLocal]);
+  }
+
   // Maps
-  const playerMap = useMemo(() => new Map<string, PlayerRecord>(players.map((p) => [p.id, p])), [players]);
+  const playerMap = useMemo(() => new Map<string, PlayerRecord>(localPlayers.map((p) => [p.id, p])), [localPlayers]);
 
   // Checked-in players
-  const presentAttendance = attendance.filter((a) => a.leftRound === null);
+  const presentAttendance = localAttendance.filter((a) => a.leftRound === null);
   const presentPlayerIds = useMemo(() => new Set(presentAttendance.map((a) => a.playerId)), [presentAttendance]);
   const checkedInPlayers = useMemo(
     () =>
-      players
+      localPlayers
         .filter((p) => presentPlayerIds.has(p.id))
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-    [players, presentPlayerIds],
+    [localPlayers, presentPlayerIds],
   );
 
   // Group players not yet checked in
   const availableRosterPlayers = useMemo(
     () =>
-      players
+      localPlayers
         .filter((p) => !presentPlayerIds.has(p.id) && p.active)
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-    [players, presentPlayerIds],
+    [localPlayers, presentPlayerIds],
   );
 
   const isViewerCheckedIn = Boolean(
@@ -96,7 +116,7 @@ export function OpenPlayManagerClient({
       }
     }
     if (canManage) {
-      for (const p of players) {
+      for (const p of localPlayers) {
         if (p.active && !ids.has(p.id)) {
           ids.add(p.id);
           list.push(p);
@@ -104,12 +124,42 @@ export function OpenPlayManagerClient({
       }
     }
     return list;
-  }, [canManage, checkedInPlayers, players]);
+  }, [canManage, checkedInPlayers, localPlayers]);
+
+  const [prevStartedRounds, setPrevStartedRounds] = useState(startedRounds);
+  const [localStartedRounds, setLocalStartedRounds] = useState<readonly StartedRoundRecord[]>(startedRounds);
+  if (startedRounds !== prevStartedRounds) {
+    setPrevStartedRounds(startedRounds);
+    const serverMatchIds = new Set(startedRounds.flatMap((sr) => sr.matches.map((m) => m.id)));
+    const pendingLocalMatches = localStartedRounds.flatMap((sr) =>
+      sr.matches.filter((m) => !serverMatchIds.has(m.id))
+    );
+    const pendingLocalMatchPlayers = localStartedRounds.flatMap((sr) =>
+      sr.matchPlayers.filter((mp) => !serverMatchIds.has(mp.matchId))
+    );
+    if (startedRounds.length > 0) {
+      setLocalStartedRounds(
+        startedRounds.map((sr, idx) =>
+          idx === 0
+            ? {
+                ...sr,
+                matches: [...sr.matches, ...pendingLocalMatches],
+                matchPlayers: [...sr.matchPlayers, ...pendingLocalMatchPlayers],
+              }
+            : sr
+        )
+      );
+    } else if (pendingLocalMatches.length > 0) {
+      setLocalStartedRounds(localStartedRounds);
+    } else {
+      setLocalStartedRounds(startedRounds);
+    }
+  }
 
   const [deletedMatchIds, setDeletedMatchIds] = useState<Set<string>>(() => new Set());
 
   // Games list from started rounds (excludes deleted/cancelled games)
-  const allMatches = useMemo(() => startedRounds.flatMap((sr) =>
+  const allMatches = useMemo(() => localStartedRounds.flatMap((sr) =>
     sr.matches
       .filter((m) => m.status !== "cancelled" && !deletedMatchIds.has(m.id))
       .map((m) => {
@@ -125,7 +175,7 @@ export function OpenPlayManagerClient({
           team2Names: t2,
         };
       }),
-  ), [startedRounds, playerMap, deletedMatchIds]);
+  ), [localStartedRounds, playerMap, deletedMatchIds]);
 
   // Automatically find the last game in the session for the logged in user (or most recent game in session)
   const lastSessionGame = useMemo(() => {
@@ -312,6 +362,20 @@ export function OpenPlayManagerClient({
     try {
       const res = await joinOpenPlaySessionAction({ groupId, sessionId: session.id });
       if (res.ok) {
+        if (currentViewerPlayerId) {
+          setLocalAttendance((prev) => {
+            const filtered = prev.filter((a) => a.playerId !== currentViewerPlayerId);
+            return [
+              ...filtered,
+              {
+                sessionId: session.id,
+                playerId: currentViewerPlayerId,
+                joinedRound: 1,
+                leftRound: null,
+              },
+            ];
+          });
+        }
         showToast("You joined Open Play!");
         router.refresh();
       } else {
@@ -340,11 +404,28 @@ export function OpenPlayManagerClient({
         initialRating: rating,
       });
       if (res.ok) {
+        const guestPlayer = res.data;
+        setLocalPlayers((prev) => {
+          if (prev.some((p) => p.id === guestPlayer.id)) return prev;
+          return [...prev, guestPlayer];
+        });
+        setLocalAttendance((prev) => {
+          const filtered = prev.filter((a) => a.playerId !== guestPlayer.id);
+          return [
+            ...filtered,
+            {
+              sessionId: session.id,
+              playerId: guestPlayer.id,
+              joinedRound: 1,
+              leftRound: null,
+            },
+          ];
+        });
         setGuestName("");
         setGuestPreset("3.5");
         setIsCustomGuestRating(false);
         setCustomGuestRatingInput("3.5");
-        showToast(`Added guest ${res.data.name}!`);
+        showToast(`Added guest ${guestPlayer.name}!`);
         router.refresh();
       } else {
         setError(res.error ?? "Failed to add guest.");
@@ -368,7 +449,20 @@ export function OpenPlayManagerClient({
         playerId: selectedRosterPlayerId,
       });
       if (res.ok) {
-        const addedName = playerMap.get(selectedRosterPlayerId)?.name ?? "Player";
+        const playerIdToAdd = selectedRosterPlayerId;
+        const addedName = playerMap.get(playerIdToAdd)?.name ?? "Player";
+        setLocalAttendance((prev) => {
+          const filtered = prev.filter((a) => a.playerId !== playerIdToAdd);
+          return [
+            ...filtered,
+            {
+              sessionId: session.id,
+              playerId: playerIdToAdd,
+              joinedRound: 1,
+              leftRound: null,
+            },
+          ];
+        });
         setSelectedRosterPlayerId("");
         setRosterFilter("");
         showToast(`Added ${addedName} to session!`);
@@ -396,6 +490,9 @@ export function OpenPlayManagerClient({
         playerId,
       });
       if (res.ok) {
+        setLocalAttendance((prev) =>
+          prev.map((a) => (a.playerId === playerId ? { ...a, leftRound: 1 } : a)),
+        );
         showToast("Player removed from session.");
         router.refresh();
       } else {
@@ -448,6 +545,44 @@ export function OpenPlayManagerClient({
       });
 
       if (res.ok) {
+        const newMatch = res.data;
+        const newMatchPlayers: MatchPlayerRecord[] = [
+          ...team1Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 1 as const, ratingBefore: null, ratingAfter: null })),
+          ...team2Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 2 as const, ratingBefore: null, ratingAfter: null })),
+        ];
+
+        setLocalStartedRounds((prev) => {
+          if (prev.length === 0) {
+            const newSr: StartedRoundRecord = {
+              round: {
+                id: newMatch.roundId,
+                sessionId: session.id,
+                roundNumber: 1,
+                status: "started",
+                seed: 0,
+                scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+                createdAt: new Date(),
+                startedAt: new Date(),
+                completedAt: null,
+                version: 1,
+              },
+              matches: [newMatch],
+              matchPlayers: newMatchPlayers,
+              sits: [],
+            };
+            return [newSr];
+          }
+          return prev.map((sr) =>
+            sr.round.id === newMatch.roundId || prev.length === 1
+              ? {
+                  ...sr,
+                  matches: [...sr.matches.filter((m) => m.id !== newMatch.id), newMatch],
+                  matchPlayers: [...sr.matchPlayers.filter((mp) => mp.matchId !== newMatch.id), ...newMatchPlayers],
+                }
+              : sr
+          );
+        });
+
         setT1Score("");
         setT2Score("");
         showToast("Game submitted successfully!");
@@ -555,6 +690,27 @@ export function OpenPlayManagerClient({
       });
 
       if (res.ok) {
+        const updatedMatchId = editingMatchId;
+        const updatedMatchPlayers: MatchPlayerRecord[] = [
+          ...team1Ids.map((p) => ({ matchId: updatedMatchId, playerId: p, team: 1 as const, ratingBefore: null, ratingAfter: null })),
+          ...team2Ids.map((p) => ({ matchId: updatedMatchId, playerId: p, team: 2 as const, ratingBefore: null, ratingAfter: null })),
+        ];
+
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) =>
+              m.id === updatedMatchId
+                ? { ...m, team1Score: s1, team2Score: s2 }
+                : m
+            ),
+            matchPlayers: [
+              ...sr.matchPlayers.filter((mp) => mp.matchId !== updatedMatchId),
+              ...updatedMatchPlayers,
+            ],
+          }))
+        );
+
         setEditingMatchId(null);
         showToast("Game updated successfully!");
         router.refresh();
