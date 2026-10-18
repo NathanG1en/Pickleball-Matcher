@@ -1324,6 +1324,11 @@ export class SqliteDomainRepository implements DomainRepository {
     }
   }
 
+  async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
+    void accountIds;
+    return [];
+  }
+
   async getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null> {
     void accountIdA;
     void accountIdB;
