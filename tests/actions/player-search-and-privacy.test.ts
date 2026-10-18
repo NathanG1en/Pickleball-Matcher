@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   searchPlayersByUsernameAction,
   updatePlayerPrivacyAction,
+  updatePlayerAction,
 } from "@/app/actions/players";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";
@@ -13,9 +14,17 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
+  const mockGetActivePlayerAccountId = vi.fn();
   return {
     ...actual,
-    getActivePlayerAccountId: vi.fn(),
+    getActivePlayerAccountId: mockGetActivePlayerAccountId,
+    requireOrganizer: vi.fn(async (groupId: string) => {
+      const accountId = await mockGetActivePlayerAccountId();
+      if (accountId && (await actual.getActionRepository().isGroupOrganizer(groupId, accountId))) {
+        return null;
+      }
+      throw new Error("Not authorized");
+    }),
   };
 });
 
@@ -154,6 +163,72 @@ describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
       expect(res.ok).toBe(false);
       if (!res.ok) {
         expect(res.error).toBe("Invalid privacy setting");
+      }
+    });
+  });
+
+  describe("updatePlayerAction (guest renaming)", () => {
+    beforeEach(async () => {
+      // Add a guest player to grp_1
+      await repository.createPlayer({
+        id: "p_guest",
+        groupId: "grp_1",
+        name: "Old Guest Name",
+        initialRating: 1000,
+        rating: 1000,
+        ratedGamesPlayed: 0,
+        active: true,
+        accountId: null,
+      });
+      // Make acc_pub an organizer of grp_1
+      await repository.addGroupOrganizer("grp_1", "acc_pub");
+    });
+
+    it("allows a group organizer to rename a guest player", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerAction({
+        groupId: "grp_1",
+        playerId: "p_guest",
+        name: "New Guest Name",
+        idempotencyKey: "test-rename-1",
+      });
+
+      expect(res.ok).toBe(true);
+      const players = await repository.listPlayers("grp_1");
+      const guest = players.find((p) => p.id === "p_guest");
+      expect(guest?.name).toBe("New Guest Name");
+    });
+
+    it("rejects renaming a registered player account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerAction({
+        groupId: "grp_1",
+        playerId: "p_1",
+        name: "Hacked Account Name",
+        idempotencyKey: "test-rename-2",
+      });
+
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toContain("Cannot edit the name of a registered player account");
+      }
+    });
+
+    it("rejects renaming if the user is not an organizer", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_priv");
+
+      const res = await updatePlayerAction({
+        groupId: "grp_1",
+        playerId: "p_guest",
+        name: "Unauthorized Rename",
+        idempotencyKey: "test-rename-3",
+      });
+
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toBe("Not authorized");
       }
     });
   });

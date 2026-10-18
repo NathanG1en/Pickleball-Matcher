@@ -26,6 +26,7 @@ import type {
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { calculateSynergyScore } from "@/lib/synergy/calculator";
+import { replayRatings } from "@/lib/domain/rating-replay";
 
 export class RepositoryConflictError extends Error {
   constructor(message = "The record changed before this update was saved.") {
@@ -821,6 +822,153 @@ export class PostgresRepositories implements DomainRepository {
   async deletePlayer(playerId: string, groupId: string): Promise<void> {
     await this.removePlayerFromGroup(playerId, groupId);
   }
+
+  async mergeGuestPlayers(
+    groupId: string,
+    targetPlayerId: string,
+    sourcePlayerIds: readonly string[],
+    mergedName: string,
+  ): Promise<PlayerRecord> {
+    return (await this.transaction(async (tx) => {
+      const txRepo = tx as PostgresRepositories;
+      const targetRows = await txRepo.query<PlayerRow[]>`
+        select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+        from players
+        where id = ${targetPlayerId} and group_id = ${groupId}
+      `;
+      if (!targetRows[0] || targetRows[0].account_id !== null) {
+        throw new Error("Target player is not a valid guest player in this group.");
+      }
+
+      for (const sId of sourcePlayerIds) {
+        if (sId === targetPlayerId) continue;
+        const sRows = await txRepo.query<PlayerRow[]>`
+          select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+          from players
+          where id = ${sId} and group_id = ${groupId}
+        `;
+        if (!sRows[0] || sRows[0].account_id !== null) {
+          throw new Error("One or more players to merge are not valid guest players in this group.");
+        }
+      }
+
+      for (const sId of sourcePlayerIds) {
+        if (sId === targetPlayerId) continue;
+
+        // session_attendance
+        const sAttendances = await txRepo.query<AttendanceRow[]>`
+          select session_id, player_id, joined_round, left_round
+          from session_attendance
+          where player_id = ${sId}
+        `;
+        for (const sa of sAttendances) {
+          const targetAtt = await txRepo.query<AttendanceRow[]>`
+            select session_id, player_id, joined_round, left_round
+            from session_attendance
+            where session_id = ${sa.session_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetAtt[0]) {
+            const minJoined = Math.min(targetAtt[0].joined_round, sa.joined_round);
+            const mergedLeft =
+              targetAtt[0].left_round === null || sa.left_round === null
+                ? null
+                : Math.max(targetAtt[0].left_round, sa.left_round);
+            await txRepo.query`
+              update session_attendance
+              set joined_round = ${minJoined}, left_round = ${mergedLeft}
+              where session_id = ${sa.session_id} and player_id = ${targetPlayerId}
+            `;
+            await txRepo.query`
+              delete from session_attendance
+              where session_id = ${sa.session_id} and player_id = ${sId}
+            `;
+          } else {
+            await txRepo.query`
+              update session_attendance
+              set player_id = ${targetPlayerId}
+              where session_id = ${sa.session_id} and player_id = ${sId}
+            `;
+          }
+        }
+
+        // match_players
+        const sMatches = await txRepo.query<MatchPlayerRow[]>`
+          select match_id, player_id, team, rating_before, rating_after
+          from match_players
+          where player_id = ${sId}
+        `;
+        for (const sm of sMatches) {
+          const targetMp = await txRepo.query<MatchPlayerRow[]>`
+            select match_id, player_id
+            from match_players
+            where match_id = ${sm.match_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetMp[0]) {
+            await txRepo.query`
+              delete from match_players
+              where match_id = ${sm.match_id} and player_id = ${sId}
+            `;
+          } else {
+            await txRepo.query`
+              update match_players
+              set player_id = ${targetPlayerId}
+              where match_id = ${sm.match_id} and player_id = ${sId}
+            `;
+          }
+        }
+
+        // round_sits
+        const sSits = await txRepo.query<SitRow[]>`
+          select round_id, player_id
+          from round_sits
+          where player_id = ${sId}
+        `;
+        for (const ss of sSits) {
+          const targetSit = await txRepo.query<SitRow[]>`
+            select round_id, player_id
+            from round_sits
+            where round_id = ${ss.round_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetSit[0]) {
+            await txRepo.query`
+              delete from round_sits
+              where round_id = ${ss.round_id} and player_id = ${sId}
+            `;
+          } else {
+            await txRepo.query`
+              update round_sits
+              set player_id = ${targetPlayerId}
+              where round_id = ${ss.round_id} and player_id = ${sId}
+            `;
+          }
+        }
+
+        // delete source guest player row
+        await txRepo.query`
+          delete from players
+          where id = ${sId} and group_id = ${groupId} and account_id is null
+        `;
+      }
+
+      // Update target player name
+      await txRepo.query`
+        update players
+        set name = ${mergedName.trim()}
+        where id = ${targetPlayerId} and group_id = ${groupId}
+      `;
+
+      await replayRatings(groupId, txRepo);
+
+      const finalRows = await txRepo.query<PlayerRow[]>`
+        select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+        from players
+        where id = ${targetPlayerId} and group_id = ${groupId}
+      `;
+      if (!finalRows[0]) throw new Error("Failed to retrieve merged player.");
+      return mapPlayer(finalRows[0]);
+    })) as PlayerRecord;
+  }
+
 
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const rows = await this.query<SessionRow[]>`

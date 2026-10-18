@@ -214,3 +214,12 @@ export function CopyIcon({ className = "h-4 w-4", ...props }: IconProps) {
   );
 }
 
+export function ChevronDownIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+

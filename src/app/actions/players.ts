@@ -18,6 +18,7 @@ import {
   createPlayerSchema,
   deletePlayerSchema,
   linkGuestPlayerSchema,
+  mergeGuestPlayersSchema,
   updatePlayerSchema,
 } from "@/lib/validation/group";
 
@@ -88,6 +89,15 @@ export async function updatePlayerAction(input: unknown): Promise<ActionResult> 
   try {
     await requireOrganizer(parsed.data.groupId);
     const repository = getActionRepository();
+    const players = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
+    const target = players.find((p) => p.id === parsed.data.playerId);
+    if (!target) {
+      return { ok: false, error: "Player not found in group" };
+    }
+    if (parsed.data.name !== undefined && target.accountId) {
+      return { ok: false, error: "Cannot edit the name of a registered player account" };
+    }
+
     await repository.updatePlayer({
       id: parsed.data.playerId,
       groupId: parsed.data.groupId,
@@ -95,6 +105,8 @@ export async function updatePlayerAction(input: unknown): Promise<ActionResult> 
       active: parsed.data.active,
       initialRating: parsed.data.initialRating,
     });
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath("/players");
     return { ok: true, data: undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update player";
@@ -311,3 +323,74 @@ export async function linkGuestPlayerAction(
     return { ok: false, error: message };
   }
 }
+
+export async function mergeGuestPlayersAction(
+  input: unknown,
+): Promise<ActionResult<PlayerRecord>> {
+  const parsed = mergeGuestPlayersSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const group = await repository.getGroup(parsed.data.groupId);
+    if (!group) return { ok: false, error: "Group not found." };
+
+    const callerAccountId = await getActivePlayerAccountId();
+    const isHost = Boolean(callerAccountId && group.ownerAccountId === callerAccountId);
+    const isAccountOrganizer = Boolean(
+      callerAccountId && (await repository.isGroupOrganizer(parsed.data.groupId, callerAccountId)),
+    );
+    const organizerSession = await getActiveOrganizerSession();
+    const isSessionOrganizer = Boolean(
+      organizerSession && organizerSession.groupId === parsed.data.groupId,
+    );
+
+    if (!isHost && !isAccountOrganizer && !isSessionOrganizer) {
+      return { ok: false, error: "Only the host or a group organizer can merge guest players." };
+    }
+
+    const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
+    const targetPlayer = groupPlayers.find((p) => p.id === parsed.data.targetPlayerId);
+    if (!targetPlayer) {
+      return { ok: false, error: "Target player not found." };
+    }
+    if (targetPlayer.accountId) {
+      return { ok: false, error: "Registered account players cannot be merged as guests." };
+    }
+
+    for (const sourceId of parsed.data.sourcePlayerIds) {
+      if (sourceId === targetPlayer.id) continue;
+      const sourcePlayer = groupPlayers.find((p) => p.id === sourceId);
+      if (!sourcePlayer) {
+        return { ok: false, error: `Guest player with ID ${sourceId} not found.` };
+      }
+      if (sourcePlayer.accountId) {
+        return { ok: false, error: "Registered account players cannot be merged as guests." };
+      }
+    }
+
+    const merged = await repository.mergeGuestPlayers(
+      parsed.data.groupId,
+      parsed.data.targetPlayerId,
+      parsed.data.sourcePlayerIds,
+      parsed.data.mergedName,
+    );
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+
+    return { ok: true, data: merged };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to merge guest players";
+    return { ok: false, error: message };
+  }
+}
+
