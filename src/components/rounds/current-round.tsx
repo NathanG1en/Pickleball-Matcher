@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
+import { clearLineupDraft, readLineupDraft, saveLineupDraft } from "@/lib/rounds/lineup-draft";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
@@ -22,6 +23,8 @@ export interface RoundCourtData {
 }
 
 export interface CurrentRoundViewProps {
+  readonly draftKey?: string;
+  readonly draftContext?: string;
   readonly round: {
     readonly id: string;
     readonly roundNumber: number;
@@ -46,7 +49,19 @@ export interface CurrentRoundViewProps {
   readonly canManage?: boolean;
 }
 
-export function CurrentRoundView({
+const subscribeToHydration = () => () => {};
+
+export function CurrentRoundView(props: CurrentRoundViewProps) {
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
+  // Semantic inputs avoid discarding edits on a router refresh with new object references.
+  const identity = JSON.stringify([hydrated, props.draftKey, props.draftContext, props.round.id, props.courts, props.sittingPlayerIds]);
+  return <CurrentRoundEditor {...props} key={identity} restoreDraft={hydrated} />;
+}
+
+function CurrentRoundEditor({
+  draftKey,
+  draftContext,
+  restoreDraft,
   round,
   courts,
   sittingPlayerIds,
@@ -61,30 +76,16 @@ export function CurrentRoundView({
   onRegenerate,
   onEnterResults,
   canManage = true,
-}: CurrentRoundViewProps) {
-  // Local editable state for manual lineup modifications
-  const [localCourts, setLocalCourts] = useState<RoundCourtData[]>(() =>
-    courts.map((c) => ({
-      courtNumber: c.courtNumber,
-      team1: [...c.team1],
-      team2: [...c.team2],
-    }))
+}: CurrentRoundViewProps & { restoreDraft: boolean }) {
+  const [draft] = useState(() =>
+    restoreDraft && draftKey && draftContext && canManage && round.status === "proposed"
+      ? readLineupDraft(draftKey, draftContext, { courts, sitting: sittingPlayerIds })
+      : null
   );
-  const [localSitting, setLocalSitting] = useState<string[]>(() => [...sittingPlayerIds]);
-  const [prevProps, setPrevProps] = useState({ courts, sittingPlayerIds });
-
-  // Sync state if props change (e.g. after regeneration)
-  if (prevProps.courts !== courts || prevProps.sittingPlayerIds !== sittingPlayerIds) {
-    setPrevProps({ courts, sittingPlayerIds });
-    setLocalCourts(
-      courts.map((c) => ({
-        courtNumber: c.courtNumber,
-        team1: [...c.team1],
-        team2: [...c.team2],
-      }))
-    );
-    setLocalSitting([...sittingPlayerIds]);
-  }
+  const [localCourts, setLocalCourts] = useState<RoundCourtData[]>(() =>
+    (draft?.courts ?? courts).map(c => ({ ...c, team1: [...c.team1], team2: [...c.team2] }))
+  );
+  const [localSitting, setLocalSitting] = useState<string[]>(() => [...(draft?.sitting ?? sittingPlayerIds)]);
 
   const courtSynergies = buildCourtSynergies(localCourts, playerAccounts ?? {}, pairSynergies);
   const viewerCourt = localCourts.find((court) => court.team1.includes(currentViewerPlayerId ?? "") || court.team2.includes(currentViewerPlayerId ?? ""));
@@ -119,6 +120,12 @@ export function CurrentRoundView({
     const currSit = localSitting.slice().sort().join(",");
     return origSit !== currSit;
   }, [localCourts, localSitting, courts, sittingPlayerIds]);
+
+  useEffect(() => {
+    if (!restoreDraft || !draftKey || !draftContext || !canManage || round.status !== "proposed") return;
+    if (hasModifications) saveLineupDraft(draftKey, draftContext, { courts: localCourts, sitting: localSitting });
+    else clearLineupDraft(draftKey);
+  }, [restoreDraft, draftKey, draftContext, canManage, round.status, hasModifications, localCourts, localSitting]);
 
   // Count how many players are in different positions
   const modificationCount = useMemo(() => {

@@ -29,6 +29,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
+import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 
@@ -125,6 +126,7 @@ export function SessionManagerClient({
         seed: nextSeed,
       });
       if (res.ok) {
+        clearLineupDraft(lineupDraftKey(session.id));
         setRegeneratedProposal(res.data);
       } else {
         setError(res.error);
@@ -158,6 +160,7 @@ export function SessionManagerClient({
         manualSitting: customProposal ? [...customProposal.sitting] : undefined,
       });
       if (res.ok) {
+        clearLineupDraft(lineupDraftKey(session.id));
         setRegeneratedProposal(null);
         router.refresh();
       } else {
@@ -954,6 +957,8 @@ export function SessionManagerClient({
             </div>
           ) : activeProposal ? (
             <CurrentRoundView
+              draftKey={lineupDraftKey(session.id)}
+              draftContext={`${session.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}`}
               round={{
                 id: `proposal_${activeProposal.seed}`,
                 roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,

@@ -263,7 +263,7 @@ test("host synergy follows current partners after manual swaps and new proposals
   await expectCurrentSynergy(2, "67% (1 games)");
   await close();
 
-  // A fresh server proposal must agree with the same account-pair history.
+  // A refreshed lineup must agree with the same account-pair history.
   await page.reload();
   const pairKey = (pair: string[]) => [...pair].sort().join("|");
   const expected = new Map([[pairKey(winners), "67% (1 games)"], [pairKey(losers), "33% (1 games)"]]);
@@ -271,4 +271,56 @@ test("host synergy follows current partners after manual swaps and new proposals
   for (const team of [1, 2]) {
     await expectCurrentSynergy(team, expected.get(pairKey(await teamNames(team))) ?? "New Duo (0 games)");
   }
+});
+
+
+test("custom lineup survives refresh and starts with the saved assignments", async ({ page }) => {
+  test.setTimeout(90000);
+  await createTestGroup(page, `Lineup draft ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Draft Blake", "Draft Casey", "Draft Drew"]) {
+    await page.locator("#guest-player-name").fill(name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  const card = page.locator(".court-card");
+  const team = (number: number) => card.getByText(`Team ${number}`, { exact: true }).locator("../..");
+  const names = async (number: number) => (await team(number).locator("[draggable] > span").allTextContents()).filter((value) => value !== "⋮⋮");
+  const original = [await names(1), await names(2)];
+  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
+  await card.getByText(original[0][0], { exact: true }).click();
+  await card.getByText(original[1][0], { exact: true }).click();
+  let edited = [await names(1), await names(2)];
+  expect(edited).not.toEqual(original);
+  await page.reload();
+  await expect(team(1).getByText(original[1][0], { exact: true })).toBeVisible();
+  expect([await names(1), await names(2)]).toEqual(edited);
+  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
+  // Benching creates a definite override even if the new algorithm proposal matches the saved swap.
+  await page.getByRole("button", { name: "Bench to sitting pool", exact: true }).first().click();
+  await page.getByRole("button", { name: "↺ Reset to Algorithm", exact: true }).click();
+  const draftKey = await page.evaluate(() => Object.keys(localStorage).find(key => key.startsWith("lineup-draft:")));
+  expect(draftKey).toBeUndefined();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  const reset = [await names(1), await names(2)];
+  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
+  await card.getByText(reset[0][0], { exact: true }).click();
+  await card.getByText(reset[1][0], { exact: true }).click();
+  edited = [await names(1), await names(2)];
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  await expect(page.locator("h1")).toContainText("Round 1 Results");
+  await page.reload();
+  await expect(page.locator("h1")).toContainText("Round 1 Results");
+  const savedTeam = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).locator("../..");
+  await expect(savedTeam).toHaveCount(1);
+  for (const name of edited[0]) await expect(savedTeam).toContainText(name);
 });
