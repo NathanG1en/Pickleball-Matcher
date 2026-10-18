@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { createAndSignInPlayer } from "./test-helpers";
+import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
@@ -151,4 +151,71 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     expect(page.url()).toBe(sessionUrl);
     await expect(summaryCard).toBeVisible();
   });
+});
+
+
+test("tournament final waits for both semifinal qualifiers", async ({ page }) => {
+  test.setTimeout(90000);
+  await createTestGroup(page, `Tournament readiness ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Qualifier A", "Qualifier B"]) {
+    await page.fill("#guest-player-name", name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "+ Create Tournament", exact: true }).click();
+  await page.getByRole("button", { name: "Clear", exact: true }).first().click();
+  await page.getByRole("checkbox", { name: /^Men's Singles/ }).check();
+  await page.getByRole("button", { name: "Create Tournament →", exact: true }).click();
+  await expect(page).toHaveURL(/\/tournaments\/tr_/);
+  const final = page.locator(".round-column").last().locator(".bracket-match-card");
+  await expect(final).toContainText("TBD");
+  await expect(final.getByRole("button", { name: "Win", exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(final.getByRole("button", { name: "Win", exact: true })).toBeDisabled();
+  const semifinal = page.locator(".round-column").first().locator(".bracket-match-card").filter({ has: page.getByRole("button", { name: "Win", exact: true }) });
+  await semifinal.getByRole("button", { name: "Win", exact: true }).first().click();
+  await expect(final).not.toContainText("TBD");
+  await expect(final.getByRole("button", { name: "Win", exact: true }).first()).toBeEnabled();
+  await final.getByRole("button", { name: "Win", exact: true }).first().click();
+  await expect(page.getByRole("heading", { name: "Men's Singles Champion", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Men's Singles Champion", exact: true })).toBeVisible();
+});
+
+for (const courtSizes of [[4], [4, 3, 2]]) {
+  test(`temporary group summarizes ${courtSizes.length} courts separately from player capacity`, async ({ page }) => {
+    const capacity = courtSizes.reduce((sum, size) => sum + size, 0);
+    await page.goto("/temporary");
+    await page.getByRole("textbox", { name: "Group name", exact: true }).fill("Court summary regression");
+    await page.getByRole("textbox", { name: "Player names · one per line", exact: true }).fill(
+      Array.from({ length: capacity + 1 }, (_, index) => `Player ${index + 1}`).join("\n"),
+    );
+    await page.getByRole("combobox", { name: "Number of courts", exact: true }).selectOption(String(courtSizes.length));
+    for (const [index, size] of courtSizes.entries()) {
+      await page.getByRole("combobox", { name: `Court ${index + 1}`, exact: true }).selectOption(String(size));
+    }
+    await page.getByRole("button", { name: "Start Temporary Group", exact: true }).click();
+    const summary = `${courtSizes.length} court${courtSizes.length === 1 ? "" : "s"} · ${capacity} playing · 1 sitting out`;
+    await expect(page.getByText(summary, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Generate First Round", exact: true }).click();
+    await expect(page.getByRole("spinbutton")).toHaveCount(courtSizes.length * 2);
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.reload();
+    await expect(page.getByText(summary, { exact: true })).toBeVisible();
+    await expect(page.getByRole("spinbutton")).toHaveCount(courtSizes.length * 2);
+  });
+}
+
+test("restored temporary group calculates capacity from saved courts without a setup draft", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("pickleball-temporary-group-v1", JSON.stringify({
+      name: "Restored mixed courts", isPublic: false, courtPlayerCounts: [4, 3, 2],
+      players: Array.from({ length: 10 }, (_, index) => ({ id: `p${index}`, name: `Player ${index}`, rating: 1000 })),
+      rounds: [], currentRound: null,
+    }));
+  });
+  await page.goto("/temporary");
+  await expect(page.getByRole("heading", { name: "Restored mixed courts", exact: true })).toBeVisible();
+  await expect(page.getByText("3 courts · 9 playing · 1 sitting out", { exact: true })).toBeVisible();
 });

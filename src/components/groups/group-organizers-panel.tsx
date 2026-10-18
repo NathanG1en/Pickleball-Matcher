@@ -447,19 +447,22 @@ export function GroupOrganizersPanel({
                   placeholder="Guest Name"
                   className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
-                <select
-                  aria-label="Guest rating"
-                  value={guestRating}
-                  onChange={(e) => setGuestRating(Number(e.target.value))}
-                  className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
-                >
-                  <option value={2.0}>Beginner (2.0)</option>
-                  <option value={2.5}>Adv. Beginner (2.5)</option>
-                  <option value={3.0}>Intermediate (3.0)</option>
-                  <option value={3.5}>Adv. Intermediate (3.5)</option>
-                  <option value={4.0}>Competitive (4.0)</option>
-                  <option value={4.5}>Adv. Competitive (4.5)</option>
-                </select>
+                <label htmlFor="guest-player-rating" className="flex flex-col gap-1 text-xs font-bold">
+                  Guest starting skill level
+                  <select
+                    id="guest-player-rating"
+                    value={guestRating}
+                    onChange={(e) => setGuestRating(Number(e.target.value))}
+                    className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
+                  >
+                    <option value={2.0}>Beginner (2.0)</option>
+                    <option value={2.5}>Adv. Beginner (2.5)</option>
+                    <option value={3.0}>Intermediate (3.0)</option>
+                    <option value={3.5}>Adv. Intermediate (3.5)</option>
+                    <option value={4.0}>Competitive (4.0)</option>
+                    <option value={4.5}>Adv. Competitive (4.5)</option>
+                  </select>
+                </label>
                 <button
                   type="submit"
                   disabled={guestSaving || !guestName.trim()}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,8 @@ export interface MatchScoreEntry {
   readonly version: number;
 }
 
+export type ScoreDrafts = Readonly<Record<string, { team1: string; team2: string }>>;
+
 export interface ResultsEntryViewProps {
   readonly roundId: string;
   readonly roundNumber: number;
@@ -25,6 +27,9 @@ export interface ResultsEntryViewProps {
   readonly onCancelMatch?: (matchId: string) => void;
   readonly onNextRound?: () => void;
   readonly canManage?: boolean;
+  readonly scoreDrafts?: ScoreDrafts;
+  readonly hasUnsavedScores?: boolean;
+  readonly onScoreChange?: (matchId: string, team: "team1" | "team2", value: string) => void;
 }
 
 export function ResultsEntryView({
@@ -36,37 +41,19 @@ export function ResultsEntryView({
   onCancelMatch,
   onNextRound,
   canManage = true,
+  scoreDrafts = {},
+  hasUnsavedScores = false,
+  onScoreChange,
 }: ResultsEntryViewProps) {
-  const [scores, setScores] = useState<
-    Record<string, { team1: string; team2: string }>
-  >(() => {
-    const initial: Record<string, { team1: string; team2: string }> = {};
-    for (const match of matches) {
-      initial[match.id] = {
-        team1: match.team1Score !== null ? String(match.team1Score) : "",
-        team2: match.team2Score !== null ? String(match.team2Score) : "",
-      };
-    }
-    return initial;
-  });
-
-  const handleScoreChange = (
-    matchId: string,
-    team: "team1" | "team2",
-    value: string,
-  ) => {
-    setScores((prev) => ({
-      ...prev,
-      [matchId]: {
-        ...prev[matchId],
-        [team]: value,
-      },
-    }));
+  const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
+    team1: match.team1Score !== null ? String(match.team1Score) : "",
+    team2: match.team2Score !== null ? String(match.team2Score) : "",
   };
 
   const handleSaveMatch = (matchId: string) => {
-    const s = scores[matchId];
-    if (!s) return;
+    const match = matches.find((entry) => entry.id === matchId);
+    if (!match) return;
+    const s = getScores(match);
     const t1 = parseInt(s.team1, 10);
     const t2 = parseInt(s.team2, 10);
     if (!isNaN(t1) && !isNaN(t2) && onSubmitResult) {
@@ -94,7 +81,7 @@ export function ResultsEntryView({
 
       <div className="space-y-4">
         {matches.map((match) => {
-          const matchScores = scores[match.id] ?? { team1: "", team2: "" };
+          const matchScores = getScores(match);
           const err = fieldErrors[match.id];
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
@@ -148,7 +135,7 @@ export function ResultsEntryView({
                         disabled={isCancelled || isPending}
                         value={matchScores.team1}
                         onChange={(e) =>
-                          handleScoreChange(match.id, "team1", e.target.value)
+                          onScoreChange?.(match.id, "team1", e.target.value)
                         }
                         placeholder="Score"
                         className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
@@ -182,7 +169,7 @@ export function ResultsEntryView({
                         disabled={isCancelled || isPending}
                         value={matchScores.team2}
                         onChange={(e) =>
-                          handleScoreChange(match.id, "team2", e.target.value)
+                          onScoreChange?.(match.id, "team2", e.target.value)
                         }
                         placeholder="Score"
                         className="w-24 bg-white border-2 border-black text-black rounded-xl px-3 py-2 text-2xl font-display font-black text-center shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-40"
@@ -244,6 +231,11 @@ export function ResultsEntryView({
       {/* Persistent Bottom Mobile Action Area */}
       {canManage && (
         <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+          {hasUnsavedScores && (
+            <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-3 text-sm font-bold text-black">
+              Save or revert your score changes before continuing.
+            </p>
+          )}
           <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
             <div className="text-left">
               <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Round Progress</p>
@@ -255,7 +247,8 @@ export function ResultsEntryView({
               type="button"
               variant="primary"
               size="lg"
-              disabled={!allResolved || isPending}
+              disabled={!allResolved || hasUnsavedScores || isPending}
+              aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
               onClick={onNextRound}
               className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
             >
