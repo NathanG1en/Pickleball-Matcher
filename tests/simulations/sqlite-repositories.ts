@@ -22,6 +22,7 @@ import type {
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
+import { replayRatings } from "@/lib/domain/rating-replay";
 
 interface GroupRow {
   id: string;
@@ -784,6 +785,114 @@ export class SqliteDomainRepository implements DomainRepository {
   async deletePlayer(playerId: string, groupId: string): Promise<void> {
     await this.removePlayerFromGroup(playerId, groupId);
   }
+
+  async mergeGuestPlayers(
+    groupId: string,
+    targetPlayerId: string,
+    sourcePlayerIds: readonly string[],
+    mergedName: string,
+  ): Promise<PlayerRecord> {
+    const target = this.db
+      .prepare("SELECT * FROM players WHERE id = ? AND group_id = ?")
+      .get(targetPlayerId, groupId) as PlayerRow | undefined;
+    if (!target || target.account_id !== null) {
+      throw new Error("Target player is not a valid guest player in this group.");
+    }
+
+    for (const sId of sourcePlayerIds) {
+      if (sId === targetPlayerId) continue;
+      const sPlayer = this.db
+        .prepare("SELECT * FROM players WHERE id = ? AND group_id = ?")
+        .get(sId, groupId) as PlayerRow | undefined;
+      if (!sPlayer || sPlayer.account_id !== null) {
+        throw new Error("One or more players to merge are not valid guest players in this group.");
+      }
+
+      // session_attendance
+      const sAttendances = this.db
+        .prepare("SELECT * FROM session_attendance WHERE player_id = ?")
+        .all(sId) as unknown as AttendanceRow[];
+      for (const sa of sAttendances) {
+        const targetAtt = this.db
+          .prepare("SELECT * FROM session_attendance WHERE session_id = ? AND player_id = ?")
+          .get(sa.session_id, targetPlayerId) as AttendanceRow | undefined;
+        if (targetAtt) {
+          const minJoined = Math.min(targetAtt.joined_round, sa.joined_round);
+          const mergedLeft =
+            targetAtt.left_round === null || sa.left_round === null
+              ? null
+              : Math.max(targetAtt.left_round, sa.left_round);
+          this.db
+            .prepare("UPDATE session_attendance SET joined_round = ?, left_round = ? WHERE session_id = ? AND player_id = ?")
+            .run(minJoined, mergedLeft, sa.session_id, targetPlayerId);
+          this.db
+            .prepare("DELETE FROM session_attendance WHERE session_id = ? AND player_id = ?")
+            .run(sa.session_id, sId);
+        } else {
+          this.db
+            .prepare("UPDATE session_attendance SET player_id = ? WHERE session_id = ? AND player_id = ?")
+            .run(targetPlayerId, sa.session_id, sId);
+        }
+      }
+
+      // match_players
+      const sMatches = this.db
+        .prepare("SELECT * FROM match_players WHERE player_id = ?")
+        .all(sId) as unknown as MatchPlayerRow[];
+      for (const sm of sMatches) {
+        const targetMp = this.db
+          .prepare("SELECT * FROM match_players WHERE match_id = ? AND player_id = ?")
+          .get(sm.match_id, targetPlayerId) as MatchPlayerRow | undefined;
+        if (targetMp) {
+          this.db
+            .prepare("DELETE FROM match_players WHERE match_id = ? AND player_id = ?")
+            .run(sm.match_id, sId);
+        } else {
+          this.db
+            .prepare("UPDATE match_players SET player_id = ? WHERE match_id = ? AND player_id = ?")
+            .run(targetPlayerId, sm.match_id, sId);
+        }
+      }
+
+      // round_sits
+      const sSits = this.db
+        .prepare("SELECT * FROM round_sits WHERE player_id = ?")
+        .all(sId) as unknown as RoundSitRow[];
+      for (const ss of sSits) {
+        const targetSit = this.db
+          .prepare("SELECT * FROM round_sits WHERE round_id = ? AND player_id = ?")
+          .get(ss.round_id, targetPlayerId) as RoundSitRow | undefined;
+        if (targetSit) {
+          this.db
+            .prepare("DELETE FROM round_sits WHERE round_id = ? AND player_id = ?")
+            .run(ss.round_id, sId);
+        } else {
+          this.db
+            .prepare("UPDATE round_sits SET player_id = ? WHERE round_id = ? AND player_id = ?")
+            .run(targetPlayerId, ss.round_id, sId);
+        }
+      }
+
+      // delete source player
+      this.db
+        .prepare("DELETE FROM players WHERE id = ? AND group_id = ? AND account_id IS NULL")
+        .run(sId, groupId);
+    }
+
+    // update target player name
+    this.db
+      .prepare("UPDATE players SET name = ? WHERE id = ? AND group_id = ?")
+      .run(mergedName.trim(), targetPlayerId, groupId);
+
+    await replayRatings(groupId, this);
+
+    const updated = this.db
+      .prepare("SELECT * FROM players WHERE id = ? AND group_id = ?")
+      .get(targetPlayerId, groupId) as PlayerRow | undefined;
+    if (!updated) throw new Error("Failed to retrieve merged player.");
+    return this.mapPlayerRecord(updated);
+  }
+
 
   async listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]> {
     const rows = this.db

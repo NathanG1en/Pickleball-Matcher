@@ -186,3 +186,14 @@ export const deletePlayerSchema = z
     idempotencyKey: entityIdSchema.optional(),
   })
   .strict();
+
+export const mergeGuestPlayersSchema = z
+  .object({
+    groupId: entityIdSchema,
+    targetPlayerId: entityIdSchema,
+    sourcePlayerIds: z.array(entityIdSchema).min(1, "Select at least one other guest player to merge."),
+    mergedName: z.string().trim().min(1, "Player name cannot be empty.").max(80, "Name must be 80 characters or fewer."),
+    idempotencyKey: entityIdSchema.optional(),
+  })
+  .strict();
+

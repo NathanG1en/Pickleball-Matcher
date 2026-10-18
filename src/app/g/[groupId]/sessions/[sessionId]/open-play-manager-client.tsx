@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
+import { SearchIcon } from "@/components/ui/icons";
+import { FilterablePlayerSelect } from "@/components/groups/filterable-player-select";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
   addOpenPlayGuestAction,
@@ -84,22 +86,23 @@ export function OpenPlayManagerClient({
   const canEditOrDelete = isSessionActive ? (canManage || isMember) : canManage;
 
   const selectableGamePlayers = useMemo(() => {
-    if (canManage) {
-      const ids = new Set<string>();
-      const list: PlayerRecord[] = [];
-      for (const p of checkedInPlayers) {
+    const ids = new Set<string>();
+    const list: PlayerRecord[] = [];
+    for (const p of checkedInPlayers) {
+      if (!ids.has(p.id)) {
         ids.add(p.id);
         list.push(p);
       }
+    }
+    if (canManage) {
       for (const p of players) {
         if (p.active && !ids.has(p.id)) {
           ids.add(p.id);
           list.push(p);
         }
       }
-      return list;
     }
-    return checkedInPlayers;
+    return list;
   }, [canManage, checkedInPlayers, players]);
 
   const [deletedMatchIds, setDeletedMatchIds] = useState<Set<string>>(() => new Set());
@@ -255,12 +258,27 @@ export function OpenPlayManagerClient({
     return false;
   };
 
+  const getSlotOptions = (slot: "t1p1" | "t1p2" | "t2p1" | "t2p2") => {
+    return selectableGamePlayers.map((p) => ({
+      id: p.id,
+      name: p.name,
+      disabled: isPlayerSelectedElsewhere(p.id, slot),
+    }));
+  };
+
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
   const [guestPreset, setGuestPreset] = useState("3.5");
   const [isCustomGuestRating, setIsCustomGuestRating] = useState(false);
   const [customGuestRatingInput, setCustomGuestRatingInput] = useState("3.5");
   const [selectedRosterPlayerId, setSelectedRosterPlayerId] = useState("");
+  const [rosterFilter, setRosterFilter] = useState("");
+
+  const filteredRosterPlayers = useMemo(() => {
+    const q = rosterFilter.trim().toLowerCase();
+    if (!q) return availableRosterPlayers;
+    return availableRosterPlayers.filter((p) => p.name.toLowerCase().includes(q));
+  }, [availableRosterPlayers, rosterFilter]);
 
   // Loading & feedback states
   const [isSubmittingGame, setIsSubmittingGame] = useState(false);
@@ -341,6 +359,7 @@ export function OpenPlayManagerClient({
       if (res.ok) {
         const addedName = playerMap.get(selectedRosterPlayerId)?.name ?? "Player";
         setSelectedRosterPlayerId("");
+        setRosterFilter("");
         showToast(`Added ${addedName} to session!`);
         router.refresh();
       } else {
@@ -471,6 +490,14 @@ export function OpenPlayManagerClient({
     if (currentSlot !== "t2p1" && editT2p1 === playerId) return true;
     if (currentSlot !== "t2p2" && editMatchType === "doubles" && editT2p2 === playerId) return true;
     return false;
+  };
+
+  const getEditSlotOptions = (slot: "t1p1" | "t1p2" | "t2p1" | "t2p2") => {
+    return selectableGamePlayers.map((p) => ({
+      id: p.id,
+      name: p.name,
+      disabled: isEditPlayerSelectedElsewhere(p.id, slot),
+    }));
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -723,13 +750,43 @@ export function OpenPlayManagerClient({
             {/* Add from Roster */}
             {availableRosterPlayers.length > 0 && (
               <form onSubmit={handleAddPlayer} className="space-y-2">
-                <label
-                  htmlFor="roster-player-select"
-                  className="block text-xs font-black uppercase tracking-wider text-black"
-                >
-                  Add Group Member
-                </label>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="roster-player-select"
+                    className="block text-xs font-black uppercase tracking-wider text-black"
+                  >
+                    Add Group Member
+                  </label>
+                  {rosterFilter.trim() && (
+                    <span className="text-[10px] font-bold text-neutral-600">
+                      {filteredRosterPlayers.length} of {availableRosterPlayers.length}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative sm:w-44">
+                    <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                    <input
+                      id="roster-player-filter"
+                      type="text"
+                      placeholder="Filter roster..."
+                      value={rosterFilter}
+                      onChange={(e) => setRosterFilter(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      aria-label="Filter roster players"
+                      className="w-full pl-8 pr-7 py-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                    />
+                    {rosterFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setRosterFilter("")}
+                        aria-label="Clear roster filter"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-black font-black text-xs p-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                   <select
                     id="roster-player-select"
                     value={selectedRosterPlayerId}
@@ -737,11 +794,15 @@ export function OpenPlayManagerClient({
                     className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                   >
                     <option value="">Select player...</option>
-                    {availableRosterPlayers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({formatDupr(p.rating)})
-                      </option>
-                    ))}
+                    {filteredRosterPlayers.length === 0 ? (
+                      <option value="" disabled>No players match filter</option>
+                    ) : (
+                      filteredRosterPlayers.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({formatDupr(p.rating)})
+                        </option>
+                      ))
+                    )}
                   </select>
                   <button
                     type="submit"
@@ -875,48 +936,30 @@ export function OpenPlayManagerClient({
                 <div className="p-4 bg-[#ccff00]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
                   <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
                   <div className="space-y-2">
-                    <select
-                      aria-label="Team 1 Player 1"
+                    <FilterablePlayerSelect
+                      ariaLabel="Team 1 Player 1"
+                      placeholder="Select Player 1..."
                       value={t1p1}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         if (isPlayerSelectedElsewhere(val, "t1p1")) return;
                         setT1p1(val);
                       }}
-                      className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
-                    >
-                      <option value="">Select Player 1...</option>
-                      {selectableGamePlayers.map((p) => {
-                        const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p1");
-                        return (
-                          <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
-                            {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      options={getSlotOptions("t1p1")}
+                      dataTestId="select-team-1-player-1"
+                    />
 
                     {matchType === "doubles" && (
-                      <select
-                        aria-label="Team 1 Player 2"
+                      <FilterablePlayerSelect
+                        ariaLabel="Team 1 Player 2"
+                        placeholder="Select Player 2..."
                         value={t1p2}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           if (isPlayerSelectedElsewhere(val, "t1p2")) return;
                           setT1p2(val);
                         }}
-                        className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
-                      >
-                        <option value="">Select Player 2...</option>
-                        {selectableGamePlayers.map((p) => {
-                          const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t1p2");
-                          return (
-                            <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
-                              {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
+                        options={getSlotOptions("t1p2")}
+                        dataTestId="select-team-1-player-2"
+                      />
                     )}
 
                     <div className="pt-2">
@@ -940,48 +983,30 @@ export function OpenPlayManagerClient({
                 <div className="p-4 bg-[#fde047]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
                   <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
                   <div className="space-y-2">
-                    <select
-                      aria-label="Team 2 Player 1"
+                    <FilterablePlayerSelect
+                      ariaLabel="Team 2 Player 1"
+                      placeholder="Select Player 1..."
                       value={t2p1}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         if (isPlayerSelectedElsewhere(val, "t2p1")) return;
                         setT2p1(val);
                       }}
-                      className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
-                    >
-                      <option value="">Select Player 1...</option>
-                      {selectableGamePlayers.map((p) => {
-                        const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p1");
-                        return (
-                          <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
-                            {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      options={getSlotOptions("t2p1")}
+                      dataTestId="select-team-2-player-1"
+                    />
 
                     {matchType === "doubles" && (
-                      <select
-                        aria-label="Team 2 Player 2"
+                      <FilterablePlayerSelect
+                        ariaLabel="Team 2 Player 2"
+                        placeholder="Select Player 2..."
                         value={t2p2}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           if (isPlayerSelectedElsewhere(val, "t2p2")) return;
                           setT2p2(val);
                         }}
-                        className="w-full p-2 rounded-xl border-2 border-black bg-white text-xs font-bold"
-                      >
-                        <option value="">Select Player 2...</option>
-                        {selectableGamePlayers.map((p) => {
-                          const isSelectedElsewhere = isPlayerSelectedElsewhere(p.id, "t2p2");
-                          return (
-                            <option key={p.id} value={p.id} disabled={isSelectedElsewhere}>
-                              {p.name}{isSelectedElsewhere ? " (Selected)" : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
+                        options={getSlotOptions("t2p2")}
+                        dataTestId="select-team-2-player-2"
+                      />
                     )}
 
                     <div className="pt-2">
@@ -1075,47 +1100,31 @@ export function OpenPlayManagerClient({
                       {/* Team 1 */}
                       <div className="p-3 bg-[#ccff00]/20 border-2 border-black rounded-xl space-y-2">
                         <span className="text-[11px] font-black uppercase text-black block">Team 1</span>
-                        <select
-                          aria-label="Edit Team 1 Player 1"
+                        <FilterablePlayerSelect
+                          ariaLabel="Edit Team 1 Player 1"
+                          placeholder="Select Player 1..."
                           value={editT1p1}
-                          onChange={(e) => {
-                            const val = e.target.value;
+                          onChange={(val) => {
                             if (isEditPlayerSelectedElsewhere(val, "t1p1")) return;
                             setEditT1p1(val);
                           }}
-                          className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
-                        >
-                          <option value="">Select Player 1...</option>
-                          {selectableGamePlayers.map((p) => {
-                            const isSelected = isEditPlayerSelectedElsewhere(p.id, "t1p1");
-                            return (
-                              <option key={p.id} value={p.id} disabled={isSelected}>
-                                {p.name}{isSelected ? " (Selected)" : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          options={getEditSlotOptions("t1p1")}
+                          sizeVariant="sm"
+                          dataTestId={`select-edit-team-1-player-1-${m.id}`}
+                        />
                         {editMatchType === "doubles" && (
-                          <select
-                            aria-label="Edit Team 1 Player 2"
+                          <FilterablePlayerSelect
+                            ariaLabel="Edit Team 1 Player 2"
+                            placeholder="Select Player 2..."
                             value={editT1p2}
-                            onChange={(e) => {
-                              const val = e.target.value;
+                            onChange={(val) => {
                               if (isEditPlayerSelectedElsewhere(val, "t1p2")) return;
                               setEditT1p2(val);
                             }}
-                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
-                          >
-                            <option value="">Select Player 2...</option>
-                            {selectableGamePlayers.map((p) => {
-                              const isSelected = isEditPlayerSelectedElsewhere(p.id, "t1p2");
-                              return (
-                                <option key={p.id} value={p.id} disabled={isSelected}>
-                                  {p.name}{isSelected ? " (Selected)" : ""}
-                                </option>
-                              );
-                            })}
-                          </select>
+                            options={getEditSlotOptions("t1p2")}
+                            sizeVariant="sm"
+                            dataTestId={`select-edit-team-1-player-2-${m.id}`}
+                          />
                         )}
                         <div>
                           <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
@@ -1133,47 +1142,31 @@ export function OpenPlayManagerClient({
                       {/* Team 2 */}
                       <div className="p-3 bg-[#fde047]/20 border-2 border-black rounded-xl space-y-2">
                         <span className="text-[11px] font-black uppercase text-black block">Team 2</span>
-                        <select
-                          aria-label="Edit Team 2 Player 1"
+                        <FilterablePlayerSelect
+                          ariaLabel="Edit Team 2 Player 1"
+                          placeholder="Select Player 1..."
                           value={editT2p1}
-                          onChange={(e) => {
-                            const val = e.target.value;
+                          onChange={(val) => {
                             if (isEditPlayerSelectedElsewhere(val, "t2p1")) return;
                             setEditT2p1(val);
                           }}
-                          className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
-                        >
-                          <option value="">Select Player 1...</option>
-                          {selectableGamePlayers.map((p) => {
-                            const isSelected = isEditPlayerSelectedElsewhere(p.id, "t2p1");
-                            return (
-                              <option key={p.id} value={p.id} disabled={isSelected}>
-                                {p.name}{isSelected ? " (Selected)" : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          options={getEditSlotOptions("t2p1")}
+                          sizeVariant="sm"
+                          dataTestId={`select-edit-team-2-player-1-${m.id}`}
+                        />
                         {editMatchType === "doubles" && (
-                          <select
-                            aria-label="Edit Team 2 Player 2"
+                          <FilterablePlayerSelect
+                            ariaLabel="Edit Team 2 Player 2"
+                            placeholder="Select Player 2..."
                             value={editT2p2}
-                            onChange={(e) => {
-                              const val = e.target.value;
+                            onChange={(val) => {
                               if (isEditPlayerSelectedElsewhere(val, "t2p2")) return;
                               setEditT2p2(val);
                             }}
-                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white text-xs font-bold"
-                          >
-                            <option value="">Select Player 2...</option>
-                            {selectableGamePlayers.map((p) => {
-                              const isSelected = isEditPlayerSelectedElsewhere(p.id, "t2p2");
-                              return (
-                                <option key={p.id} value={p.id} disabled={isSelected}>
-                                  {p.name}{isSelected ? " (Selected)" : ""}
-                                </option>
-                              );
-                            })}
-                          </select>
+                            options={getEditSlotOptions("t2p2")}
+                            sizeVariant="sm"
+                            dataTestId={`select-edit-team-2-player-2-${m.id}`}
+                          />
                         )}
                         <div>
                           <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>

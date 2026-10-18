@@ -57,6 +57,12 @@ export interface DomainRepository {
   updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;
   deletePlayer(playerId: string, groupId: string): Promise<void>;
   removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean>;
+  mergeGuestPlayers(
+    groupId: string,
+    targetPlayerId: string,
+    sourcePlayerIds: readonly string[],
+    mergedName: string,
+  ): Promise<PlayerRecord>;
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;
