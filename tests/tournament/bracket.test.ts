@@ -115,6 +115,27 @@ describe("Tournament Bracket Utilities", () => {
     expect(r2m1.participant1Id).toBe("team1");
   });
 
+  it("rejects a final winner while the other semifinal is unresolved", () => {
+    const entrants = ["a", "b", "c"].map((id) => ({ id, name: id, playerIds: [id] }));
+    const bracket = generateBracket("mens_singles", entrants, { randomize: false });
+    const final = bracket.matches.find((match) => match.round === 2)!;
+
+    expect(() => setMatchWinner(bracket, final.id, "a")).toThrow("Both participants must be known");
+    expect(final.winnerId).toBeNull();
+    expect(final.status).toBe("pending");
+
+    const semifinal = bracket.matches.find((match) => match.round === 1 && match.status !== "bye")!;
+    const ready = setMatchWinner(bracket, semifinal.id, "b");
+    const completed = setMatchWinner(ready, final.id, "a");
+    expect(completed.matches.find((match) => match.id === final.id)?.winnerId).toBe("a");
+  });
+
+  it("rejects a winner who is not in the match", () => {
+    const entrants = ["a", "b", "c", "d"].map((id) => ({ id, name: id, playerIds: [id] }));
+    const bracket = generateBracket("mens_singles", entrants, { randomize: false });
+    expect(() => setMatchWinner(bracket, bracket.matches[0]!.id, "c")).toThrow("Winner must be a participant");
+  });
+
   it("supports editing: swapping participants between matches", () => {
     const participants: TournamentParticipant[] = [
       { id: "team1", name: "Team 1", playerIds: ["p1"] },

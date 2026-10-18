@@ -13,7 +13,7 @@ import {
 } from "@/app/actions/sessions";
 import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
 import { CurrentRoundView } from "@/components/rounds/current-round";
-import { ResultsEntryView, type MatchScoreEntry } from "@/components/results/results-entry";
+import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
@@ -85,6 +85,7 @@ export function SessionManagerClient({
   }
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showInProgressModal, setShowInProgressModal] = useState(false);
   const [doNotAskAgain, setDoNotAskAgain] = useState(false);
@@ -237,7 +238,7 @@ export function SessionManagerClient({
   };
 
   const handleNextRound = async () => {
-    if (!latestStarted) return;
+    if (!latestStarted || hasUnsavedScores) return;
     setIsPending(true);
     setError(null);
     try {
@@ -311,6 +312,7 @@ export function SessionManagerClient({
   };
 
   const executeEndSession = async () => {
+    if (hasUnsavedScores) return;
     setIsPending(true);
     setError(null);
     try {
@@ -334,6 +336,7 @@ export function SessionManagerClient({
   };
 
   const handleEndSession = async () => {
+    if (hasUnsavedScores) return;
     if (inProgressMatches.length > 0) {
       const skipWarning =
         typeof window !== "undefined" &&
@@ -484,6 +487,29 @@ export function SessionManagerClient({
       })
     : [];
 
+  const hasUnsavedScores = Boolean(isRoundInProgress) && scoreEntries.some((match) => {
+    const draft = scoreDrafts[match.id];
+    if (!draft || match.status === "cancelled") return false;
+    const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
+    const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
+    return team1 !== match.team1Score || team2 !== match.team2Score;
+  });
+
+  const handleScoreChange = (matchId: string, team: "team1" | "team2", value: string) => {
+    const match = scoreEntries.find((entry) => entry.id === matchId);
+    if (!match) return;
+    setScoreDrafts((previous) => ({
+      ...previous,
+      [matchId]: {
+        ...(previous[matchId] ?? {
+          team1: match.team1Score !== null ? String(match.team1Score) : "",
+          team2: match.team2Score !== null ? String(match.team2Score) : "",
+        }),
+        [team]: value,
+      },
+    }));
+  };
+
   const isCompletedSession = session.status === "completed";
   const allSessionRounds = startedRounds;
   const totalSessionMatches = allSessionRounds.reduce((acc, r) => acc + r.matches.length, 0);
@@ -591,7 +617,8 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={handleEndSession}
-                disabled={isPending}
+                disabled={isPending || hasUnsavedScores}
+                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 data-testid="end-session-button"
                 className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
@@ -910,6 +937,9 @@ export function SessionManagerClient({
                 onCancelMatch={canManage ? handleCancelMatch : undefined}
                 onNextRound={canManage ? handleNextRound : undefined}
                 canManage={canManage}
+                scoreDrafts={scoreDrafts}
+                onScoreChange={handleScoreChange}
+                hasUnsavedScores={hasUnsavedScores}
               />
               {canManage && (
                 <div className="text-center pt-2">

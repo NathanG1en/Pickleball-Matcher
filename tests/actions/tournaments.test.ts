@@ -10,6 +10,7 @@ import {
   updateTournamentNameAction,
   updateTournamentStatusAction,
 } from "@/app/actions/tournaments";
+import { generateBracket } from "@/lib/tournament/bracket";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
@@ -101,6 +102,22 @@ describe("Tournament Server Actions", () => {
     expect(updatedMatch.score1).toBe(11);
     expect(updatedMatch.score2).toBe(8);
     expect(updatedMatch.status).toBe("completed");
+  });
+
+  it("does not persist a premature final winner", async () => {
+    const bracket = generateBracket("mens_singles", ["a", "b", "c"].map((id) => ({ id, name: id, playerIds: [id] })), { randomize: false });
+    await repository.createTournament({
+      id: "tr_pending", groupId: "g1", name: "Pending final", status: "active",
+      divisions: ["mens_singles"], brackets: { mens_singles: bracket },
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    const final = bracket.matches.find((match) => match.round === 2)!;
+    const result = await updateTournamentMatchAction({
+      tournamentId: "tr_pending", groupId: "g1", division: "mens_singles",
+      matchId: final.id, winnerId: "a",
+    });
+    expect(result).toEqual({ ok: false, error: "Both participants must be known before recording a winner" });
+    expect((await repository.getTournament("tr_pending"))?.brackets.mens_singles?.matches.find((match) => match.id === final.id)?.winnerId).toBeNull();
   });
 
   it("swaps participant slots in a match", async () => {
