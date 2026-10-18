@@ -439,6 +439,7 @@ export function GroupOrganizersPanel({
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-player-name"
+                  aria-label="Guest Name"
                   required
                   maxLength={60}
                   value={guestName}
@@ -447,6 +448,7 @@ export function GroupOrganizersPanel({
                   className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
                 <select
+                  aria-label="Guest rating"
                   value={guestRating}
                   onChange={(e) => setGuestRating(Number(e.target.value))}
                   className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"

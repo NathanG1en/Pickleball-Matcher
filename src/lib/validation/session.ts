@@ -101,3 +101,11 @@ export const undoLatestRoundSchema = existingSessionMutation.extend({
 });
 
 export const endSessionSchema = existingSessionMutation;
+
+export const updateSessionNameSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+    name: z.string().trim().min(1, "Session name cannot be blank.").max(80, "Session name must be 80 characters or fewer."),
+  })
+  .strict();

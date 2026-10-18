@@ -54,6 +54,7 @@ type SessionRow = {
   ended_at: Date | null;
   version: number;
   type?: "regular" | "open_play" | null;
+  name?: string | null;
 };
 
 type PlayerRow = {
@@ -195,6 +196,7 @@ const mapSession = (row: SessionRow): SessionRecord => ({
   endedAt: row.ended_at,
   version: row.version,
   type: (row.type as SessionType) ?? "regular",
+  name: row.name ?? null,
 });
 
 const mapPlayer = (row: PlayerRow): PlayerRecord => ({
@@ -681,6 +683,7 @@ export class PostgresRepositories implements DomainRepository {
       losses: number;
       rating: number;
       type?: string | null;
+      session_name?: string | null;
     }[]>`
       with memberships as (
         select id, group_id, initial_rating from players where account_id = ${accountId}
@@ -707,7 +710,8 @@ export class PostgresRepositories implements DomainRepository {
         s.started_at, coalesce(res.wins, 0)::int as wins,
         coalesce(res.losses, 0)::int as losses,
         coalesce(res.rating, membership.initial_rating)::float8 as rating,
-        s.type as type
+        s.type as type,
+        s.name as session_name
       from memberships membership
       join groups g on g.id = membership.group_id
       join session_attendance sa on sa.player_id = membership.id
@@ -724,6 +728,7 @@ export class PostgresRepositories implements DomainRepository {
       losses: row.losses,
       rating: row.rating,
       type: (row.type as SessionType) ?? "regular",
+      sessionName: row.session_name ?? null,
     }));
   }
 
@@ -737,7 +742,7 @@ export class PostgresRepositories implements DomainRepository {
   async listSessions(groupId: string): Promise<readonly SessionRecord[]> {
     const rows = await this.query<SessionRow[]>`
       select id, group_id, court_count, court_player_counts, status, current_round_number,
-             started_at, ended_at, version, type
+             started_at, ended_at, version, type, name
       from sessions where group_id = ${groupId}
       order by started_at desc
     `;
@@ -820,10 +825,18 @@ export class PostgresRepositories implements DomainRepository {
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const rows = await this.query<SessionRow[]>`
       select id, group_id, court_count, court_player_counts, status, current_round_number,
-             started_at, ended_at, version, type
+             started_at, ended_at, version, type, name
       from sessions where id = ${sessionId}
     `;
     return rows[0] ? mapSession(rows[0]) : null;
+  }
+
+  async updateSessionName(sessionId: string, name: string): Promise<void> {
+    await this.query`
+      update sessions
+      set name = ${name}
+      where id = ${sessionId}
+    `;
   }
 
   async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
@@ -923,11 +936,11 @@ export class PostgresRepositories implements DomainRepository {
     await this.query`
       insert into sessions (
         id, group_id, court_count, court_player_counts, status, current_round_number,
-        started_at, ended_at, version, type
+        started_at, ended_at, version, type, name
       ) values (
         ${session.id}, ${session.groupId}, ${session.courtCount}, ${session.courtPlayerCounts ?? []}, ${session.status},
         ${session.currentRoundNumber}, ${session.startedAt}, ${session.endedAt}, ${session.version},
-        ${session.type ?? "regular"}
+        ${session.type ?? "regular"}, ${session.name ?? null}
       )
     `;
     for (const item of attendance) await this.saveAttendance(item);
@@ -938,7 +951,7 @@ export class PostgresRepositories implements DomainRepository {
       update sessions set
         court_count = ${session.courtCount}, court_player_counts = ${session.courtPlayerCounts ?? []}, status = ${session.status},
         current_round_number = ${session.currentRoundNumber}, ended_at = ${session.endedAt},
-        version = ${session.version}
+        version = ${session.version}, name = ${session.name ?? null}
       where id = ${session.id} and version = ${session.version - 1}
       returning id
     `;
@@ -1036,6 +1049,25 @@ export class PostgresRepositories implements DomainRepository {
       returning id
     `;
     if (rows.length === 0) throw new RepositoryConflictError();
+  }
+
+  async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
+    await this.query`delete from match_players where match_id = ${matchId}`;
+    for (const member of matchPlayers) {
+      await this.query`
+        insert into match_players (
+          match_id, player_id, team, rating_before, rating_after
+        ) values (
+          ${member.matchId}, ${member.playerId}, ${member.team},
+          ${member.ratingBefore}, ${member.ratingAfter}
+        )
+      `;
+    }
+  }
+
+  async deleteMatch(matchId: string) {
+    await this.query`delete from match_players where match_id = ${matchId}`;
+    await this.query`delete from matches where id = ${matchId}`;
   }
 
   async updateRound(round: RoundRecord) {

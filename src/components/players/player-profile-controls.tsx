@@ -22,15 +22,20 @@ export function PlayerProfileHeader({
   initialGender,
   skillLevel,
   initialRating,
+  currentRating,
+  rating,
   initialIsPublic = true,
 }: {
   initialName: string;
   initialUsername: string;
   initialGender?: "male" | "female" | null;
   skillLevel: string;
-  initialRating: number;
+  initialRating?: number;
+  currentRating?: number;
+  rating?: number;
   initialIsPublic?: boolean;
 }) {
+  const displayRating = currentRating ?? rating ?? initialRating ?? 1000;
   const router = useRouter();
 
   const [name, setName] = useState(initialName);
@@ -474,7 +479,7 @@ export function PlayerProfileHeader({
 
       <div className="pt-2 border-t-2 border-neutral-100">
         <p className="text-xs font-bold uppercase text-neutral-600">
-          {skillLevel} · starting rating {formatDupr(initialRating)}
+          {skillLevel} · current rating {formatDupr(displayRating)}
         </p>
       </div>
     </div>
