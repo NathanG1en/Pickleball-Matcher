@@ -190,3 +190,24 @@ test.describe("Permissions and Security Workflow", () => {
   });
 });
 
+test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
+  await page.goto("/player-signup?next=%2Fsetup");
+  await page.waitForSelector("form[data-hydrated='true']");
+  await page.getByLabel("Username", { exact: true }).fill(`rating_${Date.now()}`);
+  await page.getByLabel("Display name", { exact: true }).fill("Custom Rating Tester");
+  await page.getByLabel("Password", { exact: true }).fill("ValidPassword123!");
+  await page.getByRole("checkbox", { name: /Enter custom rating/ }).check();
+  const rating = page.getByRole("spinbutton", { name: "Custom rating (2.0 – 8.0)" });
+  for (const invalid of ["9", "1.9", ""]) {
+    await rating.fill(invalid);
+    await page.getByRole("button", { name: "Sign Up", exact: true }).click();
+    await expect(page.getByText("Enter a rating between 2.0 and 8.0.", { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/player-signup/);
+    await expect(rating).toHaveValue(invalid);
+  }
+  await rating.fill("3.75");
+  await page.getByRole("button", { name: "Sign Up", exact: true }).click();
+  await expect(page).toHaveURL(/\/setup/);
+  await page.goto("/players");
+  await expect(page.getByText(/current rating 3.75/)).toBeVisible();
+});

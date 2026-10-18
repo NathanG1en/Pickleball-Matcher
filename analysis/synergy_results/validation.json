@@ -1,0 +1,11 @@
+{
+  "deterministic_csv_regeneration": true,
+  "csv_files": 9,
+  "executed_notebook_code_cells": {
+    "synergy_01_scoring.ipynb": 6,
+    "synergy_02_recency_and_robustness.ipynb": 9
+  },
+  "svg_figures_valid": 10,
+  "source_hash_matches_manifest": true,
+  "repo_root_notebook_setup": true
+}

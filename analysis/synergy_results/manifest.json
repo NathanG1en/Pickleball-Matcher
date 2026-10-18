@@ -1,0 +1,31 @@
+{
+  "seed": 20261015,
+  "holdout_seed": 20261016,
+  "repetitions": 4000,
+  "synthetic_matches": 10964000,
+  "result_margin_correlation": 0.8278295447665748,
+  "margin_scale": 1.824434549999254,
+  "grid_max_probability_step": 0.00093031963564566,
+  "checks": {
+    "probability_mass": true,
+    "neutral_center": true,
+    "team_reversal_symmetry": true,
+    "neutral_history_score": true,
+    "finite_recency_information": true
+  },
+  "python": "3.14.3 (main, Feb  3 2026, 15:32:20) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "platform": "macOS-14.1-arm64-arm-64bit-Mach-O",
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "simulation_source_sha256": "fa01952dc37d3ffe694591afe6d401d1ddceac5f646b3d9ee4730b086b3278d4",
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "nbformat": "5.11.1",
+    "nbclient": "0.11.0",
+    "ipykernel": "7.4.0",
+    "Markdown": "3.11.1"
+  }
+}
