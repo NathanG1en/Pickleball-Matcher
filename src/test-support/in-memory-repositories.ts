@@ -616,6 +616,22 @@ export class InMemoryRepositories implements DomainRepository {
     }
   }
 
+  async deleteSession(sessionId: string, groupId: string): Promise<void> {
+    const session = this.state.sessions.find((s) => s.id === sessionId && s.groupId === groupId);
+    if (!session) return;
+
+    const sessionRoundIds = new Set(this.state.rounds.filter((r) => r.sessionId === sessionId).map((r) => r.id));
+    const sessionMatchIds = new Set(this.state.matches.filter((m) => sessionRoundIds.has(m.roundId)).map((m) => m.id));
+
+    this.state.sessions = this.state.sessions.filter((s) => s.id !== sessionId);
+    this.state.attendance = this.state.attendance.filter((a) => a.sessionId !== sessionId);
+    this.state.matchPlayers = this.state.matchPlayers.filter((mp) => !sessionMatchIds.has(mp.matchId));
+    this.state.roundSits = this.state.roundSits.filter((rs) => !sessionRoundIds.has(rs.roundId));
+    this.state.matches = this.state.matches.filter((m) => !sessionRoundIds.has(m.roundId));
+    this.state.rounds = this.state.rounds.filter((r) => !sessionRoundIds.has(r.id));
+    this.writeCount += 1;
+  }
+
   async saveAttendance(attendance: AttendanceRecord) {
     const index = this.state.attendance.findIndex(
       (item) =>

@@ -289,6 +289,82 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).not.toBeVisible();
     await expect(page.locator("li").filter({ hasText: "Guest Samuel" })).not.toBeVisible();
   });
+
+  test("restricts session deletion to host/organizers and requires confirmation", async ({
+    page,
+    browser,
+  }) => {
+    // 1. Create a group as host
+    const groupName = `Session Delete Perms ${Date.now()}`;
+    const { groupId } = await createTestGroup(page, groupName);
+
+    // 2. Add players and start a session
+    const addGuestButton = page.locator("button:has-text('Add Guest')");
+    await expect(addGuestButton).toBeVisible();
+    await addGuestButton.click();
+    for (const name of ["P1", "P2", "P3"]) {
+      await page.fill("#guest-player-name", name);
+      await page.locator("button:text-is('Add')").click();
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
+    }
+
+    await page.click("a[href*='/sessions/new']");
+    await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button:has-text('Start Session')");
+    await page.waitForURL(/\/sessions\/session_/);
+    const sessionUrl = page.url();
+
+    // Verify host sees the session options menu button
+    const optionsButton = page.locator("[data-testid='session-options-menu-button']");
+    await expect(optionsButton).toBeVisible();
+
+    // 3. Create a non-organizer player in another browser context and view the session
+    const memberContext = await browser.newContext();
+    const memberPage = await memberContext.newPage();
+    const memberUser = await createAndSignInPlayer(memberPage);
+
+    // Host adds member to group
+    await page.goto(`/g/${groupId}`);
+    await page.fill("#roster-player-username", memberUser.username);
+    await page.click("button:has-text('Find & Add')");
+    await expect(page.locator("li").filter({ hasText: memberUser.name })).toBeVisible();
+
+    // Member navigates directly to the session
+    await memberPage.goto(sessionUrl);
+
+    // Member should NOT see the session options menu button
+    await expect(memberPage.locator("[data-testid='session-options-menu-button']")).not.toBeVisible();
+    await memberContext.close();
+
+    // 4. Host deletes the session with confirmation from within the session
+    await page.goto(sessionUrl);
+    await expect(optionsButton).toBeVisible();
+    await optionsButton.click();
+
+    const deleteMenuItem = page.locator("[data-testid='delete-session-menu-item']");
+    await expect(deleteMenuItem).toBeVisible();
+    await deleteMenuItem.click();
+
+    const confirmModal = page.locator("[role='alertdialog']");
+    await expect(confirmModal).toBeVisible();
+    await expect(confirmModal).toContainText("Delete Session");
+
+    // Cancel first
+    await confirmModal.locator("button:has-text('Cancel')").click();
+    await expect(confirmModal).not.toBeVisible();
+    expect(page.url()).toBe(sessionUrl);
+
+    // Confirm delete
+    await optionsButton.click();
+    await expect(deleteMenuItem).toBeVisible();
+    await deleteMenuItem.click();
+    await expect(confirmModal).toBeVisible();
+    await confirmModal.locator("button:has-text('Delete Session')").click();
+
+    // Redirected to group dashboard and session is deleted
+    await page.waitForURL(/\/g\/[^/]+$/);
+    await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
+  });
 });
 
 test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {

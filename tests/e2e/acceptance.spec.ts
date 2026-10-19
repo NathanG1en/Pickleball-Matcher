@@ -150,6 +150,37 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.waitForTimeout(1500);
     expect(page.url()).toBe(sessionUrl);
     await expect(summaryCard).toBeVisible();
+
+    // 9. Host deletes the session with confirmation via options menu dropdown
+    const optionsButton = page.locator("[data-testid='session-options-menu-button']");
+    await expect(optionsButton).toBeVisible();
+    await optionsButton.click();
+
+    const deleteMenuItem = page.locator("[data-testid='delete-session-menu-item']");
+    await expect(deleteMenuItem).toBeVisible();
+    await deleteMenuItem.click();
+
+    // Verify confirmation modal opens
+    const confirmModal = page.locator("[role='alertdialog']");
+    await expect(confirmModal).toBeVisible();
+    await expect(confirmModal).toContainText("Delete Session");
+    await expect(confirmModal).toContainText("Are you sure you want to delete this session?");
+
+    // Test canceling the deletion
+    await confirmModal.locator("button:has-text('Cancel')").click();
+    await expect(confirmModal).not.toBeVisible();
+    expect(page.url()).toBe(sessionUrl);
+
+    // Confirm deletion
+    await optionsButton.click();
+    await expect(deleteMenuItem).toBeVisible();
+    await deleteMenuItem.click();
+    await expect(confirmModal).toBeVisible();
+    await confirmModal.locator("button:has-text('Delete Session')").click();
+
+    // Verify redirected back to group dashboard and session is deleted
+    await page.waitForURL(/\/g\/[^/]+$/);
+    await expect(page.locator("[data-testid='past-sessions-list']")).toContainText("No sessions played yet.");
   });
 });
 
@@ -254,7 +285,7 @@ test("round generation indicator follows pending requests and clears on success 
   const save = await pauseAction();
   try {
     await page.getByRole("button", { name: "Save Result", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Save Result", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
     await expect(indicator).toHaveCount(0);
     save.release();
     await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();

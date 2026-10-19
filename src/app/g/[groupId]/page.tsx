@@ -283,14 +283,16 @@ export default async function GroupDashboardPage({
                 )
               )}
 
-              <Link
-                href={`/g/${groupId}/sessions/${activeSession.id}`}
-                className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
-              >
-                {activeSession.type === "open_play"
-                  ? isOrganizer ? "Manage Open Play →" : "View Open Play →"
-                  : isOrganizer ? "Resume Session →" : "View Live Session →"}
-              </Link>
+              <div>
+                <Link
+                  href={`/g/${groupId}/sessions/${activeSession.id}`}
+                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                >
+                  {activeSession.type === "open_play"
+                    ? isOrganizer ? "Manage Open Play →" : "View Open Play →"
+                    : isOrganizer ? "Resume Session →" : "View Live Session →"}
+                </Link>
+              </div>
             </section>
           ) : isOrganizer ? (
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
@@ -343,7 +345,10 @@ export default async function GroupDashboardPage({
           {/* Past Sessions */}
           <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
             <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
-            <PastSessionsList groupId={groupId} sessions={pastSessionsData} />
+            <PastSessionsList
+              groupId={groupId}
+              sessions={pastSessionsData}
+            />
           </section>
         </>
       )}

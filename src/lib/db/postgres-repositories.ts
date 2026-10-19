@@ -1010,6 +1010,13 @@ export class PostgresRepositories implements DomainRepository {
     `;
   }
 
+  async deleteSession(sessionId: string, groupId: string): Promise<void> {
+    await this.query`
+      delete from sessions
+      where id = ${sessionId} and group_id = ${groupId}
+    `;
+  }
+
   async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
     const rows = options?.includeInactive
       ? await this.query<PlayerRow[]>`

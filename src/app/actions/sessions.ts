@@ -8,9 +8,11 @@ import {
 } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
 import type { RoundProposal, RoundRecord, SessionRecord } from "@/lib/domain/types";
+import { replayRatings } from "@/lib/domain/rating-replay";
 import {
   changeAttendanceSchema,
   completeRoundSchema,
+  deleteSessionSchema,
   endSessionSchema,
   proposeRoundSchema,
   startRoundSchema,
@@ -278,4 +280,41 @@ export async function updateSessionNameAction(
     };
   }
 }
+
+export async function deleteSessionAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const parsed = deleteSessionSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid session delete request.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+
+    await repository.deleteSession(session.id, session.groupId);
+    await replayRatings(session.groupId, repository);
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to delete session",
+    };
+  }
+}
+
 

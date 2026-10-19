@@ -1,7 +1,15 @@
 import React from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PastSessionsList, type PastSessionData } from "@/components/groups/past-sessions-list";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 describe("PastSessionsList Component", () => {
   const groupId = "grp_test";

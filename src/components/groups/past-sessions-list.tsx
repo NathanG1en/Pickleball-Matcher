@@ -58,7 +58,7 @@ export function PastSessionsList({
   };
 
   if (sessions.length === 0) {
-    return <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>;
+    return <p className="text-sm font-bold text-neutral-600" data-testid="past-sessions-list">No sessions played yet.</p>;
   }
 
   return (
@@ -240,13 +240,13 @@ export function PastSessionsList({
                 )}
 
                 {/* Fully expandable: Link to full session page */}
-                <div className="pt-2 border-t-2 border-black/10 flex items-center justify-between">
+                <div className="pt-2 border-t-2 border-black/10 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-bold text-neutral-500">
                     Started {formattedDate} · {session.rounds.length} round{session.rounds.length !== 1 ? "s" : ""} · {session.totalGames} game{session.totalGames !== 1 ? "s" : ""}
                   </span>
                   <Link
                     href={`/g/${groupId}/sessions/${session.id}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 shrink-0"
                     data-testid={`view-full-session-link-${session.id}`}
                   >
                     <span>View Full Session</span>

@@ -53,6 +53,7 @@ export interface DomainRepository {
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;
   updateSessionName(sessionId: string, name: string): Promise<void>;
+  deleteSession(sessionId: string, groupId: string): Promise<void>;
   listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]>;
   createPlayer(player: PlayerRecord): Promise<void>;
   updatePlayer(player: Partial<PlayerRecord> & { id: string; groupId: string }): Promise<void>;

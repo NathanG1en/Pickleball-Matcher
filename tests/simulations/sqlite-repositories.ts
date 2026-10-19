@@ -689,6 +689,21 @@ export class SqliteDomainRepository implements DomainRepository {
       .run(name, sessionId);
   }
 
+  async deleteSession(sessionId: string, groupId: string): Promise<void> {
+    const roundRows = this.db.prepare("SELECT id FROM rounds WHERE session_id = ?").all(sessionId) as { id: string }[];
+    for (const round of roundRows) {
+      const matchRows = this.db.prepare("SELECT id FROM matches WHERE round_id = ?").all(round.id) as { id: string }[];
+      for (const match of matchRows) {
+        this.db.prepare("DELETE FROM match_players WHERE match_id = ?").run(match.id);
+      }
+      this.db.prepare("DELETE FROM matches WHERE round_id = ?").run(round.id);
+      this.db.prepare("DELETE FROM round_sits WHERE round_id = ?").run(round.id);
+    }
+    this.db.prepare("DELETE FROM rounds WHERE session_id = ?").run(sessionId);
+    this.db.prepare("DELETE FROM session_attendance WHERE session_id = ?").run(sessionId);
+    this.db.prepare("DELETE FROM sessions WHERE id = ? AND group_id = ?").run(sessionId, groupId);
+  }
+
   async listPlayers(groupId?: string, options?: { includeInactive?: boolean }): Promise<readonly PlayerRecord[]> {
     const whereConditions: string[] = [];
     const params: (string | number)[] = [];

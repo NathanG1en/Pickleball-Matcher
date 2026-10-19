@@ -6,6 +6,7 @@ import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
+import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SearchIcon } from "@/components/ui/icons";
 import { FilterablePlayerSelect } from "@/components/groups/filterable-player-select";
 import { formatDupr } from "@/lib/domain/rating-display";
@@ -804,7 +805,7 @@ export function OpenPlayManagerClient({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-          <div>
+          <div className="min-w-0 flex-1">
             <SessionNameEditor
               groupId={groupId}
               sessionId={session.id}
@@ -818,17 +819,27 @@ export function OpenPlayManagerClient({
             </p>
           </div>
 
-          {isSessionActive && isOrganizer && (
-            <button
-              type="button"
-              onClick={handleEndSession}
-              disabled={isEnding}
-              data-testid="end-session-button"
-              className="py-2 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer self-start sm:self-auto"
-            >
-              {isEnding ? "Ending..." : "End Session"}
-            </button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {isSessionActive && isOrganizer && (
+              <button
+                type="button"
+                onClick={handleEndSession}
+                disabled={isEnding}
+                data-testid="end-session-button"
+                className="py-2 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer self-start sm:self-auto"
+              >
+                {isEnding ? "Ending..." : "End Session"}
+              </button>
+            )}
+            {(isOrganizer || isHost) && (
+              <SessionOptionsMenu
+                groupId={groupId}
+                sessionId={session.id}
+                sessionName={session.name}
+                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+              />
+            )}
+          </div>
         </div>
 
         {error && (
@@ -929,7 +940,7 @@ export function OpenPlayManagerClient({
                     htmlFor="roster-player-select"
                     className="block text-xs font-black uppercase tracking-wider text-black"
                   >
-                    Add Group Member
+                    Add Existing Group Member
                   </label>
                   {rosterFilter.trim() && (
                     <span className="text-[10px] font-bold text-neutral-600">
@@ -995,7 +1006,7 @@ export function OpenPlayManagerClient({
                 htmlFor="guest-name-input"
                 className="block text-xs font-black uppercase tracking-wider text-black"
               >
-                Add Guest
+                Add Guest to Roster
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input

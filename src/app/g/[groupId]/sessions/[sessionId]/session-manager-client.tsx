@@ -31,6 +31,7 @@ import type {
 } from "@/lib/domain/types";
 import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
+import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
@@ -727,18 +728,32 @@ export function SessionManagerClient({
 
       {/* Active Session Header Card */}
       {!isCompletedSession && (
-        <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-1">
-          <SessionNameEditor
-            groupId={groupId}
-            sessionId={session.id}
-            initialName={session.name || formattedSessionDate}
-            canEdit={canEditSessionName}
-            headingTag="h2"
-            className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
-          />
-          <p className="text-xs font-bold text-neutral-600">
-            {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
-          </p>
+        <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-1">
+              <SessionNameEditor
+                groupId={groupId}
+                sessionId={session.id}
+                initialName={session.name || formattedSessionDate}
+                canEdit={canEditSessionName}
+                headingTag="h2"
+                className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
+              />
+              <p className="text-xs font-bold text-neutral-600">
+                {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
+              </p>
+            </div>
+            {canManage && (
+              <div className="shrink-0">
+                <SessionOptionsMenu
+                  groupId={groupId}
+                  sessionId={session.id}
+                  sessionName={session.name}
+                  redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                />
+              </div>
+            )}
+          </div>
         </header>
       )}
 
@@ -753,28 +768,40 @@ export function SessionManagerClient({
         <div className="space-y-6" data-testid="completed-session-full-view">
           {/* Completed Session Overview Card */}
           <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
-            <div>
-              {groupName && (
-                <span className="text-xs font-black uppercase tracking-wider text-neutral-500 block mb-1">
-                  {groupName}
-                </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                {groupName && (
+                  <span className="text-xs font-black uppercase tracking-wider text-neutral-500 block mb-1">
+                    {groupName}
+                  </span>
+                )}
+                <SessionNameEditor
+                  groupId={groupId}
+                  sessionId={session.id}
+                  initialName={session.name || formattedSessionDate}
+                  canEdit={canEditSessionName}
+                  headingTag="h2"
+                  className="font-display text-2xl font-black uppercase text-black"
+                />
+                <p className="text-sm font-bold text-neutral-600 mt-1">
+                  {new Date(session.startedAt).toLocaleDateString(undefined, {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+              {canManage && (
+                <div className="shrink-0">
+                  <SessionOptionsMenu
+                    groupId={groupId}
+                    sessionId={session.id}
+                    sessionName={session.name}
+                    redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                  />
+                </div>
               )}
-              <SessionNameEditor
-                groupId={groupId}
-                sessionId={session.id}
-                initialName={session.name || formattedSessionDate}
-                canEdit={canEditSessionName}
-                headingTag="h2"
-                className="font-display text-2xl font-black uppercase text-black"
-              />
-              <p className="text-sm font-bold text-neutral-600 mt-1">
-                {new Date(session.startedAt).toLocaleDateString(undefined, {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
             </div>
 
             {/* Quick Stats Grid */}

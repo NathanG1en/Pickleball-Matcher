@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { manualCourtSchema, startRoundSchema } from "@/lib/validation/session";
+import { deleteSessionSchema, manualCourtSchema, startRoundSchema } from "@/lib/validation/session";
 
 describe("manualCourtSchema", () => {
   it("accepts balanced doubles court (2 vs 2)", () => {
@@ -100,3 +99,31 @@ describe("startRoundSchema", () => {
     expect(res.success).toBe(false);
   });
 });
+
+describe("deleteSessionSchema", () => {
+  it("accepts valid groupId and sessionId", () => {
+    const res = deleteSessionSchema.safeParse({
+      groupId: "grp_123",
+      sessionId: "ses_456",
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects empty or invalid IDs", () => {
+    const res = deleteSessionSchema.safeParse({
+      groupId: "",
+      sessionId: "ses_456",
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects unknown extra fields due to strict schema", () => {
+    const res = deleteSessionSchema.safeParse({
+      groupId: "grp_123",
+      sessionId: "ses_456",
+      extra: true,
+    });
+    expect(res.success).toBe(false);
+  });
+});
+

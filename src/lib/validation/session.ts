@@ -109,3 +109,11 @@ export const updateSessionNameSchema = z
     name: z.string().trim().min(1, "Session name cannot be blank.").max(80, "Session name must be 80 characters or fewer."),
   })
   .strict();
+
+export const deleteSessionSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+  })
+  .strict();
+
