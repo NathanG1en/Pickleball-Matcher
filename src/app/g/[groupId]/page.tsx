@@ -348,6 +348,7 @@ export default async function GroupDashboardPage({
             <PastSessionsList
               groupId={groupId}
               sessions={pastSessionsData}
+              isOrganizer={Boolean(isOrganizer || isHost)}
             />
           </section>
         </>

@@ -11,6 +11,11 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("@/app/actions/sessions", () => ({
+  deleteSessionAction: vi.fn(async () => ({ ok: true, data: undefined })),
+  duplicateSessionAction: vi.fn(async () => ({ ok: true, data: { id: "ses_dup" } })),
+}));
+
 describe("PastSessionsList Component", () => {
   const groupId = "grp_test";
 
@@ -83,17 +88,29 @@ describe("PastSessionsList Component", () => {
     expect(html).toContain("No sessions played yet.");
   });
 
-  it("renders past session item in collapsed state with downward arrow button", () => {
+  it("renders past session item in collapsed state with downward arrow button and no completed badge", () => {
     const html = renderToStaticMarkup(<PastSessionsList groupId={groupId} sessions={[sampleSession]} />);
 
     expect(html).toContain("2 courts · 2 rounds · 4 games");
-    expect(html).toContain("Completed");
+    expect(html).not.toContain("Completed");
+    expect(html).not.toContain('aria-label="Session options"');
     expect(html).toContain('data-testid="expand-session-arrow-ses_completed_1"');
     expect(html).toContain('aria-label="Expand games for Oct 10, 2026"');
 
     // Not expanded yet
     expect(html).not.toContain('data-testid="expanded-session-content-ses_completed_1"');
     expect(html).not.toContain("Alice &amp; Bob");
+  });
+
+  it("renders session options button for hosts/organizers", () => {
+    const html = renderToStaticMarkup(
+      <PastSessionsList groupId={groupId} sessions={[sampleSession]} isOrganizer={true} />
+    );
+
+    expect(html).toContain("···");
+    expect(html).toContain('aria-label="Session options"');
+    expect(html).toContain('data-testid="session-options-menu-button-ses_completed_1"');
+    expect(html).not.toContain("Completed");
   });
 
   it("renders expanded state with rounds, matchups, scores, and link to full session page", () => {

@@ -116,7 +116,10 @@ export function SessionOptionsMenu({
     <div className="relative inline-block" ref={menuRef}>
       <button
         type="button"
-        onClick={() => setMenuOpen((prev) => !prev)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOpen((prev) => !prev);
+        }}
         aria-label="Session options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}

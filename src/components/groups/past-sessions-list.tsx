@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 
 export interface PastSessionMatchData {
   readonly id: string;
@@ -38,12 +39,14 @@ export interface PastSessionData {
 export interface PastSessionsListProps {
   readonly groupId: string;
   readonly sessions: readonly PastSessionData[];
+  readonly isOrganizer?: boolean;
   readonly initialExpandedSessionIds?: Record<string, boolean>;
 }
 
 export function PastSessionsList({
   groupId,
   sessions,
+  isOrganizer = false,
   initialExpandedSessionIds,
 }: PastSessionsListProps) {
   const [expandedSessionIds, setExpandedSessionIds] = useState<Record<string, boolean>>(
@@ -100,9 +103,15 @@ export function PastSessionsList({
               </div>
 
               <div className="flex items-center gap-2">
-                <Badge variant={session.status === "active" ? "warning" : "muted"}>
-                  {session.status === "active" ? "Active" : "Completed"}
-                </Badge>
+                {isOrganizer && (
+                  <SessionOptionsMenu
+                    groupId={groupId}
+                    sessionId={session.id}
+                    sessionName={session.name}
+                    redirectTo={`/g/${groupId}`}
+                    dataTestId={`session-options-menu-button-${session.id}`}
+                  />
+                )}
 
                 {/* Downward Arrow to expand */}
                 <button
