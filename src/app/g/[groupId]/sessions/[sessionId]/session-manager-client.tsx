@@ -70,9 +70,11 @@ export function SessionManagerClient({
 
   const sortedPlayers = useMemo(
     () =>
-      [...players].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      ),
+      players
+        .filter((p) => p.active)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        ),
     [players],
   );
 
@@ -609,6 +611,8 @@ export function SessionManagerClient({
   // Calculate participating player statistics for the session
   const attendeePlayerIds = new Set<string>();
   for (const att of currentAttendance) {
+    const player = players.find((p) => p.id === att.playerId);
+    if (player && !player.active) continue;
     attendeePlayerIds.add(att.playerId);
   }
   for (const sr of allSessionRounds) {

@@ -388,14 +388,17 @@ export async function submitOpenPlayGameAction(
       return { ok: false, error: "Only organizers can add games to an ended session." };
     }
 
-    const attendance = await repository.listAttendance(session.id);
+    const [attendance, groupPlayers] = await Promise.all([
+      repository.listAttendance(session.id),
+      repository.listPlayers(parsed.data.groupId, { includeInactive: false }),
+    ]);
+    const activePlayerIds = new Set(groupPlayers.map((p) => p.id));
     const presentPlayerIds = new Set(
-      attendance.filter((a) => a.leftRound === null).map((a) => a.playerId),
+      attendance.filter((a) => a.leftRound === null && activePlayerIds.has(a.playerId)).map((a) => a.playerId),
     );
 
     const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
     if (isOrganizerOrHost) {
-      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
       const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
       for (const pid of allGamePlayerIds) {
         if (!groupPlayerMap.has(pid)) {
@@ -600,14 +603,17 @@ export async function updateOpenPlayGameAction(
       }
     }
 
-    const attendance = await repository.listAttendance(session.id);
+    const [attendance, groupPlayers] = await Promise.all([
+      repository.listAttendance(session.id),
+      repository.listPlayers(parsed.data.groupId, { includeInactive: false }),
+    ]);
+    const activePlayerIds = new Set(groupPlayers.map((p) => p.id));
     const presentPlayerIds = new Set(
-      attendance.filter((a) => a.leftRound === null).map((a) => a.playerId),
+      attendance.filter((a) => a.leftRound === null && activePlayerIds.has(a.playerId)).map((a) => a.playerId),
     );
 
     const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
     if (isOrganizerOrHost) {
-      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
       const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
       for (const pid of allGamePlayerIds) {
         if (!groupPlayerMap.has(pid)) {

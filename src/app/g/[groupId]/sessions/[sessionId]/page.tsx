@@ -58,6 +58,16 @@ export default async function ActiveSessionPage({
 
   const isHost = Boolean(accountId && group.ownerAccountId === accountId);
 
+  const activePlayerIds = new Set(players.filter((p) => p.active).map((p) => p.id));
+  const sanitizedAttendance = sessionRecord.status === "active"
+    ? attendance.map((a) => {
+        if (a.leftRound === null && !activePlayerIds.has(a.playerId)) {
+          return { ...a, leftRound: sessionRecord.currentRoundNumber + 1 };
+        }
+        return a;
+      })
+    : attendance;
+
   if (sessionRecord.type === "open_play") {
     return (
       <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
@@ -66,7 +76,7 @@ export default async function ActiveSessionPage({
           groupName={group.name}
           session={sessionRecord}
           players={players}
-          attendance={attendance}
+          attendance={sanitizedAttendance}
           startedRounds={startedRounds}
           isOrganizer={isOrganizer}
           isHost={isHost}
@@ -104,7 +114,7 @@ export default async function ActiveSessionPage({
         groupName={group.name}
         session={sessionRecord}
         players={players}
-        attendance={attendance}
+        attendance={sanitizedAttendance}
         startedRounds={startedRounds}
         initialProposal={initialProposal}
         canManage={isOrganizer}

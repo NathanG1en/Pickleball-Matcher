@@ -162,6 +162,13 @@ export class SessionService {
   async changeAttendance(input: ChangeAttendanceInput): Promise<AttendanceRecord> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, input.sessionId);
+      if (input.present) {
+        const groupPlayers = await repository.listPlayers(session.groupId);
+        const player = groupPlayers.find((p) => p.id === input.playerId);
+        if (!player || !player.active) {
+          throw new DomainError("INVALID_STATE", "Player is not an active member of this group.");
+        }
+      }
       const records = await repository.listAttendance(input.sessionId);
       const existing = records.find((item) => item.playerId === input.playerId);
       const nextRound = session.currentRoundNumber + 1;

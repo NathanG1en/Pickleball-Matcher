@@ -130,5 +130,58 @@ describe("SqliteDomainRepository", () => {
     expect(players.every((p) => p.ratedGamesPlayed === 1)).toBe(true);
     // Rating should have changed from 1000
     expect(players.some((p) => p.rating !== 1000)).toBe(true);
+    db.close();
+  });
+
+  it("updates active session attendance when removing a player from group", async () => {
+    const db = new DatabaseSync(":memory:");
+    const repository = new SqliteDomainRepository(db);
+
+    await repository.insertGroup({
+      id: "group-1",
+      name: "Test Group",
+      organizerPinHash: "hash",
+      createdAt: new Date(),
+    });
+
+    const playerIds: string[] = [];
+    for (let index = 1; index <= 4; index++) {
+      const id = `player-${index}`;
+      playerIds.push(id);
+      await repository.createPlayer({
+        id,
+        groupId: "group-1",
+        name: `Player ${index}`,
+        initialRating: 1000,
+        rating: 1000,
+        ratedGamesPlayed: 0,
+        active: true,
+      });
+    }
+
+    const service = new SessionService(repository, {
+      now: () => new Date(),
+      nextId: (kind) => `${kind}-test`,
+      nextSeed: () => 1,
+    });
+
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 1,
+      playerIds,
+    });
+
+    // Verify player-4 is attending
+    const beforeAtt = await repository.listAttendance(session.id);
+    expect(beforeAtt.find((a) => a.playerId === "player-4")?.leftRound).toBeNull();
+
+    // Remove player-4
+    const removed = await repository.removePlayerFromGroup("player-4", "group-1");
+    expect(removed).toBe(true);
+
+    const afterAtt = await repository.listAttendance(session.id);
+    expect(afterAtt.find((a) => a.playerId === "player-4")?.leftRound).toBe(1);
+
+    db.close();
   });
 });

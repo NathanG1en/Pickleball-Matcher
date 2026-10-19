@@ -189,4 +189,28 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain("← Back to Profile");
     expect(html).toContain('href="/players"');
   });
+
+  it("does not include deleted players with no games played in Player Summary", () => {
+    const playersWithDeleted: PlayerRecord[] = [
+      ...players,
+      { id: "p5", groupId, name: "Deleted Player", active: false, initialRating: 1200, rating: 1200, ratedGamesPlayed: 0 },
+    ];
+    const attendanceWithDeleted: AttendanceRecord[] = [
+      ...attendance,
+      { sessionId, playerId: "p5", joinedRound: 1, leftRound: null },
+    ];
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={completedSession}
+        players={playersWithDeleted}
+        attendance={attendanceWithDeleted}
+        startedRounds={startedRounds}
+        initialProposal={null}
+      />
+    );
+
+    expect(html).not.toContain("Deleted Player");
+  });
 });

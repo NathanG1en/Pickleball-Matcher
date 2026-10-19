@@ -128,6 +128,9 @@ export async function deletePlayerAction(input: unknown): Promise<ActionResult> 
     await requireOrganizer(parsed.data.groupId);
     const repository = getActionRepository();
     await repository.deletePlayer(parsed.data.playerId, parsed.data.groupId);
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions`);
     return { ok: true, data: undefined };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to delete player";

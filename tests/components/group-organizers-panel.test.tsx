@@ -466,6 +466,32 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(removed?.active).toBe(false);
     });
 
+    it("updates active session attendance when removing a player", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      await repository.insertSession(
+        {
+          id: "s1",
+          groupId: "g1",
+          courtCount: 1,
+          status: "active",
+          currentRoundNumber: 0,
+          startedAt: new Date(),
+          endedAt: null,
+          version: 1,
+        },
+        [
+          { sessionId: "s1", playerId: "p3", joinedRound: 1, leftRound: null },
+        ],
+      );
+
+      const result = await removeGroupPlayerAction({ groupId: "g1", playerId: "p3" });
+      expect(result.ok).toBe(true);
+
+      const attendance = await repository.listAttendance("s1");
+      const p3Attendance = attendance.find((a) => a.playerId === "p3");
+      expect(p3Attendance?.leftRound).toBe(1);
+    });
+
     it("allows a group organizer to remove a regular player", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(orgAccountId);
 

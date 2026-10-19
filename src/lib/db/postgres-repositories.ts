@@ -827,6 +827,18 @@ export class PostgresRepositories implements DomainRepository {
       where id = ${playerId} and group_id = ${groupId}
       returning id
     `;
+    if (updated.length > 0) {
+      await this.query`
+        update session_attendance sa
+        set left_round = coalesce(s.current_round_number + 1, 1)
+        from sessions s
+        where sa.session_id = s.id
+          and s.group_id = ${groupId}
+          and s.status = 'active'
+          and sa.player_id = ${playerId}
+          and sa.left_round is null
+      `;
+    }
     return updated.length > 0;
   }
 

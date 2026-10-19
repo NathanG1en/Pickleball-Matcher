@@ -84,7 +84,7 @@ export function OpenPlayManagerClient({
   const checkedInPlayers = useMemo(
     () =>
       localPlayers
-        .filter((p) => presentPlayerIds.has(p.id))
+        .filter((p) => presentPlayerIds.has(p.id) && p.active)
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
     [localPlayers, presentPlayerIds],
   );

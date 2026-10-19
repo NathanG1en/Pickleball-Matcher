@@ -201,4 +201,47 @@ describe("SessionService", () => {
     expect(player1.ratedGamesPlayed).toBe(0);
     expect(player2.ratedGamesPlayed).toBe(0);
   });
+
+  it("rejects marking an inactive (deleted) player as present in changeAttendance", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 1,
+      playerIds: players.slice(0, 4).map((player) => player.id),
+    });
+
+    // Remove player-5 from group
+    await repository.removePlayerFromGroup("player-5", "group-1");
+
+    await expect(
+      service.changeAttendance({
+        sessionId: session.id,
+        playerId: "player-5",
+        present: true,
+      }),
+    ).rejects.toEqual(
+      new DomainError("INVALID_STATE", "Player is not an active member of this group."),
+    );
+  });
+
+  it("marks attendance as left when an attending player is deleted from the group mid-session", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 1,
+      playerIds: players.slice(0, 4).map((player) => player.id),
+    });
+
+    // Check that player-4 is present
+    const initialAtt = repository.state.attendance.find(
+      (a) => a.sessionId === session.id && a.playerId === "player-4",
+    );
+    expect(initialAtt?.leftRound).toBeNull();
+
+    // Delete player-4 from group after session started
+    await repository.removePlayerFromGroup("player-4", "group-1");
+
+    const updatedAtt = repository.state.attendance.find(
+      (a) => a.sessionId === session.id && a.playerId === "player-4",
+    );
+    expect(updatedAtt?.leftRound).toBe(1);
+  });
 });

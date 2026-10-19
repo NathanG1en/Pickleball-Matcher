@@ -779,6 +779,23 @@ export class SqliteDomainRepository implements DomainRepository {
     const result = this.db
       .prepare("UPDATE players SET active = 0 WHERE id = ? AND group_id = ?")
       .run(playerId, groupId);
+    if (result.changes > 0) {
+      this.db
+        .prepare(`
+          UPDATE session_attendance
+          SET left_round = (
+            SELECT COALESCE(s.current_round_number + 1, 1)
+            FROM sessions s
+            WHERE s.id = session_attendance.session_id
+          )
+          WHERE player_id = ?
+            AND left_round IS NULL
+            AND session_id IN (
+              SELECT id FROM sessions WHERE group_id = ? AND status = 'active'
+            )
+        `)
+        .run(playerId, groupId);
+    }
     return result.changes > 0;
   }
 
