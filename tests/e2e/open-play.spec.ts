@@ -262,6 +262,42 @@ test.describe("Open Play Workflow", () => {
 
     await expect(page.locator("text=Completed")).toBeVisible({ timeout: 15000 });
 
+    // 11b. Host duplicates the open play session via options menu dropdown
+    const optionsButton = page.locator("[data-testid='session-options-menu-button']");
+    await expect(optionsButton).toBeVisible();
+    await optionsButton.click();
+
+    const duplicateMenuItem = page.locator("[data-testid='duplicate-session-menu-item']");
+    await expect(duplicateMenuItem).toBeVisible();
+    await duplicateMenuItem.click();
+
+    const duplicateModal = page.locator("[role='alertdialog']");
+    await expect(duplicateModal).toBeVisible();
+    await duplicateModal.locator("button[data-testid='confirm-duplicate-session-button']").click();
+
+    await page.waitForURL((url) => url.href !== sessionUrl && url.pathname.includes("/sessions/session_"));
+    const duplicatedSessionUrl = page.url();
+    expect(duplicatedSessionUrl).not.toBe(sessionUrl);
+
+    // Verify duplicated session has active Open Play status, attendees, and current date in title
+    await expect(page.locator("text=In Progress")).toBeVisible();
+    const todayFormattedMonth = new Date().toLocaleDateString("en-US", { month: "short" });
+    await expect(page.locator("h1")).toContainText(todayFormattedMonth);
+    const attendeesList = page.locator("[data-testid='open-play-attendees']");
+    await expect(attendeesList).toBeVisible();
+    await expect(attendeesList.getByText(hostName)).toBeVisible();
+    await expect(attendeesList.getByText("Guest Gary")).toBeVisible();
+
+    // Clean up duplicated session so it doesn't leave an active session
+    const dupOptionsBtn = page.locator("[data-testid='session-options-menu-button']");
+    await expect(dupOptionsBtn).toBeVisible();
+    await dupOptionsBtn.click();
+    await page.locator("[data-testid='delete-session-menu-item']").click();
+    const deleteModal = page.locator("[role='alertdialog']");
+    await expect(deleteModal).toBeVisible();
+    await deleteModal.locator("button:has-text('Delete Session')").click();
+    await page.waitForURL(/\/g\/[^/]+$/);
+
     // 12. Check Host's profile sessions info and current rating
     await page.goto("/players");
     await expect(page.locator("h2:has-text('Past Sessions')")).toBeVisible();

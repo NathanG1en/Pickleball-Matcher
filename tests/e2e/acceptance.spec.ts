@@ -60,7 +60,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // Start session
     await page.click("button:has-text('Start Session')");
-    await expect(page).toHaveURL(/\/sessions\/session_/);
+    await expect(page).toHaveURL(/\/sessions\/session_/, { timeout: 15000 });
 
     // 5. Verify Round 1 Proposal: 3 courts (12 players) and 2 sits
     await expect(page.locator(".court-card:has-text('Court 1')")).toBeVisible();
@@ -151,12 +151,52 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     expect(page.url()).toBe(sessionUrl);
     await expect(summaryCard).toBeVisible();
 
-    // 9. Host deletes the session with confirmation via options menu dropdown
+    // 9. Host duplicates the session with confirmation via options menu dropdown
     const optionsButton = page.locator("[data-testid='session-options-menu-button']");
     await expect(optionsButton).toBeVisible();
     await optionsButton.click();
 
+    const duplicateMenuItem = page.locator("[data-testid='duplicate-session-menu-item']");
     const deleteMenuItem = page.locator("[data-testid='delete-session-menu-item']");
+    await expect(duplicateMenuItem).toBeVisible();
+    await expect(deleteMenuItem).toBeVisible();
+
+    // Test cancel duplication
+    await duplicateMenuItem.click();
+    const duplicateConfirmModal = page.locator("[role='alertdialog']");
+    await expect(duplicateConfirmModal).toBeVisible();
+    await expect(duplicateConfirmModal).toContainText("Duplicate Session");
+    await duplicateConfirmModal.locator("button:has-text('Cancel')").click();
+    await expect(duplicateConfirmModal).not.toBeVisible();
+    expect(page.url()).toBe(sessionUrl);
+
+    // Confirm duplicate
+    await optionsButton.click();
+    await duplicateMenuItem.click();
+    await expect(duplicateConfirmModal).toBeVisible();
+    await duplicateConfirmModal.locator("button[data-testid='confirm-duplicate-session-button']").click();
+
+    // Verify redirected to new active session
+    await page.waitForURL((url) => url.href !== sessionUrl && url.pathname.includes("/sessions/session_"));
+    const newSessionUrl = page.url();
+    expect(newSessionUrl).not.toBe(sessionUrl);
+
+    // Verify duplicated session has active status and players
+    await expect(page.locator("h2, h1").filter({ hasText: new RegExp(new Date().toLocaleDateString("en-US", { month: "short" })) })).toBeVisible();
+
+    // Delete the duplicated session
+    const newSessionOptionsButton = page.locator("[data-testid='session-options-menu-button']");
+    await expect(newSessionOptionsButton).toBeVisible();
+    await newSessionOptionsButton.click();
+    await page.locator("[data-testid='delete-session-menu-item']").click();
+    const deleteModal = page.locator("[role='alertdialog']");
+    await expect(deleteModal).toBeVisible();
+    await deleteModal.locator("button:has-text('Delete Session')").click();
+    await page.waitForURL(/\/g\/[^/]+$/);
+
+    // Navigate back to original completed session to test deleting it
+    await page.goto(sessionUrl);
+    await optionsButton.click();
     await expect(deleteMenuItem).toBeVisible();
     await deleteMenuItem.click();
 

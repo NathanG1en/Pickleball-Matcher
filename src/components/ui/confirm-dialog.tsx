@@ -14,6 +14,7 @@ export interface ConfirmDialogProps {
   cancelText?: string;
   confirmVariant?: "danger" | "primary";
   disabled?: boolean;
+  confirmDataTestId?: string;
 }
 
 export function ConfirmDialog({
@@ -26,6 +27,7 @@ export function ConfirmDialog({
   cancelText = "Cancel",
   confirmVariant = "danger",
   disabled = false,
+  confirmDataTestId,
 }: ConfirmDialogProps) {
   return (
     <Modal
@@ -61,6 +63,7 @@ export function ConfirmDialog({
             variant={confirmVariant}
             onClick={onConfirm}
             disabled={disabled}
+            data-testid={confirmDataTestId}
             className="font-display uppercase tracking-wider text-sm"
           >
             {confirmText}

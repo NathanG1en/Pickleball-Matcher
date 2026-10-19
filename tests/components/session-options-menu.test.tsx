@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/app/actions/sessions", () => ({
   deleteSessionAction: vi.fn(async () => ({ ok: true, data: undefined })),
+  duplicateSessionAction: vi.fn(async () => ({ ok: true, data: { id: "ses_dup" } })),
 }));
 
 describe("SessionOptionsMenu Component", () => {

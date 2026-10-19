@@ -2,17 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  defaultDependencies,
   getActionRepository,
   getActionSessionService,
   requireOrganizer,
 } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
-import type { RoundProposal, RoundRecord, SessionRecord } from "@/lib/domain/types";
+import type {
+  AttendanceRecord,
+  RoundProposal,
+  RoundRecord,
+  SessionRecord,
+  StartedRoundRecord,
+} from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
 import {
   changeAttendanceSchema,
   completeRoundSchema,
   deleteSessionSchema,
+  duplicateSessionSchema,
   endSessionSchema,
   proposeRoundSchema,
   startRoundSchema,
@@ -313,6 +321,175 @@ export async function deleteSessionAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to delete session",
+    };
+  }
+}
+
+export async function duplicateSessionAction(
+  input: unknown,
+): Promise<ActionResult<SessionRecord>> {
+  const parsed = duplicateSessionSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid session duplicate request.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const repository = getActionRepository();
+    const sourceSession = await repository.getSession(parsed.data.sessionId);
+    if (!sourceSession || sourceSession.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+
+    const existingSessions = await repository.listSessions(parsed.data.groupId);
+    const activeSession = existingSessions.find((s) => s.status === "active");
+    if (activeSession) {
+      return {
+        ok: false,
+        error: "An active session is already in progress for this group. Please complete or delete it first.",
+      };
+    }
+
+    const sourceAttendance = await repository.listAttendance(sourceSession.id);
+    const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: false });
+    const activePlayerIds = new Set(groupPlayers.filter((p) => p.active).map((p) => p.id));
+
+    // Duplicate players who were attending / checked in at the end of the session
+    const attendedPlayerIds = sourceAttendance
+      .filter((a) => a.leftRound === null && activePlayerIds.has(a.playerId))
+      .map((a) => a.playerId);
+
+    const now = defaultDependencies.now();
+    const sessionName = now.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const isOp = sourceSession.type === "open_play";
+    const sessionId = defaultDependencies.nextId("session");
+
+    if (isOp) {
+      const session: SessionRecord = {
+        id: sessionId,
+        groupId: parsed.data.groupId,
+        courtCount: sourceSession.courtCount || 1,
+        courtPlayerCounts: sourceSession.courtPlayerCounts ?? [4],
+        status: "active",
+        currentRoundNumber: 1,
+        startedAt: now,
+        endedAt: null,
+        version: 1,
+        type: "open_play",
+        name: sessionName,
+      };
+
+      const attendance: AttendanceRecord[] = attendedPlayerIds.map((playerId) => ({
+        sessionId,
+        playerId,
+        joinedRound: 1,
+        leftRound: null,
+      }));
+
+      await repository.insertSession(session, attendance);
+
+      const roundId = defaultDependencies.nextId("round");
+      const roundRecord: StartedRoundRecord = {
+        round: {
+          id: roundId,
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: defaultDependencies.nextSeed(),
+          scoreBreakdown: {
+            playingTime: 0,
+            consecutiveSit: 0,
+            partnerRepeat: 0,
+            skillBalance: 0,
+            opponentRepeat: 0,
+            tieBreak: 0,
+            total: 0,
+          },
+          createdAt: now,
+          startedAt: now,
+          completedAt: null,
+          version: 1,
+        },
+        matches: [],
+        matchPlayers: [],
+        sits: [],
+      };
+      await repository.insertStartedRound(roundRecord);
+
+      revalidatePath(`/g/${parsed.data.groupId}`);
+      revalidatePath(`/g/${parsed.data.groupId}/sessions/${sessionId}`);
+      revalidatePath("/players");
+      revalidatePath("/players/groups");
+      return { ok: true, data: session };
+    } else {
+      if (attendedPlayerIds.length < 2) {
+        return {
+          ok: false,
+          error: "Cannot duplicate session: at least 2 attending players are required.",
+        };
+      }
+
+      let courtCount = sourceSession.courtCount;
+      let courtPlayerCounts = sourceSession.courtPlayerCounts ? [...sourceSession.courtPlayerCounts] : undefined;
+
+      const capacity = courtPlayerCounts
+        ? courtPlayerCounts.reduce((sum, c) => sum + c, 0)
+        : courtCount * 4;
+
+      if (capacity > attendedPlayerIds.length || (courtPlayerCounts && courtPlayerCounts.length !== courtCount)) {
+        courtCount = Math.max(1, Math.min(sourceSession.courtCount, Math.floor(attendedPlayerIds.length / 2)));
+        let remaining = attendedPlayerIds.length;
+        const sizes: (2 | 3 | 4)[] = [];
+        for (let i = 0; i < courtCount; i++) {
+          const size = Math.min(4, Math.max(2, remaining)) as 2 | 3 | 4;
+          remaining -= size;
+          sizes.push(size);
+        }
+        courtPlayerCounts = sizes;
+      }
+
+      const session: SessionRecord = {
+        id: sessionId,
+        groupId: parsed.data.groupId,
+        courtCount,
+        courtPlayerCounts,
+        status: "active",
+        currentRoundNumber: 0,
+        startedAt: now,
+        endedAt: null,
+        version: 1,
+        type: "regular",
+        name: sessionName,
+      };
+
+      const attendance: AttendanceRecord[] = attendedPlayerIds.map((playerId) => ({
+        sessionId,
+        playerId,
+        joinedRound: 1,
+        leftRound: null,
+      }));
+
+      await repository.insertSession(session, attendance);
+
+      revalidatePath(`/g/${parsed.data.groupId}`);
+      revalidatePath(`/g/${parsed.data.groupId}/sessions/${sessionId}`);
+      revalidatePath("/players");
+      revalidatePath("/players/groups");
+      return { ok: true, data: session };
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to duplicate session",
     };
   }
 }

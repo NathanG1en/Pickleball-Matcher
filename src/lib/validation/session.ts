@@ -117,3 +117,10 @@ export const deleteSessionSchema = z
   })
   .strict();
 
+export const duplicateSessionSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+  })
+  .strict();
+
