@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
-import { SearchIcon } from "@/components/ui/icons";
 import { FilterablePlayerSelect } from "@/components/groups/filterable-player-select";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
@@ -107,25 +106,7 @@ export function OpenPlayManagerClient({
   const canManage = Boolean(isOrganizer || isHost);
   const canEditOrDelete = isSessionActive ? (canManage || isMember) : canManage;
 
-  const selectableGamePlayers = useMemo(() => {
-    const ids = new Set<string>();
-    const list: PlayerRecord[] = [];
-    for (const p of checkedInPlayers) {
-      if (!ids.has(p.id)) {
-        ids.add(p.id);
-        list.push(p);
-      }
-    }
-    if (canManage) {
-      for (const p of localPlayers) {
-        if (p.active && !ids.has(p.id)) {
-          ids.add(p.id);
-          list.push(p);
-        }
-      }
-    }
-    return list;
-  }, [canManage, checkedInPlayers, localPlayers]);
+  const selectableGamePlayers = checkedInPlayers;
 
   const [prevStartedRounds, setPrevStartedRounds] = useState(startedRounds);
   const [localStartedRounds, setLocalStartedRounds] = useState<readonly StartedRoundRecord[]>(startedRounds);
@@ -324,13 +305,15 @@ export function OpenPlayManagerClient({
   const [isCustomGuestRating, setIsCustomGuestRating] = useState(false);
   const [customGuestRatingInput, setCustomGuestRatingInput] = useState("3.5");
   const [selectedRosterPlayerId, setSelectedRosterPlayerId] = useState("");
-  const [rosterFilter, setRosterFilter] = useState("");
 
-  const filteredRosterPlayers = useMemo(() => {
-    const q = rosterFilter.trim().toLowerCase();
-    if (!q) return availableRosterPlayers;
-    return availableRosterPlayers.filter((p) => p.name.toLowerCase().includes(q));
-  }, [availableRosterPlayers, rosterFilter]);
+  const rosterPlayerOptions = useMemo(
+    () =>
+      availableRosterPlayers.map((p) => ({
+        id: p.id,
+        name: `${p.name} (${formatDupr(p.rating)})`,
+      })),
+    [availableRosterPlayers],
+  );
 
   // Loading & feedback states
   const [isSubmittingGame, setIsSubmittingGame] = useState(false);
@@ -465,7 +448,6 @@ export function OpenPlayManagerClient({
           ];
         });
         setSelectedRosterPlayerId("");
-        setRosterFilter("");
         showToast(`Added ${addedName} to session!`);
         router.refresh();
       } else {
@@ -519,6 +501,11 @@ export function OpenPlayManagerClient({
     const allSelected = [...team1Ids, ...team2Ids];
     if (new Set(allSelected).size !== allSelected.length) {
       setError("A player cannot be selected more than once in the same game.");
+      return;
+    }
+
+    if (allSelected.some((id) => !presentPlayerIds.has(id))) {
+      setError("All players in a game must be currently checked in to the open play session.");
       return;
     }
 
@@ -639,8 +626,26 @@ export function OpenPlayManagerClient({
     return false;
   };
 
+  const editSelectablePlayers = useMemo(() => {
+    if (!editingMatchId) return checkedInPlayers;
+    const editingMatch = allMatches.find((m) => m.id === editingMatchId);
+    if (!editingMatch) return checkedInPlayers;
+    const ids = new Set(checkedInPlayers.map((p) => p.id));
+    const list = [...checkedInPlayers];
+    for (const pid of [...editingMatch.team1PlayerIds, ...editingMatch.team2PlayerIds]) {
+      if (!ids.has(pid)) {
+        const p = playerMap.get(pid);
+        if (p) {
+          ids.add(p.id);
+          list.push(p);
+        }
+      }
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  }, [checkedInPlayers, editingMatchId, allMatches, playerMap]);
+
   const getEditSlotOptions = (slot: "t1p1" | "t1p2" | "t2p1" | "t2p2") => {
-    return selectableGamePlayers.map((p) => ({
+    return editSelectablePlayers.map((p) => ({
       id: p.id,
       name: p.name,
       disabled: isEditPlayerSelectedElsewhere(p.id, slot),
@@ -663,6 +668,15 @@ export function OpenPlayManagerClient({
     const allSelected = [...team1Ids, ...team2Ids];
     if (new Set(allSelected).size !== allSelected.length) {
       setError("A player cannot be selected more than once in the same game.");
+      return;
+    }
+
+    const editingMatch = allMatches.find((m) => m.id === editingMatchId);
+    const existingMatchPids = new Set(
+      editingMatch ? [...editingMatch.team1PlayerIds, ...editingMatch.team2PlayerIds] : [],
+    );
+    if (allSelected.some((id) => !presentPlayerIds.has(id) && !existingMatchPids.has(id))) {
+      setError("All players in a game must be currently checked in to the open play session.");
       return;
     }
 
@@ -935,64 +949,24 @@ export function OpenPlayManagerClient({
             {/* Add from Roster */}
             {availableRosterPlayers.length > 0 && (
               <form onSubmit={handleAddPlayer} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="roster-player-select"
-                    className="block text-xs font-black uppercase tracking-wider text-black"
-                  >
-                    Add Existing Group Member
-                  </label>
-                  {rosterFilter.trim() && (
-                    <span className="text-[10px] font-bold text-neutral-600">
-                      {filteredRosterPlayers.length} of {availableRosterPlayers.length}
-                    </span>
-                  )}
-                </div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black">
+                  Add Existing Group Member
+                </label>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative sm:w-44">
-                    <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
-                    <input
-                      id="roster-player-filter"
-                      type="text"
-                      placeholder="Filter roster..."
-                      value={rosterFilter}
-                      onChange={(e) => setRosterFilter(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      aria-label="Filter roster players"
-                      className="w-full pl-8 pr-7 py-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                  <div className="flex-1">
+                    <FilterablePlayerSelect
+                      ariaLabel="Add Existing Group Member"
+                      placeholder="Select player..."
+                      value={selectedRosterPlayerId}
+                      onChange={(val) => setSelectedRosterPlayerId(val)}
+                      options={rosterPlayerOptions}
+                      dataTestId="roster-player-select"
                     />
-                    {rosterFilter && (
-                      <button
-                        type="button"
-                        onClick={() => setRosterFilter("")}
-                        aria-label="Clear roster filter"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-black font-black text-xs p-1 cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    )}
                   </div>
-                  <select
-                    id="roster-player-select"
-                    value={selectedRosterPlayerId}
-                    onChange={(e) => setSelectedRosterPlayerId(e.target.value)}
-                    className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
-                  >
-                    <option value="">Select player...</option>
-                    {filteredRosterPlayers.length === 0 ? (
-                      <option value="" disabled>No players match filter</option>
-                    ) : (
-                      filteredRosterPlayers.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({formatDupr(p.rating)})
-                        </option>
-                      ))
-                    )}
-                  </select>
                   <button
                     type="submit"
                     disabled={!selectedRosterPlayerId || isAddingPlayer}
-                    className="px-3 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
                   >
                     {isAddingPlayer ? "Adding..." : "Add"}
                   </button>

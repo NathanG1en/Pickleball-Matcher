@@ -398,29 +398,12 @@ export async function submitOpenPlayGameAction(
     );
 
     const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
-    if (isOrganizerOrHost) {
-      const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
-      for (const pid of allGamePlayerIds) {
-        if (!groupPlayerMap.has(pid)) {
-          return { ok: false, error: "Player not found in group." };
-        }
-        if (!presentPlayerIds.has(pid)) {
-          await repository.saveAttendance({
-            sessionId: session.id,
-            playerId: pid,
-            joinedRound: 1,
-            leftRound: null,
-          });
-        }
-      }
-    } else {
-      for (const pid of allGamePlayerIds) {
-        if (!presentPlayerIds.has(pid)) {
-          return {
-            ok: false,
-            error: "All players in a game must be currently checked in to the open play session.",
-          };
-        }
+    for (const pid of allGamePlayerIds) {
+      if (!presentPlayerIds.has(pid)) {
+        return {
+          ok: false,
+          error: "All players in a game must be currently checked in to the open play session.",
+        };
       }
     }
 
@@ -603,45 +586,35 @@ export async function updateOpenPlayGameAction(
       }
     }
 
-    const [attendance, groupPlayers] = await Promise.all([
+    const match = await repository.getMatch(parsed.data.matchId);
+    if (!match) {
+      return { ok: false, error: "Match not found." };
+    }
+
+    const [attendance, groupPlayers, startedRounds] = await Promise.all([
       repository.listAttendance(session.id),
       repository.listPlayers(parsed.data.groupId, { includeInactive: false }),
+      repository.listStartedRounds(session.id),
     ]);
     const activePlayerIds = new Set(groupPlayers.map((p) => p.id));
     const presentPlayerIds = new Set(
       attendance.filter((a) => a.leftRound === null && activePlayerIds.has(a.playerId)).map((a) => a.playerId),
     );
 
-    const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
-    if (isOrganizerOrHost) {
-      const groupPlayerMap = new Map(groupPlayers.map((p) => [p.id, p]));
-      for (const pid of allGamePlayerIds) {
-        if (!groupPlayerMap.has(pid)) {
-          return { ok: false, error: "Player not found in group." };
-        }
-        if (!presentPlayerIds.has(pid)) {
-          await repository.saveAttendance({
-            sessionId: session.id,
-            playerId: pid,
-            joinedRound: 1,
-            leftRound: null,
-          });
-        }
-      }
-    } else {
-      for (const pid of allGamePlayerIds) {
-        if (!presentPlayerIds.has(pid)) {
-          return {
-            ok: false,
-            error: "All players in a game must be currently checked in to the open play session.",
-          };
-        }
-      }
-    }
+    const existingMatchPlayers = startedRounds
+      .flatMap((sr) => sr.matchPlayers)
+      .filter((mp) => mp.matchId === match.id)
+      .map((mp) => mp.playerId);
+    const existingMatchPlayerIds = new Set(existingMatchPlayers);
 
-    const match = await repository.getMatch(parsed.data.matchId);
-    if (!match) {
-      return { ok: false, error: "Match not found." };
+    const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
+    for (const pid of allGamePlayerIds) {
+      if (!presentPlayerIds.has(pid) && !existingMatchPlayerIds.has(pid)) {
+        return {
+          ok: false,
+          error: "All players in a game must be currently checked in to the open play session.",
+        };
+      }
     }
 
     const updatedMatch: MatchRecord = {

@@ -14,6 +14,7 @@ import {
 } from "@/app/actions/open-play";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
+import type { PlayerRecord } from "@/lib/domain/types";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -408,6 +409,71 @@ describe("Open Play Server Actions", () => {
     const remainingMatches = roundsAfter.flatMap((r) => r.matches);
     expect(remainingMatches.map((m) => m.id)).not.toContain(game1Res.data.id);
     expect(remainingMatches.map((m) => m.id)).toContain(postEndAddRes.data.id);
+  });
+
+  it("rejects submitting or updating a game with a player who is not checked into the session, even for organizers", async () => {
+    // Start session as host - only p-host is checked in
+    const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
+    expect(startRes.ok).toBe(true);
+    if (!startRes.ok) return;
+
+    // Check in p-user2 and p-user3, but NOT p-user4
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user2" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user3" });
+
+    // Host attempts to submit game including p-user4 (who is in group roster but not checked in)
+    const submitRes = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 7,
+    });
+    expect(submitRes.ok).toBe(false);
+    if (!submitRes.ok) {
+      expect(submitRes.error).toBe("All players in a game must be currently checked in to the open play session.");
+    }
+
+    // Now check in p-user4 and submit game successfully
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user4" });
+    const successfulSubmitRes = await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 7,
+    });
+    expect(successfulSubmitRes.ok).toBe(true);
+    if (!successfulSubmitRes.ok) return;
+
+    // Add a new player to the group roster who is NOT checked in
+    const newPlayer: PlayerRecord = {
+      id: "p-not-checked-in",
+      groupId: "g1",
+      name: "Not Checked In",
+      initialRating: 1200,
+      rating: 1200,
+      ratedGamesPlayed: 0,
+      active: true,
+    };
+    await repository.createPlayer(newPlayer);
+
+    // Attempt to update the game to swap in the un-checked-in player
+    const updateRes = await updateOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      matchId: successfulSubmitRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", newPlayer.id],
+      team1Score: 11,
+      team2Score: 8,
+    });
+    expect(updateRes.ok).toBe(false);
+    if (!updateRes.ok) {
+      expect(updateRes.error).toBe("All players in a game must be currently checked in to the open play session.");
+    }
   });
 });
 
