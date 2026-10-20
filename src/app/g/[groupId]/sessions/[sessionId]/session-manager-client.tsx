@@ -12,6 +12,7 @@ import {
   undoLatestRoundAction,
 } from "@/app/actions/sessions";
 import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
+import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
@@ -84,6 +85,7 @@ export function SessionManagerClient({
     setPrevAttendance(attendance);
     setCurrentAttendance(attendance);
   }
+  const [pickledMatchId, setPickledMatchId] = useState<string | null>(null);
   const [isActionPending, setIsPending] = useState(false);
   const [isGeneratingRound, startGeneratingRound] = useTransition();
   const isPending = isActionPending || isGeneratingRound;
@@ -200,6 +202,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`res_${matchId}`),
       });
       if (res.ok) {
+        setPickledMatchId(isPickleScore(team1Score, team2Score) ? matchId : null);
         router.refresh();
       } else {
         setFieldErrors((prev) => ({
@@ -935,6 +938,7 @@ export function SessionManagerClient({
           {isRoundInProgress ? (
             <div className="space-y-4">
               <ResultsEntryView
+                pickledMatchId={pickledMatchId}
                 roundId={latestStarted.round.id}
                 roundNumber={latestStarted.round.roundNumber}
                 matches={scoreEntries}

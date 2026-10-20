@@ -2,6 +2,7 @@
 
 import React from "react";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
+import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +20,7 @@ export interface MatchScoreEntry {
 export type ScoreDrafts = Readonly<Record<string, { team1: string; team2: string }>>;
 
 export interface ResultsEntryViewProps {
+  readonly pickledMatchId?: string | null;
   readonly roundId: string;
   readonly roundNumber: number;
   readonly matches: readonly MatchScoreEntry[];
@@ -36,6 +38,7 @@ export interface ResultsEntryViewProps {
 
 export function ResultsEntryView({
   roundNumber,
+  pickledMatchId = null,
   matches,
   fieldErrors = {},
   isPending = false,
@@ -225,6 +228,9 @@ export function ResultsEntryView({
                     </Button>
                   )}
                 </div>
+              )}
+              {pickledMatchId === match.id && isCompleted && isPickleScore(match.team1Score, match.team2Score) && (
+                <PickleCelebration key={match.id} />
               )}
             </div>
           );
