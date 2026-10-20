@@ -565,7 +565,7 @@ test("does not include groups in recent groups if player is not part of them eve
   // Now join the group
   await playerPage.goto(`/g/${groupId}`);
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
-  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).not.toBeVisible();
+  await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
   // Return to homepage: group MUST now appear in recent groups
   await playerPage.goto("/");
@@ -633,7 +633,7 @@ test("non-host member can leave a group from group dashboard via three dots menu
   await playerContext.close();
 });
 
-test("non-host member can leave a group from find groups page with inline confirmation", async ({
+test("non-host member can leave a group from find groups page with confirmation modal", async ({
   page,
   browser,
 }) => {
@@ -651,7 +651,7 @@ test("non-host member can leave a group from find groups page with inline confir
   // Join the group first
   await playerPage.goto(`/g/${groupId}`);
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
-  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).not.toBeVisible();
+  await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
   // Navigate to Find Groups page
   await playerPage.goto("/players/groups");
@@ -660,31 +660,91 @@ test("non-host member can leave a group from find groups page with inline confir
   // Find the group card
   const groupArticle = playerPage.locator("article", { hasText: groupName });
   await expect(groupArticle).toBeVisible();
-  await expect(groupArticle.getByText("Joined")).toBeVisible();
+  // Member badge should be visible next to group name
+  await expect(groupArticle.getByText("Member")).toBeVisible();
 
-  // Leave group button should be next to Joined
-  const leaveBtn = groupArticle.getByRole("button", { name: "Leave group" });
+  // Leave button should be where joined was
+  const leaveBtn = groupArticle.getByRole("button", { name: "Leave", exact: true });
   await expect(leaveBtn).toBeVisible();
 
-  // Clicking "Leave group" turns into "Leave" and "X" (cancel)
+  // Clicking "Leave" opens confirmation modal (same as in group options menu)
   await leaveBtn.click();
-  const confirmBtn = groupArticle.getByRole("button", { name: "Leave", exact: true });
-  const cancelBtn = groupArticle.getByRole("button", { name: "Cancel" });
-  await expect(confirmBtn).toBeVisible();
-  await expect(cancelBtn).toBeVisible();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await expect(playerPage.getByText(`Are you sure you want to leave "${groupName}"?`)).toBeVisible();
 
-  // Cancel restores "Leave group"
-  await cancelBtn.click();
-  await expect(groupArticle.getByRole("button", { name: "Leave group" })).toBeVisible();
-  await expect(groupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
+  // Cancel closes the dialog without leaving
+  await playerPage.getByRole("button", { name: "Cancel" }).click();
+  await expect(playerPage.getByRole("alertdialog")).not.toBeVisible();
+  await expect(leaveBtn).toBeVisible();
 
   // Click again and confirm leaving
-  await groupArticle.getByRole("button", { name: "Leave group" }).click();
-  await groupArticle.getByRole("button", { name: "Leave", exact: true }).click();
+  await leaveBtn.click();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await playerPage.getByTestId("confirm-leave-group-button").click();
 
-  // After leaving and refreshing, it now shows "Join" instead of "Joined"
+  // After leaving and refreshing, it now shows "Join" instead of "Member" / "Leave"
   await expect(groupArticle.getByRole("button", { name: "Join" })).toBeVisible();
-  await expect(groupArticle.getByText("Joined")).not.toBeVisible();
+  await expect(groupArticle.getByText("Member")).not.toBeVisible();
+  await expect(groupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
+
+  // Verify host sees Host badge and no leave button on find groups page
+  await page.goto("/players/groups");
+  const hostGroupArticle = page.locator("article", { hasText: groupName });
+  await expect(hostGroupArticle.getByText("Host")).toBeVisible();
+  await expect(hostGroupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
+
+  await playerContext.close();
+});
+
+test("non-host member can leave a group from profile page with confirmation modal", async ({
+  page,
+  browser,
+}) => {
+  const groupName = `Leave From Profile ${Date.now()}`;
+  const { groupId } = await createTestGroup(page, groupName);
+
+  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
+  await toggleBtn.click();
+  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+
+  const playerContext = await browser.newContext();
+  const playerPage = await playerContext.newPage();
+  await createAndSignInPlayer(playerPage);
+
+  // Join the group first
+  await playerPage.goto(`/g/${groupId}`);
+  await playerPage.getByRole("button", { name: "Join Group Now" }).click();
+  await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
+
+  // Navigate to Profile page
+  await playerPage.goto("/players");
+  await expect(playerPage.getByRole("heading", { name: "My Groups" })).toBeVisible();
+
+  const groupRow = playerPage.locator("li", { hasText: groupName });
+  await expect(groupRow).toBeVisible();
+
+  // Leave button is present
+  const leaveBtn = groupRow.getByRole("button", { name: "Leave", exact: true });
+  await expect(leaveBtn).toBeVisible();
+
+  // Clicking "Leave" opens confirmation modal
+  await leaveBtn.click();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await expect(playerPage.getByText(`Are you sure you want to leave "${groupName}"?`)).toBeVisible();
+
+  // Cancel closes the dialog without leaving
+  await playerPage.getByRole("button", { name: "Cancel" }).click();
+  await expect(playerPage.getByRole("alertdialog")).not.toBeVisible();
+  await expect(leaveBtn).toBeVisible();
+
+  // Click again and confirm leaving
+  await leaveBtn.click();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await playerPage.getByTestId("confirm-leave-group-button").click();
+
+  // Dialog closes and group is removed from My Groups
+  await expect(playerPage.getByRole("alertdialog")).not.toBeVisible();
+  await expect(playerPage.getByText(groupName)).not.toBeVisible();
 
   await playerContext.close();
 });

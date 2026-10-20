@@ -115,7 +115,7 @@ export function GroupOptionsMenu({
               }}
               className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 cursor-pointer"
             >
-              Leave Group
+              Leave
             </button>
           )}
         </div>
@@ -168,7 +168,7 @@ export function GroupOptionsMenu({
             )}
           </div>
         }
-        confirmText={leavePending ? "Leaving…" : "Leave Group"}
+        confirmText={leavePending ? "Leaving…" : "Leave"}
         cancelText="Cancel"
         confirmVariant="danger"
         disabled={leavePending}

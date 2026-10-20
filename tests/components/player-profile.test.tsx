@@ -112,7 +112,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Host");
 
     // Regular League should allow leaving
-    expect(html).toContain("Leave group");
+    expect(html).toContain("Leave");
 
     // Check specifically that Hosted League row does not contain the leave group button
     const listItems = html.split("<li").filter((item) => item.includes("Hosted League") || item.includes("Regular League"));
@@ -121,12 +121,12 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const hostedItem = listItems.find((item) => item.includes("Hosted League"));
     expect(hostedItem).toBeDefined();
     expect(hostedItem).toContain("Host");
-    expect(hostedItem).not.toContain("Leave group");
+    expect(hostedItem).not.toContain("Leave");
 
     const memberItem = listItems.find((item) => item.includes("Regular League"));
     expect(memberItem).toBeDefined();
     expect(memberItem).not.toContain("Host");
-    expect(memberItem).toContain("Leave group");
+    expect(memberItem).toContain("Leave");
   });
 
   it("shows Organizer label and allows leaving when player is an organizer but not host", async () => {
@@ -182,7 +182,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const orgItem = listItems[0];
     expect(orgItem).toContain("Organizer");
     expect(orgItem).not.toContain("Host");
-    expect(orgItem).toContain("Leave group");
+    expect(orgItem).toContain("Leave");
   });
 
   it("rejects leavePublicGroupAction when called by the host of the group", async () => {
@@ -544,19 +544,21 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(result).toEqual({ ok: false, error: "Select a valid gender." });
   });
 
-  it("LeaveGroupButton initially renders Leave group button and not confirmation buttons", () => {
-    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" />);
-    expect(html).toContain("Leave group");
-    expect(html).not.toContain(">Leave<");
-    expect(html).not.toContain(">X<");
+  it("LeaveGroupButton initially renders Leave button and not modal dialog", () => {
+    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" groupName="Test Group" />);
+    expect(html).toContain(">Leave<");
+    expect(html).not.toContain('role="alertdialog"');
+    expect(html).not.toContain("Cancel");
   });
 
-  it("LeaveGroupButton renders confirmation buttons (Leave and X) when confirming", () => {
-    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" initialConfirming={true} />);
-    expect(html).not.toContain("Leave group");
+  it("LeaveGroupButton renders confirmation modal dialog when confirming", () => {
+    const html = renderToStaticMarkup(<LeaveGroupButton groupId="grp_test" groupName="Test Group" initialConfirming={true} />);
     expect(html).toContain(">Leave<");
-    expect(html).toContain(">X<");
-    expect(html).toContain('aria-label="Cancel"');
+    expect(html).toContain('role="alertdialog"');
+    expect(html).toContain("Leave Group");
+    expect(html).toContain('Are you sure you want to leave &quot;Test Group&quot;?');
+    expect(html).toContain("Cancel");
+    expect(html).toContain('data-testid="confirm-leave-group-button"');
   });
 
   it("renders a single unified rating over time section across sessions in multiple groups", async () => {

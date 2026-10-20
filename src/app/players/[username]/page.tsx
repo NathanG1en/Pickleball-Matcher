@@ -251,7 +251,7 @@ export default async function PlayerPublicProfilePage({
                       </span>
                     )}
                     {isOwner && group.isMember && !group.isHost && (
-                      <LeaveGroupButton groupId={group.id} />
+                      <LeaveGroupButton groupId={group.id} groupName={group.name} />
                     )}
                   </div>
                 </li>

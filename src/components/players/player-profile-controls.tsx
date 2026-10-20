@@ -14,6 +14,7 @@ import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups, removeRecentGroup } from "@/lib/storage/recent-groups";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
 
 export function PlayerProfileHeader({
@@ -658,13 +659,15 @@ export function PlayerLogoutButton({ className }: { className?: string } = {}) {
 
 export function LeaveGroupButton({
   groupId,
+  groupName,
   initialConfirming = false,
 }: {
   groupId: string;
+  groupName?: string;
   initialConfirming?: boolean;
 }) {
   const router = useRouter();
-  const [confirming, setConfirming] = useState(initialConfirming);
+  const [showModal, setShowModal] = useState(initialConfirming);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -674,53 +677,59 @@ export function LeaveGroupButton({
     const result = await leavePublicGroupAction({ groupId });
     if (result.ok) {
       removeRecentGroup(groupId);
+      setShowModal(false);
       router.refresh();
     } else {
-      setError(result.error);
+      setError(result.error ?? "Unable to leave group.");
+      setPending(false);
     }
-    setPending(false);
   };
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      {confirming ? (
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={leave}
-            disabled={pending}
-            className="rounded-lg border-2 border-black bg-[#ff6b6b] px-3 py-1.5 text-[10px] font-black uppercase text-black hover:bg-[#fa5252] disabled:opacity-60 cursor-pointer"
-          >
-            {pending ? "Leaving…" : "Leave"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              setConfirming(false);
-            }}
-            disabled={pending}
-            aria-label="Cancel"
-            title="Cancel"
-            className="rounded-lg border-2 border-black bg-white px-2.5 py-1.5 text-[10px] font-black uppercase text-black hover:bg-neutral-100 disabled:opacity-60 cursor-pointer"
-          >
-            X
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setShowModal(true);
+        }}
+        disabled={pending}
+        className="rounded-xl border-2 border-black bg-white px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff6b6b] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+      >
+        Leave
+      </button>
+
+      <ConfirmDialog
+        isOpen={showModal}
+        onClose={() => {
+          if (!pending) {
             setError(null);
-            setConfirming(true);
-          }}
-          disabled={pending}
-          className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-[10px] font-black uppercase hover:bg-[#ff6b6b] disabled:opacity-60 cursor-pointer"
-        >
-          {pending ? "Leaving…" : "Leave group"}
-        </button>
-      )}
-      {error && <p role="alert" className="max-w-40 text-right text-[10px] font-bold text-red-700">{error}</p>}
-    </div>
+            setShowModal(false);
+          }
+        }}
+        onConfirm={leave}
+        title="Leave Group"
+        description={
+          <div className="space-y-3">
+            <p>
+              Are you sure you want to leave {groupName ? `"${groupName}"` : "this group"}?
+            </p>
+            {error && (
+              <div
+                role="alert"
+                className="p-2.5 rounded-lg bg-red-100 border border-red-500 text-red-800 text-xs font-bold"
+              >
+                {error}
+              </div>
+            )}
+          </div>
+        }
+        confirmText={pending ? "Leaving…" : "Leave"}
+        cancelText="Cancel"
+        confirmVariant="danger"
+        disabled={pending}
+        confirmDataTestId="confirm-leave-group-button"
+      />
+    </>
   );
 }

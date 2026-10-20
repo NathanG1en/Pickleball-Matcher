@@ -592,14 +592,14 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).toContain("Join");
       expect(html).toContain("cursor-pointer");
 
-      // Joined badge rendered for members
-      expect(html).toContain("Joined");
+      // Member badge rendered next to group name for non-organizer members
+      expect(html).toContain("Member");
 
-      // Leave group button rendered next to Joined for non-host members
-      expect(html).toContain("Leave group");
+      // Leave button rendered where Joined was for non-host members
+      expect(html).toContain(">Leave<");
     });
 
-    it("does not render Leave group button for hosts", () => {
+    it("renders Host badge and does not render Leave group button for hosts", () => {
       const groups = [
         {
           id: "grp_host",
@@ -614,8 +614,28 @@ describe("Player View for Groups and Sessions", () => {
         <PublicGroupList groups={groups} isSignedIn={true} />
       );
 
-      expect(html).toContain("Joined");
-      expect(html).not.toContain("Leave group");
+      expect(html).toContain("Host");
+      expect(html).not.toContain(">Leave<");
+    });
+
+    it("renders Organizer badge for organizers", () => {
+      const groups = [
+        {
+          id: "grp_org",
+          name: "Organizer Club",
+          playerCount: 5,
+          isMember: true,
+          isHost: false,
+          isOrganizer: true,
+        },
+      ];
+
+      const html = renderToStaticMarkup(
+        <PublicGroupList groups={groups} isSignedIn={true} />
+      );
+
+      expect(html).toContain("Organizer");
+      expect(html).toContain(">Leave<");
     });
   });
 });

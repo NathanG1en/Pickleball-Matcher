@@ -31,34 +31,47 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
     {error && <Alert variant="danger">{error}</Alert>}
     {groups.length === 0 ? <EmptyState description="No public groups match that search." /> : groups.map((group) => (
       <article key={group.id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
-        <div className="min-w-0"><h2 className="truncate font-display text-xl font-black uppercase">{group.name}</h2><p className="text-xs font-bold text-neutral-600">{group.playerCount} active player{group.playerCount === 1 ? "" : "s"}</p></div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="truncate font-display text-xl font-black uppercase">{group.name}</h2>
+            {group.isHost ? (
+              <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">
+                Host
+              </span>
+            ) : group.isOrganizer ? (
+              <span className="rounded-full border border-black bg-[#e0f2fe] px-2 py-1 text-[9px] font-black uppercase">
+                Organizer
+              </span>
+            ) : group.isMember ? (
+              <span className="rounded-full border border-black bg-[#ccff00] px-2 py-1 text-[9px] font-black uppercase">
+                Member
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs font-bold text-neutral-600">{group.playerCount} active player{group.playerCount === 1 ? "" : "s"}</p>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={`/g/${group.id}`}
-            className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            className="rounded-xl border-2 border-black bg-white px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
           >
             View Group
           </Link>
           {group.isMember ? (
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase">
-                Joined
-              </span>
-              {!group.isHost && <LeaveGroupButton groupId={group.id} />}
-            </div>
+            !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />
           ) : isSignedIn ? (
             <button
               type="button"
               onClick={() => join(group.id, group.name)}
               disabled={pendingGroup !== null}
-              className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+              className="rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
             >
               {pendingGroup === group.id ? "Joining…" : "Join"}
             </button>
           ) : (
             <Link
               href="/player-login"
-              className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Sign in to join
             </Link>
