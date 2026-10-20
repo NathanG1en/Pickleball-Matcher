@@ -7,6 +7,7 @@ import type { PublicGroupRecord } from "@/lib/domain/types";
 import { joinPublicGroupAction } from "@/app/actions/player-account";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
 import { Alert, EmptyState } from "@/components/ui";
+import { LeaveGroupButton } from "@/components/players/player-profile-controls";
 
 export function PublicGroupList({ groups, isSignedIn }: { groups: readonly PublicGroupRecord[]; isSignedIn: boolean }) {
   const router = useRouter();
@@ -39,9 +40,12 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
             View Group
           </Link>
           {group.isMember ? (
-            <span className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase">
-              Joined
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase">
+                Joined
+              </span>
+              {!group.isHost && <LeaveGroupButton groupId={group.id} />}
+            </div>
           ) : isSignedIn ? (
             <button
               type="button"

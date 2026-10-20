@@ -320,15 +320,17 @@ export class PostgresRepositories implements DomainRepository {
       name: string;
       player_count: number;
       is_member: boolean;
+      is_host: boolean;
     }[]>`
       select g.id, g.name, count(distinct p.id)::int as player_count,
-        coalesce(bool_or(mine.id is not null), false) as is_member
+        coalesce(bool_or(mine.id is not null), false) as is_member,
+        coalesce(g.owner_account_id = ${accountId ?? ""}, false) as is_host
       from groups g
       left join players p on p.group_id = g.id and p.active = true
       left join players mine on mine.group_id = g.id and mine.account_id = ${accountId ?? ""} and mine.active = true
       where g.is_public = true
         and (${term} = '' or strpos(lower(g.name), lower(${term})) > 0)
-      group by g.id, g.name
+      group by g.id, g.name, g.owner_account_id
       order by g.name
       limit 50
     `;
@@ -337,6 +339,7 @@ export class PostgresRepositories implements DomainRepository {
       name: row.name,
       playerCount: row.player_count,
       isMember: row.is_member,
+      isHost: row.is_host,
     }));
   }
 

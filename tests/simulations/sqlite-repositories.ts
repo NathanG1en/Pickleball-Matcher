@@ -352,14 +352,15 @@ export class SqliteDomainRepository implements DomainRepository {
     const rows = this.db
       .prepare(`
         SELECT g.id, g.name, COUNT(DISTINCT p.id) AS player_count,
-          MAX(CASE WHEN mine.id IS NOT NULL THEN 1 ELSE 0 END) AS is_member
+          MAX(CASE WHEN mine.id IS NOT NULL THEN 1 ELSE 0 END) AS is_member,
+          MAX(CASE WHEN g.owner_account_id = ? THEN 1 ELSE 0 END) AS is_host
         FROM groups g LEFT JOIN players p ON p.group_id = g.id AND p.active = 1
         LEFT JOIN players mine ON mine.group_id = g.id AND mine.account_id = ? AND mine.active = 1
         WHERE g.is_public = 1 AND (? = '' OR instr(lower(g.name), lower(?)) > 0)
         GROUP BY g.id, g.name ORDER BY g.name LIMIT 50
       `)
-      .all(accountId ?? "", search.trim(), search.trim()) as unknown as { id: string; name: string; player_count: number; is_member: number }[];
-    return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member) }));
+      .all(accountId ?? "", accountId ?? "", search.trim(), search.trim()) as unknown as { id: string; name: string; player_count: number; is_member: number; is_host: number }[];
+    return rows.map((row) => ({ id: row.id, name: row.name, playerCount: row.player_count, isMember: Boolean(row.is_member), isHost: Boolean(row.is_host) }));
   }
 
   async listAccountGroups(accountId: string) {

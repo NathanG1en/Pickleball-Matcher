@@ -152,13 +152,21 @@ export default async function GroupDashboardPage({
           <BackButton href={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
-            {isOrganizer && (
+            {isOrganizer ? (
               <GroupOptionsMenu
                 groupId={groupId}
                 groupName={group.name}
                 isAccountOrganizer={isAccountOrganizer}
+                isOrganizer={true}
               />
-            )}
+            ) : isMember && accountId && !isHost ? (
+              <GroupOptionsMenu
+                groupId={groupId}
+                groupName={group.name}
+                isAccountOrganizer={false}
+                isOrganizer={false}
+              />
+            ) : null}
           </div>
         </div>
         <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />

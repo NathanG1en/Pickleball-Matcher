@@ -100,6 +100,7 @@ export class InMemoryRepositories implements DomainRepository {
         name: group.name,
         playerCount: this.state.players.filter((player) => player.groupId === group.id && player.active).length,
         isMember: accountId ? this.state.players.some((player) => player.groupId === group.id && player.accountId === accountId && player.active) : false,
+        isHost: accountId ? group.ownerAccountId === accountId : false,
       }));
   }
 

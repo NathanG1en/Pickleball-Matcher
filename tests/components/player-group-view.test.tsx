@@ -594,6 +594,28 @@ describe("Player View for Groups and Sessions", () => {
 
       // Joined badge rendered for members
       expect(html).toContain("Joined");
+
+      // Leave group button rendered next to Joined for non-host members
+      expect(html).toContain("Leave group");
+    });
+
+    it("does not render Leave group button for hosts", () => {
+      const groups = [
+        {
+          id: "grp_host",
+          name: "Host Club",
+          playerCount: 5,
+          isMember: true,
+          isHost: true,
+        },
+      ];
+
+      const html = renderToStaticMarkup(
+        <PublicGroupList groups={groups} isSignedIn={true} />
+      );
+
+      expect(html).toContain("Joined");
+      expect(html).not.toContain("Leave group");
     });
   });
 });

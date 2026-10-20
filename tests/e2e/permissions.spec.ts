@@ -574,3 +574,117 @@ test("does not include groups in recent groups if player is not part of them eve
 
   await playerContext.close();
 });
+
+test("non-host member can leave a group from group dashboard via three dots menu with confirmation", async ({
+  page,
+  browser,
+}) => {
+  const groupName = `Leave From Group Dashboard ${Date.now()}`;
+  const { groupId } = await createTestGroup(page, groupName);
+
+  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
+  await toggleBtn.click();
+  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+
+  const playerContext = await browser.newContext();
+  const playerPage = await playerContext.newPage();
+  await createAndSignInPlayer(playerPage);
+
+  // Non-host joins the group
+  await playerPage.goto(`/g/${groupId}`);
+  await playerPage.getByRole("button", { name: "Join Group Now" }).click();
+  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).not.toBeVisible();
+
+  // The 3 dots button is present for group member
+  const optionsBtn = playerPage.getByRole("button", { name: "Group options" });
+  await expect(optionsBtn).toBeVisible();
+  await optionsBtn.click();
+
+  // Only "Leave Group" is in the dropdown (no "Delete Group")
+  const leaveMenuItem = playerPage.getByTestId("leave-group-menu-item");
+  await expect(leaveMenuItem).toBeVisible();
+  await expect(playerPage.getByTestId("delete-group-menu-item")).not.toBeVisible();
+
+  // Clicking Leave Group opens confirmation modal
+  await leaveMenuItem.click();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await expect(playerPage.getByText(`Are you sure you want to leave "${groupName}"?`)).toBeVisible();
+
+  // Cancel closes the dialog without leaving
+  await playerPage.getByRole("button", { name: "Cancel" }).click();
+  await expect(playerPage.getByRole("alertdialog")).not.toBeVisible();
+  await expect(optionsBtn).toBeVisible();
+
+  // Open again and confirm leaving
+  await optionsBtn.click();
+  await playerPage.getByTestId("leave-group-menu-item").click();
+  await expect(playerPage.getByRole("alertdialog")).toBeVisible();
+  await playerPage.getByTestId("confirm-leave-group-button").click();
+
+  // User is redirected to /players and group is not in their groups
+  await expect(playerPage).toHaveURL(/\/players/);
+  await expect(playerPage.getByText(groupName)).not.toBeVisible();
+
+  // Returning to public group dashboard shows visitor join card and NO 3 dots button
+  await playerPage.goto(`/g/${groupId}`);
+  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).toBeVisible();
+  await expect(playerPage.getByRole("button", { name: "Group options" })).not.toBeVisible();
+
+  await playerContext.close();
+});
+
+test("non-host member can leave a group from find groups page with inline confirmation", async ({
+  page,
+  browser,
+}) => {
+  const groupName = `Leave From Find Groups ${Date.now()}`;
+  const { groupId } = await createTestGroup(page, groupName);
+
+  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
+  await toggleBtn.click();
+  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+
+  const playerContext = await browser.newContext();
+  const playerPage = await playerContext.newPage();
+  await createAndSignInPlayer(playerPage);
+
+  // Join the group first
+  await playerPage.goto(`/g/${groupId}`);
+  await playerPage.getByRole("button", { name: "Join Group Now" }).click();
+  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).not.toBeVisible();
+
+  // Navigate to Find Groups page
+  await playerPage.goto("/players/groups");
+  await expect(playerPage.getByRole("heading", { name: "Find a group" })).toBeVisible();
+
+  // Find the group card
+  const groupArticle = playerPage.locator("article", { hasText: groupName });
+  await expect(groupArticle).toBeVisible();
+  await expect(groupArticle.getByText("Joined")).toBeVisible();
+
+  // Leave group button should be next to Joined
+  const leaveBtn = groupArticle.getByRole("button", { name: "Leave group" });
+  await expect(leaveBtn).toBeVisible();
+
+  // Clicking "Leave group" turns into "Leave" and "X" (cancel)
+  await leaveBtn.click();
+  const confirmBtn = groupArticle.getByRole("button", { name: "Leave", exact: true });
+  const cancelBtn = groupArticle.getByRole("button", { name: "Cancel" });
+  await expect(confirmBtn).toBeVisible();
+  await expect(cancelBtn).toBeVisible();
+
+  // Cancel restores "Leave group"
+  await cancelBtn.click();
+  await expect(groupArticle.getByRole("button", { name: "Leave group" })).toBeVisible();
+  await expect(groupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
+
+  // Click again and confirm leaving
+  await groupArticle.getByRole("button", { name: "Leave group" }).click();
+  await groupArticle.getByRole("button", { name: "Leave", exact: true }).click();
+
+  // After leaving and refreshing, it now shows "Join" instead of "Joined"
+  await expect(groupArticle.getByRole("button", { name: "Join" })).toBeVisible();
+  await expect(groupArticle.getByText("Joined")).not.toBeVisible();
+
+  await playerContext.close();
+});

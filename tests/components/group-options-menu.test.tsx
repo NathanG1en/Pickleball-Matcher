@@ -132,6 +132,20 @@ describe("Group Navigation and Options Menu", () => {
       expect(html).toContain("···");
       expect(html).toContain('aria-label="Group options"');
     });
+
+    it("renders the 3 dots button for non-organizer members", () => {
+      const html = renderToStaticMarkup(
+        <GroupOptionsMenu
+          groupId="g1"
+          groupName="Friday Night Picklers"
+          isAccountOrganizer={false}
+          isOrganizer={false}
+        />
+      );
+
+      expect(html).toContain("···");
+      expect(html).toContain('aria-label="Group options"');
+    });
   });
 
   describe("deleteGroupAction", () => {
