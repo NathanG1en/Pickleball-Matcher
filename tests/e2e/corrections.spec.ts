@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { sampleReplayMotion, checkAnimationReplay, createTestGroup, createAndSignInPlayer } from "./test-helpers";
 
 test.describe("Corrections and Replay Workflow", () => {
@@ -384,5 +385,64 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       expect(motion.frames[0].cy).toBeCloseTo(motion.frames[4].cy, 0);
     }
     await checkAnimationReplay(page, art, "Replay session sign-off", "sessionRolls", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
+  });
+}
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`pickle celebration follows saved 11-0 scores, not drafts or history (${reducedMotion})`, async ({ page }, testInfo) => {
+    test.setTimeout(90000);
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => document.addEventListener("animationstart", event => {
+      if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
+    }));
+    await createTestGroup(page, `Pickle score ${Date.now()}`);
+    await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+    await page.locator("#guest-player-name").fill("Pickle Guest");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+    await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByRole("button", { name: "Start Session", exact: true }).click();
+    await page.getByRole("button", { name: "Start Round", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+    const court = page.getByTestId("court-match-1");
+    const score1 = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true });
+    const score2 = page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true });
+    const reaction = page.getByTestId("pickle-celebration");
+    await score1.fill("11");
+    await score2.fill("0");
+    await expect(reaction).toHaveCount(0);
+    if (reducedMotion === "no-preference") {
+      await page.route(page.url(), route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
+      await court.getByRole("button", { name: "Save Result", exact: true }).click();
+      await expect(court.getByRole("alert")).toContainText("Failed to save match result.");
+      await expect(reaction).toHaveCount(0);
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    await court.getByRole("button", { name: "Save Result", exact: true }).click();
+    await expect(reaction).toBeVisible();
+    await expect(reaction.getByRole("status")).toContainText("Pickled! 11–0");
+    const art = reaction.getByTestId("pickle-mascot");
+    if (reducedMotion === "no-preference") await expect.poll(() => page.evaluate(() => document.documentElement.dataset.pickleWiggles)).toBe("1");
+    await expect(art).toHaveAttribute("data-motion", "still");
+    await checkAnimationReplay(page, art, "Replay pickle celebration", "pickleWiggles", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
+    const audit = await new AxeBuilder({ page }).include('[data-testid="pickle-celebration"]').analyze();
+    expect(audit.violations).toEqual([]);
+    await reaction.screenshot({ path: testInfo.outputPath("pickle-celebration.png") });
+    await page.reload();
+    await expect(score1).toHaveValue("11");
+    await expect(score2).toHaveValue("0");
+    await expect(reaction).toHaveCount(0);
+    await score1.fill("0");
+    await score2.fill("11");
+    await court.getByRole("button", { name: "Update Score", exact: true }).click();
+    await expect(reaction).toBeVisible();
+    await expect(art).toHaveAttribute("data-motion", "still");
+    await reaction.getByRole("button", { name: "Dismiss pickle celebration", exact: true }).click();
+    await expect(reaction).toHaveCount(0);
+    await score1.fill("21");
+    await score2.fill("0");
+    await court.getByRole("button", { name: "Update Score", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });
+    await expect(reaction).toHaveCount(0);
   });
 }

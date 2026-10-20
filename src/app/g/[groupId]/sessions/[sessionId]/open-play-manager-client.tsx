@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
+import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
@@ -316,6 +317,7 @@ export function OpenPlayManagerClient({
   );
 
   // Loading & feedback states
+  const [pickledGameId, setPickledGameId] = useState<string | null>(null);
   const [isSubmittingGame, setIsSubmittingGame] = useState(false);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
@@ -571,6 +573,7 @@ export function OpenPlayManagerClient({
           );
         });
 
+        setPickledGameId(isPickleScore(s1, s2) ? res.data.id : null);
         setT1Score("");
         setT2Score("");
         showToast("Game submitted successfully!");
@@ -726,6 +729,7 @@ export function OpenPlayManagerClient({
           }))
         );
 
+        if (pickledGameId === editingMatchId) setPickledGameId(null);
         setEditingMatchId(null);
         showToast("Game updated successfully!");
         router.refresh();
@@ -749,6 +753,7 @@ export function OpenPlayManagerClient({
         matchId,
       });
       if (res.ok) {
+        if (pickledGameId === matchId) setPickledGameId(null);
         showToast("Game deleted.");
         router.refresh();
       } else {
@@ -776,6 +781,7 @@ export function OpenPlayManagerClient({
     try {
       const res = await endOpenPlaySessionAction({ groupId, sessionId: session.id });
       if (res.ok) {
+        setPickledGameId(null);
         setJustEndedSession(true);
         router.refresh();
       } else {
@@ -1194,6 +1200,9 @@ export function OpenPlayManagerClient({
               >
                 {isSubmittingGame ? "Recording Game..." : isSessionActive ? "Record Game Result" : "Add Game Result"}
               </button>
+              {pickledGameId && allMatches.some(match => match.id === pickledGameId && isPickleScore(match.team1Score, match.team2Score)) && (
+                <PickleCelebration key={pickledGameId} />
+              )}
             </form>
           )}
         </section>
