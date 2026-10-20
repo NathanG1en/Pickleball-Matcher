@@ -100,10 +100,14 @@ test.describe("Permissions and Security Workflow", () => {
     // Modal should close and player should now be linked with username
     await expect(modal).not.toBeVisible();
     await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
+    await expect(page.locator("li").filter({ hasText: publicUser.name }).getByRole("link", { name: `@${publicUser.username}` })).toBeVisible();
 
     // Open dropdown for linked player
     const linkedItem = page.locator("li").filter({ hasText: publicUser.name });
     await linkedItem.locator("summary").click();
+
+    // "View profile" should now be present in the dropdown for organizer/host
+    await expect(linkedItem.locator("a:has-text('View profile')")).toBeVisible();
 
     // "Link to public player" should no longer be present
     await expect(linkedItem.locator("button:has-text('Link to public player')")).not.toBeVisible();
@@ -421,6 +425,92 @@ test.describe("Permissions and Security Workflow", () => {
     // Redirected to group dashboard and session is deleted
     await page.waitForURL(/\/g\/[^/]+$/);
     await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
+  });
+
+  test("allows players to view public profiles fully and restricts private profiles to display name and username", async ({
+    page,
+    browser,
+  }) => {
+    // 1. Create a public player and a private player in separate browser contexts
+    const publicContext = await browser.newContext();
+    const publicPage = await publicContext.newPage();
+    const publicUser = await createAndSignInPlayer(publicPage, {
+      name: "Public Champion",
+    });
+
+    const privateContext = await browser.newContext();
+    const privatePage = await privateContext.newPage();
+    const privateUser = await createAndSignInPlayer(privatePage, {
+      name: "Private Legend",
+    });
+
+    // Make privateUser private via their profile page
+    await privatePage.goto("/players");
+    const privacyBtn = privatePage.getByRole("button", { name: /Account visibility: currently Public/ });
+    await expect(privacyBtn).toBeVisible();
+    await privacyBtn.click();
+    await expect(privatePage.getByText("Profile is now Private")).toBeVisible();
+
+    // 2. In the host page, create a test group with unique name
+    const groupName = `Profile Visibility Group ${Date.now()}`;
+    const { groupId } = await createTestGroup(page, groupName);
+
+    // 3. Add publicUser and privateUser to the roster
+    await page.fill("#roster-player-username", publicUser.username);
+    await page.click("button:has-text('Find & Add')");
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
+
+    await page.fill("#roster-player-username", privateUser.username);
+    await page.click("button:has-text('Find & Add')");
+    await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible();
+
+    // 4. In the roster, both should have an underlined link for their username in (@username)
+    await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
+    await expect(page.locator(`text=${privateUser.name} (@${privateUser.username})`)).toBeVisible();
+
+    const publicLink = page.locator("li").filter({ hasText: publicUser.name }).getByRole("link", { name: `@${publicUser.username}` });
+    await expect(publicLink).toBeVisible();
+
+    // Verify organizer sees "View profile" in three dots dropdown
+    const publicItem = page.locator("li").filter({ hasText: publicUser.name });
+    await publicItem.locator("summary").click();
+    await expect(publicItem.locator("a:has-text('View profile')")).toBeVisible();
+    await publicItem.locator("summary").click(); // close
+
+    // 5. Click public user link -> leads to /players/[username] and shows full profile
+    await publicLink.click();
+    await page.waitForURL(new RegExp(`/players/${publicUser.username}`));
+    await expect(page.locator("h1")).toContainText(publicUser.name);
+    await expect(page.getByText(`@${publicUser.username}`, { exact: true })).toBeVisible();
+    await expect(page.getByText("Public", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rating over time" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Past Sessions" })).toBeVisible();
+    await expect(page.getByText("This Profile is Private")).not.toBeVisible();
+
+    // Navigate back to the group page
+    await page.goBack();
+    await page.waitForURL(new RegExp(`/g/${groupId}`));
+
+    // 6. Click private user link -> leads to /players/[username] and only shows display name and username
+    const privateLink = page.locator("li").filter({ hasText: privateUser.name }).getByRole("link", { name: `@${privateUser.username}` });
+    await expect(privateLink).toBeVisible();
+    await privateLink.click();
+    await page.waitForURL(new RegExp(`/players/${privateUser.username}`));
+    await expect(page.locator("h1")).toContainText(privateUser.name);
+    await expect(page.getByText(`@${privateUser.username}`, { exact: true })).toBeVisible();
+    await expect(page.getByText("This Profile is Private")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rating over time" })).not.toBeVisible();
+    await expect(page.getByRole("heading", { name: "Past Sessions" })).not.toBeVisible();
+
+    // 7. For a non-organizer viewing the roster, verify there is a "View profile" button on the right side
+    await publicPage.goto(`/g/${groupId}`);
+    const nonOrgRow = publicPage.locator("li").filter({ hasText: privateUser.name });
+    await expect(nonOrgRow.locator("summary")).not.toBeVisible();
+    const viewProfileBtn = nonOrgRow.getByRole("link", { name: "View profile" });
+    await expect(viewProfileBtn).toBeVisible();
+
+    await publicContext.close();
+    await privateContext.close();
   });
 });
 

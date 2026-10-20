@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import PlayerProfilePage from "@/app/players/page";
+import PlayerPublicProfilePage from "@/app/players/[username]/page";
 import { PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
@@ -14,6 +15,7 @@ vi.mock("next/navigation", () => ({
     refresh: vi.fn(),
   }),
   redirect: vi.fn(),
+  notFound: vi.fn(),
 }));
 
 vi.mock("@/app/actions/action-context", async (importOriginal) => {
@@ -136,5 +138,143 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
 
     expect(html).toContain("Doubles Synergy");
     expect(html).toContain("Play doubles matches with other registered accounts");
+  });
+
+  describe("PlayerPublicProfilePage (/players/[username])", () => {
+    it("renders full profile when target is public", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_1",
+            username: "public_star",
+            name: "Star Player",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            rating: 1250,
+            gender: "male",
+            createdAt: new Date(),
+          },
+          {
+            id: "partner_1",
+            username: "chem_partner",
+            name: "Partner Player",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1100,
+            createdAt: new Date(),
+          },
+        ],
+        synergies: [
+          {
+            accountId1: "partner_1",
+            accountId2: "target_1",
+            matchesPlayed: 10,
+            wins: 9,
+            synergyScore: 0.83,
+            updatedAt: new Date(),
+          },
+        ],
+      });
+      setActionRepository(repository);
+
+      // Viewer is another user
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_other");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "public_star" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      expect(html).toContain("Star Player");
+      expect(html).toContain("@public_star");
+      expect(html).toContain("Male");
+      expect(html).toContain("advanced");
+      expect(html).toContain("Public");
+      expect(html).toContain("Best Partner");
+      expect(html).toContain("@chem_partner");
+      expect(html).toContain("83% Synergy");
+      expect(html).toContain("Rating over time");
+      expect(html).toContain("Past Sessions");
+      expect(html).not.toContain("This Profile is Private");
+    });
+
+    it("renders only display name and username when target is private and viewer is another user", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_private",
+            username: "secret_ace",
+            name: "Secret Ace",
+            isPublic: false,
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1300,
+            rating: 1350,
+            gender: "female",
+            createdAt: new Date(),
+          },
+        ],
+      });
+      setActionRepository(repository);
+
+      // Viewer is another user
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_other");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "secret_ace" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      // Should contain display name and username
+      expect(html).toContain("Secret Ace");
+      expect(html).toContain("@secret_ace");
+      expect(html).toContain("Private");
+      expect(html).toContain("This Profile is Private");
+
+      // Should NOT contain private stats, rating, gender, etc.
+      expect(html).not.toContain("Female");
+      expect(html).not.toContain("advanced");
+      expect(html).not.toContain("Best Partner");
+      expect(html).not.toContain("Rating over time");
+      expect(html).not.toContain("Past Sessions");
+      expect(html).not.toContain("current rating");
+    });
+
+    it("renders full profile when viewer is the owner even if account is private", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "owner_private_acc",
+            username: "my_stealth_acc",
+            name: "My Stealth Name",
+            isPublic: false,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            rating: 1050,
+            createdAt: new Date(),
+          },
+        ],
+      });
+      setActionRepository(repository);
+
+      // Viewer is the owner
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("owner_private_acc");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "my_stealth_acc" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      expect(html).toContain("My Stealth Name");
+      expect(html).toContain("@my_stealth_acc");
+      expect(html).toContain("intermediate");
+      expect(html).toContain("Rating over time");
+      expect(html).toContain("Past Sessions");
+      expect(html).not.toContain("This Profile is Private");
+    });
   });
 });

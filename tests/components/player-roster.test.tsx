@@ -51,4 +51,31 @@ describe("PlayerRoster Component", () => {
     expect(html).toContain("Jordan Smith");
     expect(html).not.toContain("Delete");
   });
+
+  it("renders username as an underlined link in parentheses and renders View profile button for non-organizer", () => {
+    const playerWithUsername: PlayerRecord = {
+      id: "p3",
+      groupId: "g1",
+      name: "Alex Morgan",
+      username: "alex_m",
+      initialRating: 1000,
+      rating: 1100,
+      ratedGamesPlayed: 10,
+      active: true,
+    };
+
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={[playerWithUsername]}
+        canManage={false}
+      />
+    );
+
+    expect(html).toContain("Alex Morgan");
+    expect(html).toContain('href="/players/alex_m"');
+    expect(html).toContain("@alex_m");
+    expect(html).toContain("underline");
+    expect(html).toContain("View profile");
+  });
 });

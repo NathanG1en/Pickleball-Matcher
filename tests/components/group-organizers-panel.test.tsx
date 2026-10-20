@@ -127,11 +127,18 @@ describe("GroupOrganizersPanel and Actions", () => {
       );
 
       // Verify username formatting
-      expect(html).toContain("Host Player (@host_user)");
-      expect(html).toContain("Organizer Player (@org_user)");
-      expect(html).toContain("Regular Member (@member_user)");
+      expect(html).toContain("Host Player");
+      expect(html).toContain('href="/players/host_user"');
+      expect(html).toContain("@host_user");
+      expect(html).toContain("Organizer Player");
+      expect(html).toContain('href="/players/org_user"');
+      expect(html).toContain("@org_user");
+      expect(html).toContain("Regular Member");
+      expect(html).toContain('href="/players/member_user"');
+      expect(html).toContain("@member_user");
       expect(html).toContain("Guest Player");
       expect(html).not.toContain("Guest Player (@");
+      expect(html).toContain("View profile");
 
       // Verify active/inactive text was removed
       expect(html).not.toContain("· Active");
@@ -177,7 +184,9 @@ describe("GroupOrganizersPanel and Actions", () => {
         />
       );
 
-      expect(html).toContain("Regular Member (@member_user)");
+      expect(html).toContain("Regular Member");
+      expect(html).toContain('href="/players/member_user"');
+      expect(html).toContain("@member_user");
       expect(html).toContain("···");
       expect(html).toContain("Remove player");
       expect(html).toContain("Link to public player");
@@ -259,8 +268,13 @@ describe("GroupOrganizersPanel and Actions", () => {
         />
       );
 
-      expect(html).toContain("Host Player (@host_user)");
-      expect(html).toContain("Organizer Player (@org_user)");
+      expect(html).toContain("Host Player");
+      expect(html).toContain('href="/players/host_user"');
+      expect(html).toContain("@host_user");
+      expect(html).toContain("Organizer Player");
+      expect(html).toContain('href="/players/org_user"');
+      expect(html).toContain("@org_user");
+      expect(html).toContain("View profile");
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Link to public player");

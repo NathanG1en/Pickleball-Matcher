@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
 import { formatDupr, eloToDupr, getSkillTier, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
@@ -145,13 +146,35 @@ export function PlayerRoster({
               <div>
                 <span className="font-black text-black text-base block">
                   {player.name}
-                  {player.username ? ` (@${player.username})` : ""}
+                  {player.username ? (
+                    <>
+                      {" "}
+                      (
+                      <Link
+                        href={`/players/${encodeURIComponent(player.username)}`}
+                        className="underline hover:text-black cursor-pointer"
+                      >
+                        @{player.username}
+                      </Link>
+                      )
+                    </>
+                  ) : (
+                    ""
+                  )}
                 </span>
-                <span className="text-xs font-bold text-neutral-600">
+                <span className="text-xs font-bold text-neutral-600 block mt-0.5">
                   Rating: {formatDupr(player.rating)} ({getSkillTier(eloToDupr(player.rating)).name}) · {player.ratedGamesPlayed} games played
                 </span>
               </div>
               <div className="flex items-center gap-3">
+                {!canManage && player.username && (
+                  <Link
+                    href={`/players/${encodeURIComponent(player.username)}`}
+                    className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0 mr-2"
+                  >
+                    View profile
+                  </Link>
+                )}
                 {showDelete && (
                   <button
                     type="button"
