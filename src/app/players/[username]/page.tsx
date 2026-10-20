@@ -283,7 +283,7 @@ export default async function PlayerPublicProfilePage({
                   className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
                 >
                   <div>
-                    <h3 className="font-black text-black">
+                    <h3 suppressHydrationWarning className="font-black text-black">
                       {item.sessionName ? `${item.sessionName} · ${formattedDate}` : formattedDate}
                     </h3>
                     <p className="text-xs font-bold text-neutral-600">

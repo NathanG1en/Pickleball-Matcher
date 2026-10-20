@@ -92,7 +92,7 @@ export function PastSessionsList({
                 aria-expanded={isExpanded}
                 aria-label={session.name ? `${session.name} · ${formattedDate}` : `Session from ${formattedDate}`}
               >
-                <span className="font-bold text-black text-sm block">
+                <span suppressHydrationWarning className="font-bold text-black text-sm block">
                   {session.name ? `${session.name} · ${formattedDate}` : (session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate)}
                 </span>
                 <span className="text-xs font-bold text-neutral-500">

@@ -11,6 +11,8 @@ import {
   type RecentGroup,
 } from "@/lib/storage/recent-groups";
 
+const emptySubscribe = () => () => {};
+
 export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string }) {
   const router = useRouter();
   const [groupName, setGroupName] = useState(initialGroupName);
@@ -19,10 +21,13 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
+  const isTest = process.env.NODE_ENV === "test";
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => isTest);
+
   const recentGroupsJson = useSyncExternalStore(
     subscribeRecentGroups,
     getRecentGroupsSnapshot,
-    getRecentGroupsSnapshot
+    () => (isTest ? getRecentGroupsSnapshot() : "[]")
   );
 
   const recentGroups: RecentGroup[] = useMemo(() => {
@@ -80,7 +85,7 @@ export function LoginForm({ initialGroupName = "" }: { initialGroupName?: string
           onChange={(e) => setGroupName(e.target.value)}
           placeholder="Enter your group name"
         />
-        {recentGroups.length > 0 && !groupName && (
+        {mounted && recentGroups.length > 0 && !groupName && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
               Recent:

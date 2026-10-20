@@ -829,7 +829,7 @@ export function OpenPlayManagerClient({
               className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
             />
             <p className="text-xs font-bold text-neutral-600">
-              {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
+              {groupName ?? "Group"} · Started <span suppressHydrationWarning>{new Date(session.startedAt).toLocaleDateString()}</span>
             </p>
           </div>
 
