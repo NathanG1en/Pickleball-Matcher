@@ -249,24 +249,120 @@ export class InMemoryRepositories implements DomainRepository {
     );
     if (playerIndex === -1) return null;
 
-    const alreadyInGroup = this.state.players.some(
+    const guestPlayer = this.state.players[playerIndex];
+
+    const existingIndex = this.state.players.findIndex(
       (item) => item.groupId === groupId && item.accountId === accountId,
     );
-    if (alreadyInGroup) return null;
 
-    const existingPlayer = this.state.players[playerIndex];
+    if (existingIndex !== -1) {
+      const existingPlayer = this.state.players[existingIndex];
+      const targetPlayerId = existingPlayer.id;
+
+      // session_attendance
+      const sAttendances = this.state.attendance.filter((a) => a.playerId === playerId);
+      for (const sa of sAttendances) {
+        const targetAttIndex = this.state.attendance.findIndex(
+          (a) => a.sessionId === sa.sessionId && a.playerId === targetPlayerId,
+        );
+        if (targetAttIndex >= 0) {
+          const targetAtt = this.state.attendance[targetAttIndex];
+          const minJoined = Math.min(targetAtt.joinedRound, sa.joinedRound);
+          const mergedLeft =
+            targetAtt.leftRound === null || sa.leftRound === null
+              ? null
+              : Math.max(targetAtt.leftRound, sa.leftRound);
+          this.state.attendance[targetAttIndex] = {
+            ...targetAtt,
+            joinedRound: minJoined,
+            leftRound: mergedLeft,
+          };
+          this.state.attendance = this.state.attendance.filter(
+            (a) => !(a.sessionId === sa.sessionId && a.playerId === playerId),
+          );
+        } else {
+          this.state.attendance = this.state.attendance.map((a) =>
+            a.sessionId === sa.sessionId && a.playerId === playerId
+              ? { ...a, playerId: targetPlayerId }
+              : a,
+          );
+        }
+      }
+
+      // match_players
+      const sMatchPlayers = this.state.matchPlayers.filter((mp) => mp.playerId === playerId);
+      for (const sm of sMatchPlayers) {
+        const existsTarget = this.state.matchPlayers.some(
+          (mp) => mp.matchId === sm.matchId && mp.playerId === targetPlayerId,
+        );
+        if (existsTarget) {
+          this.state.matchPlayers = this.state.matchPlayers.filter(
+            (mp) => !(mp.matchId === sm.matchId && mp.playerId === playerId),
+          );
+        } else {
+          this.state.matchPlayers = this.state.matchPlayers.map((mp) =>
+            mp.matchId === sm.matchId && mp.playerId === playerId
+              ? { ...mp, playerId: targetPlayerId }
+              : mp,
+          );
+        }
+      }
+
+      // round_sits
+      const sSits = this.state.roundSits.filter((s) => s.playerId === playerId);
+      for (const ss of sSits) {
+        const existsTarget = this.state.roundSits.some(
+          (s) => s.roundId === ss.roundId && s.playerId === targetPlayerId,
+        );
+        if (existsTarget) {
+          this.state.roundSits = this.state.roundSits.filter(
+            (s) => !(s.roundId === ss.roundId && s.playerId === playerId),
+          );
+        } else {
+          this.state.roundSits = this.state.roundSits.map((s) =>
+            s.roundId === ss.roundId && s.playerId === playerId
+              ? { ...s, playerId: targetPlayerId }
+              : s,
+          );
+        }
+      }
+
+      // Delete duplicate guest player from players state
+      this.state.players = this.state.players.filter((p) => p.id !== playerId);
+
+      // Update target existing player
+      const updatedExisting: PlayerRecord = {
+        ...existingPlayer,
+        active: true,
+        gender: existingPlayer.gender ?? guestPlayer.gender ?? account.gender ?? null,
+        name: account.name,
+        username: account.username,
+      };
+
+      const finalExistingIndex = this.state.players.findIndex((p) => p.id === targetPlayerId);
+      if (finalExistingIndex !== -1) {
+        this.state.players[finalExistingIndex] = updatedExisting;
+      }
+
+      await replayRatings(groupId, this);
+
+      return this.state.players.find((p) => p.id === targetPlayerId) ?? updatedExisting;
+    }
+
     const updated: PlayerRecord = {
-      ...existingPlayer,
+      ...guestPlayer,
       accountId: account.id,
       username: account.username,
       name: account.name,
-      gender: existingPlayer.gender ?? account.gender ?? null,
+      gender: guestPlayer.gender ?? account.gender ?? null,
       initialRating: account.initialRating,
       rating: account.rating ?? account.initialRating,
       ratedGamesPlayed: account.ratedGamesPlayed ?? 0,
+      active: true,
     };
     this.state.players[playerIndex] = updated;
-    return updated;
+    await replayRatings(groupId, this);
+    return this.state.players[playerIndex] ?? updated;
   }
 
   async joinPublicGroup(accountId: string, groupId: string) {

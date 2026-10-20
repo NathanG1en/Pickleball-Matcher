@@ -304,6 +304,32 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("text=current rating")).toBeVisible();
     await expect(page.locator("text=starting rating")).toHaveCount(0);
 
+    // Verify rating over time chart hover and click tooltip
+    await expect(page.locator("h2:has-text('Rating over time')")).toBeVisible();
+    const ratingPoint = page.locator("[data-testid='rating-point-0']");
+    await expect(ratingPoint).toBeVisible();
+
+    // Hovering displays tooltip with rating and date below it
+    await ratingPoint.hover();
+    const tooltip = page.locator("[data-testid='rating-tooltip']");
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
+    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
+
+    // Moving mouse away hides tooltip
+    await page.mouse.move(0, 0);
+    await expect(tooltip).toBeHidden();
+
+    // Clicking rating point pins tooltip
+    await ratingPoint.click();
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
+    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
+
+    // Escape dismisses pinned tooltip
+    await page.keyboard.press("Escape");
+    await expect(tooltip).toBeHidden();
+
     // Session must be listed with (Open Play) next to group name
     const sessionId = sessionUrl.split("/sessions/")[1];
     const sessionArticle = page.locator(`article[data-testid='player-session-${sessionId}']`);

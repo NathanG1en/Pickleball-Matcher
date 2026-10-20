@@ -290,10 +290,6 @@ export async function linkGuestPlayerAction(
     if (targetPlayer.accountId) {
       return { ok: false, error: "This player is already linked to an account." };
     }
-    const accountAlreadyInGroup = groupPlayers.some((p) => p.accountId === parsed.data.targetAccountId);
-    if (accountAlreadyInGroup) {
-      return { ok: false, error: "That player account is already on the roster." };
-    }
     const targetAccount = await repository.getPlayerAccount(parsed.data.targetAccountId);
     if (!targetAccount) {
       return { ok: false, error: "Player account not found." };

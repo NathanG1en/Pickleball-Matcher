@@ -516,8 +516,93 @@ export class SqliteDomainRepository implements DomainRepository {
     const guest = this.db.prepare("SELECT * FROM players WHERE id = ? AND group_id = ?").get(playerId, groupId) as PlayerRow | undefined;
     if (!guest || guest.account_id !== null) return null;
 
-    const existing = this.db.prepare("SELECT id FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId);
-    if (existing) return null;
+    const existing = this.db.prepare("SELECT id FROM players WHERE group_id = ? AND account_id = ?").get(groupId, accountId) as { id: string } | undefined;
+
+    if (existing) {
+      const targetPlayerId = existing.id;
+
+      // session_attendance
+      const sAttendances = this.db
+        .prepare("SELECT * FROM session_attendance WHERE player_id = ?")
+        .all(playerId) as unknown as AttendanceRow[];
+      for (const sa of sAttendances) {
+        const targetAtt = this.db
+          .prepare("SELECT * FROM session_attendance WHERE session_id = ? AND player_id = ?")
+          .get(sa.session_id, targetPlayerId) as AttendanceRow | undefined;
+        if (targetAtt) {
+          const minJoined = Math.min(targetAtt.joined_round, sa.joined_round);
+          const mergedLeft =
+            targetAtt.left_round === null || sa.left_round === null
+              ? null
+              : Math.max(targetAtt.left_round, sa.left_round);
+          this.db
+            .prepare("UPDATE session_attendance SET joined_round = ?, left_round = ? WHERE session_id = ? AND player_id = ?")
+            .run(minJoined, mergedLeft, sa.session_id, targetPlayerId);
+          this.db
+            .prepare("DELETE FROM session_attendance WHERE session_id = ? AND player_id = ?")
+            .run(sa.session_id, playerId);
+        } else {
+          this.db
+            .prepare("UPDATE session_attendance SET player_id = ? WHERE session_id = ? AND player_id = ?")
+            .run(targetPlayerId, sa.session_id, playerId);
+        }
+      }
+
+      // match_players
+      const sMatches = this.db
+        .prepare("SELECT * FROM match_players WHERE player_id = ?")
+        .all(playerId) as unknown as MatchPlayerRow[];
+      for (const sm of sMatches) {
+        const targetMp = this.db
+          .prepare("SELECT * FROM match_players WHERE match_id = ? AND player_id = ?")
+          .get(sm.match_id, targetPlayerId);
+        if (targetMp) {
+          this.db
+            .prepare("DELETE FROM match_players WHERE match_id = ? AND player_id = ?")
+            .run(sm.match_id, playerId);
+        } else {
+          this.db
+            .prepare("UPDATE match_players SET player_id = ? WHERE match_id = ? AND player_id = ?")
+            .run(targetPlayerId, sm.match_id, playerId);
+        }
+      }
+
+      // round_sits
+      const sSits = this.db
+        .prepare("SELECT * FROM round_sits WHERE player_id = ?")
+        .all(playerId) as unknown as RoundSitRow[];
+      for (const ss of sSits) {
+        const targetSit = this.db
+          .prepare("SELECT * FROM round_sits WHERE round_id = ? AND player_id = ?")
+          .get(ss.round_id, targetPlayerId) as RoundSitRow | undefined;
+        if (targetSit) {
+          this.db
+            .prepare("DELETE FROM round_sits WHERE round_id = ? AND player_id = ?")
+            .run(ss.round_id, playerId);
+        } else {
+          this.db
+            .prepare("UPDATE round_sits SET player_id = ? WHERE round_id = ? AND player_id = ?")
+            .run(targetPlayerId, ss.round_id, playerId);
+        }
+      }
+
+      // delete guest player
+      this.db.prepare("DELETE FROM players WHERE id = ? AND group_id = ? AND account_id IS NULL").run(playerId, groupId);
+
+      // update target existing player
+      this.db.prepare(`
+        UPDATE players
+        SET active = 1,
+            gender = COALESCE(gender, ?, ?),
+            name = ?
+        WHERE id = ? AND group_id = ?
+      `).run(guest.gender ?? null, account.gender ?? null, account.name, targetPlayerId, groupId);
+
+      await replayRatings(groupId, this);
+
+      const finalTarget = this.db.prepare("SELECT * FROM players WHERE id = ?").get(targetPlayerId) as PlayerRow | undefined;
+      return finalTarget ? { ...this.mapPlayerRecord(finalTarget), username: account.username } : null;
+    }
 
     this.db.prepare(`
       UPDATE players
@@ -526,7 +611,8 @@ export class SqliteDomainRepository implements DomainRepository {
           gender = COALESCE(gender, ?),
           initial_rating = ?,
           rating = COALESCE(?, initial_rating),
-          rated_games_played = ?
+          rated_games_played = ?,
+          active = 1
       WHERE id = ? AND group_id = ? AND account_id IS NULL
     `).run(
       accountId,
@@ -538,6 +624,8 @@ export class SqliteDomainRepository implements DomainRepository {
       playerId,
       groupId,
     );
+
+    await replayRatings(groupId, this);
 
     const updated = this.db.prepare("SELECT * FROM players WHERE id = ?").get(playerId) as PlayerRow | undefined;
     return updated ? { ...this.mapPlayerRecord(updated), username: account.username } : null;

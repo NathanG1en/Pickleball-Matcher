@@ -111,8 +111,6 @@ export function LinkGuestModal({
   };
 
   const handleLink = async (target: SearchPlayerResult) => {
-    if (target.alreadyInGroup) return;
-
     setIsLinking(true);
     setLinkingAccountId(target.accountId);
     setError(null);
@@ -261,28 +259,33 @@ export function LinkGuestModal({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={result.alreadyInGroup || isLinking}
-                      onClick={() => void handleLink(result)}
-                      data-testid={`link-target-${result.username}`}
-                      className={`shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
-                        result.alreadyInGroup
-                          ? "bg-neutral-200 text-neutral-500 cursor-default"
-                          : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
-                      }`}
-                    >
-                      {result.alreadyInGroup ? (
-                        <span className="inline-flex items-center gap-1">
+                    {result.alreadyInGroup ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="inline-flex items-center gap-1 rounded-lg border-2 border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-black uppercase text-neutral-600">
                           <span>In Roster</span>
                           <CheckIcon className="h-3 w-3 shrink-0" />
                         </span>
-                      ) : linkingAccountId === result.accountId ? (
-                        "Linking…"
-                      ) : (
-                        "Link Player"
-                      )}
-                    </button>
+                        <button
+                          type="button"
+                          disabled={isLinking}
+                          onClick={() => void handleLink(result)}
+                          data-testid={`link-target-${result.username}`}
+                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-xs font-black uppercase bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                        >
+                          {linkingAccountId === result.accountId ? "Merging…" : "Merge"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isLinking}
+                        onClick={() => void handleLink(result)}
+                        data-testid={`link-target-${result.username}`}
+                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-xs font-black uppercase bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                      >
+                        {linkingAccountId === result.accountId ? "Linking…" : "Link Player"}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -112,6 +112,63 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(linkedItem.locator("button:has-text('Make a group organizer')")).toBeVisible();
   });
 
+  test("allows host to link guest player to an account already in the roster by merging", async ({
+    page,
+    browser,
+  }) => {
+    // 1. Create a public player in another session
+    const otherContext = await browser.newContext();
+    const otherPage = await otherContext.newPage();
+    const publicUser = await createAndSignInPlayer(otherPage);
+    await otherContext.close();
+
+    // 2. Create a test group with host
+    const groupName = `Merge Guest Test Group ${Date.now()}`;
+    await createTestGroup(page, groupName);
+
+    // 3. Add publicUser to the roster
+    await page.fill("#roster-player-username", publicUser.username);
+    await page.click("button:has-text('Find & Add')");
+    const publicUserItem = page.locator("li").filter({ hasText: publicUser.name });
+    await expect(publicUserItem).toBeVisible();
+
+    // 4. Add a guest player to the roster
+    await page.click("button[type='button']:has-text('Add Guest')");
+    await page.fill("#guest-player-name", "Guest Jordan");
+    await page.click("form button[type='submit']:has-text('Add')");
+
+    const guestItem = page.locator("li").filter({ hasText: "Guest Jordan" });
+    await expect(guestItem).toBeVisible();
+
+    // 5. Open options dropdown for Guest Jordan and click "Link to public player"
+    await guestItem.locator("summary").click();
+    const linkButton = guestItem.locator("button:has-text('Link to public player')");
+    await expect(linkButton).toBeVisible();
+    await linkButton.click();
+
+    // 6. Verify modal appears and search for publicUser
+    const modal = page.locator("div[role='dialog'][aria-labelledby='link-guest-title']");
+    await expect(modal).toBeVisible();
+    await expect(modal.locator("#link-guest-title")).toContainText("Link Guest Jordan");
+
+    await modal.locator("#link-player-search-input").fill(publicUser.username);
+    await modal.locator("button[type='submit']:has-text('Search')").click();
+
+    // 7. Verify "In Roster" label appears and "Merge" button is placed next to it
+    await expect(modal.getByText("In Roster")).toBeVisible();
+    const mergeButton = modal.locator(`[data-testid='link-target-${publicUser.username}']`);
+    await expect(mergeButton).toBeVisible();
+    await expect(mergeButton).toHaveText("Merge");
+
+    // 8. Click "Merge"
+    await mergeButton.click();
+
+    // 9. Modal should close, guest should be removed from roster, and publicUser remains
+    await expect(modal).not.toBeVisible();
+    await expect(page.locator("li").filter({ hasText: "Guest Jordan" })).not.toBeVisible();
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
+  });
+
   test("allows host to transfer host role to another organizer with group name confirmation", async ({
     page,
     browser,

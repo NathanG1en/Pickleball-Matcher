@@ -900,8 +900,29 @@ describe("GroupOrganizersPanel and Actions", () => {
       }
     });
 
-    it("rejects linking to an account already in the group roster", async () => {
+    it("allows linking to an account already in the group roster and merges histories", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+
+      // Add a session and attendance for the guest player
+      const sessionId = "s_merge_test";
+      repository.state.sessions.push({
+        id: sessionId,
+        groupId: "g1",
+        courtCount: 1,
+        courtPlayerCounts: [4],
+        status: "active",
+        currentRoundNumber: 1,
+        startedAt: new Date(),
+        endedAt: null,
+        version: 1,
+        type: "regular",
+      });
+      repository.state.attendance.push({
+        sessionId,
+        playerId: "p_guest",
+        joinedRound: 1,
+        leftRound: null,
+      });
 
       const result = await linkGuestPlayerAction({
         groupId: "g1",
@@ -909,10 +930,18 @@ describe("GroupOrganizersPanel and Actions", () => {
         targetAccountId: orgAccountId,
       });
 
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error).toContain("already on the roster");
-      }
+      expect(result.ok).toBe(true);
+
+      const roster = await repository.listPlayers("g1");
+      expect(roster.some((p) => p.id === "p_guest")).toBe(false);
+
+      const mergedPlayer = roster.find((p) => p.accountId === orgAccountId);
+      expect(mergedPlayer).toBeDefined();
+
+      const attendance = repository.state.attendance.filter(
+        (a) => a.sessionId === sessionId && a.playerId === mergedPlayer?.id,
+      );
+      expect(attendance.length).toBe(1);
     });
 
     it("rejects non-existent target account", async () => {

@@ -587,49 +587,175 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
-    const accountRows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
-      from player_accounts
-      where id = ${accountId}
-    `;
-    if (!accountRows[0]) return null;
-    const account = mapPlayerAccount(accountRows[0]);
+    return (await this.transaction(async (tx) => {
+      const txRepo = tx as PostgresRepositories;
+      const accountRows = await txRepo.query<PlayerAccountRow[]>`
+        select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+        from player_accounts
+        where id = ${accountId}
+      `;
+      if (!accountRows[0]) return null;
+      const account = mapPlayerAccount(accountRows[0]);
 
-    const guestRows = await this.query<PlayerRow[]>`
-      select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
-      from players
-      where id = ${playerId} and group_id = ${groupId}
-    `;
-    if (!guestRows[0] || guestRows[0].account_id !== null) {
-      return null;
-    }
+      const guestRows = await txRepo.query<PlayerRow[]>`
+        select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+        from players
+        where id = ${playerId} and group_id = ${groupId}
+      `;
+      if (!guestRows[0] || guestRows[0].account_id !== null) {
+        return null;
+      }
 
-    const existingInGroup = await this.query<{ id: string }[]>`
-      select id from players
-      where group_id = ${groupId} and account_id = ${accountId}
-    `;
-    if (existingInGroup.length > 0) {
-      return null;
-    }
+      const existingInGroup = await txRepo.query<PlayerRow[]>`
+        select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+        from players
+        where group_id = ${groupId} and account_id = ${accountId}
+      `;
 
-    const updatedRows = await this.query<PlayerRow[]>`
-      update players
-      set account_id = ${accountId},
-          name = ${account.name},
-          gender = coalesce(players.gender, ${account.gender ?? null}),
-          initial_rating = ${account.initialRating},
-          rating = coalesce(${account.rating ?? null}, initial_rating),
-          rated_games_played = ${account.ratedGamesPlayed ?? 0}
-      where id = ${playerId} and group_id = ${groupId} and account_id is null
-      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
-    `;
-    if (!updatedRows[0]) return null;
+      if (existingInGroup.length > 0) {
+        const targetPlayerId = existingInGroup[0].id;
 
-    return {
-      ...mapPlayer(updatedRows[0]),
-      username: account.username,
-    };
+        // Merge session_attendance
+        const sAttendances = await txRepo.query<AttendanceRow[]>`
+          select session_id, player_id, joined_round, left_round
+          from session_attendance
+          where player_id = ${playerId}
+        `;
+        for (const sa of sAttendances) {
+          const targetAtt = await txRepo.query<AttendanceRow[]>`
+            select session_id, player_id, joined_round, left_round
+            from session_attendance
+            where session_id = ${sa.session_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetAtt[0]) {
+            const minJoined = Math.min(targetAtt[0].joined_round, sa.joined_round);
+            const mergedLeft =
+              targetAtt[0].left_round === null || sa.left_round === null
+                ? null
+                : Math.max(targetAtt[0].left_round, sa.left_round);
+            await txRepo.query`
+              update session_attendance
+              set joined_round = ${minJoined}, left_round = ${mergedLeft}
+              where session_id = ${sa.session_id} and player_id = ${targetPlayerId}
+            `;
+            await txRepo.query`
+              delete from session_attendance
+              where session_id = ${sa.session_id} and player_id = ${playerId}
+            `;
+          } else {
+            await txRepo.query`
+              update session_attendance
+              set player_id = ${targetPlayerId}
+              where session_id = ${sa.session_id} and player_id = ${playerId}
+            `;
+          }
+        }
+
+        // Merge match_players
+        const sMatches = await txRepo.query<MatchPlayerRow[]>`
+          select match_id, player_id, team, rating_before, rating_after
+          from match_players
+          where player_id = ${playerId}
+        `;
+        for (const sm of sMatches) {
+          const targetMp = await txRepo.query<MatchPlayerRow[]>`
+            select match_id, player_id
+            from match_players
+            where match_id = ${sm.match_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetMp[0]) {
+            await txRepo.query`
+              delete from match_players
+              where match_id = ${sm.match_id} and player_id = ${playerId}
+            `;
+          } else {
+            await txRepo.query`
+              update match_players
+              set player_id = ${targetPlayerId}
+              where match_id = ${sm.match_id} and player_id = ${playerId}
+            `;
+          }
+        }
+
+        // Merge round_sits
+        const sSits = await txRepo.query<SitRow[]>`
+          select round_id, player_id
+          from round_sits
+          where player_id = ${playerId}
+        `;
+        for (const ss of sSits) {
+          const targetSit = await txRepo.query<SitRow[]>`
+            select round_id, player_id
+            from round_sits
+            where round_id = ${ss.round_id} and player_id = ${targetPlayerId}
+          `;
+          if (targetSit[0]) {
+            await txRepo.query`
+              delete from round_sits
+              where round_id = ${ss.round_id} and player_id = ${playerId}
+            `;
+          } else {
+            await txRepo.query`
+              update round_sits
+              set player_id = ${targetPlayerId}
+              where round_id = ${ss.round_id} and player_id = ${playerId}
+            `;
+          }
+        }
+
+        // Delete guest player
+        await txRepo.query`
+          delete from players
+          where id = ${playerId} and group_id = ${groupId} and account_id is null
+        `;
+
+        // Update target player record
+        await txRepo.query`
+          update players
+          set active = true,
+              gender = coalesce(players.gender, ${guestRows[0].gender ?? null}, ${account.gender ?? null}),
+              name = ${account.name}
+          where id = ${targetPlayerId} and group_id = ${groupId}
+        `;
+
+        await replayRatings(groupId, txRepo);
+
+        const finalRows = await txRepo.query<PlayerRow[]>`
+          select id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+          from players
+          where id = ${targetPlayerId} and group_id = ${groupId}
+        `;
+        if (!finalRows[0]) return null;
+
+        return {
+          ...mapPlayer(finalRows[0]),
+          username: account.username,
+        };
+      }
+
+      const updatedRows = await txRepo.query<PlayerRow[]>`
+        update players
+        set account_id = ${accountId},
+            name = ${account.name},
+            gender = coalesce(players.gender, ${account.gender ?? null}),
+            initial_rating = ${account.initialRating},
+            rating = coalesce(${account.rating ?? null}, initial_rating),
+            rated_games_played = ${account.ratedGamesPlayed ?? 0},
+            active = true
+        where id = ${playerId} and group_id = ${groupId} and account_id is null
+        returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
+      `;
+      if (!updatedRows[0]) return null;
+
+      await replayRatings(groupId, txRepo);
+
+      return {
+        ...mapPlayer(updatedRows[0]),
+        username: account.username,
+      };
+    })) ?? null;
   }
+
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
