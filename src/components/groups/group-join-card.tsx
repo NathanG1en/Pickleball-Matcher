@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { joinPublicGroupAction } from "@/app/actions/player-account";
+import { saveRecentGroup } from "@/lib/storage/recent-groups";
 
 export function GroupJoinCard({
   groupId,
@@ -23,6 +24,7 @@ export function GroupJoinCard({
     setError(null);
     const result = await joinPublicGroupAction({ groupId });
     if (result.ok) {
+      saveRecentGroup({ id: groupId, name: groupName });
       router.refresh();
     } else {
       setError(result.error);

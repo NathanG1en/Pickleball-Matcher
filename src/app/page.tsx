@@ -11,6 +11,7 @@ export default async function HomePage() {
   const playerAccountId = await getActivePlayerAccountId();
   let activeGroup: GroupRecord | null = null;
   let playerAccount: PlayerAccountRecord | null = null;
+  let memberGroupIds: string[] | undefined = undefined;
 
   if (session?.groupId || playerAccountId) {
     try {
@@ -18,6 +19,12 @@ export default async function HomePage() {
       if (session?.groupId) activeGroup = await repo.getGroup(session.groupId);
       if (playerAccountId) {
         playerAccount = await repo.getPlayerAccount(playerAccountId);
+        const accountGroups = await repo.listAccountGroups(playerAccountId);
+        const ids = new Set(accountGroups.map((g) => g.id));
+        if (session?.groupId) {
+          ids.add(session.groupId);
+        }
+        memberGroupIds = Array.from(ids);
       }
     } catch {
       // Fallback in non-db environments
@@ -117,7 +124,12 @@ export default async function HomePage() {
             </div>
           )}
 
-          {playerAccount && <RecentGroupsHome excludeGroupId={activeGroup?.id} />}
+          {playerAccount && (
+            <RecentGroupsHome
+              excludeGroupId={activeGroup?.id}
+              memberGroupIds={memberGroupIds}
+            />
+          )}
 
           {playerAccount ? (
             <>

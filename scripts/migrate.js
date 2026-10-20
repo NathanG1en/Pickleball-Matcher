@@ -7,13 +7,13 @@ nextEnv.loadEnvConfig(process.cwd());
 
 const isTest = process.argv.includes("--test");
 const connectionString = isTest
-  ? (process.env.TEST_DATABASE_URL || process.env.DATABASE_URL)
+  ? process.env.TEST_DATABASE_URL
   : process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error(
     isTest
-      ? "TEST_DATABASE_URL (or DATABASE_URL) is required. Add it to .env or export it before running migrations."
+      ? "TEST_DATABASE_URL is required when running migrations with --test. Add it to .env or export it."
       : "DATABASE_URL is required. Add it to .env or export it before running migrations."
   );
 }

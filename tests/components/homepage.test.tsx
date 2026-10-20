@@ -89,9 +89,18 @@ describe("HomePage authentication states", () => {
     expect(html).not.toContain("Log Out");
   });
 
-  it("renders logged-in home page with device groups, logout button, and hides temporary group option", async () => {
+  it("renders logged-in home page with member groups in recent groups, logout button, and hides temporary group option", async () => {
     saveRecentGroup({ id: "grp-1", name: "Sunset Pickleballers" });
     const repo = new InMemoryRepositories({
+      groups: [
+        {
+          id: "grp-1",
+          name: "Sunset Pickleballers",
+          organizerPinHash: "pin-hash",
+          createdAt: new Date(),
+          ownerAccountId: "usr-1",
+        },
+      ],
       playerAccounts: [
         {
           id: "usr-1",
@@ -110,7 +119,7 @@ describe("HomePage authentication states", () => {
     const jsx = await HomePage();
     const html = renderToStaticMarkup(jsx);
 
-    // Groups saved on device SHOULD be visible when logged in
+    // Groups user is part of saved on device SHOULD be visible when logged in
     expect(html).toContain("Sunset Pickleballers");
     expect(html).toContain("Your Recent Group");
 
@@ -123,6 +132,41 @@ describe("HomePage authentication states", () => {
     // Sign In button and Make Temporary Group should be GONE
     expect(html).not.toContain("Sign In to Play");
     expect(html).not.toContain("Make a Temporary Group");
+  });
+
+  it("does not render recent groups the player is not part of even if looked at and saved on device", async () => {
+    saveRecentGroup({ id: "grp-other", name: "Other Pickleballers" });
+    const repo = new InMemoryRepositories({
+      groups: [
+        {
+          id: "grp-other",
+          name: "Other Pickleballers",
+          organizerPinHash: "pin-hash",
+          createdAt: new Date(),
+          ownerAccountId: "someone-else",
+          isPublic: true,
+        },
+      ],
+      playerAccounts: [
+        {
+          id: "usr-1",
+          username: "player1",
+          name: "Player One",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    actionContext.setActionRepository(repo);
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("usr-1");
+
+    const jsx = await HomePage();
+    const html = renderToStaticMarkup(jsx);
+
+    expect(html).not.toContain("Other Pickleballers");
+    expect(html).not.toContain("Your Recent Groups");
   });
 });
 

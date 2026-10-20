@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   getRecentGroupsSnapshot,
@@ -9,7 +9,13 @@ import {
   type RecentGroup,
 } from "@/lib/storage/recent-groups";
 
-export function RecentGroupsHome({ excludeGroupId }: { excludeGroupId?: string } = {}) {
+export function RecentGroupsHome({
+  excludeGroupId,
+  memberGroupIds,
+}: {
+  excludeGroupId?: string;
+  memberGroupIds?: string[];
+} = {}) {
   const json = useSyncExternalStore(
     subscribeRecentGroups,
     getRecentGroupsSnapshot,
@@ -19,19 +25,38 @@ export function RecentGroupsHome({ excludeGroupId }: { excludeGroupId?: string }
   const groups: RecentGroup[] = useMemo(() => {
     try {
       const parsed: RecentGroup[] = JSON.parse(json);
-      if (!excludeGroupId) return parsed;
-      return parsed.filter((g) => g.id !== excludeGroupId);
+      return parsed.filter((g) => {
+        if (excludeGroupId && g.id === excludeGroupId) return false;
+        if (memberGroupIds && !memberGroupIds.includes(g.id)) return false;
+        return true;
+      });
     } catch {
       return [];
     }
-  }, [json, excludeGroupId]);
+  }, [json, excludeGroupId, memberGroupIds]);
+
+  useEffect(() => {
+    if (!memberGroupIds) return;
+    try {
+      const parsed: RecentGroup[] = JSON.parse(json);
+      const stale = parsed.filter((g) => !memberGroupIds.includes(g.id));
+      for (const g of stale) {
+        removeRecentGroup(g.id);
+      }
+    } catch {
+      // ignore
+    }
+  }, [json, memberGroupIds]);
 
   if (!groups || groups.length === 0) {
     return null;
   }
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
+    <div
+      suppressHydrationWarning
+      className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3"
+    >
       <div className="flex items-center gap-2">
         <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
           Your Recent Groups ({groups.length})

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { PublicGroupRecord } from "@/lib/domain/types";
 import { joinPublicGroupAction } from "@/app/actions/player-account";
+import { saveRecentGroup } from "@/lib/storage/recent-groups";
 import { Alert, EmptyState } from "@/components/ui";
 
 export function PublicGroupList({ groups, isSignedIn }: { groups: readonly PublicGroupRecord[]; isSignedIn: boolean }) {
@@ -12,11 +13,12 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
   const [pendingGroup, setPendingGroup] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const join = async (groupId: string) => {
+  const join = async (groupId: string, groupName: string) => {
     setPendingGroup(groupId);
     setError(null);
     const result = await joinPublicGroupAction({ groupId });
     if (result.ok) {
+      saveRecentGroup({ id: groupId, name: groupName });
       router.refresh();
     } else {
       setError(result.error);
@@ -43,7 +45,7 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
           ) : isSignedIn ? (
             <button
               type="button"
-              onClick={() => join(group.id)}
+              onClick={() => join(group.id, group.name)}
               disabled={pendingGroup !== null}
               className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
             >

@@ -535,3 +535,42 @@ test("rejects invalid custom signup ratings without creating an account", async 
   await page.goto("/players");
   await expect(page.getByText(/current rating 3.75/)).toBeVisible();
 });
+
+test("does not include groups in recent groups if player is not part of them even after looking at them", async ({
+  page,
+  browser,
+}) => {
+  const groupName = `Public Recent Test ${Date.now()}`;
+  const { groupId } = await createTestGroup(page, groupName);
+
+  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
+  await toggleBtn.click();
+  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+
+  const playerContext = await browser.newContext();
+  const playerPage = await playerContext.newPage();
+  await createAndSignInPlayer(playerPage);
+
+  // Visitor looks at the public group without joining
+  await playerPage.goto(`/g/${groupId}`);
+  await expect(playerPage.locator("h1")).toContainText(groupName);
+  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).toBeVisible();
+
+  // Go to homepage: group must NOT be in recent groups
+  await playerPage.goto("/");
+  await expect(playerPage.getByRole("heading", { name: /FAIR ROUNDS/ })).toBeVisible();
+  await expect(playerPage.getByText(groupName)).not.toBeVisible();
+  await expect(playerPage.getByText(/Your Recent Groups/)).not.toBeVisible();
+
+  // Now join the group
+  await playerPage.goto(`/g/${groupId}`);
+  await playerPage.getByRole("button", { name: "Join Group Now" }).click();
+  await expect(playerPage.getByRole("button", { name: "Join Group Now" })).not.toBeVisible();
+
+  // Return to homepage: group MUST now appear in recent groups
+  await playerPage.goto("/");
+  await expect(playerPage.getByText(/Your Recent Groups/)).toBeVisible();
+  await expect(playerPage.getByText(groupName)).toBeVisible();
+
+  await playerContext.close();
+});

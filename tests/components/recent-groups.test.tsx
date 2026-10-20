@@ -134,6 +134,23 @@ describe("Recent Groups Storage & Components", () => {
     expect(html).toBe("");
   });
 
+  it("excludes groups in RecentGroupsHome that are not in memberGroupIds", () => {
+    saveRecentGroup({ id: "grp-1", name: "Member Group" });
+    saveRecentGroup({ id: "grp-2", name: "Non-Member Group" });
+
+    const html = renderToStaticMarkup(<RecentGroupsHome memberGroupIds={["grp-1"]} />);
+    expect(html).toContain("Member Group");
+    expect(html).not.toContain("Non-Member Group");
+    expect(html).toContain("Your Recent Groups (1)");
+  });
+
+  it("renders nothing when user is not a member of any saved recent groups", () => {
+    saveRecentGroup({ id: "grp-other", name: "Other Group" });
+
+    const html = renderToStaticMarkup(<RecentGroupsHome memberGroupIds={[]} />);
+    expect(html).toBe("");
+  });
+
   it("renders HomeScreenTip safely", async () => {
     const { HomeScreenTip } = await import("@/components/groups/home-screen-tip");
     const html = renderToStaticMarkup(<HomeScreenTip />);

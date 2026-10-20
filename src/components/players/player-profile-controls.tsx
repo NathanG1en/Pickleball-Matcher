@@ -11,7 +11,7 @@ import {
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
-import { clearRecentGroups } from "@/lib/storage/recent-groups";
+import { clearRecentGroups, removeRecentGroup } from "@/lib/storage/recent-groups";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
 import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
@@ -673,6 +673,7 @@ export function LeaveGroupButton({
     setError(null);
     const result = await leavePublicGroupAction({ groupId });
     if (result.ok) {
+      removeRecentGroup(groupId);
       router.refresh();
     } else {
       setError(result.error);
