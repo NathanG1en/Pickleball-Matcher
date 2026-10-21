@@ -10,6 +10,7 @@ import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { FilterablePlayerSelect } from "@/components/groups/filterable-player-select";
 import { formatDupr } from "@/lib/domain/rating-display";
+import { SessionHighlights } from "@/components/sessions/session-highlights";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
@@ -876,6 +877,10 @@ export function OpenPlayManagerClient({
         </div>
       )}
 
+      {session.status === "completed" && (
+        <SessionHighlights rounds={localStartedRounds} players={players} excludedMatchIds={deletedMatchIds} />
+      )}
+
       {/* Attendance & Join Section */}
       <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1435,4 +1440,3 @@ export function OpenPlayManagerClient({
     </div>
   );
 }
-

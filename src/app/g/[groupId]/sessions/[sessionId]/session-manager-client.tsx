@@ -33,6 +33,7 @@ import type {
 import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
+import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
@@ -783,7 +784,7 @@ export function SessionManagerClient({
                   sessionId={session.id}
                   initialName={session.name || formattedSessionDate}
                   canEdit={canEditSessionName}
-                  headingTag="h2"
+                  headingTag="h1"
                   className="font-display text-2xl font-black uppercase text-black"
                 />
                 <p suppressHydrationWarning className="text-sm font-bold text-neutral-600 mt-1">
@@ -853,12 +854,14 @@ export function SessionManagerClient({
             </div>
           </section>
 
+          <SessionHighlights rounds={localStartedRounds} players={players} />
+
           {/* Session Player Leaderboard / Roster */}
           {sessionPlayerStats.length > 0 && (
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-              <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+              <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
                 Player Summary
-              </h3>
+              </h2>
               <div className="divide-y-2 divide-neutral-100">
                 {sessionPlayerStats.map((stat) => (
                   <div key={stat.id} className="py-2.5 flex items-center justify-between">
@@ -886,9 +889,9 @@ export function SessionManagerClient({
 
           {/* Categorized Rounds & Games */}
           <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
-            <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+            <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
               All Rounds & Matchups
-            </h3>
+            </h2>
             {allSessionRounds.length === 0 ? (
               <p className="text-sm font-bold text-neutral-600">No rounds played in this session.</p>
             ) : (
