@@ -2,46 +2,29 @@ import { test, expect } from "@playwright/test";
 import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
-  test("enforces PIN authentication and rate limits invalid attempts", async ({
+  test("protects private groups and organizer pages from unauthenticated access", async ({
     page,
     browser,
   }) => {
     // 1. Create a test group
     const groupName = `Security Test League ${Date.now()}`;
-    await createTestGroup(page, groupName);
+    const { groupId } = await createTestGroup(page, groupName);
 
-    const groupUrl = page.url();
-    const groupId = groupUrl.split("/g/")[1].split("/")[0];
-
-    // Test login and protected routes in a separate unauthenticated context.
+    // Test protected routes in a separate unauthenticated context.
     const unauthenticatedContext = await browser.newContext();
     const unauthenticatedPage = await unauthenticatedContext.newPage();
-    await unauthenticatedPage.goto(`/g/${groupId}/login`);
-    await expect(unauthenticatedPage.locator("h1")).toContainText("Organizer Sign In");
 
-    // Attempt invalid PIN
-    await unauthenticatedPage.fill("#login-pin", "0000");
-    await unauthenticatedPage.click("button[type='submit']");
-    await expect(
-      unauthenticatedPage.locator("text=Unable to sign in").or(unauthenticatedPage.locator("text=Check your group name and PIN")),
-    ).toBeVisible();
-
-    // Verify user is not logged in / cannot access protected dashboard
+    // Verify unauthenticated user cannot access private group dashboard and is redirected to player login
     await unauthenticatedPage.goto(`/g/${groupId}`);
-    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/g/${groupId}/login`));
+    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/player-login`));
 
-    // Test rate limiting on repeated failed logins.
-    for (let i = 0; i < 6; i++) {
-      await unauthenticatedPage.fill("#login-pin", `111${i}`);
-      await unauthenticatedPage.click("button[type='submit']");
-    }
-    // Should display rate limit or invalid message
-    await expect(
-      unauthenticatedPage
-        .locator("text=Too many attempts")
-        .or(unauthenticatedPage.locator("text=Unable to sign in"))
-        .or(unauthenticatedPage.locator("text=Check your group name and PIN")),
-    ).toBeVisible();
+    // Verify unauthenticated user cannot access session creation and is redirected to player login
+    await unauthenticatedPage.goto(`/g/${groupId}/sessions/new`);
+    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/player-login`));
+
+    // Verify homepage does not render legacy organizer PIN sign in
+    await unauthenticatedPage.goto("/");
+    await expect(unauthenticatedPage.locator("text=Legacy organizer PIN sign in")).not.toBeVisible();
 
     await unauthenticatedContext.close();
   });

@@ -63,7 +63,7 @@ export default async function GroupDashboardPage({
 
   if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
-      redirect(`/g/${groupId}/login`);
+      redirect(`/player-login?next=%2Fg%2F${groupId}`);
     }
     redirect("/players");
   }
