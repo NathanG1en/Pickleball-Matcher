@@ -59,13 +59,6 @@ export const linkGuestPlayerSchema = z.object({
   targetAccountId: entityIdSchema,
 }).strict();
 
-export const organizerLoginSchema = z
-  .object({
-    groupName: z.string().trim().min(1).max(80),
-    pin: organizerPinSchema,
-  })
-  .strict();
-
 export const playerSignupSchema = z.object({
   username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
   name: z.string().trim().min(1).max(80),

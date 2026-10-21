@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ORGANIZER_LOGIN_FAILURE,
-  authenticateOrganizerPin,
   hashPin,
-  verifyPin,
 } from "@/lib/auth/pin";
 import {
   createOrganizerSession,
@@ -18,27 +15,12 @@ import {
 const sessionSecret = "a-test-secret-that-is-at-least-thirty-two-bytes";
 const now = new Date("2026-10-06T12:00:00.000Z");
 
-describe("organizer PINs", () => {
+describe("organizer PIN hashing", () => {
   it("uses a fresh salt for each PIN hash", async () => {
     const first = await hashPin("2468");
     const second = await hashPin("2468");
 
     expect(first).not.toBe(second);
-    await expect(verifyPin("2468", first)).resolves.toBe(true);
-    await expect(verifyPin("1357", first)).resolves.toBe(false);
-  });
-
-  it("returns the same generic failure for unknown and incorrect organizers", async () => {
-    const hash = await hashPin("2468");
-
-    await expect(authenticateOrganizerPin("1357", hash)).resolves.toEqual({
-      ok: false,
-      error: ORGANIZER_LOGIN_FAILURE,
-    });
-    await expect(authenticateOrganizerPin("1357", null)).resolves.toEqual({
-      ok: false,
-      error: ORGANIZER_LOGIN_FAILURE,
-    });
   });
 });
 

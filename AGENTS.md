@@ -13,7 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 1. End-to-End (E2E) Test Maintenance Requirement
 
 Whenever you make changes to:
-- **Authentication & Authorization** (e.g. player signup, login, session cookies, organizer PIN).
+- **Authentication & Authorization** (e.g. player signup, login, session cookies).
 - **Group Creation & Onboarding** (e.g. `/setup`, group forms, visibility, redirect targets).
 - **Group Dashboard & Navigation** (e.g. `/g/[groupId]`, header actions, roster links, back buttons).
 - **Session & Matchmaking Workflows** (e.g. `/sessions/new`, court counts, attendance, round generation, scoring, attendance adjustments, round undo).
@@ -24,7 +24,7 @@ Whenever you make changes to:
 Do not leave broken, stale, or out-of-sync E2E tests. Any changes that affect user flows must have matching updates in:
 - `tests/e2e/acceptance.spec.ts` (Full PRD acceptance: group creation, roster setup, court generation, match scoring, round progression)
 - `tests/e2e/corrections.spec.ts` (Match score edits, cancellations, round undos, mid-session attendance)
-- `tests/e2e/permissions.spec.ts` (Organizer PIN verification, private group access control, rate limiting)
+- `tests/e2e/permissions.spec.ts` (Private group access control, member permissions, role transfers)
 - `tests/e2e/resilience.spec.ts` (Draft score preservation on validation errors, multi-tab sync, accessibility audits)
 - `tests/e2e/test-helpers.ts` (Shared helpers such as `createAndSignInPlayer` and `createTestGroup`)
 

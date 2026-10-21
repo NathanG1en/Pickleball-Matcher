@@ -313,14 +313,14 @@ describe("Player View for Groups and Sessions", () => {
       ).rejects.toThrow("REDIRECT:/players");
     });
 
-    it("redirects unauthenticated visitors of private groups to /g/[groupId]/login", async () => {
+    it("redirects unauthenticated visitors of private groups to /player-login", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
       const repo = createTestRepository({ isPublic: false });
       setActionRepository(repo);
 
       await expect(
         GroupDashboardPage({ params: Promise.resolve({ groupId }) })
-      ).rejects.toThrow(`REDIRECT:/g/${groupId}/login`);
+      ).rejects.toThrow(`REDIRECT:/player-login?next=%2Fg%2F${groupId}`);
     });
   });
 

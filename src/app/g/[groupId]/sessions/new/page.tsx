@@ -22,7 +22,7 @@ export default async function NewSessionPage({
     if (accountId) {
       redirect(`/g/${groupId}`);
     }
-    redirect(`/g/${groupId}/login`);
+    redirect(`/player-login?next=%2Fg%2F${groupId}%2Fsessions%2Fnew`);
   }
 
   const repository = getActionRepository();
