@@ -579,6 +579,14 @@ test.describe("Open Play Workflow", () => {
     });
     await expect(pastSessionItem).toContainText(todayFormatted);
 
+    const expandArrow = page.locator(`[data-testid='expand-session-arrow-${sessionId}']`);
+    const pastSessionOptions = page.locator(`[data-testid='session-options-menu-button-${sessionId}']`);
+    await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
+
     // Check player profile displays renamed session with date
     await page.goto("/players");
     const playerSession = page.locator(`article[data-testid='player-session-${sessionId}']`);

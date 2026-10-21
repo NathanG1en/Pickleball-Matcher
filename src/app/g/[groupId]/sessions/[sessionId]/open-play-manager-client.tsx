@@ -1051,12 +1051,12 @@ export function OpenPlayManagerClient({
           className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
           data-testid="submit-game-card"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-xl font-black uppercase text-black">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black">
                 {isSessionActive ? "Submit Game" : "Add Game"}
               </h2>
-              <p className="text-xs font-bold text-neutral-600">
+              <p className="text-[10px] sm:text-xs font-bold text-neutral-600 line-clamp-1 sm:line-clamp-none">
                 {isSessionActive
                   ? "Record a match played between session players."
                   : "Record an additional match for this ended session."}
@@ -1064,11 +1064,11 @@ export function OpenPlayManagerClient({
             </div>
 
             {/* Match Type Switcher */}
-            <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_#000] shrink-0">
               <button
                 type="button"
                 onClick={() => setMatchType("doubles")}
-                className={`py-1 px-3 text-xs font-black uppercase ${
+                className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase whitespace-nowrap ${
                   matchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                 }`}
               >
@@ -1081,7 +1081,7 @@ export function OpenPlayManagerClient({
                   setT1p2("");
                   setT2p2("");
                 }}
-                className={`py-1 px-3 text-xs font-black uppercase border-l-2 border-black ${
+                className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase border-l-2 border-black whitespace-nowrap ${
                   matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                 }`}
               >
@@ -1238,11 +1238,11 @@ export function OpenPlayManagerClient({
                       <span className="text-xs font-black uppercase text-black">
                         Edit Game {idx + 1}
                       </span>
-                      <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[1px_1px_0px_0px_#000]">
+                      <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[1px_1px_0px_0px_#000] shrink-0">
                         <button
                           type="button"
                           onClick={() => setEditMatchType("doubles")}
-                          className={`py-0.5 px-2 text-[11px] font-black uppercase ${
+                          className={`py-0.5 px-2 text-[10px] sm:text-[11px] font-black uppercase whitespace-nowrap ${
                             editMatchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                           }`}
                         >
@@ -1255,7 +1255,7 @@ export function OpenPlayManagerClient({
                             setEditT1p2("");
                             setEditT2p2("");
                           }}
-                          className={`py-0.5 px-2 text-[11px] font-black uppercase border-l-2 border-black ${
+                          className={`py-0.5 px-2 text-[10px] sm:text-[11px] font-black uppercase border-l-2 border-black whitespace-nowrap ${
                             editMatchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                           }`}
                         >

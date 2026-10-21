@@ -103,16 +103,6 @@ export function PastSessionsList({
               </div>
 
               <div className="flex items-center gap-2">
-                {isOrganizer && (
-                  <SessionOptionsMenu
-                    groupId={groupId}
-                    sessionId={session.id}
-                    sessionName={session.name}
-                    redirectTo={`/g/${groupId}`}
-                    dataTestId={`session-options-menu-button-${session.id}`}
-                  />
-                )}
-
                 {/* Downward Arrow to expand */}
                 <button
                   type="button"
@@ -133,6 +123,16 @@ export function PastSessionsList({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
+
+                {isOrganizer && (
+                  <SessionOptionsMenu
+                    groupId={groupId}
+                    sessionId={session.id}
+                    sessionName={session.name}
+                    redirectTo={`/g/${groupId}`}
+                    dataTestId={`session-options-menu-button-${session.id}`}
+                  />
+                )}
               </div>
             </div>
 

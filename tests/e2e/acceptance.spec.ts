@@ -131,7 +131,12 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // Expand past sessions list and navigate to full session summary
     const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();
+    const pastSessionOptions = page.locator("[data-testid^='session-options-menu-button-']").first();
     await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
     await expandArrow.click();
 
     const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();

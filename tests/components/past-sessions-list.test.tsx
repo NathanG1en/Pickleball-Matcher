@@ -102,7 +102,7 @@ describe("PastSessionsList Component", () => {
     expect(html).not.toContain("Alice &amp; Bob");
   });
 
-  it("renders session options button for hosts/organizers", () => {
+  it("renders session options button for hosts/organizers to the right of the expand button", () => {
     const html = renderToStaticMarkup(
       <PastSessionsList groupId={groupId} sessions={[sampleSession]} isOrganizer={true} />
     );
@@ -111,6 +111,12 @@ describe("PastSessionsList Component", () => {
     expect(html).toContain('aria-label="Session options"');
     expect(html).toContain('data-testid="session-options-menu-button-ses_completed_1"');
     expect(html).not.toContain("Completed");
+
+    const expandIndex = html.indexOf('data-testid="expand-session-arrow-ses_completed_1"');
+    const optionsIndex = html.indexOf('data-testid="session-options-menu-button-ses_completed_1"');
+    expect(expandIndex).toBeGreaterThan(-1);
+    expect(optionsIndex).toBeGreaterThan(-1);
+    expect(optionsIndex).toBeGreaterThan(expandIndex);
   });
 
   it("renders expanded state with rounds, matchups, scores, and link to full session page", () => {

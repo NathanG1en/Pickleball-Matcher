@@ -182,7 +182,12 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // Verify session appears in past sessions
     const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();
+    const pastSessionOptions = page.locator("[data-testid^='session-options-menu-button-']").first();
     await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
     await expandArrow.click();
     const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();
     await expect(viewFullLink).toBeVisible();
