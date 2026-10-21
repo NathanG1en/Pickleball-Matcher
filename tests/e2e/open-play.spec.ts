@@ -26,15 +26,25 @@ test.describe("Open Play Workflow", () => {
     // 3. Verify group dashboard ready to play
     await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
 
-    // 4. Verify Start Open Play button is next to Start New Session
+    // 4. Verify Start New Session button on group dashboard (and no separate Open Play button on dashboard)
     const startNewSessionBtn = page.locator("a[data-testid='start-new-session-button']");
-    const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
-
     await expect(startNewSessionBtn).toBeVisible();
-    await expect(startOpenPlayBtn).toBeVisible();
-    await expect(startOpenPlayBtn).toHaveText("Start Open Play");
+    await expect(page.locator("button[data-testid='start-open-play-button']")).toHaveCount(0);
 
-    // 5. Host clicks Start Open Play
+    // 5. Host clicks Start New Session to go to format selection screen
+    await startNewSessionBtn.click();
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await expect(page.locator("h1")).toContainText("Choose Session Format");
+    await expect(page.locator("text=Normal Session")).toBeVisible();
+    await expect(page.locator("text=Open Play")).toBeVisible();
+
+    // Select Open Play format
+    await page.click("button[data-testid='select-open-play-button']");
+    await expect(page.locator("h1")).toContainText("Open Play Setup");
+
+    // Start Open Play session
+    const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
+    await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
@@ -377,7 +387,10 @@ test.describe("Open Play Workflow", () => {
     await page.locator("button:text-is('Add')").click();
     await expect(page.locator("p[role='status']")).toContainText('Guest player "Bob" added to the roster.', { timeout: 10000 });
 
-    // Host starts Open Play
+    // Host starts Open Play via Start New Session -> Open Play
+    await page.click("a[data-testid='start-new-session-button']");
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await page.click("button[data-testid='select-open-play-button']");
     const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
     await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();
@@ -495,7 +508,10 @@ test.describe("Open Play Workflow", () => {
     const groupName = `Session Rename League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
 
-    // Host starts open play session
+    // Host starts open play session via Start New Session -> Open Play
+    await page.click("a[data-testid='start-new-session-button']");
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await page.click("button[data-testid='select-open-play-button']");
     const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
     await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();

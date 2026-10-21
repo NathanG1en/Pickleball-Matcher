@@ -26,6 +26,7 @@ import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const startOpenPlaySessionSchema = z.object({
   groupId: z.string().min(1),
+  name: z.string().trim().max(100).optional(),
 });
 
 export async function startOpenPlaySessionAction(
@@ -58,6 +59,7 @@ export async function startOpenPlaySessionAction(
     const session: SessionRecord = {
       id: sessionId,
       groupId: parsed.data.groupId,
+      name: parsed.data.name?.trim() ? parsed.data.name.trim() : null,
       courtCount: 1,
       courtPlayerCounts: [4],
       status: "active",

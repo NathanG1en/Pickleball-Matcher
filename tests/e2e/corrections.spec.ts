@@ -29,6 +29,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 3. Start a session with 2 courts and 8 players
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await expect(page.locator("text=8 players selected")).toBeVisible();
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
@@ -134,6 +135,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 2. Start a session
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
 

@@ -49,6 +49,9 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
 
+    // Select Normal Session format
+    await page.click("button[data-testid='select-normal-session-button']");
+
     // Increase courts to 3
     const courtDisplay = page.locator("span[aria-label='Court count']");
     while ((await courtDisplay.textContent()) !== "3") {

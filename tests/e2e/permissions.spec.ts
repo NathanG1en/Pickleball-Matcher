@@ -354,6 +354,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await page.click("button:has-text('Start Session')");
     await page.waitForURL(/\/sessions\/session_/);
     const sessionUrl = page.url();

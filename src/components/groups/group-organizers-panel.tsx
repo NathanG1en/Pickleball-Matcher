@@ -71,7 +71,6 @@ export function GroupOrganizersPanel({
   const [isSearching, setIsSearching] = useState(false);
   const [searchHasRun, setSearchHasRun] = useState(false);
   const [addingAccountId, setAddingAccountId] = useState<string | null>(null);
-  const [lookupPending, setLookupPending] = useState(false);
 
   // Guest mode state
   const [guestName, setGuestName] = useState("");
