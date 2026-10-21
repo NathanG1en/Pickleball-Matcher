@@ -639,7 +639,7 @@ function CurrentRoundEditor({
                             : "hover:border-black hover:text-black"
                         }`}
                       >
-                        + Add Partner
+                        Add Partner
                       </button>
                     )}
 
@@ -782,7 +782,7 @@ function CurrentRoundEditor({
                             : "hover:border-black hover:text-black"
                         }`}
                       >
-                        + Add Partner
+                        Add Partner
                       </button>
                     )}
 

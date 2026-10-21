@@ -140,11 +140,11 @@ The check constraint `account_id_1 < account_id_2` ensures:
 The Roster management card in [`src/components/groups/group-organizers-panel.tsx`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/groups/group-organizers-panel.tsx) features automatic live search:
 - As soon as an organizer types **2 or more characters**, a debounced live search queries registered accounts.
 - Matching public accounts display their `@username`, name, rating, and public chemistry preview.
-- Organizers can click **"+ Add"** to immediately add the player to the roster without needing to know or type their exact full username.
+- Organizers can click **"Add"** to immediately add the player to the roster without needing to know or type their exact full username.
 
 ### Temporary & Guest Players
 Pickleball Matcher fully supports guest players who do not have registered accounts (`accountId: null`):
-- **Inline Guest Creation**: Organizers can switch to the **"👤 + Add Guest"** tab directly in the Roster card.
+- **Inline Guest Creation**: Organizers can switch to the **"👤 Add Guest"** tab directly in the Roster card.
 - **Skill Rating**: Organizers specify a name (e.g., *"Jordan Smith"*) and an initial skill level (Beginner ~900, Intermediate ~1000, Advanced ~1100).
 - **Matchmaking & Ratings**: Guest players are included in matchmaking, court rotations, round generation, and earn dynamic ratings throughout active sessions without requiring user credentials.
 
