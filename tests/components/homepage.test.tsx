@@ -84,6 +84,7 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Sign In to Play");
     expect(html).toContain("Create an Account");
     expect(html).toContain("Make a Temporary Group");
+    expect(html).not.toContain("Legacy organizer PIN sign in");
 
     // Log out button should NOT be visible
     expect(html).not.toContain("Log Out");
@@ -129,9 +130,10 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("View Profile");
     expect(html).toContain("Log Out");
 
-    // Sign In button and Make Temporary Group should be GONE
+    // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
     expect(html).not.toContain("Sign In to Play");
     expect(html).not.toContain("Make a Temporary Group");
+    expect(html).not.toContain("Legacy organizer PIN sign in");
   });
 
   it("does not render recent groups the player is not part of even if looked at and saved on device", async () => {

@@ -12,6 +12,7 @@ import {
   undoLatestRoundAction,
 } from "@/app/actions/sessions";
 import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
+import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
@@ -112,6 +113,7 @@ export function SessionManagerClient({
     );
   }
 
+  const [pickledMatchId, setPickledMatchId] = useState<string | null>(null);
   const [isActionPending, setIsPending] = useState(false);
   const [isGeneratingRound, startGeneratingRound] = useTransition();
   const isPending = isActionPending || isGeneratingRound;
@@ -252,6 +254,7 @@ export function SessionManagerClient({
           delete next[matchId];
           return next;
         });
+        setPickledMatchId(isPickleScore(team1Score, team2Score) ? matchId : null);
       } else {
         setFieldErrors((prev) => ({
           ...prev,
@@ -740,7 +743,7 @@ export function SessionManagerClient({
                 className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
               />
               <p className="text-xs font-bold text-neutral-600">
-                {groupName ?? "Group"} · Started {new Date(session.startedAt).toLocaleDateString()}
+                {groupName ?? "Group"} · Started <span suppressHydrationWarning>{new Date(session.startedAt).toLocaleDateString()}</span>
               </p>
             </div>
             {canManage && (
@@ -783,7 +786,7 @@ export function SessionManagerClient({
                   headingTag="h2"
                   className="font-display text-2xl font-black uppercase text-black"
                 />
-                <p className="text-sm font-bold text-neutral-600 mt-1">
+                <p suppressHydrationWarning className="text-sm font-bold text-neutral-600 mt-1">
                   {new Date(session.startedAt).toLocaleDateString(undefined, {
                     weekday: "long",
                     year: "numeric",
@@ -826,7 +829,7 @@ export function SessionManagerClient({
 
             {/* Time / Duration info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
-              <span>
+              <span suppressHydrationWarning>
                 <strong className="text-black">Started:</strong>{" "}
                 {new Date(session.startedAt).toLocaleTimeString(undefined, {
                   hour: "numeric",
@@ -834,7 +837,7 @@ export function SessionManagerClient({
                 })}
               </span>
               {session.endedAt && (
-                <span>
+                <span suppressHydrationWarning>
                   <strong className="text-black">Ended:</strong>{" "}
                   {new Date(session.endedAt).toLocaleTimeString(undefined, {
                     hour: "numeric",
@@ -1051,6 +1054,7 @@ export function SessionManagerClient({
           {isRoundInProgress ? (
             <div className="space-y-4">
               <ResultsEntryView
+                pickledMatchId={pickledMatchId}
                 roundId={latestStarted.round.id}
                 roundNumber={latestStarted.round.roundNumber}
                 matches={scoreEntries}

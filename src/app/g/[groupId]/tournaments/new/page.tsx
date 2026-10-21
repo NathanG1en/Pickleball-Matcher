@@ -22,7 +22,7 @@ export default async function NewTournamentPage({
     if (accountId) {
       redirect(`/g/${groupId}`);
     }
-    redirect(`/g/${groupId}/login`);
+    redirect(`/player-login?next=%2Fg%2F${groupId}%2Ftournaments%2Fnew`);
   }
 
   const repository = getActionRepository();

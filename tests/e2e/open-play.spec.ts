@@ -620,3 +620,56 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await checkAnimationReplay(page, art, "Replay session sign-off", "sessionRolls", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
   });
 }
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`pickle celebration follows successful Open Play submissions (${reducedMotion})`, async ({ page }, testInfo) => {
+    test.setTimeout(90000);
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => document.addEventListener("animationstart", event => {
+      if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
+    }));
+    await createTestGroup(page, `Open Play pickle ${Date.now()}`);
+    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await page.locator("#guest-name-input").fill("Pickle Guest");
+    await page.locator("form").filter({ has: page.locator("#guest-name-input") }).getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByTestId("open-play-attendees")).toContainText("Pickle Guest");
+    const form = page.getByTestId("submit-game-card");
+    await form.getByRole("button", { name: "Singles (1v1)", exact: true }).click();
+    await form.getByTestId("select-team-2-player-1").click();
+    await page.getByRole("option").filter({ hasText: "Pickle Guest" }).click();
+    const score1 = form.getByRole("spinbutton", { name: "Team 1 Score", exact: true });
+    const score2 = form.getByRole("spinbutton", { name: "Team 2 Score", exact: true });
+    const reaction = page.getByTestId("pickle-celebration");
+    await score1.fill("21");
+    await score2.fill("0");
+    await form.getByTestId("submit-game-button").click();
+    await expect(page.getByTestId("open-play-matches-list")).toContainText("21 – 0");
+    await expect(reaction).toHaveCount(0);
+    await score1.fill("11");
+    await score2.fill("0");
+    await expect(reaction).toHaveCount(0);
+    if (reducedMotion === "no-preference") {
+      await page.route(page.url(), route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
+      await form.getByTestId("submit-game-button").click();
+      await expect(page.getByRole("alert").filter({ hasText: "An unexpected error occurred while submitting game." })).toBeVisible();
+      await expect(reaction).toHaveCount(0);
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    await form.getByTestId("submit-game-button").click();
+    await expect(reaction).toBeVisible();
+    const art = reaction.getByTestId("pickle-mascot");
+    if (reducedMotion === "no-preference") await expect.poll(() => page.evaluate(() => document.documentElement.dataset.pickleWiggles)).toBe("1");
+    await expect(art).toHaveAttribute("data-motion", "still");
+    await checkAnimationReplay(page, art, "Replay pickle celebration", "pickleWiggles", { reducedMotion: reducedMotion === "reduce", touch: Boolean(testInfo.project.use.hasTouch) });
+    await reaction.screenshot({ path: testInfo.outputPath("open-play-pickle.png") });
+    await score1.fill("0");
+    await score2.fill("11");
+    await form.getByTestId("submit-game-button").click();
+    await expect(page.getByTestId("open-play-matches-list").locator("article")).toHaveCount(3);
+    await expect(reaction).toBeVisible();
+    await expect(art).toHaveAttribute("data-motion", "still");
+    await page.reload();
+    await expect(page.getByTestId("open-play-matches-list")).toContainText("0 – 11");
+    await expect(reaction).toHaveCount(0);
+  });
+}

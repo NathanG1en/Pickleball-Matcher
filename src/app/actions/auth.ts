@@ -4,13 +4,13 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 
 import { getActionRepository, requirePlayer } from "@/app/actions/action-context";
-import { authenticateOrganizerPin, hashPin } from "@/lib/auth/pin";
+import { hashPin } from "@/lib/auth/pin";
 import {
   createOrganizerSession,
   getOrganizerSessionSecret,
   ORGANIZER_SESSION_COOKIE,
 } from "@/lib/auth/session";
-import { createAccountGroupSchema, createGroupSchema, organizerLoginSchema } from "@/lib/validation/group";
+import { createAccountGroupSchema, createGroupSchema } from "@/lib/validation/group";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -105,52 +105,6 @@ export async function createGroupAction(input: unknown): Promise<ActionResult<{ 
       ok: false,
       error: error instanceof Error ? error.message : "Failed to create group",
     };
-  }
-}
-
-export async function organizerLoginAction(input: unknown): Promise<ActionResult<{ groupId: string }>> {
-  const parsed = organizerLoginSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: "Please enter a valid group name and PIN",
-      fieldErrors: parsed.error.flatten().fieldErrors,
-    };
-  }
-
-  try {
-    const repository = getActionRepository();
-    const groups = await repository.getGroupsByName(parsed.data.groupName);
-    const matches = await Promise.all(
-      groups.map(async (group) => ({
-        group,
-        auth: await authenticateOrganizerPin(parsed.data.pin, group.organizerPinHash),
-      })),
-    );
-    const matchingGroups = matches.filter(({ auth }) => auth.ok);
-
-    if (matchingGroups.length !== 1) {
-      if (groups.length === 0) await authenticateOrganizerPin(parsed.data.pin, null);
-      return { ok: false, error: "Unable to sign in. Check your group name and PIN." };
-    }
-
-    const groupId = matchingGroups[0].group.id;
-
-    const session = await createOrganizerSession({
-      groupId,
-      secret: getOrganizerSessionSecret(),
-    });
-
-    try {
-      const cookieStore = await cookies();
-      cookieStore.set(session.cookie.name, session.cookie.value, session.cookie.options);
-    } catch {
-      // Non-request test contexts
-    }
-
-    return { ok: true, data: { groupId } };
-  } catch {
-    return { ok: false, error: "Unable to sign in. Check your group name and PIN." };
   }
 }
 

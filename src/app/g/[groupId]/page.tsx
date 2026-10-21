@@ -63,7 +63,7 @@ export default async function GroupDashboardPage({
 
   if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
-      redirect(`/g/${groupId}/login`);
+      redirect(`/player-login?next=%2Fg%2F${groupId}`);
     }
     redirect("/players");
   }
@@ -215,11 +215,11 @@ export default async function GroupDashboardPage({
                   {activeSession.name || (activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress")}
                 </h2>
                 <p className="text-sm font-bold text-neutral-900">
-                  Started {new Date(activeSession.startedAt).toLocaleDateString(undefined, {
+                  Started <span suppressHydrationWarning>{new Date(activeSession.startedAt).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
-                  })}
+                  })}</span>
                   {" · "}
                   {activeSession.type === "open_play"
                     ? "Check in and submit games."

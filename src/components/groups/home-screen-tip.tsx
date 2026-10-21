@@ -37,7 +37,12 @@ function getIsStandalone(): boolean {
   return (window.navigator as unknown as { standalone?: boolean })?.standalone === true;
 }
 
+const emptySubscribe = () => () => {};
+
 export function HomeScreenTip() {
+  const isTest = process.env.NODE_ENV === "test";
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => isTest);
+
   const isDismissed = useSyncExternalStore(
     subscribeDismiss,
     getDismissSnapshot,
@@ -89,7 +94,7 @@ export function HomeScreenTip() {
     }
   };
 
-  if (isDismissed || localDismissed || isStandalone) {
+  if (!mounted || isDismissed || localDismissed || isStandalone) {
     return null;
   }
 

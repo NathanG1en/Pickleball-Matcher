@@ -50,7 +50,7 @@ export function GroupTournamentsList({
                 {tourney.name}
               </h3>
               <p className="text-xs font-bold text-neutral-500">
-                Created {new Date(tourney.createdAt).toLocaleDateString()}
+                Created <span suppressHydrationWarning>{new Date(tourney.createdAt).toLocaleDateString()}</span>
               </p>
             </div>
             <Badge variant={tourney.status === "completed" ? "success" : "default"}>

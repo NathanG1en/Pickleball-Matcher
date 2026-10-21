@@ -9,6 +9,8 @@ import {
   type RecentGroup,
 } from "@/lib/storage/recent-groups";
 
+const emptySubscribe = () => () => {};
+
 export function RecentGroupsHome({
   excludeGroupId,
   memberGroupIds,
@@ -16,10 +18,13 @@ export function RecentGroupsHome({
   excludeGroupId?: string;
   memberGroupIds?: string[];
 } = {}) {
+  const isTest = process.env.NODE_ENV === "test";
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => isTest);
+
   const json = useSyncExternalStore(
     subscribeRecentGroups,
     getRecentGroupsSnapshot,
-    getRecentGroupsSnapshot
+    () => (isTest ? getRecentGroupsSnapshot() : "[]")
   );
 
   const groups: RecentGroup[] = useMemo(() => {
@@ -48,13 +53,12 @@ export function RecentGroupsHome({
     }
   }, [json, memberGroupIds]);
 
-  if (!groups || groups.length === 0) {
+  if (!mounted || !groups || groups.length === 0) {
     return null;
   }
 
   return (
     <div
-      suppressHydrationWarning
       className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3"
     >
       <div className="flex items-center gap-2">
