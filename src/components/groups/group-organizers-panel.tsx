@@ -534,7 +534,7 @@ export function GroupOrganizersPanel({
                 <div className="flex shrink-0 items-center gap-2">
                   {(isHost || isOrganizer) ? (
                     <details className="relative" data-player-menu>
-                      <summary aria-label={`Options for ${player.name}`} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 [&::-webkit-details-marker]:hidden">···</summary>
+                      <summary aria-label={`Options for ${player.name}`} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100">···</summary>
                       <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#000]">
                         {playerUsername && (
                           <>

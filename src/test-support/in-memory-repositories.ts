@@ -956,6 +956,16 @@ export class InMemoryRepositories implements DomainRepository {
       .slice(0, limit);
   }
 
+  async listPlayerAccounts(search: string = "", limit: number = 50): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = search.trim().toLowerCase().replace(/^@/, "");
+    return structuredClone(
+      this.state.playerAccounts
+        .filter((a) => !trimmed || a.username.toLowerCase().includes(trimmed) || a.name.toLowerCase().includes(trimmed))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, limit)
+    );
+  }
+
   async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
     const found = this.state.tournaments.find((t) => t.id === tournamentId);
     return found ? structuredClone(found) : null;

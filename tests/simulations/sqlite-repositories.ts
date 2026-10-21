@@ -1481,6 +1481,19 @@ export class SqliteDomainRepository implements DomainRepository {
     return rows.map((row) => this.mapPlayerAccount(row));
   }
 
+  async listPlayerAccounts(search: string = "", limit: number = 50): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = search.trim().toLowerCase().replace(/^@/, "");
+    const searchTerm = `%${trimmed}%`;
+    const rows = this.db.prepare(`
+      SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      FROM player_accounts
+      WHERE (? = '' OR username LIKE ? OR name LIKE ?)
+      ORDER BY (? != '' AND lower(username) = ?) DESC, name ASC, username ASC
+      LIMIT ?
+    `).all(trimmed, searchTerm, searchTerm, trimmed, trimmed, limit) as unknown as PlayerAccountRow[];
+    return rows.map((row) => this.mapPlayerAccount(row));
+  }
+
   async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
     void tournamentId;
     return null;

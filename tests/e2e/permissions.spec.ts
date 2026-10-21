@@ -731,3 +731,82 @@ test("non-host member can leave a group from profile page with confirmation moda
 
   await playerContext.close();
 });
+
+test("find players workflow from homepage shows public and private players with limited private profiles", async ({
+  page,
+  browser,
+}) => {
+  // 1. Create and sign in User A (public)
+  const userA = await createAndSignInPlayer(page);
+
+  // 2. In a separate context, create User B and switch to private
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+  const userB = await createAndSignInPlayer(pageB);
+
+  // Switch User B to private
+  await pageB.goto("/players");
+  const privacyToggle = pageB.locator("button[title='Click to switch to Private']");
+  await expect(privacyToggle).toBeVisible();
+  await privacyToggle.click();
+  await expect(pageB.getByText("Profile is now Private")).toBeVisible();
+  await contextB.close();
+
+  // 3. User A goes to home page
+  await page.goto("/");
+  const findGroupsBtn = page.getByRole("link", { name: "Find Groups" });
+  const findPlayersBtn = page.getByRole("link", { name: "Find Players" });
+
+  await expect(findGroupsBtn).toBeVisible();
+  await expect(findPlayersBtn).toBeVisible();
+
+  // 4. Click Find Players
+  await findPlayersBtn.click();
+  await expect(page).toHaveURL("/players/find");
+  await expect(page.getByRole("heading", { name: "Find Players" })).toBeVisible();
+
+  // 5. Search for User B (private)
+  await page.fill("#player-search", userB.username);
+  await page.click("button:has-text('Search')");
+
+  const userBCard = page.locator(`[data-testid='player-card-${userB.username}']`);
+  await expect(userBCard).toBeVisible();
+  await expect(userBCard).toContainText(userB.name);
+  await expect(userBCard).toContainText(`@${userB.username}`);
+  await expect(userBCard).toContainText("Private");
+  await expect(userBCard).toContainText("Rating:");
+
+  // 6. View User B's private profile
+  await userBCard.getByRole("link", { name: "View Profile" }).click();
+  await expect(page).toHaveURL(`/players/${userB.username}`);
+  await expect(page.getByText("This Profile is Private")).toBeVisible();
+  await expect(page.getByText("Rating over time")).not.toBeVisible();
+  await expect(page.getByText("Past Sessions")).not.toBeVisible();
+
+  // 7. Go back to Find Players and search for User A (public)
+  await page.goto("/players/find");
+  await page.fill("#player-search", userA.username);
+  await page.click("button:has-text('Search')");
+
+  const userACard = page.locator(`[data-testid='player-card-${userA.username}']`);
+  await expect(userACard).toBeVisible();
+  await expect(userACard).toContainText(userA.name);
+  await expect(userACard).toContainText(`@${userA.username}`);
+  await expect(userACard).toContainText("Public");
+  await expect(userACard).toContainText("Rating:");
+
+  // 8. Test Back button from Find Players returns to Home
+  const backFromPlayersBtn = page.getByRole("link", { name: "Go back" });
+  await expect(backFromPlayersBtn).toBeVisible();
+  await backFromPlayersBtn.click();
+  await expect(page).toHaveURL("/");
+
+  // 9. Test Back button from Find Groups returns to Home
+  await findGroupsBtn.click();
+  await expect(page).toHaveURL("/players/groups");
+  const backFromGroupsBtn = page.getByRole("link", { name: "Go back" });
+  await expect(backFromGroupsBtn).toBeVisible();
+  await backFromGroupsBtn.click();
+  await expect(page).toHaveURL("/");
+});
+

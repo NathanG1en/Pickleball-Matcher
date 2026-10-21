@@ -262,3 +262,7 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+summary::-webkit-details-marker {
+  display: none;
+}
