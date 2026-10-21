@@ -71,6 +71,7 @@ export function GroupOrganizersPanel({
   const [isSearching, setIsSearching] = useState(false);
   const [searchHasRun, setSearchHasRun] = useState(false);
   const [addingAccountId, setAddingAccountId] = useState<string | null>(null);
+  const [lookupPending, setLookupPending] = useState(false);
 
   // Guest mode state
   const [guestName, setGuestName] = useState("");
@@ -355,6 +356,13 @@ export function GroupOrganizersPanel({
                     </span>
                   )}
                 </div>
+                <button
+                  type="submit"
+                  disabled={lookupPending}
+                  className="rounded-lg border-2 border-black bg-black px-3 py-2 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
+                >
+                  {lookupPending ? "Adding…" : "Add"}
+                </button>
               </form>
 
               {/* Live Search Results Dropdown */}

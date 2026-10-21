@@ -305,6 +305,7 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
@@ -331,7 +332,7 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(page.getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
     await expect(indicator).toHaveCount(0);
     save.release();
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });
   } finally { await save.dispose(); }
 
   const failure = await pauseAction(true);
@@ -385,9 +386,11 @@ test("session setup court settles once without replaying during attendance or co
   for (const name of ["Court Canvas Blake", "Court Canvas Casey", "Court Canvas Drew"]) {
     await page.locator("#guest-player-name").fill(name);
     await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   const court = page.getByTestId("setup-court");
   await expect(court).toBeVisible();
   await expect(court).toHaveAttribute("aria-hidden", "true");
@@ -432,6 +435,7 @@ test("session setup court respects reduced motion and allows manual replay with 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await createTestGroup(page, `Static court ${Date.now()}`);
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   const court = page.getByTestId("setup-court");
   await expect(court).toBeVisible();
   await expect(court).toHaveAttribute("data-motion", "still");

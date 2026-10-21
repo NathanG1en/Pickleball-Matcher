@@ -115,7 +115,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Add publicUser to the roster
     await page.fill("#roster-player-username", publicUser.username);
-    await page.click("button:has-text('Add')");
+    await page.click("button:text-is('Add')");
     const publicUserItem = page.locator("li").filter({ hasText: publicUser.name });
     await expect(publicUserItem).toBeVisible();
 
@@ -176,7 +176,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Find and add coHost to the group roster
     await page.fill("#roster-player-username", coHost.username);
-    await page.click("button:has-text('Add')");
+    await page.click("button:text-is('Add')");
     const coHostItem = page.locator("li").filter({ hasText: coHost.name });
     await expect(coHostItem).toBeVisible();
 
@@ -371,7 +371,7 @@ test.describe("Permissions and Security Workflow", () => {
     // Host adds member to group
     await page.goto(`/g/${groupId}`);
     await page.fill("#roster-player-username", memberUser.username);
-    await page.click("button:has-text('Add')");
+    await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: memberUser.name })).toBeVisible();
 
     // Member navigates directly to the session
@@ -441,11 +441,11 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Add publicUser and privateUser to the roster
     await page.fill("#roster-player-username", publicUser.username);
-    await page.click("button:has-text('Add')");
+    await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
 
     await page.fill("#roster-player-username", privateUser.username);
-    await page.click("button:has-text('Add')");
+    await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible();
 
     // 4. In the roster, both should have an underlined link for their username in (@username)

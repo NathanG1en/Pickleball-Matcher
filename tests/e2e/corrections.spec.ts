@@ -208,6 +208,7 @@ test("host synergy follows current partners after manual swaps and new proposals
     await otherContext.close();
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -287,6 +288,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -342,6 +344,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByTestId("select-normal-session-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
     const sessionUrl = page.url();
@@ -403,6 +406,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByTestId("select-normal-session-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
     await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();

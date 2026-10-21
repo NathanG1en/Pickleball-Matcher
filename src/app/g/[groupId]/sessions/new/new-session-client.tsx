@@ -33,6 +33,20 @@ export function NewSessionClient({
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
+  const handleSelectFormat = (format: SessionFormat | null) => {
+    setSelectedFormat(format);
+    setError(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (format) {
+        url.searchParams.set("type", format);
+      } else {
+        url.searchParams.delete("type");
+      }
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
   const handleAddGuest = async (name: string, rating: number = 3.5) => {
     try {
       const res = await createPlayerAction({
@@ -172,7 +186,7 @@ export function NewSessionClient({
             <button
               type="button"
               data-testid="select-normal-session-button"
-              onClick={() => setSelectedFormat("normal")}
+              onClick={() => handleSelectFormat("normal")}
               className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Normal Session →
@@ -216,7 +230,7 @@ export function NewSessionClient({
             <button
               type="button"
               data-testid="select-open-play-button"
-              onClick={() => setSelectedFormat("open_play")}
+              onClick={() => handleSelectFormat("open_play")}
               className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Open Play →
@@ -233,10 +247,7 @@ export function NewSessionClient({
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => {
-              setSelectedFormat(null);
-              setError(null);
-            }}
+            onClick={() => handleSelectFormat(null)}
             className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
           >
             ← Change Format
@@ -279,10 +290,7 @@ export function NewSessionClient({
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => {
-            setSelectedFormat(null);
-            setError(null);
-          }}
+          onClick={() => handleSelectFormat(null)}
           className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         >
           ← Change Format

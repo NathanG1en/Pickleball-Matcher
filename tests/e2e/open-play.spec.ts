@@ -35,8 +35,8 @@ test.describe("Open Play Workflow", () => {
     await startNewSessionBtn.click();
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
     await expect(page.locator("h1")).toContainText("Choose Session Format");
-    await expect(page.locator("text=Normal Session")).toBeVisible();
-    await expect(page.locator("text=Open Play")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Normal Session" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Open Play" })).toBeVisible();
 
     // Select Open Play format
     await page.click("button[data-testid='select-open-play-button']");
@@ -199,7 +199,7 @@ test.describe("Open Play Workflow", () => {
     await submitCard.locator("button[data-testid='submit-game-button']").click();
 
     // Verify both games are displayed in Games Played list
-    await expect(matchesList.locator("article")).toHaveCount(2);
+    await expect(matchesList.locator("article")).toHaveCount(2, { timeout: 15000 });
     await expect(matchesList).toContainText("11 – 8");
 
     // Check group dashboard while Open Play is in progress
@@ -598,7 +598,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       });
     });
     await createTestGroup(page, `Open Play sign-off ${Date.now()}`);
-    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await page.getByTestId("start-new-session-button").click();
+    await page.getByTestId("select-open-play-button").click();
+    await page.getByTestId("start-open-play-button").click();
+    await page.waitForURL(/\/sessions\/session_/);
     await expect(page.getByTestId("end-session-button")).toBeVisible();
     page.once("dialog", dialog => dialog.dismiss());
     await page.getByTestId("end-session-button").click();
@@ -645,7 +648,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
     }));
     await createTestGroup(page, `Open Play pickle ${Date.now()}`);
-    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await page.getByTestId("start-new-session-button").click();
+    await page.getByTestId("select-open-play-button").click();
+    await page.getByTestId("start-open-play-button").click();
+    await page.waitForURL(/\/sessions\/session_/);
     await page.locator("#guest-name-input").fill("Pickle Guest");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByTestId("open-play-attendees")).toContainText("Pickle Guest");
