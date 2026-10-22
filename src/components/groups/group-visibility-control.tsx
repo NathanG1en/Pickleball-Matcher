@@ -31,7 +31,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
           role="group"
           aria-label="Group visibility"
           data-testid="group-visibility-toggle"
-          className="inline-flex items-center rounded-lg border-2 border-black bg-neutral-200 p-0.5 shadow-[1.5px_1.5px_0px_0px_#000]"
+          className="inline-flex items-center rounded-md border-2 border-black bg-neutral-200 p-0.5 shadow-[1px_1px_0px_0px_#000]"
         >
           <button
             type="button"
@@ -39,9 +39,9 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
             disabled={pending}
             aria-pressed={isPublic}
             data-testid="group-visibility-public-button"
-            className={`rounded-md px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
               isPublic
-                ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
+                ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
             } disabled:opacity-60`}
           >
@@ -53,9 +53,9 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
             disabled={pending}
             aria-pressed={!isPublic}
             data-testid="group-visibility-private-button"
-            className={`rounded-md px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
               !isPublic
-                ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
+                ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
             } disabled:opacity-60`}
           >

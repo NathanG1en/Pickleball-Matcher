@@ -6,13 +6,13 @@ import Link from "next/link";
 import { playerSignupAction } from "@/app/actions/player-account";
 import {
   duprToElo,
-  getSkillTier,
 } from "@/lib/domain/rating-display";
 import {
   Alert,
   Button,
   FormField,
   Input,
+  RatingSlider,
   Select,
   VisibilityToggle,
 } from "@/components/ui";
@@ -27,17 +27,12 @@ export function PlayerSignupForm() {
   const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState("3.5");
+  const [signupRating, setSignupRating] = useState(3.5);
   const [customRating, setCustomRating] = useState(false);
   const [customDuprInput, setCustomDuprInput] = useState("3.5");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [pending, setPending] = useState(false);
-
-  const activeDupr = customRating
-    ? parseFloat(customDuprInput) || 3.5
-    : parseFloat(selectedPreset);
-  const activeTier = getSkillTier(activeDupr);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -45,7 +40,7 @@ export function PlayerSignupForm() {
     setError(null);
     setFieldErrors({});
 
-    const duprValue = Number(customRating ? customDuprInput : selectedPreset);
+    const duprValue = customRating ? Number(customDuprInput) : signupRating;
     if (customRating && (!customDuprInput.trim() || !Number.isFinite(duprValue) || duprValue < 2 || duprValue > 8)) {
       setFieldErrors({ initialRating: ["Enter a rating between 2.0 and 8.0."] });
       setPending(false);
@@ -166,33 +161,25 @@ export function PlayerSignupForm() {
         </div>
       </FormField>
 
-      <FormField
-        id="player-skill"
-        label="Starting skill level"
-        error={fieldErrors.skillLevel?.[0]}
-      >
-        <Select
+      <div className="space-y-2">
+        <RatingSlider
           id="player-skill"
-          value={selectedPreset}
-          disabled={customRating}
-          onChange={(event) => {
-            setSelectedPreset(event.target.value);
-            if (!customRating) setCustomDuprInput(event.target.value);
+          label="Starting skill level"
+          value={signupRating}
+          onChange={(val) => {
+            setSignupRating(val);
+            if (!customRating) setCustomDuprInput(String(val));
           }}
-          hasError={Boolean(fieldErrors.skillLevel?.length)}
-          aria-describedby={fieldErrors.skillLevel?.length ? "player-skill-error" : undefined}
-        >
-          <option value="2.0">Beginner Level (2.0 – 2.499)</option>
-          <option value="2.5">Advanced Beginner Level (2.5 – 2.999)</option>
-          <option value="3.0">Intermediate Level (3.0 – 3.499)</option>
-          <option value="3.5">Advanced Intermediate Level (3.5 – 3.999)</option>
-          <option value="4.0">Competitive Level (4.0 – 4.499)</option>
-          <option value="4.5">Advanced Competitive Level (4.5 – 4.999)</option>
-        </Select>
-        <p aria-live="polite" className="mt-1.5 text-xs font-semibold leading-relaxed text-neutral-600">
-          {activeTier.description}
-        </p>
-      </FormField>
+          disabled={customRating}
+          dataTestId="player-skill-slider"
+          showDescription={!customRating}
+        />
+        {fieldErrors.skillLevel?.[0] && (
+          <p id="player-skill-error" className="text-xs font-bold text-red-600">
+            {fieldErrors.skillLevel[0]}
+          </p>
+        )}
+      </div>
 
       <label className="flex items-center gap-2 text-sm font-bold text-black">
         <input
@@ -200,7 +187,7 @@ export function PlayerSignupForm() {
           checked={customRating}
           onChange={(event) => {
             setCustomRating(event.target.checked);
-            if (!event.target.checked) setCustomDuprInput(selectedPreset);
+            if (!event.target.checked) setCustomDuprInput(String(signupRating));
           }}
           className="h-4 w-4 accent-black"
         />

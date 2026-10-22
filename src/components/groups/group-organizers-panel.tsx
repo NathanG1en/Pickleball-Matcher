@@ -22,7 +22,7 @@ import { LinkGuestModal } from "./link-guest-modal";
 import { EditGuestModal } from "./edit-guest-modal";
 import { MergeGuestModal } from "./merge-guest-modal";
 import { ConfirmGroupNameModal } from "./confirm-group-name-modal";
-import { ConfirmDialog } from "@/components/ui";
+import { ConfirmDialog, RatingSlider } from "@/components/ui";
 import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { SearchIcon, UserPlusIcon, LockIcon, HandshakeIcon, CheckIcon } from "@/components/ui/icons";
 
@@ -451,8 +451,10 @@ export function GroupOrganizersPanel({
               )}
             </div>
           ) : (
-            /* Add Guest Mode Form */
-            <form onSubmit={handleAddGuest} className="space-y-2 rounded-xl border-2 border-black bg-white/70 p-3 shadow-[2px_2px_0px_0px_#000]">
+            <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-white/70 p-3 shadow-[2px_2px_0px_0px_#000]">
+              <p className="text-[11px] font-bold text-neutral-600">
+                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
+              </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-player-name"
@@ -464,33 +466,22 @@ export function GroupOrganizersPanel({
                   placeholder="Guest Name"
                   className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
-                <label htmlFor="guest-player-rating" className="flex flex-col gap-1 text-xs font-bold">
-                  Guest starting skill level
-                  <select
-                    id="guest-player-rating"
-                    value={guestRating}
-                    onChange={(e) => setGuestRating(Number(e.target.value))}
-                    className="rounded-lg border-2 border-black bg-white px-2 py-1.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
-                  >
-                    <option value={2.0}>Beginner (2.0)</option>
-                    <option value={2.5}>Adv. Beginner (2.5)</option>
-                    <option value={3.0}>Intermediate (3.0)</option>
-                    <option value={3.5}>Adv. Intermediate (3.5)</option>
-                    <option value={4.0}>Competitive (4.0)</option>
-                    <option value={4.5}>Adv. Competitive (4.5)</option>
-                  </select>
-                </label>
                 <button
                   type="submit"
                   disabled={guestSaving || !guestName.trim()}
-                  className="rounded-lg border-2 border-black bg-[#ccff00] px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
+                  className="rounded-lg border-2 border-black bg-[#ccff00] px-4 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0"
                 >
                   {guestSaving ? "Adding…" : "Add"}
                 </button>
               </div>
-              <p className="text-[11px] font-bold text-neutral-600">
-                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
-              </p>
+              <RatingSlider
+                id="guest-player-rating"
+                label="Guest starting skill level"
+                value={guestRating}
+                onChange={setGuestRating}
+                dataTestId="guest-player-rating"
+                showDescription={true}
+              />
             </form>
           )}
         </div>
