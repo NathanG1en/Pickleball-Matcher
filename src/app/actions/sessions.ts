@@ -27,6 +27,7 @@ import {
   startRoundSchema,
   startSessionSchema,
   undoLatestRoundSchema,
+  updateCourtConfigSchema,
   updateSessionNameSchema,
 } from "@/lib/validation/session";
 
@@ -85,6 +86,36 @@ export async function changeAttendanceAction(input: unknown): Promise<ActionResu
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to change attendance",
+    };
+  }
+}
+
+export async function updateCourtConfigAction(
+  input: unknown,
+): Promise<ActionResult<{ session: SessionRecord; proposal?: RoundProposal }>> {
+  const parsed = updateCourtConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid court configuration parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const service = getActionSessionService();
+    const result = await service.updateCourtConfig({
+      sessionId: parsed.data.sessionId,
+      courtCount: parsed.data.courtCount,
+      courtPlayerCounts: parsed.data.courtPlayerCounts as (2 | 3 | 4)[] | undefined,
+    });
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    return { ok: true, data: result };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to update court configuration",
     };
   }
 }

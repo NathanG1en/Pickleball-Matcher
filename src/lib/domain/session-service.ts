@@ -14,6 +14,7 @@ import type {
   SessionServiceDependencies,
   StartedRoundRecord,
   StartSessionInput,
+  UpdateCourtConfigInput,
 } from "@/lib/domain/types";
 import { DEFAULT_MATCHMAKING_CONFIG } from "@/lib/matchmaking/config";
 import { generateRound } from "@/lib/matchmaking/generate-round";
@@ -187,6 +188,71 @@ export class SessionService {
           };
       await repository.saveAttendance(attendance);
       return attendance;
+    });
+  }
+
+  async updateCourtConfig(input: UpdateCourtConfigInput): Promise<{ session: SessionRecord; proposal?: RoundProposal }> {
+    return this.repository.transaction(async (repository) => {
+      const session = await requiredSession(repository, input.sessionId);
+      if (session.status !== "active") {
+        throw new DomainError("INVALID_STATE", "The session has ended.");
+      }
+      if (!Number.isSafeInteger(input.courtCount) || input.courtCount <= 0 || input.courtCount > 6) {
+        throw new DomainError("INVALID_STATE", "Court count must be between 1 and 6.");
+      }
+
+      const [players, attendance, rounds] = await Promise.all([
+        repository.listPlayers(session.groupId),
+        repository.listAttendance(input.sessionId),
+        repository.listStartedRounds(input.sessionId),
+      ]);
+      const activePlayers = matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber);
+
+      if (input.courtPlayerCounts) {
+        if (
+          input.courtPlayerCounts.length !== input.courtCount ||
+          input.courtPlayerCounts.some((count) => ![2, 3, 4].includes(count))
+        ) {
+          throw new DomainError("INVALID_STATE", "Court sizes must be 2, 3, or 4 and match the court count.");
+        }
+        const totalCourtCapacity = input.courtPlayerCounts.reduce((sum, count) => sum + count, 0);
+        if (totalCourtCapacity > activePlayers.length) {
+          throw new DomainError("INVALID_STATE", "Court sizes cannot exceed the number of present players.");
+        }
+      }
+
+      const updatedSession: SessionRecord = {
+        ...session,
+        courtCount: input.courtCount,
+        courtPlayerCounts: input.courtPlayerCounts ? [...input.courtPlayerCounts] : undefined,
+        version: session.version + 1,
+      };
+
+      await repository.updateSession(updatedSession);
+
+      const latestStarted = rounds.at(-1);
+      const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
+      let proposal: RoundProposal | undefined;
+
+      if (!isRoundInProgress && activePlayers.length >= 2) {
+        try {
+          const result = generateRound({
+            players: activePlayers,
+            courts: updatedSession.courtCount,
+            courtPlayerCounts: updatedSession.courtPlayerCounts,
+            pairHistory: sessionPairHistory(rounds),
+            config: DEFAULT_MATCHMAKING_CONFIG,
+            seed: this.dependencies.nextSeed(),
+          });
+          if (result.ok) {
+            proposal = result.value;
+          }
+        } catch {
+          // If proposal cannot be generated with current configuration, leave undefined
+        }
+      }
+
+      return { session: updatedSession, proposal };
     });
   }
 

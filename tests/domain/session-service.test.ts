@@ -267,4 +267,68 @@ describe("SessionService", () => {
     );
     expect(updatedAtt?.leftRound).toBe(1);
   });
+
+  describe("updateCourtConfig", () => {
+    it("updates court count and court sizes on an active session and generates new proposal", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        courtPlayerCounts: [4],
+        playerIds: players.map((p) => p.id),
+      });
+
+      const result = await service.updateCourtConfig({
+        sessionId: session.id,
+        courtCount: 2,
+        courtPlayerCounts: [4, 4],
+      });
+
+      expect(result.session.courtCount).toBe(2);
+      expect(result.session.courtPlayerCounts).toEqual([4, 4]);
+      expect(result.session.version).toBe(session.version + 1);
+
+      // Verify in repository
+      const saved = await repository.getSession(session.id);
+      expect(saved?.courtCount).toBe(2);
+      expect(saved?.courtPlayerCounts).toEqual([4, 4]);
+
+      // Proposal was updated to 2 courts
+      expect(result.proposal?.courts).toHaveLength(2);
+    });
+
+    it("rejects updating court config if session has ended", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        playerIds: players.slice(0, 4).map((p) => p.id),
+      });
+      await service.endSession(session.id);
+
+      await expect(
+        service.updateCourtConfig({
+          sessionId: session.id,
+          courtCount: 2,
+        }),
+      ).rejects.toEqual(new DomainError("INVALID_STATE", "The session has ended."));
+    });
+
+    it("rejects court sizes exceeding eligible players", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        courtPlayerCounts: [4],
+        playerIds: players.slice(0, 4).map((p) => p.id),
+      });
+
+      await expect(
+        service.updateCourtConfig({
+          sessionId: session.id,
+          courtCount: 2,
+          courtPlayerCounts: [4, 4], // Requires 8 players, but only 4 present
+        }),
+      ).rejects.toEqual(
+        new DomainError("INVALID_STATE", "Court sizes cannot exceed the number of present players."),
+      );
+    });
+  });
 });

@@ -357,4 +357,28 @@ describe("SessionManagerClient Component", () => {
 
     expect(memberHtml).not.toContain("Reshuffle Matchups");
   });
+
+  it("renders Attendance button for organizer in active session", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 0,
+    };
+
+    const organizerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(organizerHtml).toContain("Attendance");
+  });
 });

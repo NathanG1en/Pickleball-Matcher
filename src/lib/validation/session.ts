@@ -130,3 +130,22 @@ export const duplicateSessionSchema = z
   })
   .strict();
 
+export const updateCourtConfigSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+    sessionVersion: aggregateVersionSchema,
+    courtCount: z.coerce.number().int().min(1).max(6),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    idempotencyKey: idempotencyKeySchema,
+  })
+  .strict()
+  .refine(
+    ({ courtCount, courtPlayerCounts }) =>
+      !courtPlayerCounts || courtPlayerCounts.length === courtCount,
+    {
+      path: ["courtPlayerCounts"],
+      message: "Court sizes must match the court count.",
+    },
+  );
+

@@ -187,6 +187,12 @@ export interface ChangeAttendanceInput {
   readonly present: boolean;
 }
 
+export interface UpdateCourtConfigInput {
+  readonly sessionId: string;
+  readonly courtCount: number;
+  readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
+}
+
 export interface RecordResultInput {
   readonly matchId: string;
   readonly team1Score: number;
