@@ -815,12 +815,17 @@ export function OpenPlayManagerClient({
             ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
           />
           <div className="flex items-center gap-2">
-            <Badge variant="default" className="bg-black text-[#ccff00]">
-              Open Play
-            </Badge>
             <Badge variant={isSessionActive ? "warning" : "muted"}>
               {isSessionActive ? "In Progress" : "Completed"}
             </Badge>
+            {(isOrganizer || isHost) && (
+              <SessionOptionsMenu
+                groupId={groupId}
+                sessionId={session.id}
+                sessionName={session.name}
+                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+              />
+            )}
           </div>
         </div>
 
@@ -839,8 +844,8 @@ export function OpenPlayManagerClient({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {isSessionActive && isOrganizer && (
+          {isSessionActive && isOrganizer && (
+            <div className="shrink-0">
               <button
                 type="button"
                 onClick={handleEndSession}
@@ -850,16 +855,8 @@ export function OpenPlayManagerClient({
               >
                 {isEnding ? "Ending..." : "End Session"}
               </button>
-            )}
-            {(isOrganizer || isHost) && (
-              <SessionOptionsMenu
-                groupId={groupId}
-                sessionId={session.id}
-                sessionName={session.name}
-                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
-              />
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {error && (

@@ -69,4 +69,38 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("shrink-0");
     expect(html).toContain("whitespace-nowrap");
   });
+
+  it("removes the open play label and renders the three dots in the top right corner of the header box", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify Open Play badge is not rendered
+    expect(html).not.toContain("bg-black text-[#ccff00]");
+
+    // Verify Session Options Menu button is rendered in the top header row
+    const optionsIndex = html.indexOf('data-testid="session-options-menu-button"');
+    const sessionNameIndex = html.indexOf("Open Play Session");
+    const endSessionIndex = html.indexOf('data-testid="end-session-button"');
+
+    expect(optionsIndex).toBeGreaterThan(-1);
+    expect(sessionNameIndex).toBeGreaterThan(-1);
+    expect(endSessionIndex).toBeGreaterThan(-1);
+
+    // Three dots menu in the top bar appears before the session title and end session button
+    expect(optionsIndex).toBeLessThan(sessionNameIndex);
+    expect(optionsIndex).toBeLessThan(endSessionIndex);
+  });
 });
+

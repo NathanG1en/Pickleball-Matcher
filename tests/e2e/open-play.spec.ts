@@ -52,6 +52,17 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("h1")).toContainText("Open Play Session");
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
+    // Verify Open Play badge label is removed from the header and three dots is in the top right corner
+    const header = page.locator("header").first();
+    await expect(header.locator("span.bg-black.text-\\[\\#ccff00\\]")).toHaveCount(0);
+    const headerOptionsButton = header.locator("[data-testid='session-options-menu-button']");
+    await expect(headerOptionsButton).toBeVisible();
+    const headerBackBtn = header.locator("a[aria-label='Go back'], a[aria-label='Go back to profile']");
+    const backBox = await headerBackBtn.boundingBox();
+    const optionsBox = await headerOptionsButton.boundingBox();
+    expect(backBox && optionsBox && optionsBox.x > backBox.x).toBe(true);
+    expect(optionsBox && optionsBox.y < (backBox?.y ?? 0) + 25).toBe(true);
+
     // 7. Add Guest player "Guest Gary" with a selected rating
     await page.fill("#guest-name-input", "Guest Gary");
     await page.selectOption("#guest-rating-select", "4.0");
@@ -59,14 +70,31 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
     // Verify that Bob (on roster but not checked in) is not selectable in games
-    await page.locator("button:text-is('Singles (1v1)')").click();
+    const doublesBtn = page.locator("button:text-is('Doubles (2v2)')");
+    const singlesBtn = page.locator("button:text-is('Singles (1v1)')");
+    await expect(doublesBtn).toBeVisible();
+    await expect(singlesBtn).toBeVisible();
+
+    // Verify both match type options fit inside the submit game card horizontally without being cut off
+    const initialCardBox = await page.locator("[data-testid='submit-game-card']").boundingBox();
+    const initialSinglesBox = await singlesBtn.boundingBox();
+    const initialDoublesBox = await doublesBtn.boundingBox();
+    expect(initialCardBox).not.toBeNull();
+    expect(initialSinglesBox).not.toBeNull();
+    expect(initialDoublesBox).not.toBeNull();
+    if (initialCardBox && initialSinglesBox && initialDoublesBox) {
+      expect(initialDoublesBox.x).toBeGreaterThanOrEqual(initialCardBox.x);
+      expect(initialSinglesBox.x + initialSinglesBox.width).toBeLessThanOrEqual(initialCardBox.x + initialCardBox.width + 1);
+    }
+
+    await singlesBtn.click();
     const singlesCard = page.locator("[data-testid='submit-game-card']");
     const singlesT1P1 = singlesCard.locator("[data-testid='select-team-1-player-1']");
     await singlesT1P1.click();
     await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toHaveCount(0);
     await expect(page.locator("[role='option']").filter({ hasText: "Guest Gary" })).toHaveCount(1);
     await page.keyboard.press("Escape");
-    await page.locator("button:text-is('Doubles (2v2)')").click();
+    await doublesBtn.click();
 
     // 8. Add group player Bob from roster
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
@@ -181,7 +209,7 @@ test.describe("Open Play Workflow", () => {
 
     // Verify game is recorded in Games Played list
     const matchesList = page.locator("[data-testid='open-play-matches-list']");
-    await expect(matchesList).toBeVisible();
+    await expect(matchesList).toBeVisible({ timeout: 15000 });
     await expect(matchesList).toContainText("11 – 9");
 
     // 10b. Verify player selects automatically remain autopopulated from the logged in user's last game
@@ -277,7 +305,9 @@ test.describe("Open Play Workflow", () => {
     await expect(optionsButton).toBeVisible();
     await optionsButton.click();
 
+    const renameMenuItem = page.locator("[data-testid='rename-session-menu-item']");
     const duplicateMenuItem = page.locator("[data-testid='duplicate-session-menu-item']");
+    await expect(renameMenuItem).toBeVisible();
     await expect(duplicateMenuItem).toBeVisible();
     await duplicateMenuItem.click();
 

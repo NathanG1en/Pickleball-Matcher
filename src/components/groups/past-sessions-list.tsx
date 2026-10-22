@@ -52,6 +52,7 @@ export function PastSessionsList({
   const [expandedSessionIds, setExpandedSessionIds] = useState<Record<string, boolean>>(
     initialExpandedSessionIds ?? {},
   );
+  const [renamedSessionNames, setRenamedSessionNames] = useState<Record<string, string>>({});
 
   const toggleExpand = (sessionId: string) => {
     setExpandedSessionIds((prev) => ({
@@ -68,6 +69,7 @@ export function PastSessionsList({
     <div className="divide-y-2 divide-neutral-100" data-testid="past-sessions-list">
       {sessions.map((session) => {
         const isExpanded = Boolean(expandedSessionIds[session.id]);
+        const currentName = renamedSessionNames[session.id] ?? session.name;
         const formattedDate = new Date(session.startedAt).toLocaleDateString(undefined, {
           month: "short",
           day: "numeric",
@@ -90,10 +92,10 @@ export function PastSessionsList({
                   }
                 }}
                 aria-expanded={isExpanded}
-                aria-label={session.name ? `${session.name} · ${formattedDate}` : `Session from ${formattedDate}`}
+                aria-label={currentName ? `${currentName} · ${formattedDate}` : `Session from ${formattedDate}`}
               >
                 <span suppressHydrationWarning className="font-bold text-black text-sm block">
-                  {session.name ? `${session.name} · ${formattedDate}` : (session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate)}
+                  {currentName ? `${currentName} · ${formattedDate}` : (session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate)}
                 </span>
                 <span className="text-xs font-bold text-neutral-500">
                   {session.type === "open_play"
@@ -128,9 +130,15 @@ export function PastSessionsList({
                   <SessionOptionsMenu
                     groupId={groupId}
                     sessionId={session.id}
-                    sessionName={session.name}
+                    sessionName={currentName}
                     redirectTo={`/g/${groupId}`}
                     dataTestId={`session-options-menu-button-${session.id}`}
+                    onRenamed={(newName) => {
+                      setRenamedSessionNames((prev) => ({
+                        ...prev,
+                        [session.id]: newName,
+                      }));
+                    }}
                   />
                 )}
               </div>

@@ -119,6 +119,18 @@ describe("PastSessionsList Component", () => {
     expect(optionsIndex).toBeGreaterThan(expandIndex);
   });
 
+  it("renders custom session name when provided on past session", () => {
+    const namedSession = {
+      ...sampleSession,
+      name: "Championship Finals",
+    };
+    const html = renderToStaticMarkup(
+      <PastSessionsList groupId={groupId} sessions={[namedSession]} isOrganizer={true} />
+    );
+
+    expect(html).toContain("Championship Finals");
+  });
+
   it("renders expanded state with rounds, matchups, scores, and link to full session page", () => {
     const html = renderToStaticMarkup(
       <PastSessionsList

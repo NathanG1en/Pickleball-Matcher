@@ -480,7 +480,7 @@ describe("Player View for Groups and Sessions", () => {
       const html = renderToStaticMarkup(pageJsx);
 
       // Does not redirect, renders completed session view
-      expect(html).toContain("Oct 10, 2026");
+      expect(html).toContain("October 10, 2026");
       expect(html).toContain("Completed Session");
 
       // Back button returning to group

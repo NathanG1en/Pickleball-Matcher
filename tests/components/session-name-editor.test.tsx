@@ -154,6 +154,28 @@ describe("SessionNameEditor and updateSessionNameAction", () => {
       expect(html).toContain("Original Session Name");
       expect(html).not.toContain('aria-label="Edit session name"');
     });
+
+    it("renders descriptive initial names such as Session In Progress or Completed Session", () => {
+      const activeHtml = renderToStaticMarkup(
+        <SessionNameEditor
+          groupId="g1"
+          sessionId="s1"
+          initialName="Session In Progress"
+          canEdit={true}
+        />
+      );
+      expect(activeHtml).toContain("Session In Progress");
+
+      const completedHtml = renderToStaticMarkup(
+        <SessionNameEditor
+          groupId="g1"
+          sessionId="s1"
+          initialName="Completed Session"
+          canEdit={true}
+        />
+      );
+      expect(completedHtml).toContain("Completed Session");
+    });
   });
 
   describe("updateSessionNameAction", () => {

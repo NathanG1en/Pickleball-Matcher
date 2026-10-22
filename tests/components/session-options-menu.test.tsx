@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/app/actions/sessions", () => ({
   deleteSessionAction: vi.fn(async () => ({ ok: true, data: undefined })),
   duplicateSessionAction: vi.fn(async () => ({ ok: true, data: { id: "ses_dup" } })),
+  updateSessionNameAction: vi.fn(async () => ({ ok: true })),
 }));
 
 describe("SessionOptionsMenu Component", () => {
@@ -40,6 +41,32 @@ describe("SessionOptionsMenu Component", () => {
     );
 
     expect(html).toContain('data-testid="custom-session-menu-button"');
+  });
+
+  it("supports onRenamed prop and passes sessionName into component", () => {
+    const handleRenamed = vi.fn();
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        sessionName="Championship Final"
+        onRenamed={handleRenamed}
+      />
+    );
+
+    expect(html).toContain('data-testid="session-options-menu-button"');
+  });
+
+  it("handles null/undefined sessionName gracefully without showing date defaults", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        sessionName={null}
+      />
+    );
+
+    expect(html).toContain('data-testid="session-options-menu-button"');
   });
 });
 
