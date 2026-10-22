@@ -90,7 +90,10 @@ test.describe("Permissions and Security Workflow", () => {
     await linkedItem.locator("summary").click();
 
     // "View profile" should now be present in the dropdown for organizer/host
-    await expect(linkedItem.locator("a:has-text('View profile')")).toBeVisible();
+    const viewProfileLink = linkedItem.locator("a:has-text('View profile')");
+    await expect(viewProfileLink).toBeVisible();
+    await expect(viewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(viewProfileLink).toHaveClass(/text-black/);
 
     // "Link to public player" should no longer be present
     await expect(linkedItem.locator("button:has-text('Link to public player')")).not.toBeVisible();
@@ -332,6 +335,33 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
     await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).not.toBeVisible();
     await expect(page.locator("li").filter({ hasText: "Guest Samuel" })).not.toBeVisible();
+
+    // 13. Verify confirmation dialog before removing a guest player
+    const samMasterItem = page.locator("li").filter({ hasText: "Sam Master" });
+    await samMasterItem.locator("summary").click();
+    const removeGuestBtn = samMasterItem.locator("button:has-text('Remove player')");
+    await expect(removeGuestBtn).toBeVisible();
+    await removeGuestBtn.click();
+
+    // Confirmation dialog appears with the required message
+    const removeGuestModal = page.locator("div[role='alertdialog']");
+    await expect(removeGuestModal).toBeVisible();
+    await expect(removeGuestModal).toContainText('Are you sure you want to remove "Sam Master"? They have played 0 games.');
+
+    // Cancelling leaves the guest player on the roster
+    await removeGuestModal.locator("button:has-text('Cancel')").click();
+    await expect(removeGuestModal).not.toBeVisible();
+    await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
+
+    // Confirming removes the guest player from the roster
+    await samMasterItem.locator("summary").click();
+    await removeGuestBtn.click();
+    await expect(removeGuestModal).toBeVisible();
+    await removeGuestModal.locator("[data-testid='confirm-remove-guest-button']").click();
+
+    await expect(removeGuestModal).not.toBeVisible();
+    await expect(page.locator("p[role='status']")).toContainText("Player removed from the group.");
+    await expect(page.locator("li").filter({ hasText: "Sam Master" })).not.toBeVisible();
   });
 
   test("restricts session deletion to host/organizers and requires confirmation", async ({
@@ -458,7 +488,10 @@ test.describe("Permissions and Security Workflow", () => {
     // Verify organizer sees "View profile" in three dots dropdown
     const publicItem = page.locator("li").filter({ hasText: publicUser.name });
     await publicItem.locator("summary").click();
-    await expect(publicItem.locator("a:has-text('View profile')")).toBeVisible();
+    const publicViewProfileLink = publicItem.locator("a:has-text('View profile')");
+    await expect(publicViewProfileLink).toBeVisible();
+    await expect(publicViewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(publicViewProfileLink).toHaveClass(/text-black/);
     await publicItem.locator("summary").click(); // close
 
     // 5. Click public user link -> leads to /players/[username] and shows full profile
