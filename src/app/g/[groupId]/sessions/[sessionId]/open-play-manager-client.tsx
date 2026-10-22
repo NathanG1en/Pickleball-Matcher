@@ -296,11 +296,27 @@ export function OpenPlayManagerClient({
     return false;
   };
 
+  const handleSelectGamePlayer = (
+    slot: "t1p1" | "t1p2" | "t2p1" | "t2p2",
+    playerId: string,
+  ) => {
+    if (playerId) {
+      if (slot !== "t1p1" && t1p1 === playerId) setT1p1("");
+      if (slot !== "t1p2" && t1p2 === playerId) setT1p2("");
+      if (slot !== "t2p1" && t2p1 === playerId) setT2p1("");
+      if (slot !== "t2p2" && t2p2 === playerId) setT2p2("");
+    }
+    if (slot === "t1p1") setT1p1(playerId);
+    else if (slot === "t1p2") setT1p2(playerId);
+    else if (slot === "t2p1") setT2p1(playerId);
+    else if (slot === "t2p2") setT2p2(playerId);
+  };
+
   const getSlotOptions = (slot: "t1p1" | "t1p2" | "t2p1" | "t2p2") => {
     return selectableGamePlayers.map((p) => ({
       id: p.id,
       name: p.name,
-      disabled: isPlayerSelectedElsewhere(p.id, slot),
+      selectedElsewhere: isPlayerSelectedElsewhere(p.id, slot),
     }));
   };
 
@@ -652,11 +668,27 @@ export function OpenPlayManagerClient({
     return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   }, [checkedInPlayers, editingMatchId, allMatches, playerMap]);
 
+  const handleSelectEditPlayer = (
+    slot: "t1p1" | "t1p2" | "t2p1" | "t2p2",
+    playerId: string,
+  ) => {
+    if (playerId) {
+      if (slot !== "t1p1" && editT1p1 === playerId) setEditT1p1("");
+      if (slot !== "t1p2" && editT1p2 === playerId) setEditT1p2("");
+      if (slot !== "t2p1" && editT2p1 === playerId) setEditT2p1("");
+      if (slot !== "t2p2" && editT2p2 === playerId) setEditT2p2("");
+    }
+    if (slot === "t1p1") setEditT1p1(playerId);
+    else if (slot === "t1p2") setEditT1p2(playerId);
+    else if (slot === "t2p1") setEditT2p1(playerId);
+    else if (slot === "t2p2") setEditT2p2(playerId);
+  };
+
   const getEditSlotOptions = (slot: "t1p1" | "t1p2" | "t2p1" | "t2p2") => {
     return editSelectablePlayers.map((p) => ({
       id: p.id,
       name: p.name,
-      disabled: isEditPlayerSelectedElsewhere(p.id, slot),
+      selectedElsewhere: isEditPlayerSelectedElsewhere(p.id, slot),
     }));
   };
 
@@ -1115,10 +1147,7 @@ export function OpenPlayManagerClient({
                       ariaLabel="Team 1 Player 1"
                       placeholder="Select Player 1..."
                       value={t1p1}
-                      onChange={(val) => {
-                        if (isPlayerSelectedElsewhere(val, "t1p1")) return;
-                        setT1p1(val);
-                      }}
+                      onChange={(val) => handleSelectGamePlayer("t1p1", val)}
                       options={getSlotOptions("t1p1")}
                       dataTestId="select-team-1-player-1"
                     />
@@ -1128,10 +1157,7 @@ export function OpenPlayManagerClient({
                         ariaLabel="Team 1 Player 2"
                         placeholder="Select Player 2..."
                         value={t1p2}
-                        onChange={(val) => {
-                          if (isPlayerSelectedElsewhere(val, "t1p2")) return;
-                          setT1p2(val);
-                        }}
+                        onChange={(val) => handleSelectGamePlayer("t1p2", val)}
                         options={getSlotOptions("t1p2")}
                         dataTestId="select-team-1-player-2"
                       />
@@ -1162,10 +1188,7 @@ export function OpenPlayManagerClient({
                       ariaLabel="Team 2 Player 1"
                       placeholder="Select Player 1..."
                       value={t2p1}
-                      onChange={(val) => {
-                        if (isPlayerSelectedElsewhere(val, "t2p1")) return;
-                        setT2p1(val);
-                      }}
+                      onChange={(val) => handleSelectGamePlayer("t2p1", val)}
                       options={getSlotOptions("t2p1")}
                       dataTestId="select-team-2-player-1"
                     />
@@ -1175,10 +1198,7 @@ export function OpenPlayManagerClient({
                         ariaLabel="Team 2 Player 2"
                         placeholder="Select Player 2..."
                         value={t2p2}
-                        onChange={(val) => {
-                          if (isPlayerSelectedElsewhere(val, "t2p2")) return;
-                          setT2p2(val);
-                        }}
+                        onChange={(val) => handleSelectGamePlayer("t2p2", val)}
                         options={getSlotOptions("t2p2")}
                         dataTestId="select-team-2-player-2"
                       />
@@ -1282,10 +1302,7 @@ export function OpenPlayManagerClient({
                           ariaLabel="Edit Team 1 Player 1"
                           placeholder="Select Player 1..."
                           value={editT1p1}
-                          onChange={(val) => {
-                            if (isEditPlayerSelectedElsewhere(val, "t1p1")) return;
-                            setEditT1p1(val);
-                          }}
+                          onChange={(val) => handleSelectEditPlayer("t1p1", val)}
                           options={getEditSlotOptions("t1p1")}
                           sizeVariant="sm"
                           dataTestId={`select-edit-team-1-player-1-${m.id}`}
@@ -1295,10 +1312,7 @@ export function OpenPlayManagerClient({
                             ariaLabel="Edit Team 1 Player 2"
                             placeholder="Select Player 2..."
                             value={editT1p2}
-                            onChange={(val) => {
-                              if (isEditPlayerSelectedElsewhere(val, "t1p2")) return;
-                              setEditT1p2(val);
-                            }}
+                            onChange={(val) => handleSelectEditPlayer("t1p2", val)}
                             options={getEditSlotOptions("t1p2")}
                             sizeVariant="sm"
                             dataTestId={`select-edit-team-1-player-2-${m.id}`}
@@ -1324,10 +1338,7 @@ export function OpenPlayManagerClient({
                           ariaLabel="Edit Team 2 Player 1"
                           placeholder="Select Player 1..."
                           value={editT2p1}
-                          onChange={(val) => {
-                            if (isEditPlayerSelectedElsewhere(val, "t2p1")) return;
-                            setEditT2p1(val);
-                          }}
+                          onChange={(val) => handleSelectEditPlayer("t2p1", val)}
                           options={getEditSlotOptions("t2p1")}
                           sizeVariant="sm"
                           dataTestId={`select-edit-team-2-player-1-${m.id}`}
@@ -1337,10 +1348,7 @@ export function OpenPlayManagerClient({
                             ariaLabel="Edit Team 2 Player 2"
                             placeholder="Select Player 2..."
                             value={editT2p2}
-                            onChange={(val) => {
-                              if (isEditPlayerSelectedElsewhere(val, "t2p2")) return;
-                              setEditT2p2(val);
-                            }}
+                            onChange={(val) => handleSelectEditPlayer("t2p2", val)}
                             options={getEditSlotOptions("t2p2")}
                             sizeVariant="sm"
                             dataTestId={`select-edit-team-2-player-2-${m.id}`}

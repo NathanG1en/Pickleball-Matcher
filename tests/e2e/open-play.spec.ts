@@ -182,8 +182,10 @@ test.describe("Open Play Workflow", () => {
     // Open Team 1 Player 2 filterable dropdown
     await t1p2.click();
 
-    // Verify player selected in t1p1 cannot be selected in other dropdowns (disabled)
-    await expect(page.locator("[role='option']").filter({ hasText: hostName })).toBeDisabled();
+    // Verify player selected in t1p1 is labeled as (Selected) in other dropdowns, but can be selected (not disabled)
+    const hostOption = page.locator("[role='option']").filter({ hasText: hostName });
+    await expect(hostOption).toContainText("(Selected)");
+    await expect(hostOption).not.toBeDisabled();
 
     // Verify player filter inside dropdown allows typing in to filter out players
     const dropdownSearchInput = page.locator("[data-testid='filterable-select-search']");
@@ -205,11 +207,27 @@ test.describe("Open Play Workflow", () => {
     const t2p1 = submitCard.locator("[data-testid='select-team-2-player-1']");
     const t2p2 = submitCard.locator("[data-testid='select-team-2-player-2']");
 
-    // Open t2p1: Both players 1 and 2 should be disabled
+    // Open t2p1: Both players 1 and 2 should be labeled as (Selected) but not disabled
     await t2p1.click();
-    await expect(page.locator("[role='option']").filter({ hasText: hostName })).toBeDisabled();
-    await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toBeDisabled();
+    const hostOpt = page.locator("[role='option']").filter({ hasText: hostName });
+    const bobOpt = page.locator("[role='option']").filter({ hasText: "Bob" });
+    await expect(hostOpt).toContainText("(Selected)");
+    await expect(hostOpt).not.toBeDisabled();
+    await expect(bobOpt).toContainText("(Selected)");
+    await expect(bobOpt).not.toBeDisabled();
 
+    // Test player switching: Selecting Bob (who is currently in t1p2) switches Bob to t2p1 and clears t1p2
+    await bobOpt.click();
+    await expect(t2p1).toContainText("Bob");
+    await expect(t1p2).toContainText("Select Player 2...");
+
+    // Now switch Bob back to t1p2: Open t1p2 and select Bob, verifying t2p1 is cleared
+    await t1p2.click();
+    await page.locator("[role='option']").filter({ hasText: "Bob" }).click();
+    await expect(t1p2).toContainText("Bob");
+    await expect(t2p1).toContainText("Select Player 1...");
+
+    await t2p1.click();
     await page.locator("[data-testid='filterable-select-search']").fill(secondPlayer.name);
     await page.locator("[role='option']").filter({ hasText: secondPlayer.name }).click();
     await expect(t2p1).toContainText(secondPlayer.name);
