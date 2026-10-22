@@ -101,12 +101,30 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain("Courts");
     expect(html).toContain("Players");
     expect(html).toContain("Player Summary");
+    expect(html).toContain("Session highlights");
+    expect(html).toContain("Closest game");
+    expect(html).toContain("Most wins");
+    expect(html).toContain("Most different partners");
+    expect(html).toContain("Alice · Bob");
     expect(html).toContain("All Rounds &amp; Matchups");
     expect(html).toContain("Alice &amp; Bob");
     expect(html).toContain("Charlie &amp; Dave");
     expect(html).toContain("11");
     expect(html).toContain("7");
     expect(html).toContain("← Back to Group");
+  });
+
+  it.each(["active", "empty"] as const)("does not show recap highlights for an %s session", (scenario) => {
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={scenario === "active" ? { ...completedSession, status: "active", endedAt: null } : completedSession}
+        players={players}
+        startedRounds={scenario === "empty" ? [] : startedRounds}
+        initialProposal={null}
+      />
+    );
+    expect(html).not.toContain('data-testid="session-highlights"');
   });
 
   it("safely handles started rounds with missing matchPlayers or sits without throwing", () => {
