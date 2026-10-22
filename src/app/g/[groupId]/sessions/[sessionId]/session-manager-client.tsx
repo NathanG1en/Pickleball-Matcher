@@ -684,11 +684,6 @@ export function SessionManagerClient({
 
   const pastRounds = localStartedRounds.filter((r) => r.round.status === "completed");
   const canEditSessionName = Boolean(canManage || isOrganizer || isHost);
-  const formattedSessionDate = new Date(session.startedAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 
   return (
     <div className="space-y-6 text-black">
@@ -737,7 +732,7 @@ export function SessionManagerClient({
               <SessionNameEditor
                 groupId={groupId}
                 sessionId={session.id}
-                initialName={session.name || formattedSessionDate}
+                initialName={session.name || "Session In Progress"}
                 canEdit={canEditSessionName}
                 headingTag="h2"
                 className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
@@ -781,7 +776,7 @@ export function SessionManagerClient({
                 <SessionNameEditor
                   groupId={groupId}
                   sessionId={session.id}
-                  initialName={session.name || formattedSessionDate}
+                  initialName={session.name || "Completed Session"}
                   canEdit={canEditSessionName}
                   headingTag="h2"
                   className="font-display text-2xl font-black uppercase text-black"

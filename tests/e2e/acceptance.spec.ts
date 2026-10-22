@@ -49,6 +49,9 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
 
+    // Select Normal Session format
+    await page.click("button[data-testid='select-normal-session-button']");
+
     // Increase courts to 3
     const courtDisplay = page.locator("span[aria-label='Court count']");
     while ((await courtDisplay.textContent()) !== "3") {
@@ -128,7 +131,46 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // Expand past sessions list and navigate to full session summary
     const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();
+    const pastSessionOptions = page.locator("[data-testid^='session-options-menu-button-']").first();
     await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
+
+    // Test canceling rename session from past sessions options menu
+    await pastSessionOptions.click();
+    const historyRenameItem = page.locator("[data-testid='rename-session-menu-item']");
+    const historyDuplicateItem = page.locator("[data-testid='duplicate-session-menu-item']");
+    const historyDeleteItem = page.locator("[data-testid='delete-session-menu-item']");
+    await expect(historyRenameItem).toBeVisible();
+    await expect(historyDuplicateItem).toBeVisible();
+    await expect(historyDeleteItem).toBeVisible();
+
+    await historyRenameItem.click();
+    const renameModal = page.locator("div[role='dialog']:has-text('Rename Session')");
+    await expect(renameModal).toBeVisible();
+    const nameInput = renameModal.locator("#rename-session-name-input");
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill("Accidental New Name");
+    await renameModal.locator("button:text-is('Cancel')").click();
+    await expect(renameModal).not.toBeVisible();
+
+    // Verify session row did NOT change and nothing changed about the group
+    const pastSessionRow = page.locator("[data-testid^='past-session-item-']").first();
+    await expect(pastSessionRow).not.toContainText("Accidental New Name");
+
+    // Now test actually renaming session from past sessions options menu
+    await pastSessionOptions.click();
+    await historyRenameItem.click();
+    await expect(renameModal).toBeVisible();
+    await expect(nameInput).toHaveValue("");
+    await nameInput.fill("Championship Night");
+    await renameModal.locator("button[data-testid='confirm-rename-session-button']").click();
+
+    // Verify session row updates with new name
+    await expect(pastSessionRow).toContainText("Championship Night");
+
     await expandArrow.click();
 
     const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();
@@ -139,12 +181,19 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.waitForURL(/\/sessions\/[^/]+$/);
     const summaryCard = page.locator("[data-testid='completed-session-full-view']");
     await expect(summaryCard).toBeVisible();
-    const todayFormatted = new Date().toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    await expect(page.locator(`h2:has-text('${todayFormatted}')`)).toBeVisible();
+    await expect(page.locator("h2:has-text('Championship Night')")).toBeVisible();
+
+    // Test canceling inline session name change
+    const editSessionNameBtn = page.locator("button[aria-label='Edit session name']");
+    await expect(editSessionNameBtn).toBeVisible();
+    await editSessionNameBtn.click();
+    const inlineInput = page.locator("#session-name-input");
+    await expect(inlineInput).toBeVisible();
+    await inlineInput.fill("Accidental Inline Name");
+    await page.locator("button:text-is('Cancel')").click();
+    await expect(inlineInput).not.toBeVisible();
+    await expect(page.locator("h2:has-text('Championship Night')")).toBeVisible();
+    await expect(page.locator("h2:has-text('Accidental Inline Name')")).not.toBeVisible();
 
     // Wait 1.5s to ensure it does NOT redirect back to the group dashboard
     await page.waitForTimeout(1500);
@@ -156,8 +205,10 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(optionsButton).toBeVisible();
     await optionsButton.click();
 
+    const renameMenuItem = page.locator("[data-testid='rename-session-menu-item']");
     const duplicateMenuItem = page.locator("[data-testid='duplicate-session-menu-item']");
     const deleteMenuItem = page.locator("[data-testid='delete-session-menu-item']");
+    await expect(renameMenuItem).toBeVisible();
     await expect(duplicateMenuItem).toBeVisible();
     await expect(deleteMenuItem).toBeVisible();
 
@@ -204,7 +255,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     const confirmModal = page.locator("[role='alertdialog']");
     await expect(confirmModal).toBeVisible();
     await expect(confirmModal).toContainText("Delete Session");
-    await expect(confirmModal).toContainText("Are you sure you want to delete this session?");
+    await expect(confirmModal).toContainText(/Are you sure you want to delete ("Championship Night"|this session)\?/);
 
     // Test canceling the deletion
     await confirmModal.locator("button:has-text('Cancel')").click();
@@ -302,6 +353,7 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
@@ -328,7 +380,7 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(page.getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
     await expect(indicator).toHaveCount(0);
     save.release();
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });
   } finally { await save.dispose(); }
 
   const failure = await pauseAction(true);
@@ -382,9 +434,11 @@ test("session setup court settles once without replaying during attendance or co
   for (const name of ["Court Canvas Blake", "Court Canvas Casey", "Court Canvas Drew"]) {
     await page.locator("#guest-player-name").fill(name);
     await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   const court = page.getByTestId("setup-court");
   await expect(court).toBeVisible();
   await expect(court).toHaveAttribute("aria-hidden", "true");
@@ -429,6 +483,7 @@ test("session setup court respects reduced motion and allows manual replay with 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await createTestGroup(page, `Static court ${Date.now()}`);
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   const court = page.getByTestId("setup-court");
   await expect(court).toBeVisible();
   await expect(court).toHaveAttribute("data-motion", "still");

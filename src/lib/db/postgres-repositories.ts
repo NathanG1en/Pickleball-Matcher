@@ -569,6 +569,19 @@ export class PostgresRepositories implements DomainRepository {
     return rows.map(mapPlayerAccount);
   }
 
+  async listPlayerAccounts(search: string = "", limit: number = 50): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = search.trim().toLowerCase().replace(/^@/, "");
+    const searchTerm = `%${trimmed}%`;
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      from player_accounts
+      where (${trimmed} = '' or username ilike ${searchTerm} or name ilike ${searchTerm})
+      order by (${trimmed} != '' and username = ${trimmed}) desc, name asc, username asc
+      limit ${limit}
+    `;
+    return rows.map(mapPlayerAccount);
+  }
+
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)

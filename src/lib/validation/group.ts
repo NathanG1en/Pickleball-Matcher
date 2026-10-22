@@ -59,8 +59,31 @@ export const linkGuestPlayerSchema = z.object({
   targetAccountId: entityIdSchema,
 }).strict();
 
+export const RESERVED_USERNAMES = new Set([
+  "find",
+  "groups",
+  "search",
+  "setup",
+  "temporary",
+  "login",
+  "signup",
+  "settings",
+  "admin",
+  "api",
+]);
+
+const usernameFieldSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(24)
+  .regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only")
+  .refine((val) => !RESERVED_USERNAMES.has(val.toLowerCase()), {
+    message: "That username is reserved.",
+  });
+
 export const playerSignupSchema = z.object({
-  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+  username: usernameFieldSchema,
   name: z.string().trim().min(1).max(80),
   gender: z.enum(["male", "female"], { message: "Select your gender (male or female)." }).default("male"),
   password: z.string().min(10).max(72),
@@ -93,7 +116,7 @@ export const updatePlayerGenderSchema = z.object({
 }).strict();
 
 export const updatePlayerUsernameSchema = z.object({
-  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+  username: usernameFieldSchema,
 }).strict();
 
 export const joinPublicGroupSchema = z.object({
