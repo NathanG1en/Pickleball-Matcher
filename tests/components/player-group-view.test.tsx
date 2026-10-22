@@ -215,7 +215,7 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).not.toContain("••••••••••••••••");
 
       // Cannot change privacy settings
-      expect(html).not.toContain("Player discovery");
+      expect(html).not.toContain("group-visibility-toggle");
       expect(html).not.toContain("Make private");
       expect(html).not.toContain("Make public");
 
@@ -244,7 +244,7 @@ describe("Player View for Groups and Sessions", () => {
 
       // Organizer controls visible
       expect(html).toContain("Group ID");
-      expect(html).toContain("Player discovery");
+      expect(html).toContain("group-visibility-toggle");
       expect(html).toContain("Start New Session");
       expect(html).toContain("Find player by username");
       expect(html).toContain("Edit group name");

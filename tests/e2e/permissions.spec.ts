@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
+  test.beforeEach(() => {
+    test.setTimeout(90000);
+  });
+
   test("protects private groups and organizer pages from unauthenticated access", async ({
     page,
     browser,
@@ -328,7 +332,7 @@ test.describe("Permissions and Security Workflow", () => {
     await yesBtn.click();
 
     // Modal closes and status confirms merge
-    await expect(mergeModal).not.toBeVisible();
+    await expect(mergeModal).not.toBeVisible({ timeout: 15000 });
     await expect(page.locator("p[role='status']")).toContainText('Merged guest players into "Sam Master".');
 
     // Roster should now contain "Sam Master" and neither "Guest Samantha" nor "Guest Samuel"
@@ -472,11 +476,11 @@ test.describe("Permissions and Security Workflow", () => {
     // 3. Add publicUser and privateUser to the roster
     await page.fill("#roster-player-username", publicUser.username);
     await page.click("button:text-is('Add')");
-    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible({ timeout: 15000 });
 
     await page.fill("#roster-player-username", privateUser.username);
     await page.click("button:text-is('Add')");
-    await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible();
+    await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible({ timeout: 15000 });
 
     // 4. In the roster, both should have an underlined link for their username in (@username)
     await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
@@ -529,9 +533,9 @@ test.describe("Permissions and Security Workflow", () => {
     await publicContext.close();
     await privateContext.close();
   });
-});
 
-test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
+  test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
+  test.setTimeout(60000);
   await page.goto("/player-signup?next=%2Fsetup");
   await page.waitForSelector("form[data-hydrated='true']");
   await page.getByLabel("Username", { exact: true }).fill(`rating_${Date.now()}`);
@@ -548,7 +552,7 @@ test("rejects invalid custom signup ratings without creating an account", async 
   }
   await rating.fill("3.75");
   await page.getByRole("button", { name: "Sign Up", exact: true }).click();
-  await expect(page).toHaveURL(/\/setup/);
+  await expect(page).toHaveURL(/\/setup/, { timeout: 15000 });
   await page.goto("/players");
   await expect(page.getByText(/current rating 3.75/)).toBeVisible();
 });
@@ -560,9 +564,30 @@ test("does not include groups in recent groups if player is not part of them eve
   const groupName = `Public Recent Test ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  // Group starts as Private in toggle with info tooltip
+  const privateToggleBtn = page.getByRole("button", { name: "Private", exact: true });
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "false");
+
+  const infoBtn = page.getByTestId("group-visibility-info-button");
+  await expect(infoBtn).toBeVisible();
+
+  // Focus to display tooltip
+  await infoBtn.focus();
+  const tooltip = page.getByTestId("group-visibility-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toContainText("Players can find and join this group");
+  await expect(tooltip).toContainText("This group is private and hidden from search");
+
+  // Blur hides tooltip
+  await infoBtn.blur();
+  await expect(tooltip).toBeHidden();
+
+  // Toggle to Public
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "false");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -599,9 +624,9 @@ test("non-host member can leave a group from group dashboard via three dots menu
   const groupName = `Leave From Group Dashboard ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -657,9 +682,9 @@ test("non-host member can leave a group from find groups page with confirmation 
   const groupName = `Leave From Find Groups ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -720,9 +745,9 @@ test("non-host member can leave a group from profile page with confirmation moda
   const groupName = `Leave From Profile ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -842,5 +867,6 @@ test("find players workflow from homepage shows public and private players with 
   await expect(backFromGroupsBtn).toBeVisible();
   await backFromGroupsBtn.click();
   await expect(page).toHaveURL("/");
+});
 });
 

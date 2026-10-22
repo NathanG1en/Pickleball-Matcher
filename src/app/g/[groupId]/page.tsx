@@ -177,11 +177,11 @@ export default async function GroupDashboardPage({
             <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
           )}
         </div>
-        {isOrganizer && <GroupIdReveal groupId={groupId} />}
-
         {isOrganizer && (
           <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
         )}
+
+        {isOrganizer && <GroupIdReveal groupId={groupId} />}
 
       </header>
 
