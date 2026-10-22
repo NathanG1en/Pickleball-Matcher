@@ -2,6 +2,46 @@ import { test, expect } from "@playwright/test";
 import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
+  test("organizers can rename guests but cannot inject a starting-rating correction", async ({ page }) => {
+    const { groupId } = await createTestGroup(page, `Maintenance boundary ${Date.now()}`);
+    await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+    await page.locator("#guest-player-name").fill("Maintenance Guest");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    const guest = page.locator("li").filter({ hasText: "Maintenance Guest" });
+    await expect(guest).toBeVisible();
+    await expect(guest).toContainText("3.5");
+    await guest.locator("summary").click();
+    await guest.getByRole("button", { name: "Edit guest name", exact: true }).click();
+    const modal = page.getByRole("dialog", { name: "Edit Guest Name" });
+    await modal.locator("#edit-guest-name-input").fill("Should not save");
+    let injected = false;
+    await page.route("**/g/**", async route => {
+      const request = route.request();
+      if (request.method() === "POST" && request.headers()["next-action"]) {
+        const data = JSON.parse(request.postData() ?? "[]");
+        if (data[0]?.name === "Should not save" && data[0]?.groupId === groupId) {
+          data[0].initialRating = 4;
+          injected = true;
+          await route.continue({ postData: JSON.stringify(data) });
+          return;
+        }
+      }
+      await route.continue();
+    });
+    await modal.getByRole("button", { name: "Save Changes", exact: true }).click();
+    await expect(modal).toContainText("Invalid player update data");
+    expect(injected).toBe(true);
+    await expect(guest).toContainText("3.5");
+    await page.unroute("**/g/**");
+    await modal.locator("#edit-guest-name-input").fill("Maintained Guest");
+    await modal.getByRole("button", { name: "Save Changes", exact: true }).click();
+    await expect(modal).toHaveCount(0);
+    await page.reload();
+    const renamed = page.locator("li").filter({ hasText: "Maintained Guest" });
+    await expect(renamed).toContainText("3.5");
+    await expect(page.getByText("Should not save", { exact: true })).toHaveCount(0);
+  });
+
   test.beforeEach(() => {
     test.setTimeout(90000);
   });
@@ -50,11 +90,13 @@ test.describe("Permissions and Security Workflow", () => {
     // 3. Switch to "Add Guest" tab on dashboard
     await page.click("button[type='button']:has-text('Add Guest')");
     await page.fill("#guest-player-name", "Guest Taylor");
+    await page.selectOption("#guest-player-rating", "2");
     await page.click("form button[type='submit']:has-text('Add')");
 
     // Guest Taylor should appear in the roster
     const guestItem = page.locator("li").filter({ hasText: "Guest Taylor" });
     await expect(guestItem).toBeVisible();
+    await expect(guestItem).toContainText("Rating: 2 (");
 
     // Open options dropdown for Guest Taylor
     await guestItem.locator("summary").click();
@@ -91,6 +133,9 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Open dropdown for linked player
     const linkedItem = page.locator("li").filter({ hasText: publicUser.name });
+    await expect(linkedItem).toContainText("3.5");
+    await page.reload();
+    await expect(linkedItem).toContainText("3.5");
     await linkedItem.locator("summary").click();
 
     // "View profile" should now be present in the dropdown for organizer/host
@@ -869,4 +914,3 @@ test("find players workflow from homepage shows public and private players with 
   await expect(page).toHaveURL("/");
 });
 });
-

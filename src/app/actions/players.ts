@@ -103,7 +103,6 @@ export async function updatePlayerAction(input: unknown): Promise<ActionResult> 
       groupId: parsed.data.groupId,
       name: parsed.data.name,
       active: parsed.data.active,
-      initialRating: parsed.data.initialRating,
     });
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath("/players");
