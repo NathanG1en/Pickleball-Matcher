@@ -160,6 +160,29 @@ describe("SessionService", () => {
     expect(repository.state.players.every((player) => player.ratedGamesPlayed === 0)).toBe(true);
   });
 
+  it("reshuffles the latest round, reverting previous match data and proposing a new round", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 2,
+      playerIds: players.map((player) => player.id),
+    });
+    const firstRound = await service.startRound(session.id, await service.proposeRound(session.id, 10));
+    const firstMatchIds = new Set(
+      repository.state.matches.filter((match) => match.roundId === firstRound.id).map((match) => match.id),
+    );
+
+    const reshuffledProposal = await service.reshuffleRound(session.id, 999);
+
+    expect(reshuffledProposal).toBeDefined();
+    expect(reshuffledProposal.courts.length).toBe(2);
+    // Previous round should be deleted
+    expect(repository.state.rounds.some((r) => r.id === firstRound.id)).toBe(false);
+    expect(repository.state.matches.some((m) => firstMatchIds.has(m.id))).toBe(false);
+    // Session round number should be back to 0
+    const updatedSession = await repository.getSession(session.id);
+    expect(updatedSession?.currentRoundNumber).toBe(0);
+  });
+
   it("allows completing a round when a singles match has no score entered", async () => {
     const session = await service.startSession({
       groupId: "group-1",

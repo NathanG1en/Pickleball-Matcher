@@ -8,6 +8,7 @@ import {
   completeRoundAction,
   endSessionAction,
   proposeRoundAction,
+  reshuffleRoundAction,
   startRoundAction,
   undoLatestRoundAction,
 } from "@/app/actions/sessions";
@@ -154,7 +155,10 @@ export function SessionManagerClient({
     setError(null);
     startGeneratingRound(async () => {
       try {
-        const nextSeed = Math.floor(Math.random() * 0xffff_ffff);
+        let nextSeed = Math.floor(Math.random() * 0xffff_ffff);
+        if (activeProposal && nextSeed === activeProposal.seed) {
+          nextSeed = (nextSeed + 1) % 0xffff_ffff;
+        }
         const res = await proposeRoundAction({
           groupId,
           sessionId: session.id,
@@ -163,14 +167,50 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(session.id));
-          startGeneratingRound(() => setRegeneratedProposal(res.data));
+          setRegeneratedProposal(res.data);
         } else {
           setError(res.error);
         }
       } catch {
-        setError("Failed to regenerate round.");
+        setError("Failed to reshuffle matchups.");
       }
     });
+  };
+
+  const handleReshuffleInProgressRound = async () => {
+    if (!latestStarted || isPending) return;
+    if (
+      !confirm(
+        `Are you sure you want to reshuffle Round ${latestStarted.round.roundNumber} matchups? Any entered match scores for this round will be reset.`
+      )
+    ) {
+      return;
+    }
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await reshuffleRoundAction({
+        groupId,
+        sessionId: session.id,
+        sessionVersion: session.version,
+        roundId: latestStarted.round.id,
+        roundVersion: latestStarted.round.version,
+        idempotencyKey: createIdempotencyKey("reshuffle"),
+      });
+      if (res.ok) {
+        clearLineupDraft(lineupDraftKey(session.id));
+        setRegeneratedProposal(res.data);
+        setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+        setScoreDrafts({});
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to reshuffle matchups.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleStartRound = async (customProposal?: {
@@ -1062,6 +1102,7 @@ export function SessionManagerClient({
                 onSubmitResult={canManage ? handleSaveResult : undefined}
                 onCancelMatch={canManage ? handleCancelMatch : undefined}
                 onNextRound={canManage ? handleNextRound : undefined}
+                onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
                 isGeneratingRound={isGeneratingRound}
                 canManage={canManage}
                 scoreDrafts={scoreDrafts}
@@ -1069,7 +1110,17 @@ export function SessionManagerClient({
                 hasUnsavedScores={hasUnsavedScores}
               />
               {canManage && (
-                <div className="text-center pt-2">
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleReshuffleInProgressRound}
+                    disabled={isPending}
+                    data-testid="reshuffle-round-link"
+                    className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer"
+                  >
+                    Reshuffle Matchups
+                  </button>
+                  <span className="text-neutral-400">·</span>
                   <button
                     type="button"
                     onClick={handleUndo}
@@ -1104,6 +1155,7 @@ export function SessionManagerClient({
               pairSynergies={pairSynergies}
               isOrganizer={isOrganizer}
               isGeneratingRound={isGeneratingRound}
+              canRegenerate={Boolean(canManage)}
               onRegenerate={canManage ? handleRegenerate : undefined}
               onStartRound={canManage ? handleStartRound : undefined}
               canManage={canManage}

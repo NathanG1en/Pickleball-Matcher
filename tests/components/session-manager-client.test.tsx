@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SessionManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/session-manager-client";
-import type { AttendanceRecord, PlayerRecord, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
+import type { AttendanceRecord, PlayerRecord, RoundProposal, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -231,5 +231,130 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(html).not.toContain("Deleted Player");
+  });
+
+  it("renders reshuffle matchups controls for organizer in proposed round state", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 0,
+    };
+    const proposal: RoundProposal = {
+      seed: 42,
+      score: 0,
+      scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+      courts: [
+        { courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] },
+      ],
+      sitting: [],
+    };
+
+    const organizerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        initialProposal={proposal}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(organizerHtml).toContain("Reshuffle Matchups");
+    expect(organizerHtml).toContain('data-testid="reshuffle-matchups-button"');
+
+    const memberHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        initialProposal={proposal}
+        canManage={false}
+        isOrganizer={false}
+      />
+    );
+
+    expect(memberHtml).not.toContain("Reshuffle Matchups");
+  });
+
+  it("renders reshuffle matchups controls for organizer when round is in progress", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+    const inProgressRounds: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1234,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:05:00.000Z"),
+          startedAt: new Date("2026-10-10T14:05:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: null,
+            team2Score: null,
+            status: "pending",
+            completedAt: null,
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_1", playerId: "p1", team: 1, ratingBefore: 1200, ratingAfter: 1210 },
+          { matchId: "m_1", playerId: "p2", team: 1, ratingBefore: 1200, ratingAfter: 1210 },
+          { matchId: "m_1", playerId: "p3", team: 2, ratingBefore: 1200, ratingAfter: 1190 },
+          { matchId: "m_1", playerId: "p4", team: 2, ratingBefore: 1200, ratingAfter: 1190 },
+        ],
+        sits: [],
+      },
+    ];
+
+    const organizerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={inProgressRounds}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(organizerHtml).toContain("Reshuffle Matchups");
+    expect(organizerHtml).toContain('data-testid="reshuffle-matchups-button"');
+    expect(organizerHtml).toContain('data-testid="reshuffle-round-link"');
+
+    const memberHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={inProgressRounds}
+        initialProposal={null}
+        canManage={false}
+        isOrganizer={false}
+      />
+    );
+
+    expect(memberHtml).not.toContain("Reshuffle Matchups");
   });
 });

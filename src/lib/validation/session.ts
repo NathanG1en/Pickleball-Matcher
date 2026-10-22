@@ -100,6 +100,12 @@ export const undoLatestRoundSchema = existingSessionMutation.extend({
   roundVersion: aggregateVersionSchema,
 });
 
+export const reshuffleRoundSchema = existingSessionMutation.extend({
+  roundId: entityIdSchema,
+  roundVersion: aggregateVersionSchema,
+  seed: z.coerce.number().int().min(0).max(0xffff_ffff).optional(),
+});
+
 export const endSessionSchema = existingSessionMutation;
 
 export const updateSessionNameSchema = z

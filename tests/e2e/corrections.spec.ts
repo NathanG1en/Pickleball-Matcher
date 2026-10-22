@@ -84,13 +84,24 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.click("button:has-text('Next Round')");
     await expect(page.locator("h1")).toContainText("Round 2");
 
-    // 8. Test undoing the latest round (Round 2 proposed / start)
+    // 8. Test reshuffling in-progress round matchups and round undo
+    await page.click("button:has-text('Start Round')");
+    await page.click("button:has-text('Confirm & Start')");
+    await expect(page.locator("h1")).toContainText("Round 2 Results");
+
+    // Click Reshuffle Matchups during in-progress round
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.click("[data-testid='reshuffle-matchups-button']");
+    await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
+    await expect(page.locator("button:has-text('Start Round')")).toBeVisible();
+
+    // Start Round 2 again and test Undo Round 2
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
     await expect(page.locator("h1")).toContainText("Round 2 Results");
 
     // Click Undo Round 2
-    page.on("dialog", (dialog) => dialog.accept());
+    page.once("dialog", (dialog) => dialog.accept());
     await page.click("button:has-text('Undo Round 2')");
     // After undo, should be back to proposal or previous state
     await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();

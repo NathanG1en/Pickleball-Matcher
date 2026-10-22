@@ -422,6 +422,39 @@ export class SessionService {
     });
   }
 
+  async reshuffleRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+    return this.repository.transaction(async (repository) => {
+      const session = await requiredSession(repository, sessionId);
+      const rounds = await repository.listStartedRounds(sessionId);
+      const latest = rounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0];
+      if (!latest) throw new DomainError("INVALID_STATE", "There is no round to reshuffle.");
+      await repository.deleteRound(latest.round.id);
+      const updatedSession = {
+        ...session,
+        currentRoundNumber: Math.max(0, session.currentRoundNumber - 1),
+        version: session.version + 1,
+      };
+      await repository.updateSession(updatedSession);
+      await replayRatings(session.groupId, repository);
+
+      const [players, attendance, remainingRounds] = await Promise.all([
+        repository.listPlayers(session.groupId),
+        repository.listAttendance(sessionId),
+        repository.listStartedRounds(sessionId),
+      ]);
+      const result = generateRound({
+        players: matchmakingPlayers(players, attendance, remainingRounds, updatedSession.currentRoundNumber),
+        courts: session.courtCount,
+        courtPlayerCounts: session.courtPlayerCounts,
+        pairHistory: sessionPairHistory(remainingRounds),
+        config: DEFAULT_MATCHMAKING_CONFIG,
+        seed,
+      });
+      if (!result.ok) throw new DomainError(result.error.code, result.error.message);
+      return result.value;
+    });
+  }
+
   async endSession(sessionId: string): Promise<SessionRecord> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, sessionId);
