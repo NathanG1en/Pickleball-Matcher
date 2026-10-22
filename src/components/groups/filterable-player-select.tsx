@@ -7,6 +7,7 @@ export interface FilterablePlayerOption {
   readonly id: string;
   readonly name: string;
   readonly disabled?: boolean;
+  readonly selectedElsewhere?: boolean;
 }
 
 export interface FilterablePlayerSelectProps {
@@ -237,7 +238,7 @@ export function FilterablePlayerSelect({
                   >
                     <span className="truncate">{opt.name}</span>
                     <span className="text-[10px] font-semibold shrink-0 ml-2">
-                      {opt.disabled ? "(Selected)" : isSelected ? "✓" : ""}
+                      {opt.selectedElsewhere || opt.disabled ? "(Selected)" : isSelected ? "✓" : ""}
                     </span>
                   </button>
                 );

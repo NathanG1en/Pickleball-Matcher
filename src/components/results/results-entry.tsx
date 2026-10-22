@@ -5,6 +5,7 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ShuffleIcon } from "@/components/ui/icons";
 
 export interface MatchScoreEntry {
   readonly id: string;
@@ -31,6 +32,7 @@ export interface ResultsEntryViewProps {
   readonly onSubmitResult?: (matchId: string, team1Score: number, team2Score: number) => void;
   readonly onCancelMatch?: (matchId: string) => void;
   readonly onNextRound?: () => void;
+  readonly onReshuffleRound?: () => void;
   readonly canManage?: boolean;
   readonly scoreDrafts?: ScoreDrafts;
   readonly hasUnsavedScores?: boolean;
@@ -48,6 +50,7 @@ export function ResultsEntryView({
   onSubmitResult,
   onCancelMatch,
   onNextRound,
+  onReshuffleRound,
   canManage = true,
   scoreDrafts = {},
   hasUnsavedScores = false,
@@ -73,7 +76,7 @@ export function ResultsEntryView({
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
             {canManage ? "Score Entry" : "Live Games"}
@@ -82,9 +85,25 @@ export function ResultsEntryView({
             Round {roundNumber} {canManage ? "Results" : "Matchups"}
           </h1>
         </div>
-        <p className="text-xs font-bold text-neutral-600">
-          {canManage ? "Enter non-tied scores (e.g. 11–9)" : "Current games and live scores"}
-        </p>
+        <div className="flex flex-col items-end gap-1">
+          {canManage && onReshuffleRound && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onReshuffleRound}
+              disabled={isPending || isGeneratingRound}
+              data-testid="reshuffle-matchups-button"
+              className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+            >
+              <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Reshuffle Matchups</span>
+            </Button>
+          )}
+          <p className="text-xs font-bold text-neutral-600 hidden sm:block">
+            {canManage ? "Enter non-tied scores (e.g. 11–9)" : "Current games and live scores"}
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">

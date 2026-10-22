@@ -20,6 +20,7 @@ import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
+import { EndSessionNowButton } from "@/components/groups/end-session-now-button";
 import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
@@ -290,16 +291,37 @@ export default async function GroupDashboardPage({
                 )
               )}
 
-              <div>
-                <Link
-                  href={`/g/${groupId}/sessions/${activeSession.id}`}
-                  className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
-                >
-                  {activeSession.type === "open_play"
-                    ? isOrganizer ? "Manage Open Play →" : "View Open Play →"
-                    : isOrganizer ? "Resume Session →" : "View Live Session →"}
-                </Link>
-              </div>
+              {isOrganizer ? (
+                <div className="grid grid-cols-4 gap-3 items-stretch">
+                  <div className="col-span-1">
+                    <EndSessionNowButton
+                      groupId={groupId}
+                      sessionId={activeSession.id}
+                      sessionType={activeSession.type}
+                      sessionVersion={activeSession.version}
+                    />
+                  </div>
+                  <Link
+                    href={`/g/${groupId}/sessions/${activeSession.id}`}
+                    className="col-span-3 flex items-center justify-center text-center py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                  >
+                    {activeSession.type === "open_play"
+                      ? "Manage Open Play →"
+                      : "Resume Session →"}
+                  </Link>
+                </div>
+              ) : (
+                <div>
+                  <Link
+                    href={`/g/${groupId}/sessions/${activeSession.id}`}
+                    className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                  >
+                    {activeSession.type === "open_play"
+                      ? "View Open Play →"
+                      : "View Live Session →"}
+                  </Link>
+                </div>
+              )}
             </section>
           ) : isOrganizer ? (
             <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deleteSessionSchema, manualCourtSchema, startRoundSchema } from "@/lib/validation/session";
+import { deleteSessionSchema, manualCourtSchema, startRoundSchema, updateCourtConfigSchema } from "@/lib/validation/session";
 
 describe("manualCourtSchema", () => {
   it("accepts balanced doubles court (2 vs 2)", () => {
@@ -122,6 +122,61 @@ describe("deleteSessionSchema", () => {
       groupId: "grp_123",
       sessionId: "ses_456",
       extra: true,
+    });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("updateCourtConfigSchema", () => {
+  const baseInput = {
+    groupId: "grp_123",
+    sessionId: "ses_456",
+    sessionVersion: 1,
+    courtCount: 2,
+    courtPlayerCounts: [4, 4],
+    idempotencyKey: "key_789",
+  };
+
+  it("accepts valid court configuration", () => {
+    const res = updateCourtConfigSchema.safeParse(baseInput);
+    expect(res.success).toBe(true);
+  });
+
+  it("accepts valid court configuration without courtPlayerCounts", () => {
+    const res = updateCourtConfigSchema.safeParse({
+      ...baseInput,
+      courtPlayerCounts: undefined,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects mismatched courtPlayerCounts length and courtCount", () => {
+    const res = updateCourtConfigSchema.safeParse({
+      ...baseInput,
+      courtCount: 2,
+      courtPlayerCounts: [4, 4, 2],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects invalid court count outside 1 to 6", () => {
+    expect(
+      updateCourtConfigSchema.safeParse({ ...baseInput, courtCount: 0, courtPlayerCounts: [] }).success,
+    ).toBe(false);
+    expect(
+      updateCourtConfigSchema.safeParse({
+        ...baseInput,
+        courtCount: 7,
+        courtPlayerCounts: [4, 4, 4, 4, 4, 4, 4],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects invalid player counts per court (not 2, 3, or 4)", () => {
+    const res = updateCourtConfigSchema.safeParse({
+      ...baseInput,
+      courtCount: 2,
+      courtPlayerCounts: [5, 4],
     });
     expect(res.success).toBe(false);
   });

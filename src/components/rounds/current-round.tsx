@@ -10,6 +10,7 @@ import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup
 import {
   LockIcon,
   PencilIcon,
+  ShuffleIcon,
   ZapIcon,
   AlertTriangleIcon,
   TargetIcon,
@@ -68,7 +69,7 @@ function CurrentRoundEditor({
   courts,
   sittingPlayerIds,
   playerNames,
-  canRegenerate = false,
+  canRegenerate,
   isPending = false,
   isGeneratingRound = false,
   currentViewerPlayerId = null,
@@ -80,6 +81,7 @@ function CurrentRoundEditor({
   onEnterResults,
   canManage = true,
 }: CurrentRoundViewProps & { restoreDraft: boolean }) {
+  const allowRegenerate = canRegenerate !== undefined ? canRegenerate : Boolean(onRegenerate);
   const [draft] = useState(() =>
     restoreDraft && draftKey && draftContext && canManage && round.status === "proposed"
       ? readLineupDraft(draftKey, draftContext, { courts, sitting: sittingPlayerIds })
@@ -368,6 +370,18 @@ function CurrentRoundEditor({
                   >
                     <PencilIcon className="h-3.5 w-3.5" />
                     <span>Customize Lineup</span>
+                  </button>
+                )}
+                {allowRegenerate && (
+                  <button
+                    type="button"
+                    onClick={onRegenerate}
+                    disabled={isPending || isGeneratingRound}
+                    data-testid="header-reshuffle-matchups-button"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    <ShuffleIcon className="h-3.5 w-3.5" />
+                    <span>Reshuffle</span>
                   </button>
                 )}
               </>
@@ -1040,16 +1054,24 @@ function CurrentRoundEditor({
       {canManage && (
         <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
           <div className="max-w-xl mx-auto flex items-center gap-3">
-            {canRegenerate && (
+            {allowRegenerate && (
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
                 onClick={onRegenerate}
-                disabled={isPending}
-                className="flex-1 font-display text-lg uppercase tracking-wider"
+                disabled={isPending || isGeneratingRound}
+                data-testid="reshuffle-matchups-button"
+                className="flex-1 font-display text-lg uppercase tracking-wider inline-flex items-center justify-center gap-2"
               >
-                {isGeneratingRound ? <RoundGenerationIndicator /> : "Regenerate Round"}
+                {isGeneratingRound ? (
+                  <RoundGenerationIndicator />
+                ) : (
+                  <>
+                    <ShuffleIcon className="h-5 w-5 shrink-0" />
+                    <span>Reshuffle Matchups</span>
+                  </>
+                )}
               </Button>
             )}
 

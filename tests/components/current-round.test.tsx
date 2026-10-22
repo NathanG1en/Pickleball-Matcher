@@ -41,11 +41,11 @@ describe("CurrentRoundView Component", () => {
     expect(html).toContain("Evan");
   });
 
-  it("shows regenerate only when canRegenerate is true", () => {
+  it("shows reshuffle only when canRegenerate is true", () => {
     const proposedHtml = renderToStaticMarkup(
       <CurrentRoundView {...sampleProps} canRegenerate={true} />
     );
-    expect(proposedHtml).toContain("Regenerate Round");
+    expect(proposedHtml).toContain("Reshuffle Matchups");
 
     const startedHtml = renderToStaticMarkup(
       <CurrentRoundView
@@ -54,7 +54,7 @@ describe("CurrentRoundView Component", () => {
         canRegenerate={false}
       />
     );
-    expect(startedHtml).not.toContain("Regenerate Round");
+    expect(startedHtml).not.toContain("Reshuffle Matchups");
   });
 
   it("includes start confirmation and mobile action placement", () => {

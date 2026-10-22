@@ -160,6 +160,29 @@ describe("SessionService", () => {
     expect(repository.state.players.every((player) => player.ratedGamesPlayed === 0)).toBe(true);
   });
 
+  it("reshuffles the latest round, reverting previous match data and proposing a new round", async () => {
+    const session = await service.startSession({
+      groupId: "group-1",
+      courtCount: 2,
+      playerIds: players.map((player) => player.id),
+    });
+    const firstRound = await service.startRound(session.id, await service.proposeRound(session.id, 10));
+    const firstMatchIds = new Set(
+      repository.state.matches.filter((match) => match.roundId === firstRound.id).map((match) => match.id),
+    );
+
+    const reshuffledProposal = await service.reshuffleRound(session.id, 999);
+
+    expect(reshuffledProposal).toBeDefined();
+    expect(reshuffledProposal.courts.length).toBe(2);
+    // Previous round should be deleted
+    expect(repository.state.rounds.some((r) => r.id === firstRound.id)).toBe(false);
+    expect(repository.state.matches.some((m) => firstMatchIds.has(m.id))).toBe(false);
+    // Session round number should be back to 0
+    const updatedSession = await repository.getSession(session.id);
+    expect(updatedSession?.currentRoundNumber).toBe(0);
+  });
+
   it("allows completing a round when a singles match has no score entered", async () => {
     const session = await service.startSession({
       groupId: "group-1",
@@ -243,5 +266,69 @@ describe("SessionService", () => {
       (a) => a.sessionId === session.id && a.playerId === "player-4",
     );
     expect(updatedAtt?.leftRound).toBe(1);
+  });
+
+  describe("updateCourtConfig", () => {
+    it("updates court count and court sizes on an active session and generates new proposal", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        courtPlayerCounts: [4],
+        playerIds: players.map((p) => p.id),
+      });
+
+      const result = await service.updateCourtConfig({
+        sessionId: session.id,
+        courtCount: 2,
+        courtPlayerCounts: [4, 4],
+      });
+
+      expect(result.session.courtCount).toBe(2);
+      expect(result.session.courtPlayerCounts).toEqual([4, 4]);
+      expect(result.session.version).toBe(session.version + 1);
+
+      // Verify in repository
+      const saved = await repository.getSession(session.id);
+      expect(saved?.courtCount).toBe(2);
+      expect(saved?.courtPlayerCounts).toEqual([4, 4]);
+
+      // Proposal was updated to 2 courts
+      expect(result.proposal?.courts).toHaveLength(2);
+    });
+
+    it("rejects updating court config if session has ended", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        playerIds: players.slice(0, 4).map((p) => p.id),
+      });
+      await service.endSession(session.id);
+
+      await expect(
+        service.updateCourtConfig({
+          sessionId: session.id,
+          courtCount: 2,
+        }),
+      ).rejects.toEqual(new DomainError("INVALID_STATE", "The session has ended."));
+    });
+
+    it("rejects court sizes exceeding eligible players", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        courtPlayerCounts: [4],
+        playerIds: players.slice(0, 4).map((p) => p.id),
+      });
+
+      await expect(
+        service.updateCourtConfig({
+          sessionId: session.id,
+          courtCount: 2,
+          courtPlayerCounts: [4, 4], // Requires 8 players, but only 4 present
+        }),
+      ).rejects.toEqual(
+        new DomainError("INVALID_STATE", "Court sizes cannot exceed the number of present players."),
+      );
+    });
   });
 });

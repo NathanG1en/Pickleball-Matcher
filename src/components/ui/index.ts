@@ -9,6 +9,7 @@ export * from "./form-field";
 export * from "./input";
 export * from "./label";
 export * from "./modal";
+export * from "./rating-slider";
 export * from "./select";
 export * from "./stat-card";
 export * from "./textarea";

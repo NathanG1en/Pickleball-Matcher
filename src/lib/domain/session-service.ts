@@ -14,6 +14,7 @@ import type {
   SessionServiceDependencies,
   StartedRoundRecord,
   StartSessionInput,
+  UpdateCourtConfigInput,
 } from "@/lib/domain/types";
 import { DEFAULT_MATCHMAKING_CONFIG } from "@/lib/matchmaking/config";
 import { generateRound } from "@/lib/matchmaking/generate-round";
@@ -187,6 +188,71 @@ export class SessionService {
           };
       await repository.saveAttendance(attendance);
       return attendance;
+    });
+  }
+
+  async updateCourtConfig(input: UpdateCourtConfigInput): Promise<{ session: SessionRecord; proposal?: RoundProposal }> {
+    return this.repository.transaction(async (repository) => {
+      const session = await requiredSession(repository, input.sessionId);
+      if (session.status !== "active") {
+        throw new DomainError("INVALID_STATE", "The session has ended.");
+      }
+      if (!Number.isSafeInteger(input.courtCount) || input.courtCount <= 0 || input.courtCount > 6) {
+        throw new DomainError("INVALID_STATE", "Court count must be between 1 and 6.");
+      }
+
+      const [players, attendance, rounds] = await Promise.all([
+        repository.listPlayers(session.groupId),
+        repository.listAttendance(input.sessionId),
+        repository.listStartedRounds(input.sessionId),
+      ]);
+      const activePlayers = matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber);
+
+      if (input.courtPlayerCounts) {
+        if (
+          input.courtPlayerCounts.length !== input.courtCount ||
+          input.courtPlayerCounts.some((count) => ![2, 3, 4].includes(count))
+        ) {
+          throw new DomainError("INVALID_STATE", "Court sizes must be 2, 3, or 4 and match the court count.");
+        }
+        const totalCourtCapacity = input.courtPlayerCounts.reduce((sum, count) => sum + count, 0);
+        if (totalCourtCapacity > activePlayers.length) {
+          throw new DomainError("INVALID_STATE", "Court sizes cannot exceed the number of present players.");
+        }
+      }
+
+      const updatedSession: SessionRecord = {
+        ...session,
+        courtCount: input.courtCount,
+        courtPlayerCounts: input.courtPlayerCounts ? [...input.courtPlayerCounts] : undefined,
+        version: session.version + 1,
+      };
+
+      await repository.updateSession(updatedSession);
+
+      const latestStarted = rounds.at(-1);
+      const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
+      let proposal: RoundProposal | undefined;
+
+      if (!isRoundInProgress && activePlayers.length >= 2) {
+        try {
+          const result = generateRound({
+            players: activePlayers,
+            courts: updatedSession.courtCount,
+            courtPlayerCounts: updatedSession.courtPlayerCounts,
+            pairHistory: sessionPairHistory(rounds),
+            config: DEFAULT_MATCHMAKING_CONFIG,
+            seed: this.dependencies.nextSeed(),
+          });
+          if (result.ok) {
+            proposal = result.value;
+          }
+        } catch {
+          // If proposal cannot be generated with current configuration, leave undefined
+        }
+      }
+
+      return { session: updatedSession, proposal };
     });
   }
 
@@ -419,6 +485,39 @@ export class SessionService {
       });
       await replayRatings(session.groupId, repository);
       return latest.round;
+    });
+  }
+
+  async reshuffleRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+    return this.repository.transaction(async (repository) => {
+      const session = await requiredSession(repository, sessionId);
+      const rounds = await repository.listStartedRounds(sessionId);
+      const latest = rounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0];
+      if (!latest) throw new DomainError("INVALID_STATE", "There is no round to reshuffle.");
+      await repository.deleteRound(latest.round.id);
+      const updatedSession = {
+        ...session,
+        currentRoundNumber: Math.max(0, session.currentRoundNumber - 1),
+        version: session.version + 1,
+      };
+      await repository.updateSession(updatedSession);
+      await replayRatings(session.groupId, repository);
+
+      const [players, attendance, remainingRounds] = await Promise.all([
+        repository.listPlayers(session.groupId),
+        repository.listAttendance(sessionId),
+        repository.listStartedRounds(sessionId),
+      ]);
+      const result = generateRound({
+        players: matchmakingPlayers(players, attendance, remainingRounds, updatedSession.currentRoundNumber),
+        courts: session.courtCount,
+        courtPlayerCounts: session.courtPlayerCounts,
+        pairHistory: sessionPairHistory(remainingRounds),
+        config: DEFAULT_MATCHMAKING_CONFIG,
+        seed,
+      });
+      if (!result.ok) throw new DomainError(result.error.code, result.error.message);
+      return result.value;
     });
   }
 
