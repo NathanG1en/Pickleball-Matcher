@@ -298,7 +298,7 @@ test.describe("Open Play Workflow", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
 
-    await expect(page.locator("text=Completed")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 15000 });
 
     // 11b. Host duplicates the open play session via options menu dropdown
     const optionsButton = page.locator("[data-testid='session-options-menu-button']");
@@ -403,7 +403,7 @@ test.describe("Open Play Workflow", () => {
   test("organizer and host can add, edit, and delete games after open play session is ended, while regular member cannot", async ({
     page,
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(90000);
     // 1. Create a test group with host
     const groupName = `Ended Open Play League ${Date.now()}`;
@@ -475,6 +475,7 @@ test.describe("Open Play Workflow", () => {
 
     const matchesList = page.locator("[data-testid='open-play-matches-list']");
     await expect(matchesList).toContainText("11 – 5");
+    await expect(page.getByTestId("session-highlights")).toHaveCount(0);
 
     // Host ends the session
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
@@ -482,9 +483,13 @@ test.describe("Open Play Workflow", () => {
     await endSessionBtn.click();
     await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 15000 });
 
+    const highlights = page.getByTestId("session-highlights");
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 5");
+
     // In playerPage (regular member), visit the ended session URL
     await playerPage.goto(sessionUrl);
     await expect(playerPage.getByText("Completed", { exact: true })).toBeVisible();
+    await expect(playerPage.getByTestId("session-highlights")).toBeVisible();
     // Regular player should NOT see Submit Game card, and should NOT see Edit or Delete buttons
     await expect(playerPage.locator("[data-testid='submit-game-card']")).toHaveCount(0);
     await expect(playerPage.locator("[data-testid^='edit-game-button-']")).toHaveCount(0);
@@ -503,6 +508,9 @@ test.describe("Open Play Workflow", () => {
 
     await expect(matchesList.locator("article")).toHaveCount(2);
     await expect(matchesList).toContainText("11 – 8");
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 8");
+    await expect(highlights.getByTestId("highlight-most-wins")).toContainText("2 wins");
+    await expect(highlights.getByTestId("highlight-most-partners")).toContainText("1 partner");
 
     // 3. Host edits game 1 (change score from 11 - 5 to 11 - 9)
     const editBtn = matchesList.locator("[data-testid^='edit-game-button-']").first();
@@ -517,6 +525,7 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("text=Game updated successfully!")).toBeVisible();
     await expect(matchesList).toContainText("11 – 9");
     await expect(matchesList).not.toContainText("11 – 5");
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 9");
 
     // 4. Host deletes game 2
     const deleteBtn = matchesList.locator("[data-testid^='delete-game-button-']").last();
@@ -526,6 +535,19 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("text=Game deleted.")).toBeVisible();
     await expect(matchesList.locator("article")).toHaveCount(1);
     await expect(matchesList).not.toContainText("11 – 8");
+    await expect(highlights).toContainText("From 1 completed game");
+    await expect(highlights.getByTestId("highlight-most-wins")).toContainText("1 win");
+    await page.reload();
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 9");
+    await highlights.screenshot({ path: testInfo.outputPath("open-play-highlights.png") });
+
+    // Removing the last game also removes the highlights, including after refresh.
+    page.once("dialog", dialog => dialog.accept());
+    await matchesList.locator("[data-testid^='delete-game-button-']").first().click();
+    await expect(highlights).toHaveCount(0);
+    await expect(page.getByRole("status")).toContainText("Game deleted.");
+    await page.reload();
+    await expect(highlights).toHaveCount(0);
 
     await playerContext.close();
   });

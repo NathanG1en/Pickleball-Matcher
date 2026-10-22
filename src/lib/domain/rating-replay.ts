@@ -1,12 +1,11 @@
 import type { DomainRepository } from "@/lib/domain/repositories";
-import type { RatingReplayResult, RatingSnapshot } from "@/lib/domain/types";
+import type { PlayerRecord, ReplayMatch, RatingReplayResult, RatingSnapshot } from "@/lib/domain/types";
 import { rateMatch } from "@/lib/matchmaking/rating";
 
-export async function replayRatings(
-  groupId: string,
-  repository: DomainRepository,
-): Promise<RatingReplayResult> {
-  const players = await repository.listPlayers(undefined, { includeInactive: true });
+export function calculateRatingReplay(
+  players: readonly PlayerRecord[],
+  history: readonly ReplayMatch[],
+) {
   const playerMap = new Map(players.map((player) => [player.id, player]));
 
   const entityStates = new Map<string, { rating: number; ratedGamesPlayed: number }>();
@@ -20,7 +19,7 @@ export async function replayRatings(
     }
   }
 
-  const matches = (await repository.listReplayMatches())
+  const matches = history
     .filter((match) => match.status === "completed")
     .toSorted(
       (first, second) =>
@@ -91,22 +90,27 @@ export async function replayRatings(
     };
   });
 
-  await repository.replaceRatingState(
-    groupId,
-    updatedPlayers,
-    snapshots,
-  );
+  return { players: updatedPlayers, snapshots, processedMatchIds: matches.map(match => match.id) };
+}
+
+export async function replayRatings(
+  groupId: string,
+  repository: DomainRepository,
+): Promise<RatingReplayResult> {
+  const players = await repository.listPlayers(undefined, { includeInactive: true });
+  const matches = await repository.listReplayMatches();
+  const replay = calculateRatingReplay(players, matches);
+  await repository.replaceRatingState(groupId, replay.players, replay.snapshots);
+  const matchGroups = new Map(matches.map(match => [match.id, match.groupId]));
+  const ratings = new Map(replay.players.map(player => [player.id, player.rating]));
 
   return {
-    processedMatchIds: matches
-      .filter((match) => !groupId || match.groupId === groupId)
-      .map((match) => match.id),
+    processedMatchIds: replay.processedMatchIds.filter(id => !groupId || matchGroups.get(id) === groupId),
     playerRatings: new Map(
       players
         .filter((player) => !groupId || player.groupId === groupId)
         .map((player) => {
-          const key = player.accountId ?? player.id;
-          return [player.id, entityStates.get(key)?.rating ?? player.initialRating];
+          return [player.id, ratings.get(player.id) ?? player.initialRating];
         }),
     ),
   };

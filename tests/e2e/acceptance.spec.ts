@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { sampleReplayMotion, checkAnimationReplay, createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
-  test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }) => {
+  test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }, testInfo) => {
     test.setTimeout(120000);
     // 1. Authenticate player and visit setup page
     await createAndSignInPlayer(page);
@@ -80,6 +80,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // 6. Enter scores for Round 1
     await expect(page.locator("h1")).toContainText("Round 1 Results");
+    await expect(page.getByTestId("session-highlights")).toHaveCount(0);
 
     // Fill in scores for Court 1, 2, 3
     const court1Team1 = page.locator("input[aria-label='Court 1 Team 1 score']");
@@ -98,7 +99,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     const court3Team1 = page.locator("input[aria-label='Court 3 Team 1 score']");
     const court3Team2 = page.locator("input[aria-label='Court 3 Team 2 score']");
-    await court3Team1.fill("6");
+    await court3Team1.fill("9");
     await court3Team2.fill("11");
     await page.locator("[data-testid='court-match-3'] button:has-text('Save Result')").click();
     await expect(page.locator("[data-testid='court-match-3'] >> text=Final")).toBeVisible();
@@ -181,7 +182,28 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.waitForURL(/\/sessions\/[^/]+$/);
     const summaryCard = page.locator("[data-testid='completed-session-full-view']");
     await expect(summaryCard).toBeVisible();
-    await expect(page.locator("h2:has-text('Championship Night')")).toBeVisible();
+
+    const highlights = page.getByTestId("session-highlights");
+    await expect(highlights).toBeVisible();
+    await expect(highlights).toContainText("From 3 completed games");
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 9");
+    await expect(highlights.getByTestId("highlight-most-wins")).toContainText("1 win");
+    await expect(highlights.getByTestId("highlight-most-partners")).toContainText("1 partner");
+    await page.reload();
+    await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 9");
+    const tiedGames = highlights.locator("details");
+    await expect(tiedGames.locator("summary")).toHaveText("1 other game tied");
+    await tiedGames.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(tiedGames).toHaveAttribute("open", "");
+    await expect(tiedGames.locator("li")).toContainText("9 – 11");
+    await page.keyboard.press("Space");
+    await expect(tiedGames).not.toHaveAttribute("open", "");
+    await highlights.screenshot({ path: testInfo.outputPath("session-highlights.png") });
+    const recapA11y = await new AxeBuilder({ page }).analyze();
+    expect(recapA11y.violations).toEqual([]);
+
+    await expect(page.getByRole("heading", { level: 1, name: "Championship Night", exact: true })).toBeVisible();
 
     // Test canceling inline session name change
     const editSessionNameBtn = page.locator("button[aria-label='Edit session name']");
@@ -192,8 +214,8 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await inlineInput.fill("Accidental Inline Name");
     await page.locator("button:text-is('Cancel')").click();
     await expect(inlineInput).not.toBeVisible();
-    await expect(page.locator("h2:has-text('Championship Night')")).toBeVisible();
-    await expect(page.locator("h2:has-text('Accidental Inline Name')")).not.toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Championship Night", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Accidental Inline Name", exact: true })).not.toBeVisible();
 
     // Wait 1.5s to ensure it does NOT redirect back to the group dashboard
     await page.waitForTimeout(1500);

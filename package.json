@@ -19,7 +19,9 @@
     "db:reset": "node scripts/migrate.js --reset",
     "build:worker": "opennextjs-cloudflare build",
     "preview:worker": "opennextjs-cloudflare build && wrangler dev",
-    "deploy:worker": "opennextjs-cloudflare build && wrangler deploy"
+    "deploy:worker": "opennextjs-cloudflare build && wrangler deploy",
+    "maintenance:correct-rating": "tsx scripts/maintenance/correct-rating.ts",
+    "test:maintenance": "node scripts/test-maintenance.mjs"
   },
   "keywords": [],
   "license": "UNLICENSED",
@@ -55,6 +57,7 @@
     "eslint-config-next": "^16.3.8",
     "fast-check": "^4.10.2",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11",
     "wrangler": "^4.149.0"

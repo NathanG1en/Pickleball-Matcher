@@ -61,6 +61,11 @@ jobs:
       - name: Matchmaking Fairness & Simulation Suite
         run: npm run test:simulation
 
+      - name: Maintenance CLI Permissions and Transaction Tests
+        run: npm run test:maintenance
+        env:
+          MAINTENANCE_TEST_ADMIN_URL: postgresql://postgres@127.0.0.1:54322/postgres
+
       - name: Setup Test Database
         run: node scripts/create-test-db.js
 

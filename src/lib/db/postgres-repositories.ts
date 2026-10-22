@@ -609,10 +609,12 @@ export class PostgresRepositories implements DomainRepository {
   async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
     return (await this.transaction(async (tx) => {
       const txRepo = tx as PostgresRepositories;
+      // Keep the baseline stable through linking/replay, including maintenance corrections.
       const accountRows = await txRepo.query<PlayerAccountRow[]>`
         select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
         from player_accounts
         where id = ${accountId}
+        for update
       `;
       if (!accountRows[0]) return null;
       const account = mapPlayerAccount(accountRows[0]);
