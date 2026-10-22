@@ -10,6 +10,7 @@ import {
   Input,
   Label,
   Modal,
+  RatingSlider,
   Select,
   StatCard,
   Textarea,
@@ -226,6 +227,25 @@ describe("Reusable UI Components", () => {
       expect(html).toContain("← Back to Group");
       expect(html).toContain('href="/g/group_1"');
       expect(html).toContain('aria-label="Return to group dashboard"');
+    });
+  });
+
+  describe("RatingSlider", () => {
+    it("renders slider with floating value box, ticks, and description", () => {
+      const html = renderToStaticMarkup(
+        <RatingSlider
+          value={3.5}
+          onChange={() => {}}
+          label="Starting Rating"
+          dataTestId="test-rating-slider"
+        />
+      );
+      expect(html).toContain("Starting Rating");
+      expect(html).toContain("3.50");
+      expect(html).toContain('data-testid="test-rating-slider"');
+      expect(html).toContain('data-testid="rating-tick-2"');
+      expect(html).toContain('data-testid="rating-tick-6"');
+      expect(html).toContain("Advanced Intermediate");
     });
   });
 });

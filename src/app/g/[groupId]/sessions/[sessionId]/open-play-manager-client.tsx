@@ -28,6 +28,9 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 
+import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rating-slider";
+export { RATING_TICKS, type RatingTick };
+
 export interface OpenPlayManagerClientProps {
   readonly groupId: string;
   readonly groupName?: string;
@@ -302,9 +305,7 @@ export function OpenPlayManagerClient({
 
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
-  const [guestPreset, setGuestPreset] = useState("3.5");
-  const [isCustomGuestRating, setIsCustomGuestRating] = useState(false);
-  const [customGuestRatingInput, setCustomGuestRatingInput] = useState("3.5");
+  const [guestRating, setGuestRating] = useState(3.5);
   const [selectedRosterPlayerId, setSelectedRosterPlayerId] = useState("");
 
   const rosterPlayerOptions = useMemo(
@@ -327,9 +328,12 @@ export function OpenPlayManagerClient({
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [guestAddedPopup, setGuestAddedPopup] = useState<string | null>(null);
+  const guestPopupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
   }, []);
 
   const showToast = (msg: string) => {
@@ -380,14 +384,11 @@ export function OpenPlayManagerClient({
     setIsAddingGuest(true);
     setError(null);
     try {
-      const rating = isCustomGuestRating
-        ? parseFloat(customGuestRatingInput) || 3.5
-        : parseFloat(guestPreset);
       const res = await addOpenPlayGuestAction({
         groupId,
         sessionId: session.id,
         guestName: guestName.trim(),
-        initialRating: rating,
+        initialRating: guestRating,
       });
       if (res.ok) {
         const guestPlayer = res.data;
@@ -408,10 +409,13 @@ export function OpenPlayManagerClient({
           ];
         });
         setGuestName("");
-        setGuestPreset("3.5");
-        setIsCustomGuestRating(false);
-        setCustomGuestRatingInput("3.5");
-        showToast(`Added guest ${guestPlayer.name}!`);
+        setGuestRating(3.5);
+        if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
+        setGuestAddedPopup(guestPlayer.name);
+        guestPopupTimeoutRef.current = setTimeout(() => {
+          setGuestAddedPopup(null);
+          guestPopupTimeoutRef.current = null;
+        }, 10000);
         router.refresh();
       } else {
         setError(res.error ?? "Failed to add guest.");
@@ -796,8 +800,32 @@ export function OpenPlayManagerClient({
 
   return (
     <div className="space-y-6">
+      {/* Dismissable Guest Added Popup */}
+      {guestAddedPopup && (
+        <div
+          data-testid="guest-added-popup"
+          className="fixed top-4 right-4 z-50 flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in"
+        >
+          <p role="status" className="font-black text-black m-0 p-0">
+            you have added &quot;{guestAddedPopup}&quot; to the roster
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
+              setGuestAddedPopup(null);
+            }}
+            aria-label="Dismiss"
+            className="ml-2 flex items-center gap-1 text-black hover:bg-neutral-100 border border-black bg-white rounded px-2 py-0.5 text-xs font-black cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+          >
+            <span aria-hidden="true" className="text-sm leading-none font-black">&times;</span>
+            <span>Dismiss</span>
+          </button>
+        </div>
+      )}
+
       {/* Toast Notification */}
-      {successToast && (
+      {successToast && !guestAddedPopup && (
         <div
           role="status"
           className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce"
@@ -978,13 +1006,16 @@ export function OpenPlayManagerClient({
             )}
 
             {/* Add Guest */}
-            <form onSubmit={handleAddGuest} className="space-y-2">
+            <form onSubmit={handleAddGuest} className="space-y-3">
               <label
                 htmlFor="guest-name-input"
                 className="block text-xs font-black uppercase tracking-wider text-black"
               >
                 Add Guest to Roster
               </label>
+              <p className="text-[11px] font-bold text-neutral-600">
+                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
+              </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-name-input"
@@ -994,48 +1025,25 @@ export function OpenPlayManagerClient({
                   onChange={(e) => setGuestName(e.target.value)}
                   className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 />
-                <select
-                  id="guest-rating-select"
-                  aria-label="Guest rating"
-                  value={isCustomGuestRating ? "custom" : guestPreset}
-                  onChange={(e) => {
-                    if (e.target.value === "custom") {
-                      setIsCustomGuestRating(true);
-                    } else {
-                      setIsCustomGuestRating(false);
-                      setGuestPreset(e.target.value);
-                      setCustomGuestRatingInput(e.target.value);
-                    }
-                  }}
-                  className="p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
-                >
-                  <option value="2.0">2.0 (Beginner)</option>
-                  <option value="2.5">2.5 (Adv. Beginner)</option>
-                  <option value="3.0">3.0 (Intermediate)</option>
-                  <option value="3.5">3.5 (Adv. Intermediate)</option>
-                  <option value="4.0">4.0 (Competitive)</option>
-                  <option value="4.5">4.5 (Adv. Competitive)</option>
-                  <option value="custom">Custom...</option>
-                </select>
-                {isCustomGuestRating && (
-                  <input
-                    type="number"
-                    aria-label="Custom guest rating"
-                    min={2.0}
-                    max={8.0}
-                    step={0.1}
-                    value={customGuestRatingInput}
-                    onChange={(e) => setCustomGuestRatingInput(e.target.value)}
-                    className="w-20 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#000]"
-                  />
-                )}
                 <button
                   type="submit"
                   disabled={!guestName.trim() || isAddingGuest}
-                  className="px-3 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
                 >
                   {isAddingGuest ? "Adding..." : "Add"}
                 </button>
+              </div>
+
+              {/* Sliding Scale for Rating */}
+              <div className="bg-neutral-50 border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                <RatingSlider
+                  id="guest-rating-slider"
+                  dataTestId="guest-rating-slider"
+                  label="Guest Rating"
+                  value={guestRating}
+                  onChange={setGuestRating}
+                  showDescription={true}
+                />
               </div>
             </form>
           </div>

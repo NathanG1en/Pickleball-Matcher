@@ -96,16 +96,16 @@ test("guest roster form has accessible names and passes an accessibility audit",
   await expect(page.getByText("1 player on roster", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Guest Name", exact: true })).toBeVisible();
-  const skill = page.getByRole("combobox", { name: "Guest starting skill level", exact: true });
+  const skill = page.getByRole("slider", { name: "Guest starting skill level", exact: true });
   await expect(skill).toHaveValue("3.5");
   const audit = await new AxeBuilder({ page }).disableRules(["color-contrast"]).analyze();
   expect(audit.violations).toEqual([]);
 
   for (const [index, guest] of [
-    { name: "Intermediate Guest", value: "3", rating: "Rating: 3 (Intermediate)" },
-    { name: "Competitive Guest", value: "4", rating: "Rating: 4 (Competitive)" },
+    { name: "Intermediate Guest", tick: "3", rating: "Rating: 3 (Intermediate)" },
+    { name: "Competitive Guest", tick: "4", rating: "Rating: 4 (Competitive)" },
   ].entries()) {
-    await skill.selectOption(guest.value);
+    await page.locator(`[data-testid='rating-tick-${guest.tick}']`).click();
     await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill(guest.name);
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByText(`${index + 2} players on roster`, { exact: true })).toBeVisible();

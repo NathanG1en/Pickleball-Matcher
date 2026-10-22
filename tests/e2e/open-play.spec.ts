@@ -5,7 +5,7 @@ test.describe("Open Play Workflow", () => {
   test("host starts open play session, adds guests and players, submits games, and views in profile", async ({
     page,
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(90000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
@@ -63,10 +63,29 @@ test.describe("Open Play Workflow", () => {
     expect(backBox && optionsBox && optionsBox.x > backBox.x).toBe(true);
     expect(optionsBox && optionsBox.y < (backBox?.y ?? 0) + 25).toBe(true);
 
-    // 7. Add Guest player "Guest Gary" with a selected rating
+    // 7. Add Guest player "Guest Gary" with a selected rating using sliding scale
     await page.fill("#guest-name-input", "Guest Gary");
-    await page.selectOption("#guest-rating-select", "4.0");
+    // Verify sliding works by dragging across the number line on mouse devices
+    const sliderContainer = page.locator("[data-testid='guest-rating-value']").locator("..");
+    await sliderContainer.scrollIntoViewIfNeeded();
+    const sliderBox = await sliderContainer.boundingBox();
+    if (sliderBox && !testInfo.project.use.hasTouch) {
+      await page.mouse.move(sliderBox.x + sliderBox.width * 0.2, sliderBox.y + 36);
+      await page.mouse.down();
+      await page.mouse.move(sliderBox.x + sliderBox.width * 0.8, sliderBox.y + 36);
+      await page.mouse.up();
+      // Verifies sliding updated the rating from default 3.50
+      await expect(page.locator("[data-testid='guest-rating-value']")).not.toContainText("3.50");
+    }
+    // Clicking a tick directly also works
+    await page.locator("[data-testid='rating-tick-4']").click();
+    await expect(page.locator("[data-testid='guest-rating-value']")).toContainText("4.00");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
+    const guestPopup = page.locator("[data-testid='guest-added-popup']");
+    await expect(guestPopup).toBeVisible();
+    await expect(guestPopup).toContainText('you have added "Guest Gary" to the roster');
+    await guestPopup.locator("button[aria-label='Dismiss']").click();
+    await expect(guestPopup).not.toBeVisible();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
     // Verify that Bob (on roster but not checked in) is not selectable in games
