@@ -16,6 +16,7 @@ export default defineConfig({
     exclude: [
       "tests/e2e/**",
       "tests/integration/**",
+      "tests/maintenance-postgres/**",
       "tests/simulations/**",
       "tests/auth/rate-limit.test.ts",
     ],
