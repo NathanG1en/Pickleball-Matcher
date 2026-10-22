@@ -106,9 +106,15 @@ test.describe("Corrections and Replay Workflow", () => {
     // After undo, should be back to proposal or previous state
     await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
 
-    // 9. Test mid-session attendance correction
+    // 9. Test mid-session attendance correction and court configuration
     await page.click("button:has-text('Attendance')");
     await expect(page.locator("h3:has-text('Session Attendance')")).toBeVisible();
+
+    // Verify both tabs are visible
+    const attendanceTab = page.locator("button[role='tab']:has-text('Attendance')");
+    const courtConfigTab = page.locator("button[role='tab']:has-text('Court Configuration')");
+    await expect(attendanceTab).toBeVisible();
+    await expect(courtConfigTab).toBeVisible();
 
     // Toggle player Charlie to Away
     const charlieRow = page.locator("[data-testid='attendance-row-Charlie']");
@@ -119,7 +125,16 @@ test.describe("Corrections and Replay Workflow", () => {
     await charlieRow.locator("button:has-text('Mark Present')").click();
     await expect(charlieRow.locator("text=Present")).toBeVisible();
 
-    // Close attendance modal
+    // Switch to Court Configuration tab
+    await courtConfigTab.click();
+    await expect(page.locator("span[aria-label='Court count']")).toBeVisible();
+    await expect(page.locator("button:has-text('Save Court Configuration')")).toBeVisible();
+
+    // Save court configuration
+    await page.click("button:has-text('Save Court Configuration')");
+    await expect(page.locator("text=Court configuration updated successfully.")).toBeVisible();
+
+    // Close modal
     await page.click("button:has-text('Close')");
     await expect(page.locator("h3:has-text('Session Attendance')")).not.toBeVisible();
   });
