@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { replayRatings } from "@/lib/domain/rating-replay";
+import { calculateRatingReplay, replayRatings } from "@/lib/domain/rating-replay";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
 const players = ["a", "b", "c", "d"].map((id) => ({
@@ -31,6 +31,17 @@ function replayMatch(
 }
 
 describe("replayRatings", () => {
+  it("calculates the same replay without writing or mutating the input", async () => {
+    const matches = [replayMatch("match-1", "2026-10-06T12:00:00.000Z", 1)];
+    const original = structuredClone({ players, matches });
+    const calculated = calculateRatingReplay(players, matches);
+    expect({ players, matches }).toEqual(original);
+    const repository = new InMemoryRepositories({ players, replayMatches: matches });
+    await replayRatings("group-1", repository);
+    expect(calculated.players.map(p => p.rating)).toEqual(repository.state.players.map(p => p.rating));
+    expect(calculated.snapshots).toEqual(repository.state.ratingSnapshots);
+    expect(calculated.processedMatchIds).toEqual(["match-1"]);
+  });
   it("uses completion time then match ID for a stable chronological order", async () => {
     const repository = new InMemoryRepositories({
       players,
