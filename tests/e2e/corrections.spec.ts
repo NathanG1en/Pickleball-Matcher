@@ -468,3 +468,96 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await expect(reaction).toHaveCount(0);
   });
 }
+
+test("organizer can end an active session (normal or open play) directly from group page", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  const groupName = `End Session Direct ${Date.now()}`;
+  const { groupId } = await createTestGroup(page, groupName);
+
+  // Add 4 players for a 1-court normal session
+  await expect(page.locator("h2:has-text('Roster')")).toBeVisible();
+  const addGuestButton = page.locator("button:has-text('Add Guest')");
+  await expect(addGuestButton).toBeVisible();
+  await addGuestButton.click();
+  for (const name of ["PlayerA", "PlayerB", "PlayerC"]) {
+    await page.fill("#guest-player-name", name);
+    await page.locator("button:text-is('Add')").click();
+    await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`, { timeout: 10000 });
+  }
+
+  // 1. Normal Session: Start session
+  await page.click("a[href*='/sessions/new']");
+  await page.click("button[data-testid='select-normal-session-button']");
+  await page.click("button:has-text('Start Session')");
+  await expect(page).toHaveURL(/\/sessions\/session_/);
+
+  // Navigate back to the group page
+  await page.goto(`/g/${groupId}`);
+  await expect(page.locator("text=Session In Progress")).toBeVisible();
+  const resumeBtn = page.locator("text=Resume Session →");
+  await expect(resumeBtn).toBeVisible();
+  const endNowBtn = page.locator("button[data-testid='end-session-now-button']");
+  await expect(endNowBtn).toBeVisible();
+  await expect(endNowBtn).toHaveText("End Session");
+
+  // Verify side-by-side layout: same level, end session is on the left (~25%) and resume is on the right (~75%), separated by gap
+  const resumeBox = await resumeBtn.boundingBox();
+  const endBox = await endNowBtn.boundingBox();
+  expect(resumeBox).not.toBeNull();
+  expect(endBox).not.toBeNull();
+  if (resumeBox && endBox) {
+    // On the same level (vertical overlap)
+    expect(Math.abs(resumeBox.y - endBox.y)).toBeLessThan(10);
+    // End session is on the left and they do not touch
+    expect(resumeBox.x).toBeGreaterThan(endBox.x + endBox.width);
+    // Resume is larger (~75% vs ~25%)
+    expect(resumeBox.width).toBeGreaterThan(endBox.width * 2);
+  }
+
+  // Click End Session
+  await endNowBtn.click();
+
+  // Verify session is ended on group page
+  await expect(page.locator("text=Session In Progress")).not.toBeVisible();
+  await expect(page.locator("text=Resume Session →")).not.toBeVisible();
+  await expect(endNowBtn).not.toBeVisible();
+  await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
+
+  // 2. Open Play Session: Start open play
+  await page.click("a[data-testid='start-new-session-button']");
+  await page.click("button[data-testid='select-open-play-button']");
+  await page.click("button[data-testid='start-open-play-button']");
+  await expect(page).toHaveURL(/\/sessions\/session_/);
+
+  // Navigate back to group page
+  await page.goto(`/g/${groupId}`);
+  await expect(page.locator("text=Open Play In Progress")).toBeVisible();
+  const manageBtn = page.locator("text=Manage Open Play →");
+  await expect(manageBtn).toBeVisible();
+  const openPlayEndNowBtn = page.locator("button[data-testid='end-session-now-button']");
+  await expect(openPlayEndNowBtn).toBeVisible();
+  await expect(openPlayEndNowBtn).toHaveText("End Session");
+
+  // Verify side-by-side layout: same level, end session is on the left (~25%) and manage is on the right (~75%), separated by gap
+  const manageBox = await manageBtn.boundingBox();
+  const openPlayEndBox = await openPlayEndNowBtn.boundingBox();
+  expect(manageBox).not.toBeNull();
+  expect(openPlayEndBox).not.toBeNull();
+  if (manageBox && openPlayEndBox) {
+    expect(Math.abs(manageBox.y - openPlayEndBox.y)).toBeLessThan(10);
+    expect(manageBox.x).toBeGreaterThan(openPlayEndBox.x + openPlayEndBox.width);
+    expect(manageBox.width).toBeGreaterThan(openPlayEndBox.width * 2);
+  }
+
+  // Click End Session Now
+  await openPlayEndNowBtn.click();
+
+  // Verify open play session is ended
+  await expect(page.locator("text=Open Play In Progress")).not.toBeVisible();
+  await expect(page.locator("text=Manage Open Play →")).not.toBeVisible();
+  await expect(openPlayEndNowBtn).not.toBeVisible();
+  await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
+});
+

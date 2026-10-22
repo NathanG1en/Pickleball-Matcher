@@ -263,6 +263,38 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).toContain("Host Pro vs Member Joe");
       expect(html).toContain("View Live Session →");
       expect(html).not.toContain("Resume Session →");
+      expect(html).not.toContain("End Session");
+    });
+
+    it("allows organizers to see 'End Session' button for active normal session", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain("Session In Progress");
+      expect(html).toContain("Resume Session →");
+      expect(html).toContain("End Session");
+      expect(html).toContain("end-session-now-button");
+    });
+
+    it("allows organizers to see 'End Session' button for active open play session", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      const session = await repo.getSession(activeSessionId);
+      if (session) {
+        await repo.updateSession({ ...session, type: "open_play" });
+      }
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain("Manage Open Play →");
+      expect(html).toContain("End Session");
+      expect(html).toContain("end-session-now-button");
     });
 
     it("allows non-members to view a public group but hides active/past sessions and shows join card", async () => {
