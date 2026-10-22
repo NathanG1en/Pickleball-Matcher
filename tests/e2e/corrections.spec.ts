@@ -29,6 +29,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 3. Start a session with 2 courts and 8 players
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await expect(page.locator("text=8 players selected")).toBeVisible();
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
@@ -134,6 +135,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 2. Start a session
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
 
@@ -180,7 +182,12 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // Verify session appears in past sessions
     const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();
+    const pastSessionOptions = page.locator("[data-testid^='session-options-menu-button-']").first();
     await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
     await expandArrow.click();
     const viewFullLink = page.locator("[data-testid^='view-full-session-link-']").first();
     await expect(viewFullLink).toBeVisible();
@@ -199,13 +206,14 @@ test("host synergy follows current partners after manual swaps and new proposals
       const account = await createAndSignInPlayer(otherPage, { name });
       names.push(name);
       await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(account.username);
-      await page.getByRole("button", { name: "Find & Add", exact: true }).click();
+      await page.getByRole("button", { name: "Add", exact: true }).click();
       await expect(page.getByText(`${names.length} players on roster`, { exact: true })).toBeVisible();
     }
   } finally {
     await otherContext.close();
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -285,6 +293,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
     await expect(page.locator("#guest-player-name")).toHaveValue("");
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -340,6 +349,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByTestId("select-normal-session-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
     const sessionUrl = page.url();
@@ -401,6 +411,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+    await page.getByTestId("select-normal-session-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
     await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
+import { GroupOrganizersPanel, getRemoveGuestConfirmationMessage } from "@/components/groups/group-organizers-panel";
 import {
   addGroupOrganizerAction,
   addGroupPlayerByUsernameAction,
@@ -139,6 +139,9 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Guest Player");
       expect(html).not.toContain("Guest Player (@");
       expect(html).toContain("View profile");
+      expect(html).toContain(
+        'class="block w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"'
+      );
 
       // Verify active/inactive text was removed
       expect(html).not.toContain("· Active");
@@ -227,6 +230,18 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Merge with another guest player");
       expect(html).toContain("Remove player");
       expect(html).not.toContain("Make a group organizer");
+    });
+
+    it("formats guest removal confirmation message correctly for 0, 1, and multiple games played", () => {
+      expect(getRemoveGuestConfirmationMessage("Bob", 0)).toBe(
+        'Are you sure you want to remove "Bob"? They have played 0 games.'
+      );
+      expect(getRemoveGuestConfirmationMessage("Bob", 1)).toBe(
+        'Are you sure you want to remove "Bob"? They have played 1 game.'
+      );
+      expect(getRemoveGuestConfirmationMessage("Bob", 7)).toBe(
+        'Are you sure you want to remove "Bob"? They have played 7 games.'
+      );
     });
 
     it("does not render Link to public player for players who already have an account", () => {

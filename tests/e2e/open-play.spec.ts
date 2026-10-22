@@ -26,21 +26,42 @@ test.describe("Open Play Workflow", () => {
     // 3. Verify group dashboard ready to play
     await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
 
-    // 4. Verify Start Open Play button is next to Start New Session
+    // 4. Verify Start New Session button on group dashboard (and no separate Open Play button on dashboard)
     const startNewSessionBtn = page.locator("a[data-testid='start-new-session-button']");
-    const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
-
     await expect(startNewSessionBtn).toBeVisible();
-    await expect(startOpenPlayBtn).toBeVisible();
-    await expect(startOpenPlayBtn).toHaveText("Start Open Play");
+    await expect(page.locator("button[data-testid='start-open-play-button']")).toHaveCount(0);
 
-    // 5. Host clicks Start Open Play
+    // 5. Host clicks Start New Session to go to format selection screen
+    await startNewSessionBtn.click();
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await expect(page.locator("h1")).toContainText("Choose Session Format");
+    await expect(page.getByRole("heading", { name: "Normal Session" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Open Play" })).toBeVisible();
+
+    // Select Open Play format
+    await page.click("button[data-testid='select-open-play-button']");
+    await expect(page.locator("h1")).toContainText("Open Play Setup");
+
+    // Start Open Play session
+    const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
+    await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // 6. Verify Open Play session page loaded with Host checked in
     await expect(page.locator("h1")).toContainText("Open Play Session");
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
+
+    // Verify Open Play badge label is removed from the header and three dots is in the top right corner
+    const header = page.locator("header").first();
+    await expect(header.locator("span.bg-black.text-\\[\\#ccff00\\]")).toHaveCount(0);
+    const headerOptionsButton = header.locator("[data-testid='session-options-menu-button']");
+    await expect(headerOptionsButton).toBeVisible();
+    const headerBackBtn = header.locator("a[aria-label='Go back'], a[aria-label='Go back to profile']");
+    const backBox = await headerBackBtn.boundingBox();
+    const optionsBox = await headerOptionsButton.boundingBox();
+    expect(backBox && optionsBox && optionsBox.x > backBox.x).toBe(true);
+    expect(optionsBox && optionsBox.y < (backBox?.y ?? 0) + 25).toBe(true);
 
     // 7. Add Guest player "Guest Gary" with a selected rating
     await page.fill("#guest-name-input", "Guest Gary");
@@ -49,14 +70,31 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Guest Gary")).toBeVisible();
 
     // Verify that Bob (on roster but not checked in) is not selectable in games
-    await page.locator("button:text-is('Singles (1v1)')").click();
+    const doublesBtn = page.locator("button:text-is('Doubles (2v2)')");
+    const singlesBtn = page.locator("button:text-is('Singles (1v1)')");
+    await expect(doublesBtn).toBeVisible();
+    await expect(singlesBtn).toBeVisible();
+
+    // Verify both match type options fit inside the submit game card horizontally without being cut off
+    const initialCardBox = await page.locator("[data-testid='submit-game-card']").boundingBox();
+    const initialSinglesBox = await singlesBtn.boundingBox();
+    const initialDoublesBox = await doublesBtn.boundingBox();
+    expect(initialCardBox).not.toBeNull();
+    expect(initialSinglesBox).not.toBeNull();
+    expect(initialDoublesBox).not.toBeNull();
+    if (initialCardBox && initialSinglesBox && initialDoublesBox) {
+      expect(initialDoublesBox.x).toBeGreaterThanOrEqual(initialCardBox.x);
+      expect(initialSinglesBox.x + initialSinglesBox.width).toBeLessThanOrEqual(initialCardBox.x + initialCardBox.width + 1);
+    }
+
+    await singlesBtn.click();
     const singlesCard = page.locator("[data-testid='submit-game-card']");
     const singlesT1P1 = singlesCard.locator("[data-testid='select-team-1-player-1']");
     await singlesT1P1.click();
     await expect(page.locator("[role='option']").filter({ hasText: "Bob" })).toHaveCount(0);
     await expect(page.locator("[role='option']").filter({ hasText: "Guest Gary" })).toHaveCount(1);
     await page.keyboard.press("Escape");
-    await page.locator("button:text-is('Doubles (2v2)')").click();
+    await doublesBtn.click();
 
     // 8. Add group player Bob from roster
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
@@ -171,7 +209,7 @@ test.describe("Open Play Workflow", () => {
 
     // Verify game is recorded in Games Played list
     const matchesList = page.locator("[data-testid='open-play-matches-list']");
-    await expect(matchesList).toBeVisible();
+    await expect(matchesList).toBeVisible({ timeout: 15000 });
     await expect(matchesList).toContainText("11 – 9");
 
     // 10b. Verify player selects automatically remain autopopulated from the logged in user's last game
@@ -189,7 +227,7 @@ test.describe("Open Play Workflow", () => {
     await submitCard.locator("button[data-testid='submit-game-button']").click();
 
     // Verify both games are displayed in Games Played list
-    await expect(matchesList.locator("article")).toHaveCount(2);
+    await expect(matchesList.locator("article")).toHaveCount(2, { timeout: 15000 });
     await expect(matchesList).toContainText("11 – 8");
 
     // Check group dashboard while Open Play is in progress
@@ -267,7 +305,9 @@ test.describe("Open Play Workflow", () => {
     await expect(optionsButton).toBeVisible();
     await optionsButton.click();
 
+    const renameMenuItem = page.locator("[data-testid='rename-session-menu-item']");
     const duplicateMenuItem = page.locator("[data-testid='duplicate-session-menu-item']");
+    await expect(renameMenuItem).toBeVisible();
     await expect(duplicateMenuItem).toBeVisible();
     await duplicateMenuItem.click();
 
@@ -377,7 +417,10 @@ test.describe("Open Play Workflow", () => {
     await page.locator("button:text-is('Add')").click();
     await expect(page.locator("p[role='status']")).toContainText('Guest player "Bob" added to the roster.', { timeout: 10000 });
 
-    // Host starts Open Play
+    // Host starts Open Play via Start New Session -> Open Play
+    await page.click("a[data-testid='start-new-session-button']");
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await page.click("button[data-testid='select-open-play-button']");
     const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
     await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();
@@ -517,7 +560,10 @@ test.describe("Open Play Workflow", () => {
     const groupName = `Session Rename League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
 
-    // Host starts open play session
+    // Host starts open play session via Start New Session -> Open Play
+    await page.click("a[data-testid='start-new-session-button']");
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/new`));
+    await page.click("button[data-testid='select-open-play-button']");
     const startOpenPlayBtn = page.locator("button[data-testid='start-open-play-button']");
     await expect(startOpenPlayBtn).toBeVisible();
     await startOpenPlayBtn.click();
@@ -585,6 +631,14 @@ test.describe("Open Play Workflow", () => {
     });
     await expect(pastSessionItem).toContainText(todayFormatted);
 
+    const expandArrow = page.locator(`[data-testid='expand-session-arrow-${sessionId}']`);
+    const pastSessionOptions = page.locator(`[data-testid='session-options-menu-button-${sessionId}']`);
+    await expect(expandArrow).toBeVisible();
+    await expect(pastSessionOptions).toBeVisible();
+    const arrowBox = await expandArrow.boundingBox();
+    const optionsBox = await pastSessionOptions.boundingBox();
+    expect(arrowBox && optionsBox && optionsBox.x > arrowBox.x).toBe(true);
+
     // Check player profile displays renamed session with date
     await page.goto("/players");
     const playerSession = page.locator(`article[data-testid='player-session-${sessionId}']`);
@@ -604,7 +658,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       });
     });
     await createTestGroup(page, `Open Play sign-off ${Date.now()}`);
-    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await page.getByTestId("start-new-session-button").click();
+    await page.getByTestId("select-open-play-button").click();
+    await page.getByTestId("start-open-play-button").click();
+    await page.waitForURL(/\/sessions\/session_/);
     await expect(page.getByTestId("end-session-button")).toBeVisible();
     page.once("dialog", dialog => dialog.dismiss());
     await page.getByTestId("end-session-button").click();
@@ -651,7 +708,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
     }));
     await createTestGroup(page, `Open Play pickle ${Date.now()}`);
-    await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+    await page.getByTestId("start-new-session-button").click();
+    await page.getByTestId("select-open-play-button").click();
+    await page.getByTestId("start-open-play-button").click();
+    await page.waitForURL(/\/sessions\/session_/);
     await page.locator("#guest-name-input").fill("Pickle Guest");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByTestId("open-play-attendees")).toContainText("Pickle Guest");

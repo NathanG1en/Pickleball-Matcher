@@ -94,7 +94,7 @@ describe("SessionManagerClient Component", () => {
 
     expect(html).toContain('data-testid="completed-session-full-view"');
     expect(html).toContain("Downtown Club");
-    expect(html).toContain("Oct 10, 2026");
+    expect(html).toContain("October 10, 2026");
     expect(html).toContain("Completed Session");
     expect(html).toContain("Rounds");
     expect(html).toContain("Total Games");
@@ -169,7 +169,8 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(html).toContain('data-testid="completed-session-full-view"');
-    expect(html).toContain("Oct 10, 2026");
+    expect(html).toContain("Completed Session");
+    expect(html).toContain("October 10, 2026");
   });
 
   it("renders custom session name when provided", () => {

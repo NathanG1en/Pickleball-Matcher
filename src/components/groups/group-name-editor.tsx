@@ -17,10 +17,17 @@ export function GroupNameEditor({
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
+  const [prevInitialName, setPrevInitialName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(initialName);
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+
+  if (initialName !== prevInitialName) {
+    setPrevInitialName(initialName);
+    setName(initialName);
+    setNameInput(initialName);
+  }
 
   const handleStartEditName = () => {
     setNameInput(name);

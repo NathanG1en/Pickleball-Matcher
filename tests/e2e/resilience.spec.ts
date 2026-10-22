@@ -35,6 +35,7 @@ test.describe("Resilience and Safe Drafts", () => {
       .analyze();
     expect(sessionSetupA11y.violations).toEqual([]);
 
+    await page.click("button[data-testid='select-normal-session-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
     const sessionUrl = page.url();

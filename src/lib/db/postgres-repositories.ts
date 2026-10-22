@@ -569,6 +569,19 @@ export class PostgresRepositories implements DomainRepository {
     return rows.map(mapPlayerAccount);
   }
 
+  async listPlayerAccounts(search: string = "", limit: number = 50): Promise<readonly PlayerAccountRecord[]> {
+    const trimmed = search.trim().toLowerCase().replace(/^@/, "");
+    const searchTerm = `%${trimmed}%`;
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      from player_accounts
+      where (${trimmed} = '' or username ilike ${searchTerm} or name ilike ${searchTerm})
+      order by (${trimmed} != '' and username = ${trimmed}) desc, name asc, username asc
+      limit ${limit}
+    `;
+    return rows.map(mapPlayerAccount);
+  }
+
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
     const rows = await this.query<PlayerRow[]>`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
@@ -596,10 +609,12 @@ export class PostgresRepositories implements DomainRepository {
   async linkGuestPlayer(groupId: string, playerId: string, accountId: string): Promise<PlayerRecord | null> {
     return (await this.transaction(async (tx) => {
       const txRepo = tx as PostgresRepositories;
+      // Keep the baseline stable through linking/replay, including maintenance corrections.
       const accountRows = await txRepo.query<PlayerAccountRow[]>`
         select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
         from player_accounts
         where id = ${accountId}
+        for update
       `;
       if (!accountRows[0]) return null;
       const account = mapPlayerAccount(accountRows[0]);

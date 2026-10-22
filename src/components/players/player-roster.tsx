@@ -170,7 +170,7 @@ export function PlayerRoster({
                 {!canManage && player.username && (
                   <Link
                     href={`/players/${encodeURIComponent(player.username)}`}
-                    className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0 mr-2"
+                    className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0 mr-2"
                   >
                     View profile
                   </Link>
@@ -203,9 +203,13 @@ export function PlayerRoster({
         }}
         title="Are you sure?"
         description={
-          <>
-            Are you sure you want to delete <span className="font-black text-black">{playerToDelete?.name}</span> from the roster?
-          </>
+          !playerToDelete?.accountId ? (
+            `Are you sure you want to remove "${playerToDelete?.name}"? They have played ${playerToDelete?.ratedGamesPlayed ?? 0} ${(playerToDelete?.ratedGamesPlayed ?? 0) === 1 ? "game" : "games"}.`
+          ) : (
+            <>
+              Are you sure you want to delete <span className="font-black text-black">{playerToDelete?.name}</span> from the roster?
+            </>
+          )
         }
         confirmText="Delete"
         cancelText="Cancel"

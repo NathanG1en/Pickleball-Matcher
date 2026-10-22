@@ -370,7 +370,7 @@ export function TournamentCreationForm({
             disabled={!guestName.trim()}
             className="font-display uppercase tracking-wider"
           >
-            + Add
+            Add
           </Button>
         </div>
       </section>

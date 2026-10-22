@@ -287,7 +287,7 @@ export function AttendanceManager({
               />
             )}
             <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider">
-              + Add
+              Add
             </Button>
           </div>
         </form>

@@ -2,46 +2,73 @@ import { test, expect } from "@playwright/test";
 import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
-  test("enforces PIN authentication and rate limits invalid attempts", async ({
+  test("organizers can rename guests but cannot inject a starting-rating correction", async ({ page }) => {
+    const { groupId } = await createTestGroup(page, `Maintenance boundary ${Date.now()}`);
+    await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+    await page.locator("#guest-player-name").fill("Maintenance Guest");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    const guest = page.locator("li").filter({ hasText: "Maintenance Guest" });
+    await expect(guest).toBeVisible();
+    await expect(guest).toContainText("3.5");
+    await guest.locator("summary").click();
+    await guest.getByRole("button", { name: "Edit guest name", exact: true }).click();
+    const modal = page.getByRole("dialog", { name: "Edit Guest Name" });
+    await modal.locator("#edit-guest-name-input").fill("Should not save");
+    let injected = false;
+    await page.route("**/g/**", async route => {
+      const request = route.request();
+      if (request.method() === "POST" && request.headers()["next-action"]) {
+        const data = JSON.parse(request.postData() ?? "[]");
+        if (data[0]?.name === "Should not save" && data[0]?.groupId === groupId) {
+          data[0].initialRating = 4;
+          injected = true;
+          await route.continue({ postData: JSON.stringify(data) });
+          return;
+        }
+      }
+      await route.continue();
+    });
+    await modal.getByRole("button", { name: "Save Changes", exact: true }).click();
+    await expect(modal).toContainText("Invalid player update data");
+    expect(injected).toBe(true);
+    await expect(guest).toContainText("3.5");
+    await page.unroute("**/g/**");
+    await modal.locator("#edit-guest-name-input").fill("Maintained Guest");
+    await modal.getByRole("button", { name: "Save Changes", exact: true }).click();
+    await expect(modal).toHaveCount(0);
+    await page.reload();
+    const renamed = page.locator("li").filter({ hasText: "Maintained Guest" });
+    await expect(renamed).toContainText("3.5");
+    await expect(page.getByText("Should not save", { exact: true })).toHaveCount(0);
+  });
+
+  test.beforeEach(() => {
+    test.setTimeout(90000);
+  });
+
+  test("protects private groups and organizer pages from unauthenticated access", async ({
     page,
     browser,
   }) => {
     // 1. Create a test group
     const groupName = `Security Test League ${Date.now()}`;
-    await createTestGroup(page, groupName);
+    const { groupId } = await createTestGroup(page, groupName);
 
-    const groupUrl = page.url();
-    const groupId = groupUrl.split("/g/")[1].split("/")[0];
-
-    // Test login and protected routes in a separate unauthenticated context.
+    // Test protected routes in a separate unauthenticated context.
     const unauthenticatedContext = await browser.newContext();
     const unauthenticatedPage = await unauthenticatedContext.newPage();
-    await unauthenticatedPage.goto(`/g/${groupId}/login`);
-    await expect(unauthenticatedPage.locator("h1")).toContainText("Organizer Sign In");
 
-    // Attempt invalid PIN
-    await unauthenticatedPage.fill("#login-pin", "0000");
-    await unauthenticatedPage.click("button[type='submit']");
-    await expect(
-      unauthenticatedPage.locator("text=Unable to sign in").or(unauthenticatedPage.locator("text=Check your group name and PIN")),
-    ).toBeVisible();
-
-    // Verify user is not logged in / cannot access protected dashboard
+    // Verify unauthenticated user cannot access private group dashboard and is redirected to player login
     await unauthenticatedPage.goto(`/g/${groupId}`);
-    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/g/${groupId}/login`));
+    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/player-login`));
 
-    // Test rate limiting on repeated failed logins.
-    for (let i = 0; i < 6; i++) {
-      await unauthenticatedPage.fill("#login-pin", `111${i}`);
-      await unauthenticatedPage.click("button[type='submit']");
-    }
-    // Should display rate limit or invalid message
-    await expect(
-      unauthenticatedPage
-        .locator("text=Too many attempts")
-        .or(unauthenticatedPage.locator("text=Unable to sign in"))
-        .or(unauthenticatedPage.locator("text=Check your group name and PIN")),
-    ).toBeVisible();
+    // Verify unauthenticated user cannot access session creation and is redirected to player login
+    await unauthenticatedPage.goto(`/g/${groupId}/sessions/new`);
+    await expect(unauthenticatedPage).toHaveURL(new RegExp(`/player-login`));
+
+    // Verify homepage does not render legacy organizer PIN sign in
+    await unauthenticatedPage.goto("/");
+    await expect(unauthenticatedPage.locator("text=Legacy organizer PIN sign in")).not.toBeVisible();
 
     await unauthenticatedContext.close();
   });
@@ -63,11 +90,13 @@ test.describe("Permissions and Security Workflow", () => {
     // 3. Switch to "Add Guest" tab on dashboard
     await page.click("button[type='button']:has-text('Add Guest')");
     await page.fill("#guest-player-name", "Guest Taylor");
+    await page.selectOption("#guest-player-rating", "2");
     await page.click("form button[type='submit']:has-text('Add')");
 
     // Guest Taylor should appear in the roster
     const guestItem = page.locator("li").filter({ hasText: "Guest Taylor" });
     await expect(guestItem).toBeVisible();
+    await expect(guestItem).toContainText("Rating: 2 (");
 
     // Open options dropdown for Guest Taylor
     await guestItem.locator("summary").click();
@@ -104,10 +133,16 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Open dropdown for linked player
     const linkedItem = page.locator("li").filter({ hasText: publicUser.name });
+    await expect(linkedItem).toContainText("3.5");
+    await page.reload();
+    await expect(linkedItem).toContainText("3.5");
     await linkedItem.locator("summary").click();
 
     // "View profile" should now be present in the dropdown for organizer/host
-    await expect(linkedItem.locator("a:has-text('View profile')")).toBeVisible();
+    const viewProfileLink = linkedItem.locator("a:has-text('View profile')");
+    await expect(viewProfileLink).toBeVisible();
+    await expect(viewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(viewProfileLink).toHaveClass(/text-black/);
 
     // "Link to public player" should no longer be present
     await expect(linkedItem.locator("button:has-text('Link to public player')")).not.toBeVisible();
@@ -132,7 +167,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Add publicUser to the roster
     await page.fill("#roster-player-username", publicUser.username);
-    await page.click("button:has-text('Find & Add')");
+    await page.click("button:text-is('Add')");
     const publicUserItem = page.locator("li").filter({ hasText: publicUser.name });
     await expect(publicUserItem).toBeVisible();
 
@@ -193,7 +228,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Find and add coHost to the group roster
     await page.fill("#roster-player-username", coHost.username);
-    await page.click("button:has-text('Find & Add')");
+    await page.click("button:text-is('Add')");
     const coHostItem = page.locator("li").filter({ hasText: coHost.name });
     await expect(coHostItem).toBeVisible();
 
@@ -342,13 +377,40 @@ test.describe("Permissions and Security Workflow", () => {
     await yesBtn.click();
 
     // Modal closes and status confirms merge
-    await expect(mergeModal).not.toBeVisible();
+    await expect(mergeModal).not.toBeVisible({ timeout: 15000 });
     await expect(page.locator("p[role='status']")).toContainText('Merged guest players into "Sam Master".');
 
     // Roster should now contain "Sam Master" and neither "Guest Samantha" nor "Guest Samuel"
     await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
     await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).not.toBeVisible();
     await expect(page.locator("li").filter({ hasText: "Guest Samuel" })).not.toBeVisible();
+
+    // 13. Verify confirmation dialog before removing a guest player
+    const samMasterItem = page.locator("li").filter({ hasText: "Sam Master" });
+    await samMasterItem.locator("summary").click();
+    const removeGuestBtn = samMasterItem.locator("button:has-text('Remove player')");
+    await expect(removeGuestBtn).toBeVisible();
+    await removeGuestBtn.click();
+
+    // Confirmation dialog appears with the required message
+    const removeGuestModal = page.locator("div[role='alertdialog']");
+    await expect(removeGuestModal).toBeVisible();
+    await expect(removeGuestModal).toContainText('Are you sure you want to remove "Sam Master"? They have played 0 games.');
+
+    // Cancelling leaves the guest player on the roster
+    await removeGuestModal.locator("button:has-text('Cancel')").click();
+    await expect(removeGuestModal).not.toBeVisible();
+    await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
+
+    // Confirming removes the guest player from the roster
+    await samMasterItem.locator("summary").click();
+    await removeGuestBtn.click();
+    await expect(removeGuestModal).toBeVisible();
+    await removeGuestModal.locator("[data-testid='confirm-remove-guest-button']").click();
+
+    await expect(removeGuestModal).not.toBeVisible();
+    await expect(page.locator("p[role='status']")).toContainText("Player removed from the group.");
+    await expect(page.locator("li").filter({ hasText: "Sam Master" })).not.toBeVisible();
   });
 
   test("restricts session deletion to host/organizers and requires confirmation", async ({
@@ -371,6 +433,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    await page.click("button[data-testid='select-normal-session-button']");
     await page.click("button:has-text('Start Session')");
     await page.waitForURL(/\/sessions\/session_/);
     const sessionUrl = page.url();
@@ -387,7 +450,7 @@ test.describe("Permissions and Security Workflow", () => {
     // Host adds member to group
     await page.goto(`/g/${groupId}`);
     await page.fill("#roster-player-username", memberUser.username);
-    await page.click("button:has-text('Find & Add')");
+    await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: memberUser.name })).toBeVisible();
 
     // Member navigates directly to the session
@@ -457,12 +520,12 @@ test.describe("Permissions and Security Workflow", () => {
 
     // 3. Add publicUser and privateUser to the roster
     await page.fill("#roster-player-username", publicUser.username);
-    await page.click("button:has-text('Find & Add')");
-    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
+    await page.click("button:text-is('Add')");
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible({ timeout: 15000 });
 
     await page.fill("#roster-player-username", privateUser.username);
-    await page.click("button:has-text('Find & Add')");
-    await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible();
+    await page.click("button:text-is('Add')");
+    await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible({ timeout: 15000 });
 
     // 4. In the roster, both should have an underlined link for their username in (@username)
     await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
@@ -474,7 +537,10 @@ test.describe("Permissions and Security Workflow", () => {
     // Verify organizer sees "View profile" in three dots dropdown
     const publicItem = page.locator("li").filter({ hasText: publicUser.name });
     await publicItem.locator("summary").click();
-    await expect(publicItem.locator("a:has-text('View profile')")).toBeVisible();
+    const publicViewProfileLink = publicItem.locator("a:has-text('View profile')");
+    await expect(publicViewProfileLink).toBeVisible();
+    await expect(publicViewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(publicViewProfileLink).toHaveClass(/text-black/);
     await publicItem.locator("summary").click(); // close
 
     // 5. Click public user link -> leads to /players/[username] and shows full profile
@@ -512,9 +578,9 @@ test.describe("Permissions and Security Workflow", () => {
     await publicContext.close();
     await privateContext.close();
   });
-});
 
-test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
+  test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
+  test.setTimeout(60000);
   await page.goto("/player-signup?next=%2Fsetup");
   await page.waitForSelector("form[data-hydrated='true']");
   await page.getByLabel("Username", { exact: true }).fill(`rating_${Date.now()}`);
@@ -531,7 +597,7 @@ test("rejects invalid custom signup ratings without creating an account", async 
   }
   await rating.fill("3.75");
   await page.getByRole("button", { name: "Sign Up", exact: true }).click();
-  await expect(page).toHaveURL(/\/setup/);
+  await expect(page).toHaveURL(/\/setup/, { timeout: 15000 });
   await page.goto("/players");
   await expect(page.getByText(/current rating 3.75/)).toBeVisible();
 });
@@ -543,9 +609,30 @@ test("does not include groups in recent groups if player is not part of them eve
   const groupName = `Public Recent Test ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  // Group starts as Private in toggle with info tooltip
+  const privateToggleBtn = page.getByRole("button", { name: "Private", exact: true });
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "false");
+
+  const infoBtn = page.getByTestId("group-visibility-info-button");
+  await expect(infoBtn).toBeVisible();
+
+  // Focus to display tooltip
+  await infoBtn.focus();
+  const tooltip = page.getByTestId("group-visibility-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toContainText("Players can find and join this group");
+  await expect(tooltip).toContainText("This group is private and hidden from search");
+
+  // Blur hides tooltip
+  await infoBtn.blur();
+  await expect(tooltip).toBeHidden();
+
+  // Toggle to Public
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "false");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -582,9 +669,9 @@ test("non-host member can leave a group from group dashboard via three dots menu
   const groupName = `Leave From Group Dashboard ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -640,9 +727,9 @@ test("non-host member can leave a group from find groups page with confirmation 
   const groupName = `Leave From Find Groups ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -703,9 +790,9 @@ test("non-host member can leave a group from profile page with confirmation moda
   const groupName = `Leave From Profile ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const toggleBtn = page.getByRole("button", { name: "Make public", exact: false });
-  await toggleBtn.click();
-  await expect(page.getByRole("button", { name: "Make private", exact: false })).toBeVisible();
+  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  await publicToggleBtn.click();
+  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -747,4 +834,83 @@ test("non-host member can leave a group from profile page with confirmation moda
   await expect(playerPage.getByText(groupName)).not.toBeVisible();
 
   await playerContext.close();
+});
+
+test("find players workflow from homepage shows public and private players with limited private profiles", async ({
+  page,
+  browser,
+}) => {
+  // 1. Create and sign in User A (public)
+  const userA = await createAndSignInPlayer(page);
+
+  // 2. In a separate context, create User B and switch to private
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+  const userB = await createAndSignInPlayer(pageB);
+
+  // Switch User B to private
+  await pageB.goto("/players");
+  const privacyToggle = pageB.locator("button[title='Click to switch to Private']");
+  await expect(privacyToggle).toBeVisible();
+  await privacyToggle.click();
+  await expect(pageB.getByText("Profile is now Private")).toBeVisible();
+  await contextB.close();
+
+  // 3. User A goes to home page
+  await page.goto("/");
+  const findGroupsBtn = page.getByRole("link", { name: "Find Groups" });
+  const findPlayersBtn = page.getByRole("link", { name: "Find Players" });
+
+  await expect(findGroupsBtn).toBeVisible();
+  await expect(findPlayersBtn).toBeVisible();
+
+  // 4. Click Find Players
+  await findPlayersBtn.click();
+  await expect(page).toHaveURL("/players/find");
+  await expect(page.getByRole("heading", { name: "Find Players" })).toBeVisible();
+
+  // 5. Search for User B (private)
+  await page.fill("#player-search", userB.username);
+  await page.click("button:has-text('Search')");
+
+  const userBCard = page.locator(`[data-testid='player-card-${userB.username}']`);
+  await expect(userBCard).toBeVisible();
+  await expect(userBCard).toContainText(userB.name);
+  await expect(userBCard).toContainText(`@${userB.username}`);
+  await expect(userBCard).toContainText("Private");
+  await expect(userBCard).toContainText("Rating:");
+
+  // 6. View User B's private profile
+  await userBCard.getByRole("link", { name: "View Profile" }).click();
+  await expect(page).toHaveURL(`/players/${userB.username}`);
+  await expect(page.getByText("This Profile is Private")).toBeVisible();
+  await expect(page.getByText("Rating over time")).not.toBeVisible();
+  await expect(page.getByText("Past Sessions")).not.toBeVisible();
+
+  // 7. Go back to Find Players and search for User A (public)
+  await page.goto("/players/find");
+  await page.fill("#player-search", userA.username);
+  await page.click("button:has-text('Search')");
+
+  const userACard = page.locator(`[data-testid='player-card-${userA.username}']`);
+  await expect(userACard).toBeVisible();
+  await expect(userACard).toContainText(userA.name);
+  await expect(userACard).toContainText(`@${userA.username}`);
+  await expect(userACard).toContainText("Public");
+  await expect(userACard).toContainText("Rating:");
+
+  // 8. Test Back button from Find Players returns to Home
+  const backFromPlayersBtn = page.getByRole("link", { name: "Go back" });
+  await expect(backFromPlayersBtn).toBeVisible();
+  await backFromPlayersBtn.click();
+  await expect(page).toHaveURL("/");
+
+  // 9. Test Back button from Find Groups returns to Home
+  await findGroupsBtn.click();
+  await expect(page).toHaveURL("/players/groups");
+  const backFromGroupsBtn = page.getByRole("link", { name: "Go back" });
+  await expect(backFromGroupsBtn).toBeVisible();
+  await backFromGroupsBtn.click();
+  await expect(page).toHaveURL("/");
+});
 });

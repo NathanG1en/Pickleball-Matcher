@@ -59,15 +59,31 @@ export const linkGuestPlayerSchema = z.object({
   targetAccountId: entityIdSchema,
 }).strict();
 
-export const organizerLoginSchema = z
-  .object({
-    groupName: z.string().trim().min(1).max(80),
-    pin: organizerPinSchema,
-  })
-  .strict();
+export const RESERVED_USERNAMES = new Set([
+  "find",
+  "groups",
+  "search",
+  "setup",
+  "temporary",
+  "login",
+  "signup",
+  "settings",
+  "admin",
+  "api",
+]);
+
+const usernameFieldSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(24)
+  .regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only")
+  .refine((val) => !RESERVED_USERNAMES.has(val.toLowerCase()), {
+    message: "That username is reserved.",
+  });
 
 export const playerSignupSchema = z.object({
-  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+  username: usernameFieldSchema,
   name: z.string().trim().min(1).max(80),
   gender: z.enum(["male", "female"], { message: "Select your gender (male or female)." }).default("male"),
   password: z.string().min(10).max(72),
@@ -100,7 +116,7 @@ export const updatePlayerGenderSchema = z.object({
 }).strict();
 
 export const updatePlayerUsernameSchema = z.object({
-  username: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9_]+$/, "Use letters, numbers, and underscores only"),
+  username: usernameFieldSchema,
 }).strict();
 
 export const joinPublicGroupSchema = z.object({
@@ -162,20 +178,11 @@ export const updatePlayerSchema = z
     playerId: entityIdSchema,
     name: z.string().trim().min(1).max(80).optional(),
     active: z.boolean().optional(),
-    initialRating: z.coerce
-      .number()
-      .finite()
-      .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
-        message: "Initial rating must be between 2.000 and 8.000.",
-      })
-      .optional()
-      .transform((val) => (val === undefined ? undefined : normalizeInitialRating(val))),
     idempotencyKey: entityIdSchema,
   })
   .strict()
   .refine(
-    ({ name, active, initialRating }) =>
-      name !== undefined || active !== undefined || initialRating !== undefined,
+    ({ name, active }) => name !== undefined || active !== undefined,
     { message: "At least one player field must change" },
   );
 

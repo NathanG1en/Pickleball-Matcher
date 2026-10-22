@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createGroupAction, organizerLoginAction, organizerLogoutAction } from "@/app/actions/auth";
+import { createGroupAction, organizerLogoutAction } from "@/app/actions/auth";
 import { startSessionAction } from "@/app/actions/sessions";
 import { recordResultAction } from "@/app/actions/results";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
@@ -46,17 +46,7 @@ describe("Server Actions Security and Validation", () => {
     expect(JSON.stringify(invalidResult)).not.toContain("DATABASE_URL");
   });
 
-  it("validates PIN and enforces generic failure message on login", async () => {
-    const failedResult = await organizerLoginAction({
-      groupName: "Tuesday Group",
-      pin: "0000",
-    });
 
-    expect(failedResult.ok).toBe(false);
-    if (!failedResult.ok) {
-      expect(failedResult.error).toContain("group name and PIN");
-    }
-  });
 
   it("preserves saved session history when an organizer logs out", async () => {
     const savedSession = {
