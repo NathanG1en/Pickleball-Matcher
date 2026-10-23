@@ -13,3 +13,8 @@ alter table player_synergy
   add column if not exists weight_sum double precision not null default 0,
   add column if not exists contribution_sum double precision not null default 0,
   add column if not exists weight_sq_sum double precision not null default 0;
+
+-- Backfill legacy win-rate synergy scores to zero-centered signed index with Prior=12 shrinkage
+update player_synergy
+set synergy_score = round(100.0 * (wins::float - 0.5 * matches_played::float) / (matches_played::float + 12.0))
+where weight_sum = 0 and matches_played > 0;
