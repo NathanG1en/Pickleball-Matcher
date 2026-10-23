@@ -179,4 +179,32 @@ describe("generateRound", () => {
     expect(result.ok).toBe(false);
     expect(!result.ok && result.error.code).toBe("INVALID_COURT_COUNT");
   });
+
+  it("avoids placing players who previously played 2v1 back onto a 2v1 court when fresh players are available", () => {
+    // 7 players, 2 courts: court 1 has 4 players (doubles), court 2 has 3 players (2v1)
+    // player-1, player-2, player-3 previously played 2v1 (timesPlayed2v1: 1)
+    const players = makePlayers(7, (i) => ({
+      gamesPlayed: 1,
+      eligibleRounds: 1,
+      timesPlayed2v1: i < 3 ? 1 : 0,
+    }));
+    const result = generateRound({
+      players,
+      courts: 2,
+      courtPlayerCounts: [4, 3],
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 99,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const twoVsOneCourt = result.value.courts.find((c) => c.matchType === "team-vs-one");
+    expect(twoVsOneCourt).toBeDefined();
+    const twoVsOnePlayers = [...twoVsOneCourt!.team1, ...twoVsOneCourt!.team2];
+    for (const prior2v1Id of ["player-1", "player-2", "player-3"]) {
+      expect(twoVsOnePlayers).not.toContain(prior2v1Id);
+    }
+  });
 });

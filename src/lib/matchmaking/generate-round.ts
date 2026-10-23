@@ -17,7 +17,7 @@ import type {
 function stableInputSeed(players: readonly MatchmakingPlayer[], courts: number, courtPlayerCounts?: readonly number[]): number {
   let hash = 0x811c9dc5;
   const value = `${courts}|${courtPlayerCounts?.join(",") ?? "default"}|${players
-    .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}`)
+    .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}:${player.timesPlayed2v1 ?? 0}`)
     .join("|")}`;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);

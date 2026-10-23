@@ -1561,6 +1561,52 @@ export function SessionManagerClient({
                   ))}
                 </div>
 
+                {(courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3) ||
+                  (courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity)) && (
+                  <div className="flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
+                    <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() =>
+                        setCourtConfigPlayerCounts((prev) => {
+                          let converted = false;
+                          return prev.map((s, idx) => {
+                            if (idx < courtConfigCourts && s === 2 && !converted) {
+                              converted = true;
+                              return 3;
+                            }
+                            return s;
+                          });
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3)
+                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                          : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      2v1 Match (No Sitters)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() =>
+                        setCourtConfigPlayerCounts((prev) =>
+                          prev.map((s, idx) => (idx < courtConfigCourts && s === 3 ? 2 : s))
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity
+                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                          : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      1v1 Singles (1 Sitter)
+                    </button>
+                  </div>
+                )}
+
                 {isOverCapacity && (
                   <p className="rounded-lg border border-rose-800 bg-rose-100 px-3 py-2 text-sm font-bold text-rose-950">
                     Total players on courts ({configCapacity}) exceeds present players ({presentCount}). Adjust court sizes or court count.

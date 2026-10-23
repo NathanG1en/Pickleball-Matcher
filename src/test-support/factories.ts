@@ -10,6 +10,7 @@ export function makePlayer(overrides: Partial<MatchmakingPlayer> = {}): Matchmak
     gamesPlayed: overrides.gamesPlayed ?? 0,
     eligibleRounds: overrides.eligibleRounds ?? 0,
     satPreviousRound: overrides.satPreviousRound ?? false,
+    timesPlayed2v1: overrides.timesPlayed2v1 ?? 0,
   };
 }
 

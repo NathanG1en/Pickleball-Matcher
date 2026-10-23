@@ -96,9 +96,19 @@ function matchmakingPlayers(
     (item) => item.leftRound === null && item.joinedRound <= currentRoundNumber + 1,
   );
   const games = new Map<string, number>();
+  const timesPlayed2v1 = new Map<string, number>();
   for (const record of rounds) {
     for (const member of record.matchPlayers) {
       games.set(member.playerId, (games.get(member.playerId) ?? 0) + 1);
+    }
+    for (const match of record.matches) {
+      if (match.status === "cancelled") continue;
+      const matchMembers = record.matchPlayers.filter((mp) => mp.matchId === match.id);
+      if (matchMembers.length === 3) {
+        for (const member of matchMembers) {
+          timesPlayed2v1.set(member.playerId, (timesPlayed2v1.get(member.playerId) ?? 0) + 1);
+        }
+      }
     }
   }
   const previousRound = rounds.find((record) => record.round.roundNumber === currentRoundNumber);
@@ -115,6 +125,7 @@ function matchmakingPlayers(
         gamesPlayed: games.get(player.id) ?? 0,
         eligibleRounds: Math.max(0, currentRoundNumber - item.joinedRound + 1),
         satPreviousRound: previousSits.has(player.id),
+        timesPlayed2v1: timesPlayed2v1.get(player.id) ?? 0,
       },
     ];
   });
