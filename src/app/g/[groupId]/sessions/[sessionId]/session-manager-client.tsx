@@ -1232,7 +1232,7 @@ export function SessionManagerClient({
                     data-testid="reshuffle-round-link"
                     className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer"
                   >
-                    Reshuffle Matchups
+                    Reshuffle
                   </button>
                   <span className="text-neutral-400">·</span>
                   <button

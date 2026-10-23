@@ -263,7 +263,7 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    expect(organizerHtml).toContain("Reshuffle Matchups");
+    expect(organizerHtml).toContain("Reshuffle");
     expect(organizerHtml).toContain('data-testid="reshuffle-matchups-button"');
 
     const memberHtml = renderToStaticMarkup(
@@ -279,7 +279,7 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    expect(memberHtml).not.toContain("Reshuffle Matchups");
+    expect(memberHtml).not.toContain("Reshuffle");
   });
 
   it("renders reshuffle matchups controls for organizer when round is in progress", () => {
@@ -338,7 +338,7 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    expect(organizerHtml).toContain("Reshuffle Matchups");
+    expect(organizerHtml).toContain("Reshuffle");
     expect(organizerHtml).toContain('data-testid="reshuffle-matchups-button"');
     expect(organizerHtml).toContain('data-testid="reshuffle-round-link"');
 
@@ -355,7 +355,7 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    expect(memberHtml).not.toContain("Reshuffle Matchups");
+    expect(memberHtml).not.toContain("Reshuffle");
   });
 
   it("renders Attendance button for organizer in active session", () => {

@@ -97,7 +97,7 @@ export function ResultsEntryView({
               className="font-display uppercase text-xs inline-flex items-center gap-1.5"
             >
               <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Reshuffle Matchups</span>
+              <span>Reshuffle</span>
             </Button>
           )}
           <p className="text-xs font-bold text-neutral-600 hidden sm:block">

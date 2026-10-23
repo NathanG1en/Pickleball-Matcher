@@ -401,10 +401,11 @@ function CurrentRoundEditor({
                     onClick={onRegenerate}
                     disabled={isPending || isGeneratingRound}
                     data-testid="header-reshuffle-matchups-button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+                    aria-label="Reshuffle"
+                    title="Reshuffle"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
                   >
                     <ShuffleIcon className="h-3.5 w-3.5" />
-                    <span>Reshuffle</span>
                   </button>
                 )}
               </>
@@ -1121,7 +1122,7 @@ function CurrentRoundEditor({
                 ) : (
                   <>
                     <ShuffleIcon className="h-5 w-5 shrink-0" />
-                    <span>Reshuffle Matchups</span>
+                    <span>Reshuffle</span>
                   </>
                 )}
               </Button>
