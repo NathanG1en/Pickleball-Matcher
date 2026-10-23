@@ -131,6 +131,23 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("View Profile");
     expect(html).toContain("Log Out");
 
+    // Order: View Profile -> Find Groups/Players -> Create A Group -> Log Out
+    const viewProfileIdx = html.indexOf("View Profile");
+    const findGroupsIdx = html.indexOf("Find Groups");
+    const findPlayersIdx = html.indexOf("Find Players");
+    const createGroupIdx = html.indexOf("Create A Group");
+    const logoutIdx = html.indexOf("Log Out");
+
+    expect(viewProfileIdx).toBeLessThan(findGroupsIdx);
+    expect(findGroupsIdx).toBeLessThan(createGroupIdx);
+    expect(findPlayersIdx).toBeLessThan(createGroupIdx);
+    expect(createGroupIdx).toBeLessThan(logoutIdx);
+
+    // Font weight: Find Groups, Find Players, and Log Out share the same font-bold weight
+    expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/groups"/);
+    expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/find"/);
+    expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*>Log Out<\/button>/);
+
     // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
     expect(html).not.toContain("Sign In to Play");
     expect(html).not.toContain("Make a Temporary Group");
