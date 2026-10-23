@@ -207,4 +207,36 @@ describe("generateRound", () => {
       expect(twoVsOnePlayers).not.toContain(prior2v1Id);
     }
   });
+
+  it("produces valid rounds under varying temperature settings", () => {
+    const players = makePlayers(8);
+    const zeroTemp = generateRound({
+      players,
+      courts: 2,
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 1234,
+      temperature: 0,
+    });
+    const highTemp = generateRound({
+      players,
+      courts: 2,
+      pairHistory: [],
+      config: TEST_CONFIG,
+      seed: 1234,
+      temperature: 1.0,
+    });
+
+    expect(zeroTemp.ok).toBe(true);
+    expect(highTemp.ok).toBe(true);
+    if (!zeroTemp.ok || !highTemp.ok) return;
+
+    expect(zeroTemp.value.courts).toHaveLength(2);
+    expect(highTemp.value.courts).toHaveLength(2);
+    // Both allocate all 8 players exactly once
+    const zeroAssigned = zeroTemp.value.courts.flatMap((c) => [...c.team1, ...c.team2]);
+    const highAssigned = highTemp.value.courts.flatMap((c) => [...c.team1, ...c.team2]);
+    expect(new Set(zeroAssigned).size).toBe(8);
+    expect(new Set(highAssigned).size).toBe(8);
+  });
 });

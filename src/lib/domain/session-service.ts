@@ -268,7 +268,11 @@ export class SessionService {
     });
   }
 
-  async proposeRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+  async proposeRound(
+    sessionId: string,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     const session = await requiredSession(this.repository, sessionId);
     const [players, attendance, rounds] = await Promise.all([
       this.repository.listPlayers(session.groupId),
@@ -282,6 +286,7 @@ export class SessionService {
       pairHistory: sessionPairHistory(rounds),
       config: DEFAULT_MATCHMAKING_CONFIG,
       seed,
+      temperature,
     });
     if (!result.ok) throw new DomainError(result.error.code, result.error.message);
     return result.value;
@@ -519,7 +524,11 @@ export class SessionService {
     });
   }
 
-  async reshuffleRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+  async reshuffleRound(
+    sessionId: string,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, sessionId);
       const rounds = await repository.listStartedRounds(sessionId);
@@ -546,6 +555,7 @@ export class SessionService {
         pairHistory: sessionPairHistory(remainingRounds),
         config: DEFAULT_MATCHMAKING_CONFIG,
         seed,
+        temperature,
       });
       if (!result.ok) throw new DomainError(result.error.code, result.error.message);
       return result.value;

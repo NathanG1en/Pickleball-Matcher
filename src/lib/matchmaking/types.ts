@@ -139,4 +139,6 @@ export interface GenerateRoundInput {
   readonly allowSingles?: boolean;
   /** Optional player capacity for each court; unallocated players sit out. */
   readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
+  /** Matchmaking variety factor (0 = strictly balanced, 0.5 = varied, 1.0 = high variety). */
+  readonly temperature?: number;
 }

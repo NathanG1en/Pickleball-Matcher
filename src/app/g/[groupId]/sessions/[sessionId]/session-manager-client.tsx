@@ -254,8 +254,10 @@ export function SessionManagerClient({
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
+  const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
+
   // Actions
-  const handleRegenerate = () => {
+  const handleRegenerate = (variety = matchmakingVariety) => {
     if (isPending) return;
     setError(null);
     startGeneratingRound(async () => {
@@ -269,6 +271,7 @@ export function SessionManagerClient({
           sessionId: currentSession.id,
           sessionVersion: currentSession.version,
           seed: nextSeed,
+          temperature: variety,
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
@@ -280,6 +283,11 @@ export function SessionManagerClient({
         setError("Failed to reshuffle matchups.");
       }
     });
+  };
+
+  const handleChangeVariety = (newVariety: number) => {
+    setMatchmakingVariety(newVariety);
+    handleRegenerate(newVariety);
   };
 
   const handleReshuffleInProgressRound = async () => {
@@ -301,6 +309,7 @@ export function SessionManagerClient({
         roundId: latestStarted.round.id,
         roundVersion: latestStarted.round.version,
         idempotencyKey: createIdempotencyKey("reshuffle"),
+        temperature: matchmakingVariety,
       });
       if (res.ok) {
         clearLineupDraft(lineupDraftKey(currentSession.id));
@@ -1261,9 +1270,11 @@ export function SessionManagerClient({
               isOrganizer={isOrganizer}
               isGeneratingRound={isGeneratingRound}
               canRegenerate={Boolean(canManage)}
-              onRegenerate={canManage ? handleRegenerate : undefined}
+              onRegenerate={canManage ? () => handleRegenerate() : undefined}
               onStartRound={canManage ? handleStartRound : undefined}
               canManage={canManage}
+              matchmakingVariety={matchmakingVariety}
+              onChangeMatchmakingVariety={handleChangeVariety}
             />
           ) : (
             <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
@@ -1271,7 +1282,7 @@ export function SessionManagerClient({
                 {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
               </p>
               {canManage ? (
-                <Button type="button" variant="primary" onClick={handleRegenerate} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
                   {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
                 </Button>
               ) : (

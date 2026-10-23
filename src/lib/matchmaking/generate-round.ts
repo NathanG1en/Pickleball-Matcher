@@ -14,9 +14,14 @@ import type {
   Team,
 } from "@/lib/matchmaking/types";
 
-function stableInputSeed(players: readonly MatchmakingPlayer[], courts: number, courtPlayerCounts?: readonly number[]): number {
+function stableInputSeed(
+  players: readonly MatchmakingPlayer[],
+  courts: number,
+  courtPlayerCounts?: readonly number[],
+  temperature = 0,
+): number {
   let hash = 0x811c9dc5;
-  const value = `${courts}|${courtPlayerCounts?.join(",") ?? "default"}|${players
+  const value = `${courts}|${courtPlayerCounts?.join(",") ?? "default"}|${temperature}|${players
     .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}:${player.timesPlayed2v1 ?? 0}`)
     .join("|")}`;
   for (let index = 0; index < value.length; index += 1) {
@@ -68,9 +73,84 @@ function bestCourtPairing(
   return bestCourt;
 }
 
-function betterScore(candidate: ScoreBreakdown, current: ScoreBreakdown | null): boolean {
-  if (!current) return true;
-  return candidate.total < current.total;
+function candidateKey(candidate: RoundCandidate): string {
+  const courtsPart = candidate.courts
+    .map((c) => {
+      const t1 = [...c.team1].sort().join(",");
+      const t2 = [...c.team2].sort().join(",");
+      return [t1, t2].sort().join("v");
+    })
+    .sort()
+    .join(";");
+  const sitPart = [...candidate.sitting].sort().join(",");
+  return `${courtsPart}|${sitPart}`;
+}
+
+interface ScoredCandidate {
+  readonly candidate: RoundCandidate;
+  readonly breakdown: ScoreBreakdown;
+  readonly key: string;
+}
+
+class CandidatePool {
+  private pool: ScoredCandidate[] = [];
+  private readonly maxPoolSize = 30;
+
+  constructor(private readonly temperature: number) {}
+
+  add(candidate: RoundCandidate, breakdown: ScoreBreakdown): void {
+    if (this.temperature <= 0) {
+      if (this.pool.length === 0 || breakdown.total < this.pool[0].breakdown.total) {
+        this.pool = [{ candidate, breakdown, key: "" }];
+      }
+      return;
+    }
+
+    const key = candidateKey(candidate);
+    const existingIndex = this.pool.findIndex((item) => item.key === key);
+    if (existingIndex !== -1) {
+      if (breakdown.total < this.pool[existingIndex].breakdown.total) {
+        this.pool[existingIndex] = { candidate, breakdown, key };
+        this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+      }
+      return;
+    }
+
+    if (this.pool.length < this.maxPoolSize) {
+      this.pool.push({ candidate, breakdown, key });
+      this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+    } else if (breakdown.total < this.pool[this.pool.length - 1].breakdown.total) {
+      this.pool[this.pool.length - 1] = { candidate, breakdown, key };
+      this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+    }
+  }
+
+  select(random: { next(): number }): ScoredCandidate {
+    if (this.pool.length === 0) {
+      throw new Error("Matchmaking configuration must evaluate at least one candidate");
+    }
+    if (this.temperature <= 0 || this.pool.length === 1) {
+      return this.pool[0];
+    }
+
+    // Boltzmann selection with temperature
+    const scale = 15 * this.temperature;
+    const bestScore = this.pool[0].breakdown.total;
+    const weights = this.pool.map((item) =>
+      Math.exp(-(item.breakdown.total - bestScore) / scale),
+    );
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const threshold = random.next() * totalWeight;
+
+    let cumulative = 0;
+    for (let i = 0; i < this.pool.length; i++) {
+      cumulative += weights[i];
+      if (cumulative >= threshold) {
+        return this.pool[i];
+      }
+    }
+    return this.pool[0];
+  }
 }
 
 export function generateRound(input: GenerateRoundInput): GenerationResult {
@@ -106,14 +186,14 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
   }
 
   const config = input.config ?? DEFAULT_MATCHMAKING_CONFIG;
-  const seed = input.seed ?? stableInputSeed(input.players, input.courts, input.courtPlayerCounts);
+  const temperature = Math.max(0, input.temperature ?? 0);
+  const seed = input.seed ?? stableInputSeed(input.players, input.courts, input.courtPlayerCounts, temperature);
   const random = createSeededRandom(seed);
   if (input.courtPlayerCounts) {
     const totalActivePlayers = input.courtPlayerCounts.reduce((sum, size) => sum + size, 0);
     const sitCount = input.players.length - totalActivePlayers;
     const pairHistory = buildPairHistoryIndex(input.pairHistory);
-    let bestCandidate: RoundCandidate | null = null;
-    let bestBreakdown: ScoreBreakdown | null = null;
+    const pool = new CandidatePool(temperature);
     for (let iteration = 0; iteration < config.iterations; iteration += 1) {
       const sitting = chooseSittingPlayers({ players: input.players, sitCount, random, config });
       const sittingSet = new Set(sitting);
@@ -142,10 +222,10 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
       }
       const candidate = { courts, sitting };
       const breakdown = scoreRound(candidate, { ...context, tieBreak: random.next() * config.tieBreakMaximum });
-      if (betterScore(breakdown, bestBreakdown)) { bestCandidate = candidate; bestBreakdown = breakdown; }
+      pool.add(candidate, breakdown);
     }
-    if (!bestCandidate || !bestBreakdown) throw new Error("Matchmaking configuration must evaluate at least one candidate");
-    return { ok: true, value: { ...bestCandidate, seed, score: bestBreakdown.total, scoreBreakdown: bestBreakdown } };
+    const chosen = pool.select(random);
+    return { ok: true, value: { ...chosen.candidate, seed, score: chosen.breakdown.total, scoreBreakdown: chosen.breakdown } };
   }
   const doublesCourtCount = Math.min(Math.floor(input.players.length / 4), input.courts);
   const leftoverPlayers = input.players.length - doublesCourtCount * 4;
@@ -155,8 +235,7 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
   const totalActivePlayers = doublesCourtCount * 4 + singlesCourtCount * 2;
   const sitCount = input.players.length - totalActivePlayers;
   const pairHistory = buildPairHistoryIndex(input.pairHistory);
-  let bestCandidate: RoundCandidate | null = null;
-  let bestBreakdown: ScoreBreakdown | null = null;
+  const pool = new CandidatePool(temperature);
 
   for (let iteration = 0; iteration < config.iterations; iteration += 1) {
     const sitting = chooseSittingPlayers({
@@ -204,23 +283,18 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
       ...context,
       tieBreak: random.next() * config.tieBreakMaximum,
     });
-    if (betterScore(breakdown, bestBreakdown)) {
-      bestCandidate = candidate;
-      bestBreakdown = breakdown;
-    }
+    pool.add(candidate, breakdown);
   }
 
-  if (!bestCandidate || !bestBreakdown) {
-    throw new Error("Matchmaking configuration must evaluate at least one candidate");
-  }
+  const chosen = pool.select(random);
 
   return {
     ok: true,
     value: {
-      ...bestCandidate,
+      ...chosen.candidate,
       seed,
-      score: bestBreakdown.total,
-      scoreBreakdown: bestBreakdown,
+      score: chosen.breakdown.total,
+      scoreBreakdown: chosen.breakdown,
     },
   };
 }

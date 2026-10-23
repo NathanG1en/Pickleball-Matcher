@@ -71,4 +71,16 @@ describe("CurrentRoundView Component", () => {
     expect(html).not.toContain("Proposal Draft");
     expect(html).not.toContain("Round Proposal");
   });
+
+  it("renders matchmaking variety controls with intuitive info trigger when canManage is true", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView {...sampleProps} canManage={true} canRegenerate={true} />
+    );
+
+    expect(html).toContain("Matchmaking Variety:");
+    expect(html).toContain("Balanced");
+    expect(html).toContain("Varied");
+    expect(html).toContain("Wild");
+    expect(html).toContain('aria-label="What is Matchmaking Variety?"');
+  });
 });
