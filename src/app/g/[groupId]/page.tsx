@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/action-context";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { Badge } from "@/components/ui/badge";
+import { ClientDate } from "@/components/ui/client-date-time";
 import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
 import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
@@ -215,11 +216,15 @@ export default async function GroupDashboardPage({
                   {activeSession.name || (activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress")}
                 </h2>
                 <p className="text-sm font-bold text-neutral-900">
-                  Started <span suppressHydrationWarning>{new Date(activeSession.startedAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}</span>
+                  <ClientDate
+                    date={activeSession.startedAt}
+                    prefix="Started "
+                    options={{
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }}
+                  />
                   {" · "}
                   {activeSession.type === "open_play"
                     ? "Check in and submit games."

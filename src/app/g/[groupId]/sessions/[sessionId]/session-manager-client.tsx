@@ -21,6 +21,7 @@ import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/comp
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { XIcon } from "@/components/ui/icons";
@@ -893,7 +894,7 @@ export function SessionManagerClient({
                 className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
               />
               <p className="text-xs font-bold text-neutral-600">
-                {groupName ?? "Group"} · Started <span suppressHydrationWarning>{new Date(session.startedAt).toLocaleDateString()}</span>
+                {groupName ?? "Group"} · Started <ClientDate date={session.startedAt} />
               </p>
             </div>
             {canManage && (
@@ -936,13 +937,16 @@ export function SessionManagerClient({
                   headingTag="h1"
                   className="font-display text-2xl font-black uppercase text-black"
                 />
-                <p suppressHydrationWarning className="text-sm font-bold text-neutral-600 mt-1">
-                  {new Date(session.startedAt).toLocaleDateString(undefined, {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                <p className="text-sm font-bold text-neutral-600 mt-1">
+                  <ClientDate
+                    date={session.startedAt}
+                    options={{
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }}
+                  />
                 </p>
               </div>
               {canManage && (
@@ -979,21 +983,15 @@ export function SessionManagerClient({
 
             {/* Time / Duration info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
-              <span suppressHydrationWarning>
-                <strong className="text-black">Started:</strong>{" "}
-                {new Date(session.startedAt).toLocaleTimeString(undefined, {
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </span>
+              <ClientTime
+                date={session.startedAt}
+                prefix={<strong className="text-black">Started: </strong>}
+              />
               {session.endedAt && (
-                <span suppressHydrationWarning>
-                  <strong className="text-black">Ended:</strong>{" "}
-                  {new Date(session.endedAt).toLocaleTimeString(undefined, {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </span>
+                <ClientTime
+                  date={session.endedAt}
+                  prefix={<strong className="text-black">Ended: </strong>}
+                />
               )}
               {durationFormatted && (
                 <span>
