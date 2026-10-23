@@ -18,7 +18,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
       />
     );
     // Player's own team displays their partner synergy badge
-    expect(html).toContain("84% Synergy");
+    expect(html).toContain("+84 Synergy");
     // Warning pills remain removed
     expect(html).not.toContain("Synergy Paused");
     expect(html).not.toContain("Guest Duo");
@@ -37,7 +37,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
       />
     );
     // Court cards don't render synergy badges for organizer (revealed only via panel)
-    expect(html).not.toContain("84% Synergy");
+    expect(html).not.toContain("+84 Synergy");
   });
 
   it("renders reveal synergy button only for organizers", () => {
@@ -67,7 +67,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         pairSynergies={{ '["acc1","acc2"]': { score: 67, matchesPlayed: 1 } }}
       />
     );
-    expect(html).toContain("67% Synergy");
+    expect(html).toContain("+67 Synergy");
   });
 
   it("displays the synergy score inside the reveal synergy modal card", () => {
@@ -87,7 +87,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
       />
     );
     expect(html).toContain("Court Synergy &amp; Chemistry");
-    expect(html).toContain("84% (10 games)");
+    expect(html).toContain("+84 (10 games)");
     expect(html).toContain("Alice &amp; Bob");
     // All calculated -> no ineligibility notice
     expect(html).not.toContain("Notice: Synergy Not Yet Available For Some Duos");

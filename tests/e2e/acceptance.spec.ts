@@ -71,14 +71,14 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator(".court-card:has-text('Court 3')")).toBeVisible();
     const sitsSection = page.locator("section:has-text('Sitting this round')");
     await expect(sitsSection).toBeVisible();
-    const round1Sitters = await sitsSection.locator("span").allTextContents();
-    expect(round1Sitters.length).toBeGreaterThanOrEqual(2);
-
     // Verify Reshuffle Matchups in proposed round
     const reshuffleButton = page.locator("[data-testid='reshuffle-matchups-button']");
     await expect(reshuffleButton).toBeVisible();
     await reshuffleButton.click();
     await expect(page.locator(".court-card:has-text('Court 1')")).toBeVisible();
+
+    const round1Sitters = await sitsSection.locator("span").allTextContents();
+    expect(round1Sitters.length).toBeGreaterThanOrEqual(2);
 
     // Start Round 1
     await page.click("button:has-text('Start Round')");

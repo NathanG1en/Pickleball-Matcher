@@ -17,6 +17,7 @@ import type {
   AttendanceRecord,
   MatchPlayerRecord,
   MatchRecord,
+  PairMatchSynergyResult,
   PlayerRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -485,9 +486,21 @@ export async function submitOpenPlayGameAction(
       const playerAccountMap = new Map<string, string | null>(
         groupPlayers.map((p) => [p.id, p.accountId ?? null]),
       );
-      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      const playerRatingMap = new Map<string, number>(
+        groupPlayers.map((p) => [p.id, p.rating]),
+      );
       const [t1A, t1B] = parsed.data.team1PlayerIds;
       const [t2A, t2B] = parsed.data.team2PlayerIds;
+      const t1R1 = playerRatingMap.get(t1A) ?? 1000;
+      const t1R2 = playerRatingMap.get(t1B) ?? 1000;
+      const t2R1 = playerRatingMap.get(t2A) ?? 1000;
+      const t2R2 = playerRatingMap.get(t2B) ?? 1000;
+      const team1Rating = (t1R1 + t1R2) / 2;
+      const team2Rating = (t2R1 + t2R2) / 2;
+      const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
+      const pTeam2 = 1 - pTeam1;
+
+      const pairResults: PairMatchSynergyResult[] = [];
       const t1AccA = playerAccountMap.get(t1A);
       const t1AccB = playerAccountMap.get(t1B);
       if (t1AccA && t1AccB) {
@@ -495,6 +508,9 @@ export async function submitOpenPlayGameAction(
           accountIdA: t1AccA,
           accountIdB: t1AccB,
           won: parsed.data.team1Score > parsed.data.team2Score,
+          expectedWinProbability: pTeam1,
+          ownScore: parsed.data.team1Score,
+          opponentScore: parsed.data.team2Score,
         });
       }
       const t2AccA = playerAccountMap.get(t2A);
@@ -504,6 +520,9 @@ export async function submitOpenPlayGameAction(
           accountIdA: t2AccA,
           accountIdB: t2AccB,
           won: parsed.data.team2Score > parsed.data.team1Score,
+          expectedWinProbability: pTeam2,
+          ownScore: parsed.data.team2Score,
+          opponentScore: parsed.data.team1Score,
         });
       }
       if (pairResults.length > 0) {
@@ -654,9 +673,21 @@ export async function updateOpenPlayGameAction(
       const playerAccountMap = new Map<string, string | null>(
         groupPlayers.map((p) => [p.id, p.accountId ?? null]),
       );
-      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      const playerRatingMap = new Map<string, number>(
+        groupPlayers.map((p) => [p.id, p.rating]),
+      );
       const [t1A, t1B] = parsed.data.team1PlayerIds;
       const [t2A, t2B] = parsed.data.team2PlayerIds;
+      const t1R1 = playerRatingMap.get(t1A) ?? 1000;
+      const t1R2 = playerRatingMap.get(t1B) ?? 1000;
+      const t2R1 = playerRatingMap.get(t2A) ?? 1000;
+      const t2R2 = playerRatingMap.get(t2B) ?? 1000;
+      const team1Rating = (t1R1 + t1R2) / 2;
+      const team2Rating = (t2R1 + t2R2) / 2;
+      const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
+      const pTeam2 = 1 - pTeam1;
+
+      const pairResults: PairMatchSynergyResult[] = [];
       const t1AccA = playerAccountMap.get(t1A);
       const t1AccB = playerAccountMap.get(t1B);
       if (t1AccA && t1AccB) {
@@ -664,6 +695,9 @@ export async function updateOpenPlayGameAction(
           accountIdA: t1AccA,
           accountIdB: t1AccB,
           won: parsed.data.team1Score > parsed.data.team2Score,
+          expectedWinProbability: pTeam1,
+          ownScore: parsed.data.team1Score,
+          opponentScore: parsed.data.team2Score,
         });
       }
       const t2AccA = playerAccountMap.get(t2A);
@@ -673,6 +707,9 @@ export async function updateOpenPlayGameAction(
           accountIdA: t2AccA,
           accountIdB: t2AccB,
           won: parsed.data.team2Score > parsed.data.team1Score,
+          expectedWinProbability: pTeam2,
+          ownScore: parsed.data.team2Score,
+          opponentScore: parsed.data.team1Score,
         });
       }
       if (pairResults.length > 0) {
