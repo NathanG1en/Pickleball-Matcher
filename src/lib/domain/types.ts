@@ -32,7 +32,19 @@ export interface PlayerSynergyRecord {
   readonly matchesPlayed: number;
   readonly wins: number;
   readonly synergyScore: number;
+  readonly weightSum?: number;
+  readonly contributionSum?: number;
+  readonly weightSqSum?: number;
   readonly updatedAt: Date;
+}
+
+export interface PairMatchSynergyResult {
+  readonly accountIdA: string;
+  readonly accountIdB: string;
+  readonly won: boolean;
+  readonly expectedWinProbability?: number;
+  readonly ownScore?: number | null;
+  readonly opponentScore?: number | null;
 }
 
 export interface PublicGroupRecord {

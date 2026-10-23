@@ -12,6 +12,7 @@ import type {
   PlayerGender,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
+  PairMatchSynergyResult,
   PublicGroupRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -25,7 +26,7 @@ import type {
   TournamentBracket,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
-import { calculateSynergyScore } from "@/lib/synergy/calculator";
+import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
 
 export class RepositoryConflictError extends Error {
@@ -91,6 +92,9 @@ type PlayerSynergyRow = {
   matches_played: number;
   wins: number;
   synergy_score: number;
+  weight_sum?: number | null;
+  contribution_sum?: number | null;
+  weight_sq_sum?: number | null;
   updated_at: Date;
 };
 
@@ -233,6 +237,9 @@ const mapPlayerSynergy = (row: PlayerSynergyRow): PlayerSynergyRecord => ({
   matchesPlayed: row.matches_played,
   wins: row.wins,
   synergyScore: row.synergy_score,
+  weightSum: row.weight_sum ?? undefined,
+  contributionSum: row.contribution_sum ?? undefined,
+  weightSqSum: row.weight_sq_sum ?? undefined,
   updatedAt: row.updated_at,
 });
 
@@ -527,29 +534,56 @@ export class PostgresRepositories implements DomainRepository {
     };
   }
 
-  async recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void> {
+  async recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void> {
     if (pairResults.length === 0) return;
     for (const pair of pairResults) {
       if (pair.accountIdA === pair.accountIdB) continue;
       const [first, second] = pair.accountIdA < pair.accountIdB
         ? [pair.accountIdA, pair.accountIdB]
         : [pair.accountIdB, pair.accountIdA];
-      const winIncrement = pair.won ? 1 : 0;
+
+      const existing = await this.getPairSynergy(first, second);
+      const updated = updateSynergyState(
+        existing
+          ? {
+              matchesPlayed: existing.matchesPlayed,
+              wins: existing.wins,
+              weightSum: existing.weightSum,
+              contributionSum: existing.contributionSum,
+              weightSqSum: existing.weightSqSum,
+            }
+          : null,
+        {
+          won: pair.won,
+          expectedWinProbability: pair.expectedWinProbability,
+          ownScore: pair.ownScore,
+          opponentScore: pair.opponentScore,
+        }
+      );
 
       await this.query`
-        insert into player_synergy (account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at)
+        insert into player_synergy (
+          account_id_1, account_id_2, matches_played, wins, synergy_score,
+          weight_sum, contribution_sum, weight_sq_sum, updated_at
+        )
         values (
           ${first},
           ${second},
-          1,
-          ${winIncrement},
-          ${calculateSynergyScore(1, winIncrement)},
+          ${updated.matchesPlayed},
+          ${updated.wins},
+          ${updated.synergyScore},
+          ${updated.weightSum},
+          ${updated.contributionSum},
+          ${updated.weightSqSum},
           now()
         )
         on conflict (account_id_1, account_id_2) do update set
-          matches_played = player_synergy.matches_played + 1,
-          wins = player_synergy.wins + ${winIncrement},
-          synergy_score = round(((player_synergy.wins + ${winIncrement} + 1)::float / (player_synergy.matches_played + 1 + 2)::float) * 100),
+          matches_played = excluded.matches_played,
+          wins = excluded.wins,
+          synergy_score = excluded.synergy_score,
+          weight_sum = excluded.weight_sum,
+          contribution_sum = excluded.contribution_sum,
+          weight_sq_sum = excluded.weight_sq_sum,
           updated_at = now()
       `;
     }

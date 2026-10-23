@@ -138,6 +138,7 @@ export async function proposeRoundAction(
     const proposal = await service.proposeRound(
       parsed.data.sessionId,
       parsed.data.seed,
+      parsed.data.temperature,
     );
     return { ok: true, data: proposal };
   } catch (err) {
@@ -273,6 +274,7 @@ export async function reshuffleRoundAction(
     const proposal = await service.reshuffleRound(
       parsed.data.sessionId,
       parsed.data.seed,
+      parsed.data.temperature,
     );
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: proposal };

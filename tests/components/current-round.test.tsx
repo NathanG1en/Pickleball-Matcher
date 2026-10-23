@@ -45,7 +45,7 @@ describe("CurrentRoundView Component", () => {
     const proposedHtml = renderToStaticMarkup(
       <CurrentRoundView {...sampleProps} canRegenerate={true} />
     );
-    expect(proposedHtml).toContain("Reshuffle Matchups");
+    expect(proposedHtml).toContain("Reshuffle");
 
     const startedHtml = renderToStaticMarkup(
       <CurrentRoundView
@@ -54,7 +54,7 @@ describe("CurrentRoundView Component", () => {
         canRegenerate={false}
       />
     );
-    expect(startedHtml).not.toContain("Reshuffle Matchups");
+    expect(startedHtml).not.toContain("Reshuffle");
   });
 
   it("includes start confirmation and mobile action placement", () => {
@@ -70,5 +70,17 @@ describe("CurrentRoundView Component", () => {
     expect(html).toContain("Customize Lineup");
     expect(html).not.toContain("Proposal Draft");
     expect(html).not.toContain("Round Proposal");
+  });
+
+  it("renders matchmaking variety controls with intuitive info trigger when canManage is true", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView {...sampleProps} canManage={true} canRegenerate={true} />
+    );
+
+    expect(html).toContain("Matchmaking Variety:");
+    expect(html).toContain("Balanced");
+    expect(html).toContain("Varied");
+    expect(html).toContain("Wild");
+    expect(html).toContain('aria-label="What is Matchmaking Variety?"');
   });
 });

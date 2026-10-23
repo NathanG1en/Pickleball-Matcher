@@ -112,7 +112,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
 
     expect(html).toContain("Best Partner");
     expect(html).toContain("@sam_slam");
-    expect(html).toContain("80% Synergy");
+    expect(html).toContain("+80 Synergy");
     expect(html).toContain("8 matches");
   });
 
@@ -195,7 +195,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("Public");
       expect(html).toContain("Best Partner");
       expect(html).toContain("@chem_partner");
-      expect(html).toContain("83% Synergy");
+      expect(html).toContain("+83 Synergy");
       expect(html).toContain("Rating over time");
       expect(html).toContain("Past Sessions");
       expect(html).not.toContain("This Profile is Private");

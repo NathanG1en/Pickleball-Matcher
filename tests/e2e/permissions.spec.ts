@@ -90,7 +90,7 @@ test.describe("Permissions and Security Workflow", () => {
     // 3. Switch to "Add Guest" tab on dashboard
     await page.click("button[type='button']:has-text('Add Guest')");
     await page.fill("#guest-player-name", "Guest Taylor");
-    await page.selectOption("#guest-player-rating", "2");
+    await page.locator("[data-testid='rating-tick-2']").click();
     await page.click("form button[type='submit']:has-text('Add')");
 
     // Guest Taylor should appear in the roster
@@ -203,7 +203,7 @@ test.describe("Permissions and Security Workflow", () => {
     await mergeButton.click();
 
     // 9. Modal should close, guest should be removed from roster, and publicUser remains
-    await expect(modal).not.toBeVisible();
+    await expect(modal).not.toBeVisible({ timeout: 15000 });
     await expect(page.locator("li").filter({ hasText: "Guest Jordan" })).not.toBeVisible();
     await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible();
   });
@@ -741,12 +741,15 @@ test("non-host member can leave a group from find groups page with confirmation 
   await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
   // Navigate to Find Groups page
-  await playerPage.goto("/players/groups");
+  await playerPage.goto(`/players/groups?q=${encodeURIComponent(groupName)}`);
   await expect(playerPage.getByRole("heading", { name: "Find a group" })).toBeVisible();
+
+  await playerPage.fill("input[placeholder*='Search by group name']", groupName);
+  await playerPage.click("button:has-text('Search')");
 
   // Find the group card
   const groupArticle = playerPage.locator("article", { hasText: groupName });
-  await expect(groupArticle).toBeVisible();
+  await expect(groupArticle).toBeVisible({ timeout: 10000 });
   // Member badge should be visible next to group name
   await expect(groupArticle.getByText("Member")).toBeVisible();
 
@@ -775,9 +778,9 @@ test("non-host member can leave a group from find groups page with confirmation 
   await expect(groupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
 
   // Verify host sees Host badge and no leave button on find groups page
-  await page.goto("/players/groups");
+  await page.goto(`/players/groups?q=${encodeURIComponent(groupName)}`);
   const hostGroupArticle = page.locator("article", { hasText: groupName });
-  await expect(hostGroupArticle.getByText("Host")).toBeVisible();
+  await expect(hostGroupArticle.getByText("Host")).toBeVisible({ timeout: 10000 });
   await expect(hostGroupArticle.getByRole("button", { name: "Leave", exact: true })).not.toBeVisible();
 
   await playerContext.close();

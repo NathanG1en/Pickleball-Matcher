@@ -41,6 +41,7 @@ export const proposeRoundSchema = z
     sessionId: entityIdSchema,
     sessionVersion: aggregateVersionSchema,
     seed: z.coerce.number().int().min(0).max(0xffff_ffff).optional(),
+    temperature: z.coerce.number().min(0).max(2).optional(),
   })
   .strict();
 
@@ -104,6 +105,7 @@ export const reshuffleRoundSchema = existingSessionMutation.extend({
   roundId: entityIdSchema,
   roundVersion: aggregateVersionSchema,
   seed: z.coerce.number().int().min(0).max(0xffff_ffff).optional(),
+  temperature: z.coerce.number().min(0).max(2).optional(),
 });
 
 export const endSessionSchema = existingSessionMutation;

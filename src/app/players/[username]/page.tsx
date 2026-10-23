@@ -162,13 +162,24 @@ export default async function PlayerPublicProfilePage({
                 </p>
               </div>
               <div className="text-right">
-                <span className="inline-block rounded-xl border-2 border-black bg-white px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000]">
-                  {bestPartner.synergyScore > 1
-                    ? Math.round(bestPartner.synergyScore)
-                    : Math.round(bestPartner.synergyScore * 100)}% Synergy
-                </span>
+                {(() => {
+                  const raw = bestPartner.synergyScore;
+                  const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                  const sign = score > 0 ? `+${score}` : `${score}`;
+                  return (
+                    <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000] ${
+                      score > 0
+                        ? "bg-emerald-100 text-emerald-950"
+                        : score < 0
+                        ? "bg-rose-100 text-rose-950"
+                        : "bg-white text-black"
+                    }`}>
+                      {sign} Synergy
+                    </span>
+                  );
+                })()}
                 <p className="mt-1 text-[11px] font-bold text-neutral-800">
-                  {bestPartner.matchesPlayed} matches together
+                  {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
                 </p>
               </div>
             </div>

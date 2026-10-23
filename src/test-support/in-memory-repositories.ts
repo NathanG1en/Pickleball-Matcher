@@ -7,6 +7,7 @@ import type {
   PlayerGender,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
+  PairMatchSynergyResult,
   MatchPlayerRecord,
   MatchRecord,
   PlayerRecord,
@@ -18,7 +19,7 @@ import type {
   StartedRoundRecord,
   TournamentRecord,
 } from "@/lib/domain/types";
-import { calculateSynergyScore } from "@/lib/synergy/calculator";
+import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
 
 interface InMemoryState {
@@ -915,34 +916,46 @@ export class InMemoryRepositories implements DomainRepository {
     };
   }
 
-  async recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void> {
+  async recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void> {
     for (const pair of pairResults) {
       if (pair.accountIdA === pair.accountIdB) continue;
       const [first, second] = pair.accountIdA < pair.accountIdB ? [pair.accountIdA, pair.accountIdB] : [pair.accountIdB, pair.accountIdA];
       const existing = this.state.synergies.find((s) => s.accountId1 === first && s.accountId2 === second);
-      const winInc = pair.won ? 1 : 0;
+      const updated = updateSynergyState(
+        existing
+          ? {
+              matchesPlayed: existing.matchesPlayed,
+              wins: existing.wins,
+              weightSum: existing.weightSum,
+              contributionSum: existing.contributionSum,
+              weightSqSum: existing.weightSqSum,
+            }
+          : null,
+        {
+          won: pair.won,
+          expectedWinProbability: pair.expectedWinProbability,
+          ownScore: pair.ownScore,
+          opponentScore: pair.opponentScore,
+        }
+      );
+
+      const record: PlayerSynergyRecord = {
+        accountId1: first,
+        accountId2: second,
+        matchesPlayed: updated.matchesPlayed,
+        wins: updated.wins,
+        synergyScore: updated.synergyScore,
+        weightSum: updated.weightSum,
+        contributionSum: updated.contributionSum,
+        weightSqSum: updated.weightSqSum,
+        updatedAt: new Date(),
+      };
+
       if (existing) {
-        const newMatches = existing.matchesPlayed + 1;
-        const newWins = existing.wins + winInc;
-        const newScore = calculateSynergyScore(newMatches, newWins);
         const index = this.state.synergies.indexOf(existing);
-        this.state.synergies[index] = {
-          accountId1: first,
-          accountId2: second,
-          matchesPlayed: newMatches,
-          wins: newWins,
-          synergyScore: newScore,
-          updatedAt: new Date(),
-        };
+        this.state.synergies[index] = record;
       } else {
-        this.state.synergies.push({
-          accountId1: first,
-          accountId2: second,
-          matchesPlayed: 1,
-          wins: winInc,
-          synergyScore: calculateSynergyScore(1, winInc),
-          updatedAt: new Date(),
-        });
+        this.state.synergies.push(record);
       }
     }
     this.writeCount += 1;

@@ -6,6 +6,7 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
+import { Modal } from "@/components/ui/modal";
 import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup";
 import {
   LockIcon,
@@ -50,6 +51,8 @@ export interface CurrentRoundViewProps {
   readonly onRegenerate?: () => void;
   readonly onEnterResults?: () => void;
   readonly canManage?: boolean;
+  readonly matchmakingVariety?: number;
+  readonly onChangeMatchmakingVariety?: (variety: number) => void;
 }
 
 const subscribeToHydration = () => () => {};
@@ -80,8 +83,11 @@ function CurrentRoundEditor({
   onRegenerate,
   onEnterResults,
   canManage = true,
+  matchmakingVariety = 0,
+  onChangeMatchmakingVariety,
 }: CurrentRoundViewProps & { restoreDraft: boolean }) {
   const allowRegenerate = canRegenerate !== undefined ? canRegenerate : Boolean(onRegenerate);
+  const [showVarietyInfo, setShowVarietyInfo] = useState(false);
   const [draft] = useState(() =>
     restoreDraft && draftKey && draftContext && canManage && round.status === "proposed"
       ? readLineupDraft(draftKey, draftContext, { courts, sitting: sittingPlayerIds })
@@ -97,6 +103,23 @@ function CurrentRoundEditor({
   const partnerSynergy = viewerCourt
     ? courtSynergies[viewerCourt.courtNumber]?.[viewerCourt.team1.includes(currentViewerPlayerId ?? "") ? "team1" : "team2"]
     : null;
+
+  const renderPartnerBadge = (syn: typeof partnerSynergy) => {
+    if (!syn || syn.score === undefined) return null;
+    const score = syn.score;
+    const badgeStyle =
+      score > 0
+        ? "bg-[#ccff00] text-black"
+        : score < 0
+        ? "bg-amber-100 text-amber-900"
+        : "bg-neutral-100 text-neutral-800";
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]`}>
+        <ZapIcon className="h-3 w-3 shrink-0" />
+        <span>{score > 0 ? `+${score}` : `${score}`} Synergy</span>
+      </span>
+    );
+  };
 
   // Friction and interaction state
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -378,10 +401,11 @@ function CurrentRoundEditor({
                     onClick={onRegenerate}
                     disabled={isPending || isGeneratingRound}
                     data-testid="header-reshuffle-matchups-button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+                    aria-label="Reshuffle"
+                    title="Reshuffle"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
                   >
                     <ShuffleIcon className="h-3.5 w-3.5" />
-                    <span>Reshuffle</span>
                   </button>
                 )}
               </>
@@ -403,6 +427,45 @@ function CurrentRoundEditor({
           {round.status === "completed" && <Badge variant="default">Completed</Badge>}
         </div>
       </div>
+
+      {/* Matchmaking Variety Control */}
+      {round.status === "proposed" && canManage && allowRegenerate && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-black uppercase tracking-wide text-neutral-800">Matchmaking Variety:</span>
+            <button
+              type="button"
+              onClick={() => setShowVarietyInfo(true)}
+              aria-label="What is Matchmaking Variety?"
+              title="What is Matchmaking Variety?"
+              className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-black bg-neutral-100 text-[10px] font-black text-black hover:bg-[#ccff00] cursor-pointer"
+            >
+              i
+            </button>
+          </div>
+          <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-lg border-2 border-black">
+            {[
+              { value: 0, label: "Balanced" },
+              { value: 0.5, label: "Varied" },
+              { value: 1.0, label: "Wild" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={isPending || isGeneratingRound}
+                onClick={() => onChangeMatchmakingVariety?.(opt.value)}
+                className={`px-2.5 py-1 rounded-md text-xs font-black uppercase transition-all cursor-pointer ${
+                  (matchmakingVariety ?? 0) === opt.value
+                    ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
+                    : "text-neutral-600 hover:text-black border border-transparent"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Manual Override Status Banner */}
       {round.status === "proposed" && isUnlocked && (
@@ -557,19 +620,14 @@ function CurrentRoundEditor({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 1" : "Team 1"}
                     </span>
-                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score !== undefined) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                        <ZapIcon className="h-3 w-3 shrink-0" />
-                        <span>{partnerSynergy!.score}% Synergy</span>
-                      </span>
-                    )}
-                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] === null) && (
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score === undefined && playerAccounts && playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] === null) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
                         <AlertTriangleIcon className="h-3 w-3 shrink-0" />
                         <span>Guest Partner</span>
                       </span>
                     )}
-                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
+                    {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
@@ -700,19 +758,14 @@ function CurrentRoundEditor({
                     <span className="text-xs uppercase font-black tracking-wider text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 2" : "Team 2"}
                     </span>
-                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score !== undefined) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000]">
-                        <ZapIcon className="h-3 w-3 shrink-0" />
-                        <span>{partnerSynergy!.score}% Synergy</span>
-                      </span>
-                    )}
-                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && playerAccounts && playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] === null) && (
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score === undefined && playerAccounts && playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] === null) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
                         <AlertTriangleIcon className="h-3 w-3 shrink-0" />
                         <span>Guest Partner</span>
                       </span>
                     )}
-                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && !partnerSynergy?.score && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
+                    {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
@@ -1069,7 +1122,7 @@ function CurrentRoundEditor({
                 ) : (
                   <>
                     <ShuffleIcon className="h-5 w-5 shrink-0" />
-                    <span>Reshuffle Matchups</span>
+                    <span>Reshuffle</span>
                   </>
                 )}
               </Button>
@@ -1116,6 +1169,40 @@ function CurrentRoundEditor({
           playerNames={playerNames}
           playerAccounts={playerAccounts}
         />
+      )}
+
+      {showVarietyInfo && (
+        <Modal
+          isOpen={showVarietyInfo}
+          onClose={() => setShowVarietyInfo(false)}
+          title="Matchmaking Variety"
+        >
+          <div className="space-y-4 text-sm text-neutral-800">
+            <p className="font-medium text-neutral-700">
+              Controls how strictly the algorithm sticks to the single mathematically optimal lineup versus introducing fresh, unexpected pairings when generating or reshuffling matchups.
+            </p>
+            <div className="space-y-3">
+              <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
+                <p className="font-black text-black uppercase text-xs">Balanced (Default)</p>
+                <p className="text-xs text-neutral-700 mt-1 font-semibold">
+                  Strict mathematical optimization. Minimizes rating disparities and partner/opponent repeats. Best for competitive, closely-matched play.
+                </p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
+                <p className="font-black text-black uppercase text-xs">Varied (Moderate)</p>
+                <p className="text-xs text-neutral-700 mt-1 font-semibold">
+                  Explores top-tier alternative pairings. Maintains strong skill balance while rotating partners and opponents who rarely play together.
+                </p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
+                <p className="font-black text-black uppercase text-xs">Wild (High Variety)</p>
+                <p className="text-xs text-neutral-700 mt-1 font-semibold">
+                  Maximizes lineup diversity for surprising matchups and high social variety, while still respecting player sitting limits and 2v1 protections.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

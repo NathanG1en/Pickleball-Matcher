@@ -8,7 +8,7 @@ import type { AttendanceRecord, MatchPlayerRecord, MatchRecord, RoundRecord, Rou
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { saveTemporaryGroupSchema } from "@/lib/validation/temporary";
 
-const emptyScore: ScoreBreakdown = { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 };
+const emptyScore: ScoreBreakdown = { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, twoVsOneRepeat: 0, tieBreak: 0, total: 0 };
 
 export async function saveTemporaryGroupAction(input: unknown): Promise<{ ok: boolean; groupId?: string; error?: string }> {
   const parsed = saveTemporaryGroupSchema.safeParse(input);

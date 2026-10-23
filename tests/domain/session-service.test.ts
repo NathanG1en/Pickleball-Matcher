@@ -330,5 +330,47 @@ describe("SessionService", () => {
         new DomainError("INVALID_STATE", "Court sizes cannot exceed the number of present players."),
       );
     });
+
+    it("tracks timesPlayed2v1 and rotates 2v1 court assignments across rounds", async () => {
+      // 7 players on 2 courts: [4, 3] -> 1 doubles court, 1 2v1 court
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 2,
+        courtPlayerCounts: [4, 3],
+        playerIds: players.slice(0, 7).map((p) => p.id),
+      });
+
+      // Round 1
+      const proposal1 = await service.proposeRound(session.id, 101);
+      const court3R1 = proposal1.courts.find((c) => c.matchType === "team-vs-one");
+      expect(court3R1).toBeDefined();
+      const r1Players = [...court3R1!.team1, ...court3R1!.team2];
+      expect(r1Players).toHaveLength(3);
+
+      const startedRound = await service.startRound(session.id, proposal1);
+      // Complete round 1 matches
+      for (const court of proposal1.courts) {
+        const matches = repository.state.matches.filter((m) => m.courtNumber === court.courtNumber);
+        const match = matches[matches.length - 1];
+        await service.recordResult({
+          matchId: match.id,
+          team1Score: 11,
+          team2Score: 9,
+        });
+      }
+      await service.completeRound(startedRound.id);
+
+      // Propose Round 2
+      const proposal2 = await service.proposeRound(session.id, 102);
+      const court3R2 = proposal2.courts.find((c) => c.matchType === "team-vs-one");
+      expect(court3R2).toBeDefined();
+      const r2Players = [...court3R2!.team1, ...court3R2!.team2];
+      expect(r2Players).toHaveLength(3);
+
+      // None of the players who played 2v1 in Round 1 should play 2v1 in Round 2!
+      for (const p of r1Players) {
+        expect(r2Players).not.toContain(p);
+      }
+    });
   });
 });
