@@ -105,4 +105,43 @@ describe("scoreRound", () => {
       scoreRound(balanced, context).total,
     );
   });
+
+  it("applies a penalty when players who already played 2v1 are assigned to 2v1 again", () => {
+    const freshPlayers: MatchmakingPlayer[] = [
+      { id: "p1", name: "p1", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 0 },
+      { id: "p2", name: "p2", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 0 },
+      { id: "p3", name: "p3", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 0 },
+    ];
+    const repeatedPlayers: MatchmakingPlayer[] = [
+      { id: "p1", name: "p1", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 1 },
+      { id: "p2", name: "p2", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 0 },
+      { id: "p3", name: "p3", rating: 1000, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false, timesPlayed2v1: 0 },
+    ];
+
+    const twoVsOneCandidate: RoundCandidate = {
+      courts: [{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3"], matchType: "team-vs-one" }],
+      sitting: [],
+    };
+
+    const freshScore = scoreRound(twoVsOneCandidate, {
+      players: freshPlayers,
+      pairHistory: [],
+      config: DEFAULT_MATCHMAKING_CONFIG,
+      sittingPenalty: { playingTime: 0, consecutiveSit: 0 },
+      tieBreak: 0,
+    });
+
+    const repeatedScore = scoreRound(twoVsOneCandidate, {
+      players: repeatedPlayers,
+      pairHistory: [],
+      config: DEFAULT_MATCHMAKING_CONFIG,
+      sittingPenalty: { playingTime: 0, consecutiveSit: 0 },
+      tieBreak: 0,
+    });
+
+    expect(freshScore.twoVsOneRepeat).toBe(0);
+    expect(repeatedScore.twoVsOneRepeat).toBe(100);
+    expect(repeatedScore.total).toBeGreaterThan(freshScore.total);
+  });
 });
+

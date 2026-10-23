@@ -176,6 +176,49 @@ export function AttendanceManager({
             </label>
           ))}
         </div>
+        {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||
+          (courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity)) && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
+            <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
+            <button
+              type="button"
+              onClick={() =>
+                setCourtPlayerCounts((prev) => {
+                  let converted = false;
+                  return prev.map((s, idx) => {
+                    if (idx < courts && s === 2 && !converted) {
+                      converted = true;
+                      return 3;
+                    }
+                    return s;
+                  });
+                })
+              }
+              className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                courtPlayerCounts.slice(0, courts).some((s) => s === 3)
+                  ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                  : "bg-white text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              2v1 Match (No Sitters)
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setCourtPlayerCounts((prev) =>
+                  prev.map((s, idx) => (idx < courts && s === 3 ? 2 : s))
+                )
+              }
+              className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity
+                  ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                  : "bg-white text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              1v1 Singles (1 Sitter)
+            </button>
+          </div>
+        )}
         {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
       </section>
 

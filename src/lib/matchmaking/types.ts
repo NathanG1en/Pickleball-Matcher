@@ -9,6 +9,7 @@ export interface MatchmakingPlayer {
   readonly gamesPlayed: number;
   readonly eligibleRounds: number;
   readonly satPreviousRound: boolean;
+  readonly timesPlayed2v1?: number;
 }
 
 export interface PairHistory {
@@ -40,6 +41,7 @@ export interface ScoreBreakdown {
   readonly partnerRepeat: number;
   readonly skillBalance: number;
   readonly opponentRepeat: number;
+  readonly twoVsOneRepeat?: number;
   readonly tieBreak: number;
   readonly total: number;
 }
@@ -90,6 +92,7 @@ export interface MatchmakingWeights {
   readonly partnerRepeat: number;
   readonly skillBalance: number;
   readonly opponentRepeat: number;
+  readonly twoVsOneRepeat?: number;
 }
 
 export interface MatchmakingConfig {
@@ -136,4 +139,6 @@ export interface GenerateRoundInput {
   readonly allowSingles?: boolean;
   /** Optional player capacity for each court; unallocated players sit out. */
   readonly courtPlayerCounts?: readonly (2 | 3 | 4)[];
+  /** Matchmaking variety factor (0 = strictly balanced, 0.5 = varied, 1.0 = high variety). */
+  readonly temperature?: number;
 }

@@ -96,9 +96,19 @@ function matchmakingPlayers(
     (item) => item.leftRound === null && item.joinedRound <= currentRoundNumber + 1,
   );
   const games = new Map<string, number>();
+  const timesPlayed2v1 = new Map<string, number>();
   for (const record of rounds) {
     for (const member of record.matchPlayers) {
       games.set(member.playerId, (games.get(member.playerId) ?? 0) + 1);
+    }
+    for (const match of record.matches) {
+      if (match.status === "cancelled") continue;
+      const matchMembers = record.matchPlayers.filter((mp) => mp.matchId === match.id);
+      if (matchMembers.length === 3) {
+        for (const member of matchMembers) {
+          timesPlayed2v1.set(member.playerId, (timesPlayed2v1.get(member.playerId) ?? 0) + 1);
+        }
+      }
     }
   }
   const previousRound = rounds.find((record) => record.round.roundNumber === currentRoundNumber);
@@ -115,6 +125,7 @@ function matchmakingPlayers(
         gamesPlayed: games.get(player.id) ?? 0,
         eligibleRounds: Math.max(0, currentRoundNumber - item.joinedRound + 1),
         satPreviousRound: previousSits.has(player.id),
+        timesPlayed2v1: timesPlayed2v1.get(player.id) ?? 0,
       },
     ];
   });
@@ -257,7 +268,11 @@ export class SessionService {
     });
   }
 
-  async proposeRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+  async proposeRound(
+    sessionId: string,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     const session = await requiredSession(this.repository, sessionId);
     const [players, attendance, rounds] = await Promise.all([
       this.repository.listPlayers(session.groupId),
@@ -271,6 +286,7 @@ export class SessionService {
       pairHistory: sessionPairHistory(rounds),
       config: DEFAULT_MATCHMAKING_CONFIG,
       seed,
+      temperature,
     });
     if (!result.ok) throw new DomainError(result.error.code, result.error.message);
     return result.value;
@@ -508,7 +524,11 @@ export class SessionService {
     });
   }
 
-  async reshuffleRound(sessionId: string, seed = this.dependencies.nextSeed()): Promise<RoundProposal> {
+  async reshuffleRound(
+    sessionId: string,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, sessionId);
       const rounds = await repository.listStartedRounds(sessionId);
@@ -535,6 +555,7 @@ export class SessionService {
         pairHistory: sessionPairHistory(remainingRounds),
         config: DEFAULT_MATCHMAKING_CONFIG,
         seed,
+        temperature,
       });
       if (!result.ok) throw new DomainError(result.error.code, result.error.message);
       return result.value;

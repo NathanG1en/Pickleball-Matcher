@@ -116,6 +116,26 @@ export function scoreRound(
     (averageSkillDifference / 400) * context.config.weights.skillBalance;
   const opponentRepeat =
     (pairPenalties.opponent / (courtCount * 4 * 25)) * context.config.weights.opponentRepeat;
+
+  const twoVsOneWeight = context.config.weights.twoVsOneRepeat ?? 100;
+  let twoVsOneRepeat = 0;
+  const indexedPlayers = playerIndex(context.players);
+  for (const court of candidate.courts) {
+    const isTwoVsOne =
+      court.matchType === "team-vs-one" ||
+      court.team1.length + court.team2.length === 3;
+    if (isTwoVsOne) {
+      const playersOnCourt = [...court.team1, ...court.team2];
+      for (const playerId of playersOnCourt) {
+        const player = indexedPlayers.get(playerId);
+        const count = player?.timesPlayed2v1 ?? 0;
+        if (count > 0) {
+          twoVsOneRepeat += count * count * twoVsOneWeight;
+        }
+      }
+    }
+  }
+
   const tieBreak = context.tieBreak;
 
   return {
@@ -124,6 +144,7 @@ export function scoreRound(
     partnerRepeat,
     skillBalance,
     opponentRepeat,
+    twoVsOneRepeat,
     tieBreak,
     total:
       playingTime +
@@ -131,6 +152,7 @@ export function scoreRound(
       partnerRepeat +
       skillBalance +
       opponentRepeat +
+      twoVsOneRepeat +
       tieBreak,
   };
 }
