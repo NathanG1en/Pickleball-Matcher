@@ -30,6 +30,7 @@ import type {
 } from "@/lib/domain/types";
 
 import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rating-slider";
+import { ClientDate } from "@/components/ui/client-date-time";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -901,7 +902,7 @@ export function OpenPlayManagerClient({
               className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
             />
             <p className="text-xs font-bold text-neutral-600">
-              {groupName ?? "Group"} · Started <span suppressHydrationWarning>{new Date(session.startedAt).toLocaleDateString()}</span>
+              {groupName ?? "Group"} · Started <ClientDate date={session.startedAt} />
             </p>
           </div>
 
