@@ -280,8 +280,8 @@ test("host synergy follows current partners after manual swaps and new proposals
 
   await arrangeTeam1(winners);
   await reveal();
-  await expectCurrentSynergy(1, "67% (1 games)");
-  await expectCurrentSynergy(2, "33% (1 games)");
+  await expectCurrentSynergy(1, "+4 (1 games)");
+  await expectCurrentSynergy(2, "-4 (1 games)");
   await close();
 
   // Neither mixed partnership has ever played, so neither may inherit a saved score.
@@ -294,14 +294,14 @@ test("host synergy follows current partners after manual swaps and new proposals
   // Moving a known partnership to the other team slot preserves its history.
   await arrangeTeam1(losers);
   await reveal();
-  await expectCurrentSynergy(1, "33% (1 games)");
-  await expectCurrentSynergy(2, "67% (1 games)");
+  await expectCurrentSynergy(1, "-4 (1 games)");
+  await expectCurrentSynergy(2, "+4 (1 games)");
   await close();
 
   // A refreshed lineup must agree with the same account-pair history.
   await page.reload();
   const pairKey = (pair: string[]) => [...pair].sort().join("|");
-  const expected = new Map([[pairKey(winners), "67% (1 games)"], [pairKey(losers), "33% (1 games)"]]);
+  const expected = new Map([[pairKey(winners), "+4 (1 games)"], [pairKey(losers), "-4 (1 games)"]]);
   await reveal();
   for (const team of [1, 2]) {
     await expectCurrentSynergy(team, expected.get(pairKey(await teamNames(team))) ?? "New Duo (0 games)");

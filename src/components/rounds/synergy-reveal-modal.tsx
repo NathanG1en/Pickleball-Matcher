@@ -59,11 +59,19 @@ function resolveTeamSynergy(
   }
 
   if (synInfo?.score !== undefined && synInfo?.matchesPlayed !== undefined) {
+    const formatted = synInfo.score > 0 ? `+${synInfo.score}` : `${synInfo.score}`;
+    const badgeStyle =
+      synInfo.score > 0
+        ? "border-black bg-[#ccff00] text-black"
+        : synInfo.score < 0
+        ? "border-amber-400 bg-amber-100 text-amber-900"
+        : "border-neutral-300 bg-neutral-100 text-neutral-800";
+
     return {
       status: "calculated" as const,
-      badgeText: `${synInfo.score}% (${synInfo.matchesPlayed} games)`,
+      badgeText: `${formatted} (${synInfo.matchesPlayed} games)`,
       badgeIcon: "zap" as const,
-      badgeStyle: "border-black bg-[#ccff00] text-black",
+      badgeStyle,
       message: undefined,
       iconType: undefined,
     };

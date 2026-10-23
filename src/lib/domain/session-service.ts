@@ -6,6 +6,7 @@ import type {
   ChangeAttendanceInput,
   MatchPlayerRecord,
   MatchRecord,
+  PairMatchSynergyResult,
   PlayerRecord,
   RecordResultInput,
   RoundProposal,
@@ -433,13 +434,26 @@ export class SessionService {
         groupPlayers.map((p) => [p.id, p.accountId ?? null]),
       );
 
-      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      const playerRatingMap = new Map<string, number>(
+        groupPlayers.map((p) => [p.id, p.rating]),
+      );
+
+      const pairResults: PairMatchSynergyResult[] = [];
       for (const match of record.matches) {
         if (match.status === "completed" && match.team1Score !== null && match.team2Score !== null) {
           const mps = record.matchPlayers.filter((item) => item.matchId === match.id);
           const t1 = mps.filter((m) => m.team === 1);
           const t2 = mps.filter((m) => m.team === 2);
           if (t1.length === 2 && t2.length === 2) {
+            const t1R1 = t1[0].ratingBefore ?? playerRatingMap.get(t1[0].playerId) ?? 1000;
+            const t1R2 = t1[1].ratingBefore ?? playerRatingMap.get(t1[1].playerId) ?? 1000;
+            const t2R1 = t2[0].ratingBefore ?? playerRatingMap.get(t2[0].playerId) ?? 1000;
+            const t2R2 = t2[1].ratingBefore ?? playerRatingMap.get(t2[1].playerId) ?? 1000;
+            const team1Rating = (t1R1 + t1R2) / 2;
+            const team2Rating = (t2R1 + t2R2) / 2;
+            const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
+            const pTeam2 = 1 - pTeam1;
+
             const t1Acc1 = playerAccountMap.get(t1[0].playerId);
             const t1Acc2 = playerAccountMap.get(t1[1].playerId);
             if (t1Acc1 && t1Acc2) {
@@ -447,6 +461,9 @@ export class SessionService {
                 accountIdA: t1Acc1,
                 accountIdB: t1Acc2,
                 won: match.team1Score > match.team2Score,
+                expectedWinProbability: pTeam1,
+                ownScore: match.team1Score,
+                opponentScore: match.team2Score,
               });
             }
 
@@ -457,6 +474,9 @@ export class SessionService {
                 accountIdA: t2Acc1,
                 accountIdB: t2Acc2,
                 won: match.team2Score > match.team1Score,
+                expectedWinProbability: pTeam2,
+                ownScore: match.team2Score,
+                opponentScore: match.team1Score,
               });
             }
           }
@@ -531,7 +551,10 @@ export class SessionService {
       const playerAccountMap = new Map<string, string | null>(
         groupPlayers.map((p) => [p.id, p.accountId ?? null]),
       );
-      const pairResults: { accountIdA: string; accountIdB: string; won: boolean }[] = [];
+      const playerRatingMap = new Map<string, number>(
+        groupPlayers.map((p) => [p.id, p.rating]),
+      );
+      const pairResults: PairMatchSynergyResult[] = [];
 
       for (const sr of startedRounds) {
         if (sr.round.status === "started") {
@@ -551,6 +574,15 @@ export class SessionService {
               const t1 = mps.filter((m) => m.team === 1);
               const t2 = mps.filter((m) => m.team === 2);
               if (t1.length === 2 && t2.length === 2) {
+                const t1R1 = t1[0].ratingBefore ?? playerRatingMap.get(t1[0].playerId) ?? 1000;
+                const t1R2 = t1[1].ratingBefore ?? playerRatingMap.get(t1[1].playerId) ?? 1000;
+                const t2R1 = t2[0].ratingBefore ?? playerRatingMap.get(t2[0].playerId) ?? 1000;
+                const t2R2 = t2[1].ratingBefore ?? playerRatingMap.get(t2[1].playerId) ?? 1000;
+                const team1Rating = (t1R1 + t1R2) / 2;
+                const team2Rating = (t2R1 + t2R2) / 2;
+                const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
+                const pTeam2 = 1 - pTeam1;
+
                 const t1Acc1 = playerAccountMap.get(t1[0].playerId);
                 const t1Acc2 = playerAccountMap.get(t1[1].playerId);
                 if (t1Acc1 && t1Acc2) {
@@ -558,6 +590,9 @@ export class SessionService {
                     accountIdA: t1Acc1,
                     accountIdB: t1Acc2,
                     won: match.team1Score > match.team2Score,
+                    expectedWinProbability: pTeam1,
+                    ownScore: match.team1Score,
+                    opponentScore: match.team2Score,
                   });
                 }
                 const t2Acc1 = playerAccountMap.get(t2[0].playerId);
@@ -567,6 +602,9 @@ export class SessionService {
                     accountIdA: t2Acc1,
                     accountIdB: t2Acc2,
                     won: match.team2Score > match.team1Score,
+                    expectedWinProbability: pTeam2,
+                    ownScore: match.team2Score,
+                    opponentScore: match.team1Score,
                   });
                 }
               }

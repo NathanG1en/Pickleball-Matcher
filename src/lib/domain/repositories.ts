@@ -10,6 +10,7 @@ import type {
   PlayerGender,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
+  PairMatchSynergyResult,
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
@@ -39,7 +40,7 @@ export interface DomainRepository {
   listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]>;
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;
   getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null>;
-  recordMatchesSynergy(pairResults: readonly { accountIdA: string; accountIdB: string; won: boolean }[]): Promise<void>;
+  recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void>;
   searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   listPlayerAccounts(search?: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;

@@ -143,14 +143,14 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                         <span className="inline-flex items-center gap-1 text-amber-700">
                           <span>·</span>
                           <HandshakeIcon className="h-3 w-3 shrink-0" />
-                          <span>Best: @{player.bestPartner.username} ({player.bestPartner.synergyScore}% synergy)</span>
+                          <span>Best: @{player.bestPartner.username} ({player.bestPartner.synergyScore > 0 ? `+${player.bestPartner.synergyScore}` : player.bestPartner.synergyScore} synergy)</span>
                         </span>
                       )}
                       {player.viewerSynergyScore !== null && player.viewerSynergyScore !== undefined && (
                         <span className="inline-flex items-center gap-1 text-emerald-700">
                           <span>·</span>
                           <ZapIcon className="h-3 w-3 shrink-0" />
-                          <span>Chemistry with you: {player.viewerSynergyScore}%</span>
+                          <span>Chemistry with you: {player.viewerSynergyScore > 0 ? `+${player.viewerSynergyScore}` : player.viewerSynergyScore}</span>
                         </span>
                       )}
                     </div>

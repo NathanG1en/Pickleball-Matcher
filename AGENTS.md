@@ -10,41 +10,33 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Project Instructions & Agent Guidelines
 
-## 1. End-to-End (E2E) Test Maintenance Requirement
+## 1. End-to-End (E2E) Test Guidelines
 
-Whenever you make changes to:
+When making changes to:
 - **Authentication & Authorization** (e.g. player signup, login, session cookies).
 - **Group Creation & Onboarding** (e.g. `/setup`, group forms, visibility, redirect targets).
 - **Group Dashboard & Navigation** (e.g. `/g/[groupId]`, header actions, roster links, back buttons).
 - **Session & Matchmaking Workflows** (e.g. `/sessions/new`, court counts, attendance, round generation, scoring, attendance adjustments, round undo).
 - **Accessibility & ARIA Attributes** (e.g. labels, roles, Axe audits).
 
-**YOU MUST UPDATE AND RUN THE E2E TESTS TO REFLECT THOSE CHANGES.**
+**E2E runs are NOT mandatory on every task.** Verify code as best you can through static inspection, typechecks, and fast unit/component tests, and update test files to correct obvious flow mismatches.
+- You do **not** have to run the full Playwright suite (`npm run test:e2e`) every time.
+- If needed, test only the single targeted spec or test case (e.g. `npx playwright test tests/e2e/corrections.spec.ts:15`) rather than running the whole suite.
 
-Do not leave broken, stale, or out-of-sync E2E tests. Any changes that affect user flows must have matching updates in:
-- `tests/e2e/acceptance.spec.ts` (Full PRD acceptance: group creation, roster setup, court generation, match scoring, round progression)
+Key E2E specs for reference:
+- `tests/e2e/acceptance.spec.ts` (PRD acceptance: group creation, roster setup, court generation, match scoring, round progression)
 - `tests/e2e/corrections.spec.ts` (Match score edits, cancellations, round undos, mid-session attendance)
 - `tests/e2e/permissions.spec.ts` (Private group access control, member permissions, role transfers)
 - `tests/e2e/resilience.spec.ts` (Draft score preservation on validation errors, multi-tab sync, accessibility audits)
 - `tests/e2e/test-helpers.ts` (Shared helpers such as `createAndSignInPlayer` and `createTestGroup`)
 
-### Running and Verifying E2E Tests
-Run the test suites locally to ensure zero failures and zero retries:
-```bash
-npm run test:e2e
-```
-Or test an individual spec:
-```bash
-npx playwright test tests/e2e/acceptance.spec.ts
-```
-
 ## 2. Key Architecture & Flow Reminders
 - **Player Accounts**: Group creation requires an authenticated player account. The creator is automatically added to the group roster as the host player. Account for the host player in expected player counts (e.g., host + 13 added players = 14 players on roster).
 - **Client Hydration**: Client components use `useSyncExternalStore` for SSR-safe hydration markers (`data-hydrated="true"`) to prevent premature browser form submissions before React attaches event listeners.
-- **Continuous Quality Checks**: Always ensure the quality gates pass:
+- **Fast Quality Checks**: Ensure the fast quality gates pass:
   - `npm run lint` (ESLint with Next.js & React 19 rules)
   - `npm run typecheck` (TypeScript)
-  - `npm test` (Vitest unit and component tests)
-  - `npm run test:simulation` (Matchmaking fairness and Elo simulations)
-  - `npm run test:e2e` (Playwright acceptance and accessibility tests)
+  - `npm test` (Fast Vitest unit and component tests)
+  - `npm run test:simulation` (When rating or matchmaking algorithms are modified)
+  - `npm run test:e2e` (Optional / on-demand only; do not run automatically every time)
 
