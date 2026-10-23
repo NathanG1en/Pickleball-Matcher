@@ -6,7 +6,10 @@ import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import type { StartedRoundRecord } from "@/lib/domain/types";
 
 const testDbUrl = process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-if (process.env.DATABASE_URL && testDbUrl === process.env.DATABASE_URL) {
+const originalDatabaseUrl = process.env.ORIGINAL_DATABASE_URL !== undefined
+  ? (process.env.ORIGINAL_DATABASE_URL || undefined)
+  : process.env.DATABASE_URL;
+if (originalDatabaseUrl && testDbUrl === originalDatabaseUrl) {
   throw new Error("SAFETY ABORT: Refusing to run destructive integration test truncate against DATABASE_URL. Use a separate TEST_DATABASE_URL.");
 }
 
