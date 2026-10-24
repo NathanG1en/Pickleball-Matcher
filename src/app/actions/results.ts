@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  getActionRepository,
   getActionSessionService,
   requireOrganizer,
 } from "@/app/actions/action-context";
@@ -34,7 +35,13 @@ export async function recordResultAction(
       team1Score: parsed.data.team1Score,
       team2Score: parsed.data.team2Score,
     });
+    const sessionId =
+      parsed.data.sessionId ??
+      (await getActionRepository().getRound(match.roundId))?.sessionId;
     revalidatePath(`/g/${parsed.data.groupId}`);
+    if (sessionId) {
+      revalidatePath(`/g/${parsed.data.groupId}/sessions/${sessionId}`);
+    }
     return { ok: true, data: match };
   } catch (err) {
     return {
@@ -60,7 +67,13 @@ export async function cancelMatchAction(
     await requireOrganizer(parsed.data.groupId);
     const service = getActionSessionService();
     const match = await service.cancelMatch(parsed.data.matchId);
+    const sessionId =
+      parsed.data.sessionId ??
+      (await getActionRepository().getRound(match.roundId))?.sessionId;
     revalidatePath(`/g/${parsed.data.groupId}`);
+    if (sessionId) {
+      revalidatePath(`/g/${parsed.data.groupId}/sessions/${sessionId}`);
+    }
     return { ok: true, data: match };
   } catch (err) {
     return {
