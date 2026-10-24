@@ -40,6 +40,7 @@ import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
+import { formatSessionDate } from "@/lib/utils/date";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -86,10 +87,15 @@ export function SessionManagerClient({
 
   const [prevSession, setPrevSession] = useState(session);
   const [currentSession, setCurrentSession] = useState(session);
+  const [sessionName, setSessionName] = useState(session.name ?? null);
   if (session !== prevSession) {
     setPrevSession(session);
     setCurrentSession(session);
+    setSessionName(session.name ?? null);
   }
+
+  const formattedDate = formatSessionDate(session.startedAt);
+  const initialSessionName = sessionName || formattedDate;
 
   const [prevInitialProposal, setPrevInitialProposal] = useState(initialProposal);
   const [regeneratedProposal, setRegeneratedProposal] = useState<RoundProposal | null>(null);
@@ -888,13 +894,20 @@ export function SessionManagerClient({
               <SessionNameEditor
                 groupId={groupId}
                 sessionId={session.id}
-                initialName={session.name || "Session In Progress"}
+                initialName={initialSessionName}
                 canEdit={canEditSessionName}
                 headingTag="h2"
                 className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
+                onRenamed={(newName) => setSessionName(newName)}
               />
               <p className="text-xs font-bold text-neutral-600">
-                {groupName ?? "Group"} · Started <ClientDate date={session.startedAt} />
+                {groupName ?? "Group"}
+                {sessionName ? (
+                  <>
+                    {" · Started "}
+                    <ClientDate date={session.startedAt} />
+                  </>
+                ) : null}
               </p>
             </div>
             {canManage && (
@@ -902,8 +915,9 @@ export function SessionManagerClient({
                 <SessionOptionsMenu
                   groupId={groupId}
                   sessionId={session.id}
-                  sessionName={session.name}
+                  sessionName={sessionName}
                   redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                  onRenamed={(newName) => setSessionName(newName)}
                 />
               </div>
             )}
@@ -932,30 +946,34 @@ export function SessionManagerClient({
                 <SessionNameEditor
                   groupId={groupId}
                   sessionId={session.id}
-                  initialName={session.name || "Completed Session"}
+                  initialName={initialSessionName}
                   canEdit={canEditSessionName}
                   headingTag="h1"
                   className="font-display text-2xl font-black uppercase text-black"
+                  onRenamed={(newName) => setSessionName(newName)}
                 />
-                <p className="text-sm font-bold text-neutral-600 mt-1">
-                  <ClientDate
-                    date={session.startedAt}
-                    options={{
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    }}
-                  />
-                </p>
+                {sessionName && (
+                  <p className="text-sm font-bold text-neutral-600 mt-1">
+                    <ClientDate
+                      date={session.startedAt}
+                      options={{
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }}
+                    />
+                  </p>
+                )}
               </div>
               {canManage && (
                 <div className="shrink-0">
                   <SessionOptionsMenu
                     groupId={groupId}
                     sessionId={session.id}
-                    sessionName={session.name}
+                    sessionName={sessionName}
                     redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                    onRenamed={(newName) => setSessionName(newName)}
                   />
                 </div>
               )}

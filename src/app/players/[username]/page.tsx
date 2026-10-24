@@ -14,6 +14,7 @@ import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
 import { GlobeIcon, HandshakeIcon, LockIcon } from "@/components/ui/icons";
 import { formatDupr } from "@/lib/domain/rating-display";
+import { formatSessionDate } from "@/lib/utils/date";
 
 export async function generateMetadata({
   params,
@@ -282,11 +283,7 @@ export default async function PlayerPublicProfilePage({
             <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
           ) : (
             history.map((item) => {
-              const formattedDate = item.startedAt.toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              });
+              const formattedDate = formatSessionDate(item.startedAt);
               return (
                 <article
                   key={`${item.groupId}-${item.sessionId}`}

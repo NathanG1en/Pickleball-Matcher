@@ -31,6 +31,7 @@ import type {
 
 import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rating-slider";
 import { ClientDate } from "@/components/ui/client-date-time";
+import { formatSessionDate } from "@/lib/utils/date";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -63,6 +64,10 @@ export function OpenPlayManagerClient({
   const router = useRouter();
 
   // Local state for instant UI updates without waiting for router.refresh()
+  const [sessionName, setSessionName] = useState(session.name ?? null);
+  const formattedDate = formatSessionDate(session.startedAt);
+  const initialSessionName = sessionName || formattedDate;
+
   const [prevPlayers, setPrevPlayers] = useState(players);
   const [localPlayers, setLocalPlayers] = useState<readonly PlayerRecord[]>(players);
   if (players !== prevPlayers) {
@@ -884,8 +889,9 @@ export function OpenPlayManagerClient({
               <SessionOptionsMenu
                 groupId={groupId}
                 sessionId={session.id}
-                sessionName={session.name}
+                sessionName={sessionName}
                 redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                onRenamed={(newName) => setSessionName(newName)}
               />
             )}
           </div>
@@ -896,13 +902,20 @@ export function OpenPlayManagerClient({
             <SessionNameEditor
               groupId={groupId}
               sessionId={session.id}
-              initialName={session.name || "Open Play Session"}
+              initialName={initialSessionName}
               canEdit={isOrganizer || isHost}
               headingTag="h1"
               className="font-display text-2xl sm:text-3xl font-black uppercase text-black"
+              onRenamed={(newName) => setSessionName(newName)}
             />
             <p className="text-xs font-bold text-neutral-600">
-              {groupName ?? "Group"} · Started <ClientDate date={session.startedAt} />
+              {groupName ?? "Group"}
+              {sessionName ? (
+                <>
+                  {" · Started "}
+                  <ClientDate date={session.startedAt} />
+                </>
+              ) : null}
             </p>
           </div>
 

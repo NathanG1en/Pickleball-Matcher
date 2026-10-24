@@ -13,6 +13,7 @@ export function SessionNameEditor({
   canEdit = true,
   headingTag: Heading = "h1",
   className = "font-display text-2xl sm:text-3xl font-black uppercase text-black tracking-tight truncate",
+  onRenamed,
 }: {
   groupId: string;
   sessionId: string;
@@ -20,6 +21,7 @@ export function SessionNameEditor({
   canEdit?: boolean;
   headingTag?: "h1" | "h2" | "h3";
   className?: string;
+  onRenamed?: (newName: string) => void;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -61,6 +63,7 @@ export function SessionNameEditor({
     if (result.ok) {
       setName(trimmed);
       setIsEditingName(false);
+      onRenamed?.(trimmed);
       router.refresh();
     } else {
       setNameError(result.error ?? "Failed to update session name.");
@@ -108,7 +111,7 @@ export function SessionNameEditor({
 
   return (
     <div className="flex items-center gap-2">
-      <Heading className={className}>
+      <Heading className={className} suppressHydrationWarning>
         {name}
       </Heading>
       {canEdit && (

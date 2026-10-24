@@ -47,8 +47,8 @@ describe("EditGuestModal component", () => {
       />
     );
 
-    expect(html).toContain("Edit Guest Name");
-    expect(html).toContain('Update the display name for guest &quot;Guest Charlie&quot;.');
+    expect(html).toContain("Edit Guest");
+    expect(html).toContain('Update details for guest &quot;Guest Charlie&quot;.');
     expect(html).toContain('value="Guest Charlie"');
     expect(html).toContain("Save Changes");
     expect(html).toContain("Cancel");

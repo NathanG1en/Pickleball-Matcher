@@ -7,6 +7,7 @@ import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { HandshakeIcon } from "@/components/ui/icons";
+import { formatSessionDate } from "@/lib/utils/date";
 
 export default async function PlayerProfilePage() {
   const accountId = await getActivePlayerAccountId();
@@ -115,11 +116,7 @@ export default async function PlayerProfilePage() {
           <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>
         ) : (
           history.map((item) => {
-            const formattedDate = item.startedAt.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            });
+            const formattedDate = formatSessionDate(item.startedAt);
             return (
               <article
                 key={`${item.groupId}-${item.sessionId}`}

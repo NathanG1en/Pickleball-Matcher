@@ -49,7 +49,12 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // 6. Verify Open Play session page loaded with Host checked in
-    await expect(page.locator("h1")).toContainText("Open Play Session");
+    const todayFormatted = new Date().toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    await expect(page.locator("h1")).toContainText(todayFormatted);
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
     // Verify Open Play badge label is removed from the header and three dots is in the top right corner
@@ -324,7 +329,7 @@ test.describe("Open Play Workflow", () => {
     await guestNameInput.fill("Bobby");
     await editGuestModal.locator("button:has-text('Save Changes')").click();
 
-    await expect(page.locator("p[role='status']")).toContainText('Guest name updated to "Bobby".');
+    await expect(page.locator("p[role='status']")).toContainText('Guest "Bobby" updated');
     await expect(page.locator("li").filter({ hasText: "Bobby" })).toBeVisible();
 
     // Return to session to end it
@@ -607,7 +612,12 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // Verify initial session name
-    await expect(page.locator("h1")).toContainText("Open Play Session");
+    const todayFormatted = new Date().toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    await expect(page.locator("h1")).toContainText(todayFormatted);
 
     // Host renames session using edit pencil
     const editSessionBtn = page.locator("button[aria-label='Edit session name']");
@@ -661,11 +671,6 @@ test.describe("Open Play Workflow", () => {
     const sessionId = sessionUrl.split("/sessions/")[1].split("?")[0];
     const pastSessionItem = page.locator(`[data-testid='past-session-item-${sessionId}']`);
     await expect(pastSessionItem).toContainText("Friday Night Open Play");
-    const todayFormatted = new Date().toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
     await expect(pastSessionItem).toContainText(todayFormatted);
 
     const expandArrow = page.locator(`[data-testid='expand-session-arrow-${sessionId}']`);

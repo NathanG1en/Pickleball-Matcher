@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
+import { formatSessionDate } from "@/lib/utils/date";
 
 export interface PastSessionMatchData {
   readonly id: string;
@@ -70,11 +71,7 @@ export function PastSessionsList({
       {sessions.map((session) => {
         const isExpanded = Boolean(expandedSessionIds[session.id]);
         const currentName = renamedSessionNames[session.id] ?? session.name;
-        const formattedDate = new Date(session.startedAt).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+        const formattedDate = formatSessionDate(session.startedAt);
 
         return (
           <div key={session.id} className="py-3.5 space-y-3" data-testid={`past-session-item-${session.id}`}>
@@ -95,7 +92,7 @@ export function PastSessionsList({
                 aria-label={currentName ? `${currentName} · ${formattedDate}` : `Session from ${formattedDate}`}
               >
                 <span suppressHydrationWarning className="font-bold text-black text-sm block">
-                  {currentName ? `${currentName} · ${formattedDate}` : (session.type === "open_play" ? `Open Play · ${formattedDate}` : formattedDate)}
+                  {currentName ? `${currentName} · ${formattedDate}` : formattedDate}
                 </span>
                 <span className="text-xs font-bold text-neutral-500">
                   {session.type === "open_play"

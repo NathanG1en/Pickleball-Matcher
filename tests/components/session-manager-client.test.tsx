@@ -94,7 +94,7 @@ describe("SessionManagerClient Component", () => {
 
     expect(html).toContain('data-testid="completed-session-full-view"');
     expect(html).toContain("Downtown Club");
-    expect(html).toContain("October 10, 2026");
+    expect(html).toContain("Oct 10, 2026");
     expect(html).toContain("Completed Session");
     expect(html).toContain("Rounds");
     expect(html).toContain("Total Games");
@@ -170,10 +170,10 @@ describe("SessionManagerClient Component", () => {
 
     expect(html).toContain('data-testid="completed-session-full-view"');
     expect(html).toContain("Completed Session");
-    expect(html).toContain("October 10, 2026");
+    expect(html).toContain("Oct 10, 2026");
   });
 
-  it("renders custom session name when provided", () => {
+  it("renders custom session name when provided and keeps date separate", () => {
     const namedSession = {
       ...completedSession,
       name: "Championship Finals",
@@ -190,6 +190,7 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(html).toContain("Championship Finals");
+    expect(html).toContain("October 10, 2026");
   });
 
   it("renders back button to profile when isFromProfile is true", () => {
