@@ -13,7 +13,7 @@ import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
 import { GlobeIcon, HandshakeIcon, LockIcon } from "@/components/ui/icons";
-import { formatDupr } from "@/lib/domain/rating-display";
+import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { formatSessionDate } from "@/lib/utils/date";
 
 export async function generateMetadata({
@@ -137,7 +137,7 @@ export default async function PlayerPublicProfilePage({
               </div>
               <div className="pt-2 border-t-2 border-neutral-100">
                 <p className="text-xs font-bold uppercase text-neutral-600">
-                  {targetAccount.skillLevel} · current rating {formatDupr(currentRating)}
+                  {getSkillTier(eloToDupr(currentRating)).name} · current rating {formatDupr(currentRating)}
                 </p>
               </div>
             </div>
