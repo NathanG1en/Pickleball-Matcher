@@ -191,7 +191,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("Star Player");
       expect(html).toContain("@public_star");
       expect(html).toContain("Male");
-      expect(html).toContain("advanced");
+      expect(html).toContain("Competitive");
       expect(html).toContain("Public");
       expect(html).toContain("Best Partner");
       expect(html).toContain("@chem_partner");
@@ -236,7 +236,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
 
       // Should NOT contain private stats, rating, gender, etc.
       expect(html).not.toContain("Female");
-      expect(html).not.toContain("advanced");
+      expect(html).not.toContain("Competitive");
       expect(html).not.toContain("Best Partner");
       expect(html).not.toContain("Rating over time");
       expect(html).not.toContain("Past Sessions");
@@ -271,7 +271,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
 
       expect(html).toContain("My Stealth Name");
       expect(html).toContain("@my_stealth_acc");
-      expect(html).toContain("intermediate");
+      expect(html).toContain("Advanced Intermediate");
       expect(html).toContain("Rating over time");
       expect(html).toContain("Past Sessions");
       expect(html).not.toContain("This Profile is Private");

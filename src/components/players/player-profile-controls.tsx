@@ -12,7 +12,7 @@ import {
 } from "@/app/actions/player-account";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { clearRecentGroups, removeRecentGroup } from "@/lib/storage/recent-groups";
-import { formatDupr } from "@/lib/domain/rating-display";
+import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
@@ -21,7 +21,6 @@ export function PlayerProfileHeader({
   initialName,
   initialUsername,
   initialGender,
-  skillLevel,
   initialRating,
   currentRating,
   rating,
@@ -30,7 +29,7 @@ export function PlayerProfileHeader({
   initialName: string;
   initialUsername: string;
   initialGender?: "male" | "female" | null;
-  skillLevel: string;
+  skillLevel?: string;
   initialRating?: number;
   currentRating?: number;
   rating?: number;
@@ -480,7 +479,7 @@ export function PlayerProfileHeader({
 
       <div className="pt-2 border-t-2 border-neutral-100">
         <p className="text-xs font-bold uppercase text-neutral-600">
-          {skillLevel} · current rating {formatDupr(displayRating)}
+          {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
         </p>
       </div>
     </div>

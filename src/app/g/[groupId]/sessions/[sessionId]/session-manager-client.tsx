@@ -120,12 +120,13 @@ export function SessionManagerClient({
     setLocalStartedRounds(
       startedRounds.map((sr) => {
         const localSr = localStartedRounds.find((l) => l.round.id === sr.round.id);
-        if (!localSr) return sr;
         return {
           ...sr,
           matches: sr.matches.map((serverMatch) => {
             if (serverMatch.status !== "pending") return serverMatch;
-            const localMatch = localSr.matches.find((lm) => lm.id === serverMatch.id);
+            const localMatch =
+              localSr?.matches.find((lm) => lm.id === serverMatch.id) ??
+              localStartedRounds.flatMap((r) => r.matches).find((lm) => lm.id === serverMatch.id);
             if (localMatch && (localMatch.status !== "pending" || savingMatchIds.has(serverMatch.id))) {
               return localMatch;
             }
@@ -385,6 +386,7 @@ export function SessionManagerClient({
     try {
       const res = await recordResultAction({
         groupId,
+        sessionId: currentSession.id,
         matchId,
         team1Score,
         team2Score,
@@ -393,23 +395,20 @@ export function SessionManagerClient({
       });
       if (res.ok) {
         setLocalStartedRounds((prev) =>
-          prev.map((sr) =>
-            sr.round.id === latestStarted.round.id
-              ? {
-                  ...sr,
-                  matches: sr.matches.map((m) =>
-                    m.id === matchId
-                      ? {
-                          ...m,
-                          status: "completed" as const,
-                          team1Score,
-                          team2Score,
-                        }
-                      : m
-                  ),
-                }
-              : sr
-          )
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) =>
+              m.id === matchId
+                ? {
+                    ...m,
+                    status: "completed" as const,
+                    team1Score,
+                    team2Score,
+                    version: m.version + 1,
+                  }
+                : m
+            ),
+          }))
         );
         setScoreDrafts((prev) => {
           const next = { ...prev };
@@ -438,35 +437,49 @@ export function SessionManagerClient({
   };
 
   const handleCancelMatch = async (matchId: string) => {
-    if (!latestStarted) return;
-    const match = latestStarted.matches.find((m) => m.id === matchId);
-    if (!match) return;
+    let matchToCancel: MatchRecord | undefined;
+    for (const sr of localStartedRounds) {
+      const found = sr.matches.find((m) => m.id === matchId);
+      if (found) {
+        matchToCancel = found;
+        break;
+      }
+    }
+    if (!matchToCancel) return;
+
+    // Optimistically mark as cancelled immediately
+    const previousRounds = localStartedRounds;
+    setLocalStartedRounds((prev) =>
+      prev.map((sr) => ({
+        ...sr,
+        matches: sr.matches.map((m) =>
+          m.id === matchId ? { ...m, status: "cancelled" as const, version: m.version + 1 } : m
+        ),
+      }))
+    );
+    setScoreDrafts((prev) => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
 
     setSavingMatchIds((prev) => new Set([...prev, matchId]));
     try {
       const res = await cancelMatchAction({
         groupId,
+        sessionId: currentSession.id,
         matchId,
-        matchVersion: match.version,
+        matchVersion: matchToCancel.version,
         idempotencyKey: createIdempotencyKey(`cancel_${matchId}`),
       });
       if (res.ok) {
-        setLocalStartedRounds((prev) =>
-          prev.map((sr) =>
-            sr.round.id === latestStarted.round.id
-              ? {
-                  ...sr,
-                  matches: sr.matches.map((m) =>
-                    m.id === matchId ? { ...m, status: "cancelled" as const } : m
-                  ),
-                }
-              : sr
-          )
-        );
+        router.refresh();
       } else {
+        setLocalStartedRounds(previousRounds);
         setError(res.error);
       }
     } catch {
+      setLocalStartedRounds(previousRounds);
       setError("Failed to cancel match.");
     } finally {
       setSavingMatchIds((prev) => {
@@ -522,6 +535,7 @@ export function SessionManagerClient({
       });
       if (res.ok) {
         setRegeneratedProposal(null);
+        setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
         router.refresh();
       } else {
         setError(res.error);
@@ -535,7 +549,11 @@ export function SessionManagerClient({
 
   const inProgressMatches = localStartedRounds
     .filter((sr) => sr.round.status === "started")
-    .flatMap((sr) => sr.matches.filter((m) => m.status === "pending"));
+    .flatMap((sr) =>
+      sr.matches.filter(
+        (m) => m.status === "pending" && !savingMatchIds.has(m.id)
+      )
+    );
 
   const getMatchTeams = (match: MatchRecord) => {
     const sr = localStartedRounds.find((r) => r.matches.some((m) => m.id === match.id));
@@ -664,6 +682,7 @@ export function SessionManagerClient({
     try {
       const res = await recordResultAction({
         groupId,
+        sessionId: currentSession.id,
         matchId,
         team1Score: t1,
         team2Score: t2,
@@ -676,7 +695,7 @@ export function SessionManagerClient({
             ...sr,
             matches: sr.matches.map((m) =>
               m.id === matchId
-                ? { ...m, team1Score: t1, team2Score: t2, status: "completed" as const }
+                ? { ...m, team1Score: t1, team2Score: t2, status: "completed" as const, version: m.version + 1 }
                 : m
             ),
           }))
@@ -699,6 +718,7 @@ export function SessionManagerClient({
     try {
       const res = await cancelMatchAction({
         groupId,
+        sessionId: currentSession.id,
         matchId,
         matchVersion,
         idempotencyKey: createIdempotencyKey(`hist_cancel_${matchId}`),
@@ -708,7 +728,7 @@ export function SessionManagerClient({
           prev.map((sr) => ({
             ...sr,
             matches: sr.matches.map((m) =>
-              m.id === matchId ? { ...m, status: "cancelled" as const } : m
+              m.id === matchId ? { ...m, status: "cancelled" as const, version: m.version + 1 } : m
             ),
           }))
         );

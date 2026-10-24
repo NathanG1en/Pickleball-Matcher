@@ -21,6 +21,7 @@ export const recordResultSchema = z
 
 export const recordResultMutationSchema = recordResultSchema.extend({
   groupId: entityIdSchema,
+  sessionId: entityIdSchema.optional(),
   matchVersion: z.coerce.number().int().positive(),
   idempotencyKey: entityIdSchema,
 });
@@ -28,6 +29,7 @@ export const recordResultMutationSchema = recordResultSchema.extend({
 export const cancelMatchSchema = z
   .object({
     groupId: entityIdSchema,
+    sessionId: entityIdSchema.optional(),
     matchId: entityIdSchema,
     matchVersion: z.coerce.number().int().positive().optional(),
     idempotencyKey: entityIdSchema.optional(),

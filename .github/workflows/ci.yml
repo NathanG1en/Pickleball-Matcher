@@ -6,6 +6,7 @@ on:
       - main
       - pickleball-mvp
       - pickleball-mvp-gemini
+      - development
   pull_request:
 
 jobs:

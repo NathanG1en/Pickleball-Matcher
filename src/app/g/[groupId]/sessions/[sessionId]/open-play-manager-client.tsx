@@ -360,6 +360,11 @@ export function OpenPlayManagerClient({
   }, []);
 
   const showToast = (msg: string) => {
+    if (guestPopupTimeoutRef.current !== null) {
+      clearTimeout(guestPopupTimeoutRef.current);
+      guestPopupTimeoutRef.current = null;
+    }
+    setGuestAddedPopup(null);
     if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
     setSuccessToast(msg);
     toastTimeoutRef.current = setTimeout(() => {
@@ -840,7 +845,7 @@ export function OpenPlayManagerClient({
   return (
     <div className="space-y-6">
       {/* Dismissable Guest Added Popup */}
-      {guestAddedPopup && (
+      {guestAddedPopup && !successToast && (
         <div
           data-testid="guest-added-popup"
           className="fixed top-4 right-4 z-50 flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in"
@@ -864,7 +869,7 @@ export function OpenPlayManagerClient({
       )}
 
       {/* Toast Notification */}
-      {successToast && !guestAddedPopup && (
+      {successToast && (
         <div
           role="status"
           className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce"

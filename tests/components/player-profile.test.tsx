@@ -303,7 +303,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain('aria-label="Edit display name"');
     expect(html).toContain('aria-label="Edit username"');
     expect(html).toContain('aria-label="Edit gender"');
-    expect(html).toContain("advanced · current rating 3.75");
+    expect(html).toContain("Advanced Intermediate · current rating 3.75");
   });
 
   it("renders the player's current rating on their profile instead of their initial rating", async () => {
@@ -330,9 +330,36 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const html = renderToStaticMarkup(pageElement);
 
     expect(html).toContain("Ranked Player");
-    expect(html).toContain("intermediate · current rating 3.75");
+    expect(html).toContain("Advanced Intermediate · current rating 3.75");
     expect(html).not.toContain("current rating 3.5");
     expect(html).not.toContain("starting rating");
+  });
+
+  it("corrects the rating description to match current rating (e.g. Advanced Intermediate for 3.5, Intermediate for 3.0)", async () => {
+    const intermediateRepo = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "int_user",
+          name: "Intermediate Player",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          rating: 800, // 3.0 DUPR = Intermediate
+          ratedGamesPlayed: 3,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [],
+      players: [],
+    });
+    setActionRepository(intermediateRepo);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    expect(html).toContain("Intermediate · current rating 3");
+    expect(html).not.toContain("Advanced Intermediate");
   });
 
   it("checks username availability against database (identifies taken usernames and permits current user)", async () => {

@@ -382,4 +382,71 @@ describe("SessionManagerClient Component", () => {
 
     expect(organizerHtml).toContain("Attendance");
   });
+
+  it("does not treat cancelled matches in started rounds as games in progress", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+
+    const startedRoundsWithCancelled: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_active",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1234,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:05:00.000Z"),
+          startedAt: new Date("2026-10-10T14:05:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_cancelled",
+            roundId: "rnd_active",
+            courtNumber: 1,
+            team1Score: null,
+            team2Score: null,
+            status: "cancelled",
+            completedAt: new Date("2026-10-10T14:10:00.000Z"),
+            version: 2,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_cancelled", playerId: "p1", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_cancelled", playerId: "p2", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_cancelled", playerId: "p3", team: 2, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_cancelled", playerId: "p4", team: 2, ratingBefore: 1200, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRoundsWithCancelled}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    // Cancelled match badge is displayed
+    expect(html).toContain("Cancelled");
+    // In-progress warning modal should not be visible when no pending games remain
+    expect(html).not.toContain("You have these games in progress:");
+    expect(html).not.toContain('data-testid="in-progress-warning-modal"');
+    // End Session button is present and not disabled by unsaved scores
+    expect(html).toContain('data-testid="end-session-button"');
+    expect(html).toContain("End Session");
+  });
 });

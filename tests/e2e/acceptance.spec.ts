@@ -121,12 +121,15 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // Prior sitters must NOT sit again in Round 2
     const round2SitsSection = page.locator("section:has-text('Sitting this round')");
-    const round2Sitters = await round2SitsSection.locator("span").allTextContents();
-    for (const sitter of round1Sitters) {
-      if (sitter.trim()) {
-        expect(round2Sitters).not.toContain(sitter);
+    await expect(async () => {
+      const round2Sitters = await round2SitsSection.locator("span").allTextContents();
+      expect(round2Sitters.length).toBeGreaterThanOrEqual(2);
+      for (const sitter of round1Sitters) {
+        if (sitter.trim()) {
+          expect(round2Sitters).not.toContain(sitter);
+        }
       }
-    }
+    }).toPass({ timeout: 10000 });
 
     // 8. End the session and verify completed session summary remains visible without returning to group
     const sessionUrl = page.url();
