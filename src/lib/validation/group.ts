@@ -160,6 +160,7 @@ export const createPlayerSchema = z
   .object({
     groupId: entityIdSchema,
     name: z.string().trim().min(1).max(80),
+    gender: z.enum(["male", "female"]).optional(),
     initialRating: z.coerce
       .number()
       .finite()
@@ -177,12 +178,13 @@ export const updatePlayerSchema = z
     groupId: entityIdSchema,
     playerId: entityIdSchema,
     name: z.string().trim().min(1).max(80).optional(),
+    gender: z.enum(["male", "female"]).optional(),
     active: z.boolean().optional(),
     idempotencyKey: entityIdSchema,
   })
   .strict()
   .refine(
-    ({ name, active }) => name !== undefined || active !== undefined,
+    ({ name, gender, active }) => name !== undefined || gender !== undefined || active !== undefined,
     { message: "At least one player field must change" },
   );
 

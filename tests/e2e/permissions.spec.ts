@@ -11,8 +11,8 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(guest).toBeVisible();
     await expect(guest).toContainText("3.5");
     await guest.locator("summary").click();
-    await guest.getByRole("button", { name: "Edit guest name", exact: true }).click();
-    const modal = page.getByRole("dialog", { name: "Edit Guest Name" });
+    await guest.getByRole("button", { name: "Edit guest", exact: true }).click();
+    const modal = page.getByRole("dialog", { name: "Edit Guest" });
     await modal.locator("#edit-guest-name-input").fill("Should not save");
     let injected = false;
     await page.route("**/g/**", async route => {
@@ -297,20 +297,20 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Organizer opens three dots for guest
     await guestItem.locator("summary").click();
-    const editGuestBtn = guestItem.locator("button:has-text('Edit guest name')");
+    const editGuestBtn = guestItem.locator("button:has-text('Edit guest')");
     await expect(editGuestBtn).toBeVisible();
     await expect(guestItem.locator("button:has-text('Remove player')")).toBeVisible();
 
-    // Click Edit guest name and update
+    // Click Edit guest and update
     await editGuestBtn.click();
-    const editModal = page.locator("div[role='dialog']:has-text('Edit Guest Name')");
+    const editModal = page.locator("div[role='dialog']:has-text('Edit Guest')");
     await expect(editModal).toBeVisible();
     const guestInput = editModal.locator("#edit-guest-name-input");
     await expect(guestInput).toHaveValue("Guest Sam");
     await guestInput.fill("Guest Samantha");
     await editModal.locator("button:has-text('Save Changes')").click();
 
-    await expect(page.locator("p[role='status']")).toContainText('Guest name updated to "Guest Samantha".');
+    await expect(page.locator("p[role='status']")).toContainText('Guest "Guest Samantha" updated');
     await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).toBeVisible();
 
     // 12. Add a second guest player and verify organizer can merge 2+ guests together
@@ -328,7 +328,7 @@ test.describe("Permissions and Security Workflow", () => {
     await samanthaItem.locator("summary").click();
     const mergeBtn = samanthaItem.locator("button:has-text('Merge with another guest player')");
     await expect(mergeBtn).toBeVisible();
-    await expect(samanthaItem.locator("button:has-text('Edit guest name')")).toBeVisible();
+    await expect(samanthaItem.locator("button:has-text('Edit guest')")).toBeVisible();
     await expect(samanthaItem.locator("button:has-text('Remove player')")).toBeVisible();
 
     // Click Merge with another guest player

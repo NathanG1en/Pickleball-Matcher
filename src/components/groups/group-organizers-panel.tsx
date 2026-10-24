@@ -81,6 +81,7 @@ export function GroupOrganizersPanel({
 
   // Guest mode state
   const [guestName, setGuestName] = useState("");
+  const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState<number>(3.5);
   const [guestSaving, setGuestSaving] = useState(false);
 
@@ -185,12 +186,14 @@ export function GroupOrganizersPanel({
       const res = await createPlayerAction({
         groupId,
         name: trimmed,
+        gender: guestGender,
         initialRating: guestRating,
         idempotencyKey: createIdempotencyKey("guest_add"),
       });
       if (res.ok) {
         setMessage(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
+        setGuestGender("male");
         setGuestRating(3.5);
         router.refresh();
       } else {
@@ -466,6 +469,16 @@ export function GroupOrganizersPanel({
                   placeholder="Guest Name"
                   className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
+                <select
+                  id="guest-player-gender"
+                  aria-label="Guest Gender"
+                  value={guestGender}
+                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+                  className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
                 <button
                   type="submit"
                   disabled={guestSaving || !guestName.trim()}
@@ -515,6 +528,11 @@ export function GroupOrganizersPanel({
                         ""
                       )}
                     </span>
+                    {player.gender && (
+                      <span className="rounded border border-black/40 bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-800">
+                        {player.gender}
+                      </span>
+                    )}
                     {organizer && (
                       <span
                         className={`rounded-full border border-black px-2 py-1 text-[9px] font-black uppercase ${
@@ -604,7 +622,7 @@ export function GroupOrganizersPanel({
                                   }}
                                   className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
                                 >
-                                  Edit guest name
+                                  Edit guest
                                 </button>
                                 <button
                                   type="button"
@@ -696,8 +714,8 @@ export function GroupOrganizersPanel({
           onClose={() => setEditingGuest(null)}
           guestPlayer={editingGuest}
           groupId={groupId}
-          onGuestUpdated={(updatedName) => {
-            setMessage(`Guest name updated to "${updatedName}".`);
+          onGuestUpdated={(updatedName, updatedGender) => {
+            setMessage(`Guest "${updatedName}" updated${updatedGender ? ` (${updatedGender})` : ""}.`);
             setEditingGuest(null);
             router.refresh();
           }}

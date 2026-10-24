@@ -29,13 +29,14 @@ export function PlayersClient({
     setPlayers(initialPlayers);
   }
 
-  const handleAddPlayer = async (name: string, initialRating: number) => {
+  const handleAddPlayer = async (name: string, initialRating: number, gender?: "male" | "female") => {
     setIsPending(true);
     setError(null);
     try {
       const res = await createPlayerAction({
         groupId,
         name,
+        gender,
         initialRating,
         idempotencyKey: createIdempotencyKey("p_add"),
       });

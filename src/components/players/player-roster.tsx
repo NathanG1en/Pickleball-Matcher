@@ -10,7 +10,7 @@ export interface PlayerRosterProps {
   readonly groupId: string;
   readonly players: readonly PlayerRecord[];
   readonly isPending?: boolean;
-  readonly onAddPlayer?: (name: string, initialRating: number) => void;
+  readonly onAddPlayer?: (name: string, initialRating: number, gender?: "male" | "female") => void;
   readonly onDeletePlayer?: (player: PlayerRecord) => void;
   readonly canManage?: boolean;
 }
@@ -30,6 +30,7 @@ export function PlayerRoster({
     [players],
   );
   const [name, setName] = useState("");
+  const [gender, setGender] = useState<"male" | "female">("male");
   const [selectedPreset, setSelectedPreset] = useState("3.5");
   const [customRating, setCustomRating] = useState(false);
   const [customRatingInput, setCustomRatingInput] = useState("3.5");
@@ -40,8 +41,9 @@ export function PlayerRoster({
     if (name.trim() && onAddPlayer) {
       const dupr = customRating ? parseFloat(customRatingInput) || 3.5 : parseFloat(selectedPreset);
       const elo = duprToElo(dupr);
-      onAddPlayer(name.trim(), elo);
+      onAddPlayer(name.trim(), elo, gender);
       setName("");
+      setGender("male");
       setSelectedPreset("3.5");
       setCustomRating(false);
       setCustomRatingInput("3.5");
@@ -74,6 +76,21 @@ export function PlayerRoster({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Jordan Smith"
             />
+          </div>
+
+          <div>
+            <label htmlFor="player-gender-select" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+              Gender
+            </label>
+            <select
+              id="player-gender-select"
+              value={gender}
+              onChange={(e) => setGender(e.target.value as "male" | "female")}
+              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow cursor-pointer"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
           </div>
 
           <div>
@@ -160,6 +177,11 @@ export function PlayerRoster({
                     </>
                   ) : (
                     ""
+                  )}
+                  {player.gender && (
+                    <span className="ml-2 rounded border border-black/40 bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-800 align-middle">
+                      {player.gender}
+                    </span>
                   )}
                 </span>
                 <span className="text-xs font-bold text-neutral-600 block mt-0.5">
