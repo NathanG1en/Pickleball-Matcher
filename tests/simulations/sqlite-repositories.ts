@@ -875,8 +875,8 @@ export class SqliteDomainRepository implements DomainRepository {
 
   async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
     const player = this.db
-      .prepare("SELECT account_id FROM players WHERE id = ? AND group_id = ?")
-      .get(playerId, groupId) as { account_id: string | null } | undefined;
+      .prepare("SELECT account_id, rated_games_played FROM players WHERE id = ? AND group_id = ?")
+      .get(playerId, groupId) as { account_id: string | null; rated_games_played: number } | undefined;
     if (!player) return false;
     const accountId = player.account_id;
     if (accountId) {
@@ -888,6 +888,22 @@ export class SqliteDomainRepository implements DomainRepository {
         .prepare("DELETE FROM group_organizers WHERE group_id = ? AND account_id = ?")
         .run(groupId, accountId);
     }
+
+    if (!accountId) {
+      const match = this.db
+        .prepare("SELECT 1 FROM match_players WHERE player_id = ? LIMIT 1")
+        .get(playerId);
+      const gamesPlayed = player.rated_games_played ?? 0;
+      if (!match && gamesPlayed === 0) {
+        this.db.prepare("DELETE FROM round_sits WHERE player_id = ?").run(playerId);
+        this.db.prepare("DELETE FROM session_attendance WHERE player_id = ?").run(playerId);
+        const result = this.db
+          .prepare("DELETE FROM players WHERE id = ? AND group_id = ?")
+          .run(playerId, groupId);
+        return result.changes > 0;
+      }
+    }
+
     const result = this.db
       .prepare("UPDATE players SET active = 0 WHERE id = ? AND group_id = ?")
       .run(playerId, groupId);

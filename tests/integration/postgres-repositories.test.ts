@@ -233,5 +233,65 @@ describe("PostgresRepositories", () => {
     const list = await repository.listTournaments("group-1");
     expect(list.some((t) => t.id === "tr_test_1")).toBe(true);
   });
+
+  it("deletes a guest player with 0 matches/games from the database when removed", async () => {
+    await repository.createPlayer({
+      id: "guest-zero",
+      groupId: "group-1",
+      name: "Guest Zero",
+      initialRating: 1000,
+      rating: 1000,
+      ratedGamesPlayed: 0,
+      active: true,
+    });
+
+    const removed = await repository.removePlayerFromGroup("guest-zero", "group-1");
+    expect(removed).toBe(true);
+
+    const rows = await sql`select id from players where id = 'guest-zero'`;
+    expect(rows).toHaveLength(0);
+  });
+
+  it("soft-deletes a guest player who has played games when removed", async () => {
+    await repository.createPlayer({
+      id: "guest-played",
+      groupId: "group-1",
+      name: "Guest Played",
+      initialRating: 1000,
+      rating: 1050,
+      ratedGamesPlayed: 2,
+      active: true,
+    });
+
+    const removed = await repository.removePlayerFromGroup("guest-played", "group-1");
+    expect(removed).toBe(true);
+
+    const rows = await sql`select id, active from players where id = 'guest-played'`;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].active).toBe(false);
+  });
+
+  it("soft-deletes a registered account player when removed even with 0 games", async () => {
+    await sql`insert into player_accounts (id, username, name, password_hash, skill_level, initial_rating, rating, rated_games_played)
+              values ('acc-member', 'member', 'Member User', 'hash', 'intermediate', 1000, 1000, 0)`;
+
+    await repository.createPlayer({
+      id: "player-member",
+      groupId: "group-1",
+      name: "Member User",
+      initialRating: 1000,
+      rating: 1000,
+      ratedGamesPlayed: 0,
+      active: true,
+      accountId: "acc-member",
+    });
+
+    const removed = await repository.removePlayerFromGroup("player-member", "group-1");
+    expect(removed).toBe(true);
+
+    const rows = await sql`select id, active from players where id = 'player-member'`;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].active).toBe(false);
+  });
 });
 

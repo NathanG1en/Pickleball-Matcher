@@ -48,7 +48,7 @@ export default async function HomePage() {
       >
         {/* Eyebrow badge */}
         <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black">
             <span className="w-2 h-2 rounded-full bg-black animate-ping" />
             Pickleball Matchmaker
           </span>
@@ -80,15 +80,15 @@ export default async function HomePage() {
 
         {/* 3 Neobrutalist Feature Cards */}
         <div className="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
-          <div className="p-3 rounded-xl bg-[#e0f2fe] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+          <div className="p-3 rounded-xl bg-[#e0f2fe] border-2 border-black">
             <div className="font-display text-base font-black text-black uppercase">Equal Sits</div>
             <div className="text-[11px] font-bold text-neutral-700">Even court time</div>
           </div>
-          <div className="p-3 rounded-xl bg-[#fef08a] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+          <div className="p-3 rounded-xl bg-[#fef08a] border-2 border-black">
             <div className="font-display text-base font-black text-black uppercase">New Pairs</div>
             <div className="text-[11px] font-bold text-neutral-700">Partner variety</div>
           </div>
-          <div className="p-3 rounded-xl bg-[#dcfce7] border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+          <div className="p-3 rounded-xl bg-[#dcfce7] border-2 border-black">
             <div className="font-display text-base font-black text-black uppercase">Fair Games</div>
             <div className="text-[11px] font-bold text-neutral-700">Rating balance</div>
           </div>

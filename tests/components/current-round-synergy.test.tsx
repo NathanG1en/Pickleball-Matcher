@@ -40,7 +40,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
     expect(html).not.toContain("+84 Synergy");
   });
 
-  it("renders reveal synergy button only for organizers", () => {
+  it("renders partner synergies button only for organizers", () => {
     const html = renderToStaticMarkup(
       <CurrentRoundView
         round={{ id: "r1", roundNumber: 1, status: "started", seed: 1 }}
@@ -52,7 +52,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         pairSynergies={{ '["acc1","acc2"]': { score: 84, matchesPlayed: 10 } }}
       />
     );
-    expect(html).toContain("Reveal Synergy");
+    expect(html).toContain("Partner Synergies");
   });
 
   it("follows the same account pair across courts, team slots, and player order", () => {

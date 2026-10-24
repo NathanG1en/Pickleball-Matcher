@@ -992,8 +992,8 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async removePlayerFromGroup(playerId: string, groupId: string): Promise<boolean> {
-    const playerRows = await this.query<{ account_id: string | null }[]>`
-      select account_id from players where id = ${playerId} and group_id = ${groupId}
+    const playerRows = await this.query<{ account_id: string | null; rated_games_played: number }[]>`
+      select account_id, rated_games_played from players where id = ${playerId} and group_id = ${groupId}
     `;
     if (!playerRows[0]) return false;
     const accountId = playerRows[0].account_id;
@@ -1008,6 +1008,29 @@ export class PostgresRepositories implements DomainRepository {
         delete from group_organizers
         where group_id = ${groupId} and account_id = ${accountId}
       `;
+    }
+
+    if (!accountId) {
+      const matchRows = await this.query<{ has_matches: boolean }[]>`
+        select exists (select 1 from match_players where player_id = ${playerId}) as has_matches
+      `;
+      const hasMatches = Boolean(matchRows[0]?.has_matches);
+      const gamesPlayed = playerRows[0].rated_games_played ?? 0;
+
+      if (!hasMatches && gamesPlayed === 0) {
+        await this.query`
+          delete from round_sits where player_id = ${playerId}
+        `;
+        await this.query`
+          delete from session_attendance where player_id = ${playerId}
+        `;
+        const deleted = await this.query<{ id: string }[]>`
+          delete from players
+          where id = ${playerId} and group_id = ${groupId}
+          returning id
+        `;
+        return deleted.length > 0;
+      }
     }
 
     const updated = await this.query<{ id: string }[]>`

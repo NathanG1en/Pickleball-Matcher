@@ -133,7 +133,7 @@ describe("SqliteDomainRepository", () => {
     db.close();
   });
 
-  it("updates active session attendance when removing a player from group", async () => {
+  it("updates active session attendance when removing an account player from group", async () => {
     const db = new DatabaseSync(":memory:");
     const repository = new SqliteDomainRepository(db);
 
@@ -141,6 +141,16 @@ describe("SqliteDomainRepository", () => {
       id: "group-1",
       name: "Test Group",
       organizerPinHash: "hash",
+      createdAt: new Date(),
+    });
+
+    await repository.createPlayerAccount({
+      id: "acc-4",
+      username: "user4",
+      name: "Player 4",
+      passwordHash: "hash",
+      skillLevel: "beginner",
+      initialRating: 1000,
       createdAt: new Date(),
     });
 
@@ -156,6 +166,7 @@ describe("SqliteDomainRepository", () => {
         rating: 1000,
         ratedGamesPlayed: 0,
         active: true,
+        accountId: index === 4 ? "acc-4" : undefined,
       });
     }
 
@@ -181,6 +192,36 @@ describe("SqliteDomainRepository", () => {
 
     const afterAtt = await repository.listAttendance(session.id);
     expect(afterAtt.find((a) => a.playerId === "player-4")?.leftRound).toBe(1);
+
+    db.close();
+  });
+
+  it("deletes a guest player with 0 games from the database when removed", async () => {
+    const db = new DatabaseSync(":memory:");
+    const repository = new SqliteDomainRepository(db);
+
+    await repository.insertGroup({
+      id: "group-1",
+      name: "Test Group",
+      organizerPinHash: "hash",
+      createdAt: new Date(),
+    });
+
+    await repository.createPlayer({
+      id: "guest-1",
+      groupId: "group-1",
+      name: "Guest Player",
+      initialRating: 1000,
+      rating: 1000,
+      ratedGamesPlayed: 0,
+      active: true,
+    });
+
+    const removed = await repository.removePlayerFromGroup("guest-1", "group-1");
+    expect(removed).toBe(true);
+
+    const allPlayers = await repository.listPlayers("group-1", { includeInactive: true });
+    expect(allPlayers.some((p) => p.id === "guest-1")).toBe(false);
 
     db.close();
   });

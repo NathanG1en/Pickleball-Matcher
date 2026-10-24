@@ -82,9 +82,9 @@ To prevent anxiety or bias among opponents on the court, partner synergy badges 
   `⚡ 84% Synergy (12 matches)`
 - Opponents $C$ and $D$ on the other side of Court 1 do **not** see $A$ and $B$'s badge.
 
-### Organizer "Reveal Synergy" Modal
+### Organizer "Partner Synergies" Modal
 Session organizers may need to balance courts or review pair dynamics. Organizers have access to a discreet button:
-- **⚡ Reveal Synergy**: Opens [`SynergyRevealModal`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/rounds/synergy-reveal-modal.tsx) showing chemistry for each doubles pair across all active courts.
+- **⚡ Partner Synergies**: Opens [`SynergyRevealModal`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/rounds/synergy-reveal-modal.tsx) showing chemistry for each doubles pair across all active courts.
 
 ---
 

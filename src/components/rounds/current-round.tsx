@@ -114,7 +114,7 @@ function CurrentRoundEditor({
         ? "bg-amber-100 text-amber-900"
         : "bg-neutral-100 text-neutral-800";
     return (
-      <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]`}>
+      <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-[10px] font-black uppercase`}>
         <ZapIcon className="h-3 w-3 shrink-0" />
         <span>{score > 0 ? `+${score}` : `${score}`} Synergy</span>
       </span>
@@ -372,7 +372,7 @@ function CurrentRoundEditor({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
           {round.status === "proposed" && (
             canManage ? (
               <>
@@ -380,32 +380,19 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setIsUnlocked(false)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
-                    <LockIcon className="h-3.5 w-3.5" />
-                    <span>Lock Lineup</span>
+                    <LockIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>Lock</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
-                    <PencilIcon className="h-3.5 w-3.5" />
-                    <span>Customize Lineup</span>
-                  </button>
-                )}
-                {allowRegenerate && (
-                  <button
-                    type="button"
-                    onClick={onRegenerate}
-                    disabled={isPending || isGeneratingRound}
-                    data-testid="header-reshuffle-matchups-button"
-                    aria-label="Reshuffle"
-                    title="Reshuffle"
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <ShuffleIcon className="h-3.5 w-3.5" />
+                    <PencilIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>Manual Edit</span>
                   </button>
                 )}
               </>
@@ -417,10 +404,10 @@ function CurrentRoundEditor({
             <button
               type="button"
               onClick={() => setShowSynergyModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
             >
-              <ZapIcon className="h-3.5 w-3.5" />
-              <span>Reveal Synergy</span>
+              <ZapIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Partner Synergies</span>
             </button>
           )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
@@ -566,7 +553,7 @@ function CurrentRoundEditor({
                   Court {court.courtNumber}
                 </span>
                 <span
-                  className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] ${
+                  className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black border-2 border-black ${
                     isUnbalanced
                       ? "bg-[#ff6b6b]"
                     : isSingles || isTeamVsOne
@@ -628,7 +615,7 @@ function CurrentRoundEditor({
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
                     )}
@@ -668,10 +655,10 @@ function CurrentRoundEditor({
                           onClick={() => handlePlayerClick(pId)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
                             isSelected
-                              ? "bg-[#ccff00] ring-4 ring-black shadow-[3px_3px_0px_0px_#000] scale-105"
+                              ? "bg-[#ccff00] ring-4 ring-black scale-105"
                               : isUnlocked
-                              ? "bg-white hover:bg-neutral-50 cursor-grab active:cursor-grabbing shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
-                              : "bg-white shadow-[2px_2px_0px_0px_#000]"
+                              ? "bg-white hover:bg-neutral-50 cursor-grab active:cursor-grabbing hover:scale-[1.02]"
+                              : "bg-white"
                           }`}
                         >
                           {isUnlocked && <span className="text-neutral-400 select-none text-xs">⋮⋮</span>}
@@ -766,7 +753,7 @@ function CurrentRoundEditor({
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600 shadow-[1px_1px_0px_0px_#000]" title="Chemistry unlocks after your first match together">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
                     )}
@@ -806,10 +793,10 @@ function CurrentRoundEditor({
                           onClick={() => handlePlayerClick(pId)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
                             isSelected
-                              ? "bg-[#ccff00] ring-4 ring-black shadow-[3px_3px_0px_0px_#000] scale-105"
+                              ? "bg-[#ccff00] ring-4 ring-black scale-105"
                               : isUnlocked
-                              ? "bg-white hover:bg-neutral-50 cursor-grab active:cursor-grabbing shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
-                              : "bg-white shadow-[2px_2px_0px_0px_#000]"
+                              ? "bg-white hover:bg-neutral-50 cursor-grab active:cursor-grabbing hover:scale-[1.02]"
+                              : "bg-white"
                           }`}
                         >
                           {isUnlocked && <span className="text-neutral-400 select-none text-xs">⋮⋮</span>}
@@ -958,10 +945,10 @@ function CurrentRoundEditor({
                 onClick={() => handlePlayerClick(id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black text-black text-sm font-black transition-all ${
                   isSelected
-                    ? "bg-[#ccff00] ring-4 ring-black shadow-[3px_3px_0px_0px_#000] scale-105"
+                    ? "bg-[#ccff00] ring-4 ring-black scale-105"
                     : isUnlocked
-                    ? "bg-[#fde047] hover:bg-yellow-300 cursor-grab active:cursor-grabbing shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
-                    : "bg-[#fde047] shadow-[2px_2px_0px_0px_#000]"
+                    ? "bg-[#fde047] hover:bg-yellow-300 cursor-grab active:cursor-grabbing hover:scale-[1.02]"
+                    : "bg-[#fde047]"
                 }`}
               >
                 {isUnlocked && <span className="text-neutral-500 select-none text-xs">⋮⋮</span>}

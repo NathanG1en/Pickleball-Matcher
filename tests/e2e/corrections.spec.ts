@@ -257,7 +257,7 @@ test("host synergy follows current partners after manual swaps and new proposals
   await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Next Round", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
 
   const arrangeTeam1 = async (desired: string[]) => {
@@ -271,7 +271,7 @@ test("host synergy follows current partners after manual swaps and new proposals
       }
     }
   };
-  const reveal = () => page.getByRole("button", { name: "Reveal Synergy", exact: true }).click();
+  const reveal = () => page.getByRole("button", { name: "Partner Synergies", exact: true }).click();
   const close = () => page.getByRole("button", { name: "Close Breakdown", exact: true }).click();
   const expectCurrentSynergy = async (team: number, badge: string) => {
     const pairNames = (await teamNames(team)).join(" & ");
@@ -326,7 +326,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   const team = (number: number) => card.getByText(`Team ${number}`, { exact: true }).locator("../..");
   const names = async (number: number) => (await team(number).locator("[draggable] > span").allTextContents()).filter((value) => value !== "⋮⋮");
   const original = [await names(1), await names(2)];
-  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
   await card.getByText(original[0][0], { exact: true }).click();
   await card.getByText(original[1][0], { exact: true }).click();
@@ -335,7 +335,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   await page.reload();
   await expect(team(1).getByText(original[1][0], { exact: true })).toBeVisible();
   expect([await names(1), await names(2)]).toEqual(edited);
-  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
   // Benching creates a definite override even if the new algorithm proposal matches the saved swap.
   await page.getByRole("button", { name: "Bench to sitting pool", exact: true }).first().click();
@@ -345,7 +345,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   await page.reload();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const reset = [await names(1), await names(2)];
-  await page.getByRole("button", { name: "Customize Lineup", exact: true }).click();
+  await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
   await card.getByText(reset[0][0], { exact: true }).click();
   await card.getByText(reset[1][0], { exact: true }).click();

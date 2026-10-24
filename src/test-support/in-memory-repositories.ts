@@ -516,6 +516,19 @@ export class InMemoryRepositories implements DomainRepository {
         (o) => !(o.groupId === groupId && o.accountId === player.accountId),
       );
     }
+
+    const isGuest = !player.accountId;
+    const hasMatches = this.state.matchPlayers.some((mp) => mp.playerId === playerId);
+    const gamesPlayed = player.ratedGamesPlayed ?? 0;
+
+    if (isGuest && !hasMatches && gamesPlayed === 0) {
+      this.state.roundSits = this.state.roundSits.filter((s) => s.playerId !== playerId);
+      this.state.attendance = this.state.attendance.filter((a) => a.playerId !== playerId);
+      this.state.players = this.state.players.filter((p) => !(p.id === playerId && p.groupId === groupId));
+      this.writeCount += 1;
+      return true;
+    }
+
     this.state.players = this.state.players.map((p) =>
       p.id === playerId && p.groupId === groupId ? { ...p, active: false } : p,
     );

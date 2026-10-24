@@ -567,6 +567,49 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(result.ok).toBe(false);
       expect(result.error).toContain("Only the host or a group organizer can remove players");
     });
+
+    it("completely deletes a guest player with 0 games from the database when removed", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      await repository.createPlayer({
+        id: "p_guest_0",
+        groupId: "g1",
+        name: "Zero Games Guest",
+        initialRating: 1000,
+        rating: 1000,
+        ratedGamesPlayed: 0,
+        active: true,
+      });
+
+      const result = await removeGroupPlayerAction({ groupId: "g1", playerId: "p_guest_0" });
+      expect(result.ok).toBe(true);
+
+      const allPlayers = await repository.listPlayers("g1", { includeInactive: true });
+      expect(allPlayers.some((p) => p.id === "p_guest_0")).toBe(false);
+    });
+
+    it("soft-deletes a guest player who has played games when removed", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      await repository.createPlayer({
+        id: "p_guest_played",
+        groupId: "g1",
+        name: "Played Guest",
+        initialRating: 1000,
+        rating: 1050,
+        ratedGamesPlayed: 3,
+        active: true,
+      });
+
+      const result = await removeGroupPlayerAction({ groupId: "g1", playerId: "p_guest_played" });
+      expect(result.ok).toBe(true);
+
+      const activePlayers = await repository.listPlayers("g1");
+      expect(activePlayers.some((p) => p.id === "p_guest_played")).toBe(false);
+
+      const allPlayers = await repository.listPlayers("g1", { includeInactive: true });
+      const removed = allPlayers.find((p) => p.id === "p_guest_played");
+      expect(removed).toBeDefined();
+      expect(removed?.active).toBe(false);
+    });
   });
 
   describe("Adding public users and guests to private groups", () => {

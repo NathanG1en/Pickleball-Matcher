@@ -222,6 +222,14 @@ export function ChevronDownIcon({ className = "h-4 w-4", ...props }: IconProps) 
   );
 }
 
+export function ChevronRightIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 
 
 export function PickleballIcon({ className = "h-6 w-6", ...props }: IconProps) {

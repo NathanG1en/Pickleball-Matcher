@@ -67,7 +67,7 @@ describe("CurrentRoundView Component", () => {
   it("renders lineup customization controls without proposal labels", () => {
     const html = renderToStaticMarkup(<CurrentRoundView {...sampleProps} />);
 
-    expect(html).toContain("Customize Lineup");
+    expect(html).toContain("Manual Edit");
     expect(html).not.toContain("Proposal Draft");
     expect(html).not.toContain("Round Proposal");
   });

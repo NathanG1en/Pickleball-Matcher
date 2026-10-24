@@ -247,6 +247,11 @@ describe("SessionService", () => {
   });
 
   it("marks attendance as left when an attending player is deleted from the group mid-session", async () => {
+    // Set accountId on player-4 so they are treated as an account member rather than a guest
+    repository.state.players = repository.state.players.map((p) =>
+      p.id === "player-4" ? { ...p, accountId: "acc-4" } : p,
+    );
+
     const session = await service.startSession({
       groupId: "group-1",
       courtCount: 1,
@@ -266,6 +271,21 @@ describe("SessionService", () => {
       (a) => a.sessionId === session.id && a.playerId === "player-4",
     );
     expect(updatedAtt?.leftRound).toBe(1);
+  });
+
+  it("completely deletes an attending guest player with 0 games from the repository when removed mid-session", async () => {
+    await service.startSession({
+      groupId: "group-1",
+      courtCount: 1,
+      playerIds: players.slice(0, 4).map((player) => player.id),
+    });
+
+    // Guest player-4 has 0 games and no account
+    const removed = await repository.removePlayerFromGroup("player-4", "group-1");
+    expect(removed).toBe(true);
+
+    expect(repository.state.players.some((p) => p.id === "player-4")).toBe(false);
+    expect(repository.state.attendance.some((a) => a.playerId === "player-4")).toBe(false);
   });
 
   describe("updateCourtConfig", () => {
