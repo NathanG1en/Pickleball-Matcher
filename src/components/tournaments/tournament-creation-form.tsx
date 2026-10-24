@@ -15,6 +15,7 @@ import { createPlayerAction } from "@/app/actions/players";
 import { createParticipantsForDivision } from "@/lib/tournament/bracket";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
+import { RatingSlider } from "@/components/ui/rating-slider";
 
 interface TournamentCreationFormProps {
   readonly groupId: string;
@@ -45,6 +46,7 @@ export function TournamentCreationForm({
   );
   const [guestName, setGuestName] = useState<string>("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
+  const [guestRating, setGuestRating] = useState<number>(3.5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,7 +94,8 @@ export function TournamentCreationForm({
       const res = await createPlayerAction({
         groupId,
         name: guestName.trim(),
-        initialRating: 1000,
+        gender: guestGender,
+        initialRating: guestRating,
         idempotencyKey: createIdempotencyKey("guest"),
       });
 
@@ -104,6 +107,7 @@ export function TournamentCreationForm({
         setPlayers((prev) => [...prev, newPlayer]);
         setSelectedPlayerIds((prev) => new Set([...prev, newPlayer.id]));
         setGuestName("");
+        setGuestRating(3.5);
       } else {
         setError(res.error);
       }
@@ -303,10 +307,16 @@ export function TournamentCreationForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {sortedPlayers.map((player) => {
             const isSelected = selectedPlayerIds.has(player.id);
+            const genderLabel =
+              player.gender === "male"
+                ? "Male"
+                : player.gender === "female"
+                  ? "Female"
+                  : "No Gender";
             return (
-              <div
+              <label
                 key={player.id}
-                onClick={() => togglePlayer(player.id)}
+                htmlFor={`player-check-${player.id}`}
                 className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                   isSelected
                     ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
@@ -318,60 +328,70 @@ export function TournamentCreationForm({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => togglePlayer(player.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer"
+                  className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer shrink-0"
                 />
-                <span className="font-black text-base flex-1 truncate">{player.name}</span>
-                <select
-                  value={player.gender ?? ""}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const newGender = (e.target.value as "male" | "female") || null;
-                    setPlayers((prev) =>
-                      prev.map((p) => (p.id === player.id ? { ...p, gender: newGender } : p)),
-                    );
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-[11px] font-black uppercase px-2 py-1 rounded border-2 border-black bg-white shadow-[1px_1px_0px_0px_#000] cursor-pointer"
-                  title="Assign player gender"
-                >
-                  <option value="">No Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <span className="text-xs font-bold text-neutral-600">{formatDupr(player.rating)}</span>
-              </div>
+                <span className="font-black text-base flex-1 min-w-0 truncate text-inherit">
+                  {player.name}
+                </span>
+                <div className="flex flex-col items-end justify-center shrink-0 text-right">
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-black/30 bg-white/80 shrink-0 text-black leading-none mb-1">
+                    {genderLabel}
+                  </span>
+                  <span
+                    className={`text-xs font-black leading-tight ${
+                      isSelected ? "text-black" : "text-neutral-800"
+                    }`}
+                  >
+                    {formatDupr(player.rating)}
+                  </span>
+                </div>
+              </label>
             );
           })}
         </div>
 
         {/* Add Guest / Quick Player Form */}
-        <div className="mt-4 pt-4 border-t-2 border-neutral-100 flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            placeholder="Add guest player name..."
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
-          />
-          <select
-            value={guestGender}
-            onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-            className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000]"
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          <Button
-            type="button"
-            onClick={handleAddGuest}
-            variant="secondary"
-            size="sm"
-            disabled={!guestName.trim()}
-            className="font-display uppercase tracking-wider"
-          >
-            Add
-          </Button>
+        <div className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-3">
+          <label className="block text-xs font-black uppercase tracking-wider text-black">
+            Add Guest Player
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="Add guest player name..."
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+            />
+            <select
+              value={guestGender}
+              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+              className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            <Button
+              type="button"
+              onClick={handleAddGuest}
+              variant="secondary"
+              size="sm"
+              disabled={!guestName.trim()}
+              className="font-display uppercase tracking-wider shrink-0"
+            >
+              Add
+            </Button>
+          </div>
+          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+            <RatingSlider
+              id="tournament-guest-rating"
+              dataTestId="tournament-guest-rating"
+              label="Guest Starting Rating"
+              value={guestRating}
+              onChange={setGuestRating}
+              showDescription={true}
+            />
+          </div>
         </div>
       </section>
 

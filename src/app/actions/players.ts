@@ -60,6 +60,7 @@ export async function createPlayerAction(input: unknown): Promise<ActionResult<P
       id: `p_${randomUUID().slice(0, 10)}`,
       groupId: parsed.data.groupId,
       name: parsed.data.name,
+      gender: parsed.data.gender ?? null,
       initialRating: parsed.data.initialRating,
       rating: parsed.data.initialRating,
       ratedGamesPlayed: 0,
@@ -97,14 +98,19 @@ export async function updatePlayerAction(input: unknown): Promise<ActionResult> 
     if (parsed.data.name !== undefined && target.accountId) {
       return { ok: false, error: "Cannot edit the name of a registered player account" };
     }
+    if (parsed.data.gender !== undefined && target.accountId) {
+      return { ok: false, error: "Cannot edit the gender of a registered player account" };
+    }
 
     await repository.updatePlayer({
       id: parsed.data.playerId,
       groupId: parsed.data.groupId,
       name: parsed.data.name,
+      gender: parsed.data.gender,
       active: parsed.data.active,
     });
     revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/players`);
     revalidatePath("/players");
     return { ok: true, data: undefined };
   } catch (err) {

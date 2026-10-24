@@ -486,6 +486,7 @@ export class InMemoryRepositories implements DomainRepository {
     );
     if (existing) {
       if (player.name !== undefined) Object.assign(existing, { name: player.name });
+      if (player.gender !== undefined) Object.assign(existing, { gender: player.gender });
       if (player.active !== undefined) Object.assign(existing, { active: player.active });
       if (player.initialRating !== undefined) {
         Object.assign(existing, { initialRating: player.initialRating });

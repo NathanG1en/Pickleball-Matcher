@@ -308,15 +308,15 @@ test.describe("Open Play Workflow", () => {
     await expect(bobMenu).toBeVisible();
     await bobMenu.click();
 
-    // Verify "Edit guest name" is present alongside "Remove player"
-    const editGuestBtn = bobRow.locator("button:has-text('Edit guest name')");
+    // Verify "Edit guest" is present alongside "Remove player"
+    const editGuestBtn = bobRow.locator("button:has-text('Edit guest')");
     await expect(editGuestBtn).toBeVisible();
     await expect(bobRow.locator("button:has-text('Remove player')")).toBeVisible();
 
     await editGuestBtn.click();
 
     // Verify modal is displayed with input prefilled
-    const editGuestModal = page.locator("div[role='dialog']:has-text('Edit Guest Name')");
+    const editGuestModal = page.locator("div[role='dialog']:has-text('Edit Guest')");
     await expect(editGuestModal).toBeVisible();
     const guestNameInput = editGuestModal.locator("#edit-guest-name-input");
     await expect(guestNameInput).toHaveValue("Bob");

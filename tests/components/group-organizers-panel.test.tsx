@@ -166,9 +166,9 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Remove player");
       expect(html).toContain("data-player-menu");
 
-      // Verify Link to public player and Edit guest name option exists for guest player
+      // Verify Link to public player and Edit guest option exists for guest player
       expect(html).toContain("Link to public player");
-      expect(html).toContain("Edit guest name");
+      expect(html).toContain("Edit guest");
 
       // Verify Find Player and Add Guest options exist for host
       expect(html).toContain("Find Player");
@@ -193,7 +193,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("···");
       expect(html).toContain("Remove player");
       expect(html).toContain("Link to public player");
-      expect(html).toContain("Edit guest name");
+      expect(html).toContain("Edit guest");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Transfer host");
@@ -226,7 +226,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       );
 
       expect(html).toContain("Link to public player");
-      expect(html).toContain("Edit guest name");
+      expect(html).toContain("Edit guest");
       expect(html).toContain("Merge with another guest player");
       expect(html).toContain("Remove player");
       expect(html).not.toContain("Make a group organizer");
@@ -268,7 +268,7 @@ describe("GroupOrganizersPanel and Actions", () => {
 
       expect(html).toContain("Make a group organizer");
       expect(html).not.toContain("Link to public player");
-      expect(html).not.toContain("Edit guest name");
+      expect(html).not.toContain("Edit guest");
       expect(html).not.toContain("Merge with another guest player");
     });
 
@@ -293,7 +293,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Link to public player");
-      expect(html).not.toContain("Edit guest name");
+      expect(html).not.toContain("Edit guest");
       expect(html).not.toContain("Remove player");
       expect(html).not.toContain("···");
       expect(html).not.toContain("Find Player");

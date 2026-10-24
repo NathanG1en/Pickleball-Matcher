@@ -827,12 +827,13 @@ export class SqliteDomainRepository implements DomainRepository {
   async createPlayer(player: PlayerRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         player.id,
         player.groupId,
         player.name,
+        player.gender ?? null,
         player.initialRating,
         player.rating,
         player.ratedGamesPlayed,
@@ -847,6 +848,11 @@ export class SqliteDomainRepository implements DomainRepository {
       this.db
         .prepare("UPDATE players SET name = ? WHERE id = ? AND group_id = ?")
         .run(player.name, player.id, player.groupId);
+    }
+    if (player.gender !== undefined) {
+      this.db
+        .prepare("UPDATE players SET gender = ? WHERE id = ? AND group_id = ?")
+        .run(player.gender ?? null, player.id, player.groupId);
     }
     if (player.active !== undefined) {
       this.db

@@ -231,5 +231,37 @@ describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
         expect(res.error).toBe("Not authorized");
       }
     });
+
+    it("allows a group organizer to edit a guest player's gender", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerAction({
+        groupId: "grp_1",
+        playerId: "p_guest",
+        gender: "female",
+        idempotencyKey: "test-gender-1",
+      });
+
+      expect(res.ok).toBe(true);
+      const players = await repository.listPlayers("grp_1");
+      const guest = players.find((p) => p.id === "p_guest");
+      expect(guest?.gender).toBe("female");
+    });
+
+    it("rejects editing the gender of a registered player account", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerAction({
+        groupId: "grp_1",
+        playerId: "p_1",
+        gender: "female",
+        idempotencyKey: "test-gender-2",
+      });
+
+      expect(res.ok).toBe(false);
+      if (!res.ok) {
+        expect(res.error).toContain("Cannot edit the gender of a registered player account");
+      }
+    });
   });
 });

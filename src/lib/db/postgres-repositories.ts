@@ -945,8 +945,8 @@ export class PostgresRepositories implements DomainRepository {
 
   async createPlayer(player: PlayerRecord): Promise<void> {
     await this.query`
-      insert into players (id, group_id, name, initial_rating, rating, rated_games_played, active, account_id)
-      values (${player.id}, ${player.groupId}, ${player.name}, ${player.initialRating}, ${player.rating}, ${player.ratedGamesPlayed}, ${player.active}, ${player.accountId ?? null})
+      insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
+      values (${player.id}, ${player.groupId}, ${player.name}, ${player.gender ?? null}, ${player.initialRating}, ${player.rating}, ${player.ratedGamesPlayed}, ${player.active}, ${player.accountId ?? null})
     `;
   }
 
@@ -954,6 +954,12 @@ export class PostgresRepositories implements DomainRepository {
     if (player.name !== undefined) {
       await this.query`
         update players set name = ${player.name}
+        where id = ${player.id} and group_id = ${player.groupId}
+      `;
+    }
+    if (player.gender !== undefined) {
+      await this.query`
+        update players set gender = ${player.gender ?? null}
         where id = ${player.id} and group_id = ${player.groupId}
       `;
     }
