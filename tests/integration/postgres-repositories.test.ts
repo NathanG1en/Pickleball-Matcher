@@ -5,13 +5,23 @@ import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import type { StartedRoundRecord } from "@/lib/domain/types";
 
-const testDbUrl = process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-if (process.env.DATABASE_URL && testDbUrl === process.env.DATABASE_URL) {
-  throw new Error("SAFETY ABORT: Refusing to run destructive integration test truncate against DATABASE_URL. Use a separate TEST_DATABASE_URL.");
+const getDatabaseIdentity = (value?: string) => {
+  if (!value) return null;
+  const url = new URL(value);
+  return `${url.protocol}//${url.hostname}:${url.port}${url.pathname}`.toLowerCase();
+};
+
+const appDb = getDatabaseIdentity(process.env.DATABASE_URL);
+const testDb = getDatabaseIdentity(process.env.TEST_DATABASE_URL);
+
+if (appDb && testDb && appDb === testDb) {
+  throw new Error(
+    "SAFETY ABORT: Refusing to run destructive integration test against the same database. Use a separate TEST_DATABASE_URL database name."
+  );
 }
 
 const sql = postgres(
-  testDbUrl,
+  testDb || "",
   { prepare: false, onnotice: () => undefined },
 );
 const repository = new PostgresRepositories(sql);
