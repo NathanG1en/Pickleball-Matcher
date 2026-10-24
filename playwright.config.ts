@@ -58,7 +58,7 @@ export default defineConfig({
     timeout: 60_000,
     env: {
       PORT: testPort,
-      NEXT_DIST_DIR: process.env.NEXT_DIST_DIR ?? ".next-test",
+      NEXT_DIST_DIR: process.env.NEXT_DIST_DIR ?? (process.env.CI ? ".next" : ".next-test"),
       DATABASE_URL: testDbUrl,
       TEST_DATABASE_URL: testDbUrl,
       ORGANIZER_SESSION_SECRET: process.env.ORGANIZER_SESSION_SECRET ?? "test-organizer-session-secret-at-least-32-chars",
