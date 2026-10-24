@@ -472,10 +472,17 @@ test.describe("Open Play Workflow", () => {
     // Add guests to session: Charlie, Dana
     await page.fill("#guest-name-input", "Charlie");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
+    const guestPopup = page.locator("[data-testid='guest-added-popup']");
+    if (await guestPopup.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await guestPopup.locator("button[aria-label='Dismiss']").click();
+    }
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Charlie")).toBeVisible();
 
     await page.fill("#guest-name-input", "Dana");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
+    if (await guestPopup.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await guestPopup.locator("button[aria-label='Dismiss']").click();
+    }
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Dana")).toBeVisible();
 
     // Add Bob from roster
