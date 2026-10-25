@@ -69,6 +69,9 @@ export default async function HomePage() {
           <p className="text-base sm:text-lg text-neutral-800 pt-2 font-medium leading-relaxed max-w-sm mx-auto">
             An elevated pickleball experience.
           </p>
+          <p className="text-sm sm:text-base font-semibold text-neutral-600">
+            Equal Sits · New Pairs · Fair Games
+          </p>
         </div>
 
         {/* Neobrutalist Court Divider */}
@@ -76,22 +79,6 @@ export default async function HomePage() {
           <div className="h-1 flex-1 bg-black rounded-full" aria-hidden="true" />
           <HomePickleball />
           <div className="h-1 flex-1 bg-black rounded-full" aria-hidden="true" />
-        </div>
-
-        {/* 3 Neobrutalist Feature Cards */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
-          <div className="p-3 rounded-xl bg-[#e0f2fe] border-2 border-black">
-            <div className="font-display text-base font-black text-black uppercase">Equal Sits</div>
-            <div className="text-[11px] font-bold text-neutral-700">Even court time</div>
-          </div>
-          <div className="p-3 rounded-xl bg-[#fef08a] border-2 border-black">
-            <div className="font-display text-base font-black text-black uppercase">New Pairs</div>
-            <div className="text-[11px] font-bold text-neutral-700">Partner variety</div>
-          </div>
-          <div className="p-3 rounded-xl bg-[#dcfce7] border-2 border-black">
-            <div className="font-display text-base font-black text-black uppercase">Fair Games</div>
-            <div className="text-[11px] font-bold text-neutral-700">Rating balance</div>
-          </div>
         </div>
 
         {/* Actions */}
