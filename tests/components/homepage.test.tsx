@@ -86,12 +86,11 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Make a Temporary Group");
     expect(html).not.toContain("Legacy organizer PIN sign in");
 
-    // Slogan below elevated pickleball experience and feature boxes deleted
+    // Elevated pickleball experience present, but feature slogans/boxes removed
     expect(html).toContain("An elevated pickleball experience.");
-    expect(html).toContain("Equal Sits · New Pairs · Fair Games");
-    expect(html.indexOf("An elevated pickleball experience.")).toBeLessThan(
-      html.indexOf("Equal Sits · New Pairs · Fair Games")
-    );
+    expect(html).not.toContain("Equal Sits");
+    expect(html).not.toContain("New Pairs");
+    expect(html).not.toContain("Fair Games");
     expect(html).not.toContain("Even court time");
     expect(html).not.toContain("Partner variety");
 

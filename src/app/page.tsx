@@ -69,9 +69,6 @@ export default async function HomePage() {
           <p className="text-base sm:text-lg text-neutral-800 pt-2 font-medium leading-relaxed max-w-sm mx-auto">
             An elevated pickleball experience.
           </p>
-          <p className="text-sm sm:text-base font-semibold text-neutral-600">
-            Equal Sits · New Pairs · Fair Games
-          </p>
         </div>
 
         {/* Neobrutalist Court Divider */}
