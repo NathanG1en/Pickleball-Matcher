@@ -131,5 +131,27 @@ describe("OpenPlayManagerClient Component", () => {
     // Ensure there is no separate submit button for adding from roster
     expect(html).not.toContain('disabled="" class="px-4 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]');
   });
+
+  it("renders game score inputs with font-bold text-sm styling", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('aria-label="Team 1 Score"');
+    expect(html).toContain('aria-label="Team 2 Score"');
+    expect(html).toContain("font-mono font-bold text-sm text-center");
+    expect(html).not.toContain("font-mono font-black text-lg text-center");
+  });
 });
 

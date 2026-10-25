@@ -140,8 +140,9 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Guest Player (@");
       expect(html).toContain("View profile");
       expect(html).toContain(
-        'class="block w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"'
+        'class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"'
       );
+      expect(html).not.toContain("text-xs font-black uppercase hover:bg-[#ccff00]");
 
       // Verify active/inactive text was removed
       expect(html).not.toContain("· Active");

@@ -62,5 +62,32 @@ describe("FilterablePlayerSelect component", () => {
 
     expect(html).toContain('data-testid="test-select"');
   });
+
+  it("renders with text-sm styling for both default and sm size variants", () => {
+    const defaultHtml = renderToStaticMarkup(
+      <FilterablePlayerSelect
+        ariaLabel="Default Select"
+        placeholder="Select a player..."
+        value=""
+        onChange={vi.fn()}
+        options={options}
+      />
+    );
+    expect(defaultHtml).toContain("p-2 text-sm");
+    expect(defaultHtml).not.toContain("p-2 text-xs");
+
+    const smHtml = renderToStaticMarkup(
+      <FilterablePlayerSelect
+        ariaLabel="Small Select"
+        placeholder="Select a player..."
+        value=""
+        onChange={vi.fn()}
+        options={options}
+        sizeVariant="sm"
+      />
+    );
+    expect(smHtml).toContain("p-1.5 text-sm");
+    expect(smHtml).not.toContain("p-1.5 text-xs");
+  });
 });
 
