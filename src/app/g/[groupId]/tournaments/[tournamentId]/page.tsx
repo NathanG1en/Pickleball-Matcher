@@ -7,6 +7,7 @@ import {
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import { TournamentBracketManager } from "@/components/tournaments/tournament-bracket-manager";
+import { TeamTournamentManager } from "@/components/tournaments/team-tournament-manager";
 
 export default async function TournamentDetailPage({
   params,
@@ -16,9 +17,10 @@ export default async function TournamentDetailPage({
   const { groupId, tournamentId } = await params;
   const repository = getActionRepository();
 
-  const [group, tournament] = await Promise.all([
+  const [group, tournament, players] = await Promise.all([
     repository.getGroup(groupId),
     repository.getTournament(tournamentId),
+    repository.listPlayers(groupId, { includeInactive: true }),
   ]);
 
   if (!group || !tournament || tournament.groupId !== groupId) {
@@ -37,10 +39,18 @@ export default async function TournamentDetailPage({
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto space-y-6 text-black">
-      <TournamentBracketManager
-        initialTournament={tournament}
-        isOrganizer={isOrganizer}
-      />
+      {tournament.format === "team_dual" ? (
+        <TeamTournamentManager
+          initialTournament={tournament}
+          isOrganizer={isOrganizer}
+          players={players}
+        />
+      ) : (
+        <TournamentBracketManager
+          initialTournament={tournament}
+          isOrganizer={isOrganizer}
+        />
+      )}
     </main>
   );
 }

@@ -63,3 +63,34 @@ export const editParticipantSlotSchema = z.object({
   newParticipantId: z.string().nullable(),
 });
 
+export const createTeamTournamentSchema = z.object({
+  groupId: z.string().min(1, "Group ID is required"),
+  name: z.string().trim().min(1, "Tournament name is required").max(100, "Tournament name is too long"),
+  teams: z.array(z.object({
+    name: z.string().trim().min(1, "Team name is required").max(50),
+    color: z.string().min(1),
+    pairPlayerIds: z.array(z.tuple([z.string(), z.string()])),
+    soloPlayerIds: z.array(z.string()),
+  })).min(2, "At least 2 teams are required"),
+  scoringType: z.enum(["games_won", "points_diff"]).default("games_won"),
+});
+
+export const updateTeamTournamentLineSchema = z.object({
+  tournamentId: z.string().min(1),
+  groupId: z.string().min(1),
+  lineId: z.string().min(1),
+  team1Score: z.number().int().min(0).max(99).nullable(),
+  team2Score: z.number().int().min(0).max(99).nullable(),
+  team1PlayerIds: z.array(z.string()).optional(),
+  team2PlayerIds: z.array(z.string()).optional(),
+});
+
+export const addTeamTournamentLineSchema = z.object({
+  tournamentId: z.string().min(1),
+  groupId: z.string().min(1),
+  name: z.string().trim().min(1).max(50),
+  type: z.enum(["doubles", "singles"]),
+  team1PlayerIds: z.array(z.string()).min(1),
+  team2PlayerIds: z.array(z.string()).min(1),
+});
+

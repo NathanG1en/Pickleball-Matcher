@@ -24,6 +24,8 @@ import type {
   TournamentRecord,
   TournamentDivision,
   TournamentBracket,
+  TournamentFormat,
+  TeamTournamentData,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
@@ -149,6 +151,8 @@ type TournamentRow = {
   brackets: Record<string, TournamentBracket> | string;
   created_at: Date;
   updated_at: Date;
+  format?: TournamentFormat | null;
+  team_data?: TeamTournamentData | string | null;
 };
 
 function parseJsonField<T>(value: unknown, defaultValue: T): T {
@@ -169,6 +173,7 @@ function parseJsonField<T>(value: unknown, defaultValue: T): T {
 const mapTournament = (row: TournamentRow): TournamentRecord => {
   const divisions = parseJsonField<TournamentDivision[]>(row.divisions, []);
   const brackets = parseJsonField<Record<string, TournamentBracket>>(row.brackets, {});
+  const teamData = parseJsonField<TeamTournamentData | null>(row.team_data, null);
   return {
     id: row.id,
     groupId: row.group_id,
@@ -178,6 +183,8 @@ const mapTournament = (row: TournamentRow): TournamentRecord => {
     brackets: typeof brackets === "object" && brackets !== null ? brackets : {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    format: row.format ?? "bracket",
+    teamData: teamData && typeof teamData === "object" ? teamData : null,
   };
 };
 
@@ -1595,7 +1602,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getTournament(tournamentId: string): Promise<TournamentRecord | null> {
     const rows = await this.query<TournamentRow[]>`
-      select id, group_id, name, status, divisions, brackets, created_at, updated_at
+      select id, group_id, name, status, divisions, brackets, created_at, updated_at, format, team_data
       from tournaments
       where id = ${tournamentId}
     `;
@@ -1604,7 +1611,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async listTournaments(groupId: string): Promise<readonly TournamentRecord[]> {
     const rows = await this.query<TournamentRow[]>`
-      select id, group_id, name, status, divisions, brackets, created_at, updated_at
+      select id, group_id, name, status, divisions, brackets, created_at, updated_at, format, team_data
       from tournaments
       where group_id = ${groupId}
       order by created_at desc
@@ -1615,7 +1622,7 @@ export class PostgresRepositories implements DomainRepository {
   async createTournament(tournament: TournamentRecord): Promise<void> {
     await this.query`
       insert into tournaments (
-        id, group_id, name, status, divisions, brackets, created_at, updated_at
+        id, group_id, name, status, divisions, brackets, created_at, updated_at, format, team_data
       ) values (
         ${tournament.id},
         ${tournament.groupId},
@@ -1624,7 +1631,9 @@ export class PostgresRepositories implements DomainRepository {
         ${JSON.stringify(tournament.divisions)},
         ${JSON.stringify(tournament.brackets)},
         ${tournament.createdAt},
-        ${tournament.updatedAt}
+        ${tournament.updatedAt},
+        ${tournament.format ?? "bracket"},
+        ${tournament.teamData ? JSON.stringify(tournament.teamData) : null}
       )
     `;
   }
@@ -1636,6 +1645,8 @@ export class PostgresRepositories implements DomainRepository {
         status = ${tournament.status},
         divisions = ${JSON.stringify(tournament.divisions)},
         brackets = ${JSON.stringify(tournament.brackets)},
+        format = ${tournament.format ?? "bracket"},
+        team_data = ${tournament.teamData ? JSON.stringify(tournament.teamData) : null},
         updated_at = ${tournament.updatedAt}
       where id = ${tournament.id}
     `;

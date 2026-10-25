@@ -59,14 +59,20 @@ export function GroupTournamentsList({
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            {tourney.divisions.map((div) => (
-              <span
-                key={div}
-                className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000]"
-              >
-                {TOURNAMENT_DIVISION_LABELS[div] ?? div}
+            {tourney.format === "team_dual" ? (
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]">
+                Team Tournament
               </span>
-            ))}
+            ) : (
+              tourney.divisions.map((div) => (
+                <span
+                  key={div}
+                  className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000]"
+                >
+                  {TOURNAMENT_DIVISION_LABELS[div] ?? div}
+                </span>
+              ))
+            )}
           </div>
 
           <Link

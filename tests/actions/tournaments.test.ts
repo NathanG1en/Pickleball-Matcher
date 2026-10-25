@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addTeamTournamentLineAction,
+  createTeamTournamentAction,
   createTournamentAction,
   deleteTournamentAction,
   editTournamentSlotAction,
   reshuffleTournamentDivisionAction,
   swapTournamentSlotsAction,
+  updateTeamTournamentLineAction,
   updateTournamentMatchAction,
   updateTournamentNameAction,
   updateTournamentStatusAction,
@@ -256,6 +259,133 @@ describe("Tournament Server Actions", () => {
 
     const check = await repository.getTournament(tourney.id);
     expect(check).toBeNull();
+  });
+
+  describe("Team Tournament Actions", () => {
+    it("creates a team tournament with pre-formed pairs and solo players", async () => {
+      const res = await createTeamTournamentAction({
+        groupId: "g1",
+        name: "Spring Team Brawl",
+        teams: [
+          {
+            name: "Team Fire 🔥",
+            color: "#ef4444",
+            pairPlayerIds: [["p1", "p2"]],
+            soloPlayerIds: [],
+          },
+          {
+            name: "Team Ice ❄️",
+            color: "#3b82f6",
+            pairPlayerIds: [["p3", "p4"]],
+            soloPlayerIds: [],
+          },
+        ],
+        scoringType: "games_won",
+      });
+
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+
+      const tourney = res.data;
+      expect(tourney.name).toBe("Spring Team Brawl");
+      expect(tourney.format).toBe("team_dual");
+      expect(tourney.teamData).toBeDefined();
+      expect(tourney.teamData?.teams.length).toBe(2);
+      expect(tourney.teamData?.pairs.length).toBe(2);
+      expect(tourney.teamData?.lines.length).toBeGreaterThanOrEqual(1);
+
+      const line1 = tourney.teamData!.lines[0]!;
+      expect(line1.type).toBe("doubles");
+      expect(line1.team1PlayerIds).toEqual(["p1", "p2"]);
+      expect(line1.team2PlayerIds).toEqual(["p3", "p4"]);
+      expect(line1.status).toBe("pending");
+    });
+
+    it("updates line scores and completes a match line", async () => {
+      const createRes = await createTeamTournamentAction({
+        groupId: "g1",
+        name: "Line Scoring Test",
+        teams: [
+          {
+            name: "Team Fire 🔥",
+            color: "#ef4444",
+            pairPlayerIds: [["p1", "p2"]],
+            soloPlayerIds: [],
+          },
+          {
+            name: "Team Ice ❄️",
+            color: "#3b82f6",
+            pairPlayerIds: [["p3", "p4"]],
+            soloPlayerIds: [],
+          },
+        ],
+      });
+      expect(createRes.ok).toBe(true);
+      if (!createRes.ok) return;
+
+      const tourney = createRes.data;
+      const line = tourney.teamData!.lines[0]!;
+
+      const updateRes = await updateTeamTournamentLineAction({
+        tournamentId: tourney.id,
+        groupId: "g1",
+        lineId: line.id,
+        team1Score: 11,
+        team2Score: 9,
+      });
+
+      expect(updateRes.ok).toBe(true);
+      if (!updateRes.ok) return;
+
+      const updatedLine = updateRes.data.teamData!.lines[0]!;
+      expect(updatedLine.team1Score).toBe(11);
+      expect(updatedLine.team2Score).toBe(9);
+      expect(updatedLine.status).toBe("completed");
+    });
+
+    it("adds a tiebreaker / deciding line to a team tournament", async () => {
+      const createRes = await createTeamTournamentAction({
+        groupId: "g1",
+        name: "Dreambreaker Test",
+        teams: [
+          {
+            name: "Team Fire 🔥",
+            color: "#ef4444",
+            pairPlayerIds: [["p1", "p2"]],
+            soloPlayerIds: [],
+          },
+          {
+            name: "Team Ice ❄️",
+            color: "#3b82f6",
+            pairPlayerIds: [["p3", "p4"]],
+            soloPlayerIds: [],
+          },
+        ],
+      });
+      expect(createRes.ok).toBe(true);
+      if (!createRes.ok) return;
+
+      const tourney = createRes.data;
+      const addRes = await addTeamTournamentLineAction({
+        tournamentId: tourney.id,
+        groupId: "g1",
+        name: "Dreambreaker Singles",
+        type: "singles",
+        team1PlayerIds: ["p1"],
+        team2PlayerIds: ["p3"],
+      });
+
+      expect(addRes.ok).toBe(true);
+      if (!addRes.ok) return;
+
+      const lines = addRes.data.teamData!.lines;
+      expect(lines.length).toBe(2);
+      const newLine = lines[1]!;
+      expect(newLine.name).toBe("Dreambreaker Singles");
+      expect(newLine.type).toBe("singles");
+      expect(newLine.team1PlayerIds).toEqual(["p1"]);
+      expect(newLine.team2PlayerIds).toEqual(["p3"]);
+    });
   });
 });
 

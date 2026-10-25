@@ -270,14 +270,54 @@ export interface TournamentBracket {
   roundNames: readonly string[];
 }
 
+export type TournamentFormat = "bracket" | "team_dual";
+
+export interface TeamTournamentPair {
+  readonly id: string;
+  readonly player1Id: string;
+  readonly player2Id: string;
+}
+
+export interface TeamTournamentTeam {
+  readonly id: string;
+  name: string;
+  color: string;
+  pairIds: readonly string[];
+  soloPlayerIds: readonly string[];
+}
+
+export interface TeamTournamentLine {
+  readonly id: string;
+  readonly lineNumber: number;
+  name: string;
+  type: "doubles" | "singles";
+  team1PlayerIds: readonly string[];
+  team2PlayerIds: readonly string[];
+  team1Score: number | null;
+  team2Score: number | null;
+  status: "pending" | "in_progress" | "completed";
+}
+
+export interface TeamTournamentData {
+  pairs: readonly TeamTournamentPair[];
+  teams: readonly TeamTournamentTeam[];
+  lines: readonly TeamTournamentLine[];
+  format: "dual_meet";
+  scoringType: "games_won" | "points_diff";
+}
+
+export type TournamentStatus = "draft" | "active" | "completed";
+
 export interface TournamentRecord {
   readonly id: string;
   readonly groupId: string;
   name: string;
-  status: "draft" | "active" | "completed";
+  status: TournamentStatus;
   divisions: readonly TournamentDivision[];
   brackets: Record<string, TournamentBracket>;
   readonly createdAt: Date;
   updatedAt: Date;
+  format?: TournamentFormat;
+  teamData?: TeamTournamentData | null;
 }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { TrophyIcon, ShuffleIcon, CheckIcon } from "@/components/ui/icons";
+import { TrophyIcon, ShuffleIcon, CheckIcon, PencilIcon } from "@/components/ui/icons";
 import {
   TOURNAMENT_DIVISION_LABELS,
   type TournamentDivision,
@@ -20,6 +20,7 @@ import {
   updateTournamentNameAction,
   updateTournamentStatusAction,
 } from "@/app/actions/tournaments";
+import { TournamentOptionsMenu } from "@/components/tournaments/tournament-options-menu";
 
 interface TournamentBracketManagerProps {
   readonly initialTournament: TournamentRecord;
@@ -46,6 +47,9 @@ export function TournamentBracketManager({
   const [tournamentName, setTournamentName] = useState(tournament.name);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Inline match scores per match ID
+  const [matchScores, setMatchScores] = useState<Record<string, { s1: string; s2: string }>>({});
 
   // Edit Matchup Modal State
   const [editingMatch, setEditingMatch] = useState<TournamentMatch | null>(null);
@@ -136,6 +140,7 @@ export function TournamentBracketManager({
       });
       if (res.ok) {
         setTournament(res.data);
+        setMatchScores({});
       } else {
         setError(res.error);
       }
@@ -146,12 +151,77 @@ export function TournamentBracketManager({
     }
   };
 
+  const handleScoreChange = (matchId: string, slot: 1 | 2, val: string) => {
+    setMatchScores((prev) => {
+      const match = matches.find((m) => m.id === matchId);
+      const current = prev[matchId] ?? {
+        s1: match?.score1 !== null && match?.score1 !== undefined ? String(match.score1) : "",
+        s2: match?.score2 !== null && match?.score2 !== undefined ? String(match.score2) : "",
+      };
+      return {
+        ...prev,
+        [matchId]: {
+          ...current,
+          [slot === 1 ? "s1" : "s2"]: val,
+        },
+      };
+    });
+  };
+
+  const getMatchScore = (match: TournamentMatch, slot: 1 | 2): string => {
+    const entry = matchScores[match.id];
+    if (entry !== undefined) {
+      return slot === 1 ? entry.s1 : entry.s2;
+    }
+    const existing = slot === 1 ? match.score1 : match.score2;
+    return existing !== null ? String(existing) : "";
+  };
+
+  const handleSaveMatchScore = async (matchId: string) => {
+    if (!isOrganizer) return;
+    const match = matches.find((m) => m.id === matchId);
+    if (!match || !match.participant1Id || !match.participant2Id) return;
+
+    const s1Str = getMatchScore(match, 1).trim();
+    const s2Str = getMatchScore(match, 2).trim();
+
+    if (s1Str === "" || s2Str === "") {
+      setError("Please enter scores for both participants.");
+      return;
+    }
+
+    const s1 = parseInt(s1Str, 10);
+    const s2 = parseInt(s2Str, 10);
+
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0 || s1 > 99 || s2 > 99) {
+      setError("Scores must be valid numbers between 0 and 99.");
+      return;
+    }
+
+    if (s1 === s2) {
+      setError("Scores cannot be tied. One participant must win.");
+      return;
+    }
+
+    const winnerId = s1 > s2 ? match.participant1Id : match.participant2Id;
+    await handleSetWinner(match.id, winnerId, s1, s2);
+  };
+
+  const handleResetWinner = async (matchId: string) => {
+    setMatchScores((prev) => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
+    await handleSetWinner(matchId, null, null, null);
+  };
+
   const openEditModal = (match: TournamentMatch) => {
     setEditingMatch(match);
     setSlot1Choice(match.participant1Id ?? "");
     setSlot2Choice(match.participant2Id ?? "");
-    setScore1Input(match.score1 !== null ? String(match.score1) : "");
-    setScore2Input(match.score2 !== null ? String(match.score2) : "");
+    setScore1Input(getMatchScore(match, 1));
+    setScore2Input(getMatchScore(match, 2));
   };
 
   const saveEditModal = async () => {
@@ -206,6 +276,13 @@ export function TournamentBracketManager({
 
       if (res.ok) {
         setTournament(res.data);
+        setMatchScores((prev) => ({
+          ...prev,
+          [editingMatch.id]: {
+            s1: s1 !== null ? String(s1) : "",
+            s2: s2 !== null ? String(s2) : "",
+          },
+        }));
       } else {
         setError(res.error);
       }
@@ -260,11 +337,11 @@ export function TournamentBracketManager({
       )}
 
       {/* Header Card */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="flex items-center justify-between mb-3">
+      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
+        <div className="flex items-center justify-between">
           <Link
             href={`/g/${tournament.groupId}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 font-display text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
           >
             ← Back to Group
           </Link>
@@ -273,52 +350,88 @@ export function TournamentBracketManager({
               {tournament.status === "completed" ? "Completed" : "Active Tournament"}
             </Badge>
             {isOrganizer && (
-              <button
-                type="button"
-                onClick={handleToggleStatus}
-                className="text-xs font-black uppercase text-black hover:underline cursor-pointer p-1"
-              >
-                {tournament.status === "completed" ? "Reopen" : "Mark Finished"}
-              </button>
+              <TournamentOptionsMenu
+                groupId={tournament.groupId}
+                tournamentId={tournament.id}
+                tournamentName={tournament.name}
+                status={tournament.status}
+                onToggleStatus={handleToggleStatus}
+              />
             )}
           </div>
         </div>
 
-        {editingName && isOrganizer ? (
-          <div className="flex gap-2 items-center mt-2">
-            <input
-              type="text"
-              value={tournamentName}
-              onChange={(e) => setTournamentName(e.target.value)}
-              className="font-display text-2xl font-black uppercase bg-white border-2 border-black rounded-xl px-3 py-1 flex-1 shadow-[2px_2px_0px_0px_#000]"
-            />
-            <Button size="sm" variant="primary" onClick={handleSaveName}>
-              Save
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => setEditingName(false)}>
-              Cancel
-            </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+          <div className="min-w-0 flex-1">
+            {editingName && isOrganizer ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveName();
+                }}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <input
+                  type="text"
+                  aria-label="Tournament name"
+                  required
+                  value={tournamentName}
+                  onChange={(e) => setTournamentName(e.target.value)}
+                  className="min-w-0 max-w-xs font-display text-2xl sm:text-3xl font-black uppercase bg-white border-2 border-black rounded-xl px-3 py-1.5 shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  variant="primary"
+                  type="submit"
+                  disabled={isPending || !tournamentName.trim()}
+                  className="font-bold uppercase"
+                >
+                  Save
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setEditingName(false)}
+                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black">
+                  {tournament.name}
+                </h1>
+                {isOrganizer && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingName(true)}
+                    aria-label="Edit tournament name"
+                    title="Edit tournament name"
+                    className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1.5 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
+                  >
+                    <PencilIcon className="h-2 w-2" />
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-xs font-bold text-neutral-600 mt-1">
+              {tournament.divisions.length} Division{tournament.divisions.length === 1 ? "" : "s"} · Single Elimination Bracket
+            </p>
           </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <h1 className="font-display text-3xl font-black uppercase tracking-tight text-black">
-              {tournament.name}
-            </h1>
-            {isOrganizer && (
+
+          {isOrganizer && tournament.status === "active" && (
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setEditingName(true)}
-                className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer ml-2"
+                onClick={handleToggleStatus}
+                className="px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer bg-[#ccff00] hover:bg-[#b8eb00] text-black"
               >
-                Rename
+                Mark Finished
               </button>
-            )}
-          </div>
-        )}
-
-        <p className="text-xs font-bold text-neutral-600 mt-1">
-          {tournament.divisions.length} Division{tournament.divisions.length === 1 ? "" : "s"} · Single Elimination Bracket
-        </p>
+            </div>
+          )}
+        </div>
 
         {/* Division Tabs */}
         {availableDivisions.length > 1 && (
@@ -445,7 +558,7 @@ export function TournamentBracketManager({
                         <div className="flex items-center gap-1.5">
                           {isBye ? (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-neutral-400 bg-neutral-100 text-neutral-600">
-                              BYE
+                              Skipped
                             </span>
                           ) : isCompleted ? (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-black bg-[#ccff00] text-black">
@@ -484,24 +597,35 @@ export function TournamentBracketManager({
                               <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                             )}
                             <span className="font-bold text-sm truncate">
-                              {p1 ? p1.name : isBye ? "BYE" : "TBD"}
+                              {p1 ? p1.name : isBye ? "Skipped" : "TBD"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {m.score1 !== null && (
-                              <span className="font-display font-black text-base px-2 py-0.5 rounded bg-white/80 border border-black">
-                                {m.score1}
-                              </span>
-                            )}
-                            {isOrganizer && p1 && !isBye && m.winnerId !== p1.id && (
-                              <button
-                                type="button"
-                                onClick={() => handleSetWinner(m.id, p1.id, m.score1, m.score2)}
-                                disabled={isPending || !p1 || !p2}
-                                className="text-[11px] font-black uppercase px-2 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 cursor-pointer transition-colors"
-                              >
-                                Win
-                              </button>
+                            {isOrganizer && p1 && p2 && !isBye ? (
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                value={getMatchScore(m, 1)}
+                                onChange={(e) => handleScoreChange(m.id, 1, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveMatchScore(m.id);
+                                  }
+                                }}
+                                placeholder="0"
+                                disabled={isPending}
+                                aria-label={p1 ? `${p1.name} score` : "Participant 1 score"}
+                                data-testid={`score1-input-${m.id}`}
+                                className="w-12 h-8 text-center font-display font-black text-sm bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
+                              />
+                            ) : (
+                              m.score1 !== null && (
+                                <span className="font-display font-black text-base px-2 py-0.5 rounded bg-white/80 border border-black">
+                                  {m.score1}
+                                </span>
+                              )
                             )}
                           </div>
                         </div>
@@ -519,39 +643,63 @@ export function TournamentBracketManager({
                               <CheckIcon className="h-4 w-4 shrink-0 text-black" />
                             )}
                             <span className="font-bold text-sm truncate">
-                              {p2 ? p2.name : isBye ? "BYE" : "TBD"}
+                              {p2 ? p2.name : isBye ? "Skipped" : "TBD"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {m.score2 !== null && (
-                              <span className="font-display font-black text-base px-2 py-0.5 rounded bg-white/80 border border-black">
-                                {m.score2}
-                              </span>
-                            )}
-                            {isOrganizer && p2 && !isBye && m.winnerId !== p2.id && (
-                              <button
-                                type="button"
-                                onClick={() => handleSetWinner(m.id, p2.id, m.score1, m.score2)}
-                                disabled={isPending || !p1 || !p2}
-                                className="text-[11px] font-black uppercase px-2 py-1 rounded-lg bg-black text-white hover:bg-neutral-800 cursor-pointer transition-colors"
-                              >
-                                Win
-                              </button>
+                            {isOrganizer && p1 && p2 && !isBye ? (
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                value={getMatchScore(m, 2)}
+                                onChange={(e) => handleScoreChange(m.id, 2, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveMatchScore(m.id);
+                                  }
+                                }}
+                                placeholder="0"
+                                disabled={isPending}
+                                aria-label={p2 ? `${p2.name} score` : "Participant 2 score"}
+                                data-testid={`score2-input-${m.id}`}
+                                className="w-12 h-8 text-center font-display font-black text-sm bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
+                              />
+                            ) : (
+                              m.score2 !== null && (
+                                <span className="font-display font-black text-base px-2 py-0.5 rounded bg-white/80 border border-black">
+                                  {m.score2}
+                                </span>
+                              )
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Clear Winner Undo Control */}
-                      {isOrganizer && m.winnerId && !isBye && (
-                        <div className="mt-2 text-right">
+                      {/* Organizer Match Controls: Reset & Save */}
+                      {isOrganizer && p1 && p2 && !isBye && (
+                        <div className="mt-3 pt-2.5 border-t-2 border-neutral-100 flex items-center justify-between gap-2">
+                          <div>
+                            {m.winnerId && (
+                              <button
+                                type="button"
+                                onClick={() => handleResetWinner(m.id)}
+                                disabled={isPending}
+                                className="text-[11px] font-black uppercase text-neutral-500 hover:text-black underline cursor-pointer"
+                              >
+                                Reset Winner
+                              </button>
+                            )}
+                          </div>
                           <button
                             type="button"
-                            onClick={() => handleSetWinner(m.id, null, null, null)}
+                            onClick={() => handleSaveMatchScore(m.id)}
                             disabled={isPending}
-                            className="text-[10px] font-black uppercase text-neutral-500 hover:text-black underline cursor-pointer"
+                            data-testid={`save-score-${m.id}`}
+                            className="px-3 py-1 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                           >
-                            Reset Winner
+                            Save
                           </button>
                         </div>
                       )}

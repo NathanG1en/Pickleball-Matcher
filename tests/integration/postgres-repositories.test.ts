@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
-import type { StartedRoundRecord } from "@/lib/domain/types";
+import type { StartedRoundRecord, TournamentRecord } from "@/lib/domain/types";
 
 const testDbUrl = process.env.TEST_DATABASE_URL;
 if (!testDbUrl) {
@@ -232,6 +232,64 @@ describe("PostgresRepositories", () => {
 
     const list = await repository.listTournaments("group-1");
     expect(list.some((t) => t.id === "tr_test_1")).toBe(true);
+  });
+
+  it("creates, retrieves, and updates a team tournament with teamData", async () => {
+    const teamTournament: TournamentRecord = {
+      id: "tr_team_test_1",
+      groupId: "group-1",
+      name: "Battle of the Dink",
+      status: "active",
+      format: "team_dual",
+      divisions: [],
+      brackets: {},
+      teamData: {
+        pairs: [{ id: "pr_1", player1Id: "a", player2Id: "b" }],
+        teams: [
+          { id: "t1", name: "Team Red", color: "#ef4444", pairIds: ["pr_1"], soloPlayerIds: [] },
+          { id: "t2", name: "Team Blue", color: "#3b82f6", pairIds: [], soloPlayerIds: ["c", "d"] },
+        ],
+        lines: [
+          {
+            id: "line_1",
+            lineNumber: 1,
+            name: "Line 1 - Doubles",
+            type: "doubles",
+            team1PlayerIds: ["a", "b"],
+            team2PlayerIds: ["c", "d"],
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+          },
+        ],
+        format: "dual_meet",
+        scoringType: "games_won",
+      },
+      createdAt: new Date("2026-10-24T12:00:00.000Z"),
+      updatedAt: new Date("2026-10-24T12:00:00.000Z"),
+    };
+
+    await repository.createTournament(teamTournament);
+
+    const fetched = await repository.getTournament("tr_team_test_1");
+    expect(fetched).not.toBeNull();
+    expect(fetched?.name).toBe("Battle of the Dink");
+    expect(fetched?.format).toBe("team_dual");
+    expect(fetched?.teamData?.teams.length).toBe(2);
+    expect(fetched?.teamData?.lines[0]?.status).toBe("completed");
+    expect(fetched?.teamData?.lines[0]?.team1Score).toBe(11);
+
+    const updated = {
+      ...teamTournament,
+      name: "Battle of the Dink - Finals",
+      status: "completed" as const,
+      updatedAt: new Date("2026-10-24T13:00:00.000Z"),
+    };
+    await repository.updateTournament(updated);
+
+    const fetchedUpdated = await repository.getTournament("tr_team_test_1");
+    expect(fetchedUpdated?.name).toBe("Battle of the Dink - Finals");
+    expect(fetchedUpdated?.status).toBe("completed");
   });
 
   it("deletes a guest player with 0 matches/games from the database when removed", async () => {
