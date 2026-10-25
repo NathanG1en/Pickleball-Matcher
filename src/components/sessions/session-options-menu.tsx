@@ -190,7 +190,7 @@ export function SessionOptionsMenu({
             role="menuitem"
             data-testid="rename-session-menu-item"
             onClick={handleOpenRename}
-            className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
+            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
           >
             Rename Session
           </button>
@@ -199,7 +199,7 @@ export function SessionOptionsMenu({
             role="menuitem"
             data-testid="duplicate-session-menu-item"
             onClick={handleOpenDuplicate}
-            className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
+            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
           >
             Duplicate Session
           </button>
@@ -208,7 +208,7 @@ export function SessionOptionsMenu({
             role="menuitem"
             data-testid="delete-session-menu-item"
             onClick={handleOpenDelete}
-            className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
           >
             Delete Session
           </button>

@@ -556,7 +556,7 @@ export function GroupOrganizersPanel({
                           <Link
                             href={`/players/${encodeURIComponent(playerUsername)}`}
                             onClick={closeAllMenus}
-                            className="block w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"
+                            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"
                           >
                             View profile
                           </Link>
@@ -565,7 +565,7 @@ export function GroupOrganizersPanel({
                           <button
                             type="button"
                             disabled
-                            className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Group host
                           </button>
@@ -579,7 +579,7 @@ export function GroupOrganizersPanel({
                                       type="button"
                                       disabled={pendingPlayerId === player.id}
                                       onClick={() => void removeOrganizer(player.id)}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                       {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
                                     </button>
@@ -591,7 +591,7 @@ export function GroupOrganizersPanel({
                                         setTransferError(null);
                                         setTransferTarget(player);
                                       }}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
                                     >
                                       Transfer host
                                     </button>
@@ -603,7 +603,7 @@ export function GroupOrganizersPanel({
                                       type="button"
                                       disabled={pendingPlayerId === player.id}
                                       onClick={() => void makeOrganizer(player.id)}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                       {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
                                     </button>
@@ -620,7 +620,7 @@ export function GroupOrganizersPanel({
                                     closeAllMenus();
                                     setEditingGuest(player);
                                   }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
                                 >
                                   Edit guest
                                 </button>
@@ -630,7 +630,7 @@ export function GroupOrganizersPanel({
                                     closeAllMenus();
                                     setMergingGuest(player);
                                   }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
                                 >
                                   Merge with another guest player
                                 </button>
@@ -640,7 +640,7 @@ export function GroupOrganizersPanel({
                                     closeAllMenus();
                                     setLinkingPlayer(player);
                                   }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase hover:bg-[#ccff00] cursor-pointer"
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
                                 >
                                   Link to public player
                                 </button>
@@ -659,7 +659,7 @@ export function GroupOrganizersPanel({
                                     void removePlayer(player.id);
                                   }
                                 }}
-                                className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {pendingPlayerId === player.id ? "Removing…" : "Remove player"}
                               </button>
@@ -667,7 +667,7 @@ export function GroupOrganizersPanel({
                               <button
                                 type="button"
                                 disabled
-                                className="w-full rounded-lg px-3 py-2 text-left text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 Group organizer
                               </button>

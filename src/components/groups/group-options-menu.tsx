@@ -100,7 +100,7 @@ export function GroupOptionsMenu({
                 setDeleteError(null);
                 setShowDeleteModal(true);
               }}
-              className="w-full rounded-xl px-3 py-2 text-left text-xs font-black uppercase text-red-600 hover:bg-red-50 cursor-pointer"
+              className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 cursor-pointer"
             >
               Delete Group
             </button>

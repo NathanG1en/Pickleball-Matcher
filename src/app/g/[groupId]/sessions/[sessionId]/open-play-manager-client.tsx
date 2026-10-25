@@ -329,7 +329,6 @@ export function OpenPlayManagerClient({
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
   const [guestRating, setGuestRating] = useState(3.5);
-  const [selectedRosterPlayerId, setSelectedRosterPlayerId] = useState("");
 
   const rosterPlayerOptions = useMemo(
     () =>
@@ -455,33 +454,30 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleAddPlayer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRosterPlayerId) return;
+  const handleSelectRosterPlayer = async (playerId: string) => {
+    if (!playerId || isAddingPlayer) return;
     setIsAddingPlayer(true);
     setError(null);
     try {
       const res = await addOpenPlayPlayerAction({
         groupId,
         sessionId: session.id,
-        playerId: selectedRosterPlayerId,
+        playerId,
       });
       if (res.ok) {
-        const playerIdToAdd = selectedRosterPlayerId;
-        const addedName = playerMap.get(playerIdToAdd)?.name ?? "Player";
+        const addedName = playerMap.get(playerId)?.name ?? "Player";
         setLocalAttendance((prev) => {
-          const filtered = prev.filter((a) => a.playerId !== playerIdToAdd);
+          const filtered = prev.filter((a) => a.playerId !== playerId);
           return [
             ...filtered,
             {
               sessionId: session.id,
-              playerId: playerIdToAdd,
+              playerId,
               joinedRound: 1,
               leftRound: null,
             },
           ];
         });
-        setSelectedRosterPlayerId("");
         showToast(`Added ${addedName} to session!`);
         router.refresh();
       } else {
@@ -1035,30 +1031,24 @@ export function OpenPlayManagerClient({
           <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-4">
             {/* Add from Roster */}
             {availableRosterPlayers.length > 0 && (
-              <form onSubmit={handleAddPlayer} className="space-y-2">
+              <div className="space-y-2">
                 <label className="block text-xs font-black uppercase tracking-wider text-black">
                   Add Existing Group Member
                 </label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1">
-                    <FilterablePlayerSelect
-                      ariaLabel="Add Existing Group Member"
-                      placeholder="Select player..."
-                      value={selectedRosterPlayerId}
-                      onChange={(val) => setSelectedRosterPlayerId(val)}
-                      options={rosterPlayerOptions}
-                      dataTestId="roster-player-select"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!selectedRosterPlayerId || isAddingPlayer}
-                    className="px-4 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
-                  >
-                    {isAddingPlayer ? "Adding..." : "Add"}
-                  </button>
-                </div>
-              </form>
+                <FilterablePlayerSelect
+                  ariaLabel="Add Existing Group Member"
+                  placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
+                  value=""
+                  onChange={(val) => {
+                    if (val) {
+                      void handleSelectRosterPlayer(val);
+                    }
+                  }}
+                  options={rosterPlayerOptions}
+                  dataTestId="roster-player-select"
+                  disabled={isAddingPlayer}
+                />
+              </div>
             )}
 
             {/* Add Guest */}
@@ -1193,7 +1183,7 @@ export function OpenPlayManagerClient({
                         value={t1Score}
                         onChange={(e) => setT1Score(e.target.value)}
                         aria-label="Team 1 Score"
-                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-black text-lg text-center"
+                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
                       />
                     </div>
                   </div>
@@ -1234,7 +1224,7 @@ export function OpenPlayManagerClient({
                         value={t2Score}
                         onChange={(e) => setT2Score(e.target.value)}
                         aria-label="Team 2 Score"
-                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-black text-lg text-center"
+                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
                       />
                     </div>
                   </div>

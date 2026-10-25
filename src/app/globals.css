@@ -102,12 +102,6 @@ body {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
-button,
-input,
-select {
-  font: inherit;
-}
-
 :focus-visible {
   outline: 3px solid #000000;
   outline-offset: 2px;

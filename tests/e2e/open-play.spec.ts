@@ -120,12 +120,11 @@ test.describe("Open Play Workflow", () => {
     await page.keyboard.press("Escape");
     await doublesBtn.click();
 
-    // 8. Add group player Bob from roster
+    // 8. Add group player Bob from roster (selecting from dropdown directly adds them to open play)
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");
     await page.locator("[role='option']").filter({ hasText: "Bob" }).click();
-    await page.locator("form").filter({ has: page.locator("[data-testid='roster-player-select']") }).locator("button[type='submit']").click();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Bob")).toBeVisible();
 
     // 9. Second player signs up and joins open play in another browser context
@@ -485,12 +484,11 @@ test.describe("Open Play Workflow", () => {
     }
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Dana")).toBeVisible();
 
-    // Add Bob from roster
+    // Add Bob from roster (selecting from dropdown directly adds them to open play)
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");
     await page.locator("[role='option']").filter({ hasText: "Bob" }).click();
-    await page.locator("form").filter({ has: page.locator("[data-testid='roster-player-select']") }).locator("button[type='submit']").click();
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Bob")).toBeVisible();
 
     // Regular player signs up and joins group in second browser context

@@ -102,5 +102,34 @@ describe("OpenPlayManagerClient Component", () => {
     expect(optionsIndex).toBeLessThan(sessionNameIndex);
     expect(optionsIndex).toBeLessThan(endSessionIndex);
   });
+
+  it("renders Add Existing Group Member dropdown directly without a separate submit button", () => {
+    // Attendance with Dave missing, so Dave is an available roster player
+    const attendanceWithoutDave: AttendanceRecord[] = [
+      { sessionId, playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p2", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p3", joinedRound: 1, leftRound: null },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendanceWithoutDave}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain("Add Existing Group Member");
+    expect(html).toContain('data-testid="roster-player-select"');
+    // Ensure there is no separate submit button for adding from roster
+    expect(html).not.toContain('disabled="" class="px-4 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]');
+  });
 });
 

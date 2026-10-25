@@ -129,7 +129,7 @@ export function FilterablePlayerSelect({
           }
         }}
         className={`w-full flex items-center justify-between text-left rounded-xl border-2 border-black bg-white font-bold transition-all shadow-[2px_2px_0px_0px_#000] focus:outline-none ${
-          sizeVariant === "sm" ? "p-1.5 text-xs" : "p-2 text-xs"
+          sizeVariant === "sm" ? "p-1.5 text-sm" : "p-2 text-sm"
         } ${
           disabled
             ? "opacity-50 cursor-not-allowed"
