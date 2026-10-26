@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useTransition } from "react";
+import { PartnerRequests } from "@/components/sessions/partner-requests";
+import { StayTogetherEditor } from "@/components/attendance/stay-together-editor";
+import { canonicalPairs } from "@/lib/matchmaking/stay-together";
+import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { useRouter } from "next/navigation";
 
 import {
@@ -12,6 +16,7 @@ import {
   startRoundAction,
   undoLatestRoundAction,
   updateCourtConfigAction,
+  updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
 import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
@@ -27,6 +32,7 @@ import { formatDupr } from "@/lib/domain/rating-display";
 import { XIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
+  PartnerRequestRecord,
   MatchRecord,
   PlayerRecord,
   RoundProposal,
@@ -50,6 +56,8 @@ export interface SessionManagerClientProps {
   readonly attendance?: readonly AttendanceRecord[];
   readonly startedRounds: readonly StartedRoundRecord[];
   readonly initialProposal: RoundProposal | null;
+  readonly partnerRequests?: readonly PartnerRequestRecord[];
+  readonly initialProposalError?: string | null;
   readonly canManage?: boolean;
   readonly currentViewerPlayerId?: string | null;
   readonly pairSynergies?: PairSynergiesMap;
@@ -66,6 +74,8 @@ export function SessionManagerClient({
   attendance = [],
   startedRounds,
   initialProposal,
+  partnerRequests = [],
+  initialProposalError = null,
   canManage = true,
   currentViewerPlayerId = null,
   pairSynergies = {},
@@ -140,7 +150,8 @@ export function SessionManagerClient({
   const [pickledMatchId, setPickledMatchId] = useState<string | null>(null);
   const [isActionPending, setIsPending] = useState(false);
   const [isGeneratingRound, startGeneratingRound] = useTransition();
-  const isPending = isActionPending || isGeneratingRound;
+  const [isRequestPending, setRequestPending] = useState(false);
+  const isPending = isActionPending || isGeneratingRound || isRequestPending;
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -263,6 +274,33 @@ export function SessionManagerClient({
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
   const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
+
+  const applyPartnerSession = async (updated: SessionRecord) => {
+    setCurrentSession(updated);
+    clearLineupDraft(lineupDraftKey(updated.id));
+    setRegeneratedProposal(null);
+    if (canManage && updated.status === "active" && !isRoundInProgress) {
+      const generated = await proposeRoundAction({ groupId, sessionId: updated.id, sessionVersion: updated.version, temperature: matchmakingVariety });
+      if (generated.ok) setRegeneratedProposal(generated.data);
+      else setError(generated.error);
+    }
+    router.refresh();
+  };
+
+  const handleSavePairs = async (pairs: readonly StayTogetherPair[]) => {
+    if (isPending) return;
+    setIsPending(true);
+    setError(null);
+    try {
+      const saved = await updateStayTogetherPairsAction({ groupId, sessionId: currentSession.id, sessionVersion: currentSession.version, pairs });
+      if (!saved.ok) { setError(saved.error); return; }
+      await applyPartnerSession(saved.data);
+    } catch {
+      setError("Unable to save Stay Together pairs. Refresh and try again.");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   // Actions
   const handleRegenerate = (variety = matchmakingVariety) => {
@@ -945,6 +983,20 @@ export function SessionManagerClient({
         </header>
       )}
 
+      {(currentSession.status === "active" || currentSession.stayTogetherPairs?.length) && <StayTogetherEditor
+        players={players}
+        pairs={currentSession.stayTogetherPairs ?? []}
+        eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+        onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
+        disabled={isPending}
+        pending={isActionPending}
+      />}
+      <PartnerRequests groupId={groupId} session={currentSession} players={players}
+        presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+        currentViewerPlayerId={currentViewerPlayerId} canManage={canManage} initialRequests={partnerRequests}
+        disabled={isPending} onBusyChange={setRequestPending} onSessionUpdated={applyPartnerSession} />
+      {!activeProposal && initialProposalError && !error && <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>}
+      {activeProposal?.sitting.length === 1 && (currentSession.stayTogetherPairs ?? []).some(pair => pair.includes(activeProposal.sitting[0]) && pair.every(id => currentAttendance.some(a => a.playerId === id && a.leftRound === null))) && <p role="status" className="rounded-xl border-2 border-black bg-amber-50 p-3 text-sm font-bold">{playerNames[activeProposal.sitting[0]]} is sitting this round to rotate playing time. Their Stay Together pairing is saved for later rounds.</p>}
       {error && (
         <div role="alert" className="p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
           {error}
@@ -1285,7 +1337,7 @@ export function SessionManagerClient({
           ) : activeProposal ? (
             <CurrentRoundView
               draftKey={lineupDraftKey(session.id)}
-              draftContext={`${session.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}`}
+              draftContext={`${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`}
               round={{
                 id: `proposal_${activeProposal.seed}`,
                 roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,

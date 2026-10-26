@@ -1,0 +1,64 @@
+import { test, expect } from "@playwright/test";
+import { createTestGroup, createAndSignInPlayer } from "./test-helpers";
+
+test("a member requests a friend and an organizer approves it for future rounds", async ({ page, browser }, testInfo) => {
+  test.setTimeout(120_000);
+  const { groupId } = await createTestGroup(page, `Partner requests ${Date.now()}`);
+  const memberContext = await browser.newContext();
+  try {
+    const memberPage = await memberContext.newPage();
+    const member = await createAndSignInPlayer(memberPage, { name: "Alex Requester" });
+    await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(member.username);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByRole("link", { name: `@${member.username}`, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+    for (const name of ["Sam Requested", "Casey Guest"]) {
+      await page.locator("#guest-player-name").fill(name);
+      await page.getByRole("button", { name: "Add", exact: true }).click();
+      await expect(page.locator("#guest-player-name")).toHaveValue("");
+    }
+    await page.getByTestId("start-new-session-button").click();
+    await page.getByTestId("select-normal-session-button").click();
+    await page.getByRole("button", { name: "Start Session", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
+    const sessionUrl = page.url();
+    await page.getByRole("button", { name: "Attendance", exact: true }).click();
+    const memberAttendance = page.getByTestId("attendance-row-Alex Requester");
+    await memberAttendance.getByRole("button", { name: "Mark Left", exact: true }).click();
+    await expect(memberAttendance.getByText("Away", { exact: true })).toBeVisible();
+    await memberPage.goto(sessionUrl);
+    const memberPanel = memberPage.getByTestId("partner-requests");
+    await expect(memberPanel.getByText("Join this session before requesting a partner.", { exact: true })).toBeVisible();
+    await memberAttendance.getByRole("button", { name: "Mark Present", exact: true }).click();
+    await expect(memberAttendance.getByText("Present", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await memberPanel.getByRole("button", { name: "Refresh requests", exact: true }).click();
+    await memberPanel.getByRole("combobox", { name: "Requested partner", exact: true }).selectOption({ label: "Sam Requested" });
+    await memberPanel.getByRole("button", { name: "Request Stay Together", exact: true }).click();
+    await expect(memberPanel.getByText("Pending", { exact: true })).toBeVisible();
+    await expect(memberPanel.getByRole("button", { name: "Cancel request to Sam Requested", exact: true })).toBeVisible();
+    const organizerPanel = page.getByTestId("partner-requests");
+    await organizerPanel.getByRole("button", { name: "Refresh requests", exact: true }).click();
+    await expect(organizerPanel.getByRole("button", { name: "Approve Alex Requester and Sam Requested", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Start Round", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+    const teamOneScore = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true });
+    const teamTwoScore = page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true });
+    await teamOneScore.fill("11");
+    await teamTwoScore.fill("4");
+    await organizerPanel.getByRole("button", { name: "Refresh requests", exact: true }).click();
+    await expect(teamOneScore).toHaveValue("11");
+    await expect(teamTwoScore).toHaveValue("4");
+    await organizerPanel.screenshot({ path: testInfo.outputPath("partner-request-queue.png") });
+    await organizerPanel.getByRole("button", { name: "Approve Alex Requester and Sam Requested", exact: true }).click();
+    const pairs = page.getByTestId("stay-together-settings");
+    await expect(pairs.getByRole("listitem").filter({ hasText: "Alex Requester" }).filter({ hasText: "Sam Requested" })).toBeVisible({ timeout: 20_000 });
+    await expect(teamOneScore).toHaveValue("11");
+    await expect(teamTwoScore).toHaveValue("4");
+    await memberPanel.getByRole("button", { name: "Refresh requests", exact: true }).click();
+    await expect(memberPanel.getByText("Approved", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(pairs.getByRole("listitem").filter({ hasText: "Alex Requester" }).filter({ hasText: "Sam Requested" })).toBeVisible();
+    await expect(memberPanel.getByRole("button", { name: /Approve/ })).toHaveCount(0);
+  } finally { await memberContext.close(); }
+});

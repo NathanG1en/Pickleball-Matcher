@@ -69,14 +69,14 @@ function candidatePairPenalties(
   for (const court of candidate.courts) {
     if (court.team1.length === 2) {
       const [p1, p2] = court.team1;
-      partner += scorePartnerPair(
+      if (!context.stayTogetherPairs?.some(([a, b]) => (a === p1 && b === p2) || (a === p2 && b === p1))) partner += scorePartnerPair(
         historyFor(indexedHistory, p1, p2),
         context.config,
       );
     }
     if (court.team2.length === 2) {
       const [p1, p2] = court.team2;
-      partner += scorePartnerPair(
+      if (!context.stayTogetherPairs?.some(([a, b]) => (a === p1 && b === p2) || (a === p2 && b === p1))) partner += scorePartnerPair(
         historyFor(indexedHistory, p1, p2),
         context.config,
       );

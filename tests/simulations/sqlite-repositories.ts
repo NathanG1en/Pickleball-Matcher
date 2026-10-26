@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  PartnerRequestRecord,
   GroupRecord,
   GroupOrganizerRecord,
   PlayerAccountRecord,
@@ -66,6 +67,7 @@ interface SessionRow {
   group_id: string;
   court_count: number;
   court_player_counts: string;
+  stay_together_pairs: string;
   status: "active" | "completed";
   current_round_number: number;
   started_at: string;
@@ -193,6 +195,7 @@ export class SqliteDomainRepository implements DomainRepository {
         group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
         court_count INTEGER NOT NULL,
         court_player_counts TEXT NOT NULL DEFAULT '[]',
+        stay_together_pairs TEXT NOT NULL DEFAULT '[]',
         status TEXT NOT NULL,
         current_round_number INTEGER NOT NULL,
         started_at TEXT NOT NULL,
@@ -201,6 +204,18 @@ export class SqliteDomainRepository implements DomainRepository {
         type TEXT NOT NULL DEFAULT 'regular',
         name TEXT
       );
+      CREATE TABLE IF NOT EXISTS session_partner_requests (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        requester_player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        partner_player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','declined','cancelled')),
+        created_at TEXT NOT NULL, resolved_at TEXT, version INTEGER NOT NULL DEFAULT 1,
+        CHECK (requester_player_id <> partner_player_id)
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS partner_request_outgoing_pending ON session_partner_requests(session_id,requester_player_id) WHERE status='pending';
+      CREATE UNIQUE INDEX IF NOT EXISTS partner_request_pair_pending ON session_partner_requests(session_id,min(requester_player_id,partner_player_id),max(requester_player_id,partner_player_id)) WHERE status='pending';
+
 
       CREATE TABLE IF NOT EXISTS session_attendance (
         session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -735,6 +750,28 @@ export class SqliteDomainRepository implements DomainRepository {
       );
   }
 
+  async lockPartnerRequests(sessionId: string): Promise<void> { void sessionId; }
+  private mapPartnerRequest(row: Record<string, unknown>): PartnerRequestRecord {
+    return { id: String(row.id), sessionId: String(row.session_id), requesterPlayerId: String(row.requester_player_id), partnerPlayerId: String(row.partner_player_id),
+      status: row.status as PartnerRequestRecord["status"], createdAt: new Date(String(row.created_at)), resolvedAt: row.resolved_at ? new Date(String(row.resolved_at)) : null, version: Number(row.version) };
+  }
+  async listPartnerRequests(sessionId: string): Promise<readonly PartnerRequestRecord[]> {
+    return this.db.prepare("SELECT * FROM session_partner_requests WHERE session_id = ? ORDER BY (status='pending') DESC, created_at DESC, id DESC").all(sessionId).map(row => this.mapPartnerRequest(row));
+  }
+  async getPartnerRequest(requestId: string): Promise<PartnerRequestRecord | null> {
+    const row = this.db.prepare("SELECT * FROM session_partner_requests WHERE id = ?").get(requestId);
+    return row ? this.mapPartnerRequest(row) : null;
+  }
+  async insertPartnerRequest(request: PartnerRequestRecord): Promise<void> {
+    this.db.prepare("INSERT INTO session_partner_requests (id,session_id,requester_player_id,partner_player_id,status,created_at,resolved_at,version) VALUES (?,?,?,?,?,?,?,?)")
+      .run(request.id, request.sessionId, request.requesterPlayerId, request.partnerPlayerId, request.status, request.createdAt.toISOString(), request.resolvedAt?.toISOString() ?? null, request.version);
+  }
+  async updatePartnerRequest(request: PartnerRequestRecord): Promise<void> {
+    const result = this.db.prepare("UPDATE session_partner_requests SET status = ?, resolved_at = ?, version = ? WHERE id = ? AND session_id = ? AND version = ?")
+      .run(request.status, request.resolvedAt?.toISOString() ?? null, request.version, request.id, request.sessionId, request.version - 1);
+    if (!result.changes) throw new RepositoryConflictError();
+  }
+
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     const row = this.db
       .prepare("SELECT * FROM sessions WHERE id = ?")
@@ -744,6 +781,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      stayTogetherPairs: JSON.parse(row.stay_together_pairs ?? "[]"),
       courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
@@ -763,6 +801,7 @@ export class SqliteDomainRepository implements DomainRepository {
       id: row.id,
       groupId: row.group_id,
       courtCount: row.court_count,
+      stayTogetherPairs: JSON.parse(row.stay_together_pairs ?? "[]"),
       courtPlayerCounts: JSON.parse(row.court_player_counts).length ? JSON.parse(row.court_player_counts) as (2 | 3 | 4)[] : undefined,
       status: row.status,
       currentRoundNumber: row.current_round_number,
@@ -1156,13 +1195,14 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, status, current_round_number, started_at, ended_at, version, type, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (id, group_id, court_count, court_player_counts, stay_together_pairs, status, current_round_number, started_at, ended_at, version, type, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         session.id,
         session.groupId,
         session.courtCount,
         JSON.stringify(session.courtPlayerCounts ?? []),
+        JSON.stringify(session.stayTogetherPairs ?? []),
         session.status,
         session.currentRoundNumber,
         session.startedAt.toISOString(),
@@ -1179,11 +1219,12 @@ export class SqliteDomainRepository implements DomainRepository {
   async updateSession(session: SessionRecord): Promise<void> {
     const result = this.db
       .prepare(
-        "UPDATE sessions SET court_count = ?, court_player_counts = ?, status = ?, current_round_number = ?, ended_at = ?, version = ?, name = ? WHERE id = ? AND version = ?",
+        "UPDATE sessions SET court_count = ?, court_player_counts = ?, stay_together_pairs = ?, status = ?, current_round_number = ?, ended_at = ?, version = ?, name = ? WHERE id = ? AND version = ?",
       )
       .run(
         session.courtCount,
         JSON.stringify(session.courtPlayerCounts ?? []),
+        JSON.stringify(session.stayTogetherPairs ?? []),
         session.status,
         session.currentRoundNumber,
         session.endedAt ? session.endedAt.toISOString() : null,
