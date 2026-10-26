@@ -1,3 +1,4 @@
+import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import type { GeneratedRound, ScoreBreakdown } from "@/lib/matchmaking/types";
 
 export interface GroupRecord {
@@ -91,6 +92,7 @@ export interface PlayerSessionHistoryRecord {
 }
 
 export interface SessionRecord {
+  readonly stayTogetherPairs?: readonly StayTogetherPair[];
   readonly id: string;
   readonly groupId: string;
   readonly courtCount: number;
@@ -102,6 +104,25 @@ export interface SessionRecord {
   version: number;
   type?: SessionType;
   name?: string | null;
+}
+
+export interface PartnerRequestView {
+  readonly session: SessionRecord;
+  readonly requests: readonly PartnerRequestRecord[];
+  readonly players: readonly { id: string; name: string }[];
+  readonly presentPlayerIds: readonly string[];
+}
+
+export type PartnerRequestStatus = "pending" | "approved" | "declined" | "cancelled";
+export interface PartnerRequestRecord {
+  readonly id: string;
+  readonly sessionId: string;
+  readonly requesterPlayerId: string;
+  readonly partnerPlayerId: string;
+  readonly status: PartnerRequestStatus;
+  readonly createdAt: Date;
+  readonly resolvedAt: Date | null;
+  readonly version: number;
 }
 
 export interface AttendanceRecord {
@@ -189,6 +210,7 @@ export interface SessionServiceDependencies {
 }
 
 export interface StartSessionInput {
+  readonly stayTogetherPairs?: readonly StayTogetherPair[];
   readonly groupId: string;
   readonly courtCount: number;
   readonly playerIds: readonly string[];

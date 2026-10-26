@@ -1,5 +1,7 @@
 "use client";
 
+import { StayTogetherEditor } from "./stay-together-editor";
+import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import React, { useMemo, useState } from "react";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,7 @@ export interface AttendanceManagerProps {
   readonly maxCourts?: number;
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
-  readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[] }) => void;
+  readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[]; stayTogetherPairs: readonly StayTogetherPair[] }) => void;
   readonly onAddGuest?: (name: string, initialRating?: number) => void;
 }
 
@@ -60,7 +62,9 @@ export function AttendanceManager({
   const [isCustomGuestRating, setIsCustomGuestRating] = useState<boolean>(false);
   const [customGuestRating, setCustomGuestRating] = useState<string>("3.5");
 
+  const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
   const togglePlayer = (id: string) => {
+    if (selectedIds.has(id)) setStayTogetherPairs(pairs => pairs.filter(pair => !pair.includes(id)));
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -74,6 +78,7 @@ export function AttendanceManager({
   };
 
   const clearAll = () => {
+    setStayTogetherPairs([]);
     setSelectedIds(new Set());
   };
 
@@ -109,6 +114,7 @@ export function AttendanceManager({
         courtCount: courts,
         courtPlayerCounts: courtPlayerCounts.slice(0, courts),
         selectedPlayerIds: Array.from(selectedIds),
+        stayTogetherPairs,
       });
     }
   };
@@ -335,6 +341,8 @@ export function AttendanceManager({
           </div>
         </form>
       </section>
+
+      {!isEditingSession && <StayTogetherEditor players={players} pairs={stayTogetherPairs} eligibleIds={[...selectedIds]} onChange={setStayTogetherPairs} disabled={isPending} />}
 
       {/* Sticky Mobile Action Bar */}
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">

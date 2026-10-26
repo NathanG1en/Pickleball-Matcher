@@ -1,3 +1,5 @@
+import { canonicalPairs, validateStayTogetherPairs, validateStayTogetherLineup } from "@/lib/matchmaking/stay-together";
+import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { DomainError } from "@/lib/domain/errors";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
@@ -90,14 +92,18 @@ function matchmakingPlayers(
   attendance: readonly AttendanceRecord[],
   rounds: readonly StartedRoundRecord[],
   currentRoundNumber: number,
+  preserveParticipationHistory = false,
 ): MatchmakingPlayer[] {
   const playersById = new Map(players.map((player) => [player.id, player]));
   const activeAttendance = attendance.filter(
     (item) => item.leftRound === null && item.joinedRound <= currentRoundNumber + 1,
   );
   const games = new Map<string, number>();
+  const historicalEligibility = new Map<string, number>();
   const timesPlayed2v1 = new Map<string, number>();
   for (const record of rounds) {
+    const presentInRound = new Set([...record.matchPlayers.map(member => member.playerId), ...record.sits.map(sit => sit.playerId)]);
+    for (const id of presentInRound) historicalEligibility.set(id, (historicalEligibility.get(id) ?? 0) + 1);
     for (const member of record.matchPlayers) {
       games.set(member.playerId, (games.get(member.playerId) ?? 0) + 1);
     }
@@ -123,7 +129,7 @@ function matchmakingPlayers(
         name: player.name,
         rating: player.rating,
         gamesPlayed: games.get(player.id) ?? 0,
-        eligibleRounds: Math.max(0, currentRoundNumber - item.joinedRound + 1),
+        eligibleRounds: Math.max(0, currentRoundNumber - item.joinedRound + 1, preserveParticipationHistory ? historicalEligibility.get(player.id) ?? 0 : 0),
         satPreviousRound: previousSits.has(player.id),
         timesPlayed2v1: timesPlayed2v1.get(player.id) ?? 0,
       },
@@ -148,11 +154,19 @@ export class SessionService {
     )) {
       throw new DomainError("INVALID_STATE", "Court sizes must be 2, 3, or 4 and fit the selected players.");
     }
+    const stayTogetherPairs = canonicalPairs(input.stayTogetherPairs ?? []);
+    if (stayTogetherPairs.length) {
+      const roster = await this.repository.listPlayers(input.groupId);
+      const selected = input.playerIds.filter(id => roster.some(player => player.id === id && player.active));
+      const error = validateStayTogetherPairs(stayTogetherPairs, selected);
+      if (error) throw new DomainError("INVALID_STATE", error);
+    }
     const now = this.dependencies.now();
     const session: SessionRecord = {
       id: this.dependencies.nextId("session"),
       groupId: input.groupId,
       courtCount: input.courtCount,
+      stayTogetherPairs,
       courtPlayerCounts: input.courtPlayerCounts,
       status: "active",
       currentRoundNumber: 0,
@@ -174,6 +188,7 @@ export class SessionService {
 
   async changeAttendance(input: ChangeAttendanceInput): Promise<AttendanceRecord> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockPartnerRequests(input.sessionId);
       const session = await requiredSession(repository, input.sessionId);
       if (input.present) {
         const groupPlayers = await repository.listPlayers(session.groupId);
@@ -203,6 +218,31 @@ export class SessionService {
     });
   }
 
+  async updateStayTogetherPairs(input: { sessionId: string; sessionVersion: number; pairs: readonly StayTogetherPair[] }): Promise<SessionRecord> {
+    return this.repository.transaction(async repository => {
+      await repository.lockPartnerRequests(input.sessionId);
+      const session = await requiredSession(repository, input.sessionId);
+      if (session.status !== "active") throw new DomainError("INVALID_STATE", "The session has ended.");
+      if (session.type === "open_play") throw new DomainError("INVALID_STATE", "Stay Together is available in normal sessions only.");
+      if (session.version !== input.sessionVersion) throw new DomainError("INVALID_STATE", "The session changed. Refresh and try again.");
+      const roster = await repository.listPlayers(session.groupId, { includeInactive: true });
+      const attendance = await repository.listAttendance(session.id);
+      const pairs = canonicalPairs(input.pairs);
+      const error = validateStayTogetherPairs(pairs, roster.map(p => p.id));
+      if (error) throw new DomainError("INVALID_STATE", error);
+      const existing = new Set(canonicalPairs(session.stayTogetherPairs ?? []).map(pair => JSON.stringify(pair)));
+      for (const pair of pairs) {
+        if (existing.has(JSON.stringify(pair))) continue;
+        if (!pair.every(id => roster.some(p => p.id === id && p.active) && attendance.some(a => a.playerId === id && a.leftRound === null))) {
+          throw new DomainError("INVALID_STATE", "New Stay Together partners must be currently attending this session.");
+        }
+      }
+      const updated = { ...session, stayTogetherPairs: pairs, version: session.version + 1 };
+      await repository.updateSession(updated);
+      return updated;
+    });
+  }
+
   async updateCourtConfig(input: UpdateCourtConfigInput): Promise<{ session: SessionRecord; proposal?: RoundProposal }> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, input.sessionId);
@@ -218,7 +258,7 @@ export class SessionService {
         repository.listAttendance(input.sessionId),
         repository.listStartedRounds(input.sessionId),
       ]);
-      const activePlayers = matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber);
+      const activePlayers = matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length));
 
       if (input.courtPlayerCounts) {
         if (
@@ -252,14 +292,17 @@ export class SessionService {
             players: activePlayers,
             courts: updatedSession.courtCount,
             courtPlayerCounts: updatedSession.courtPlayerCounts,
+            stayTogetherPairs: updatedSession.stayTogetherPairs,
             pairHistory: sessionPairHistory(rounds),
             config: DEFAULT_MATCHMAKING_CONFIG,
             seed: this.dependencies.nextSeed(),
           });
+          if (!result.ok && updatedSession.stayTogetherPairs?.length) throw new DomainError("INVALID_STATE", result.error.message);
           if (result.ok) {
             proposal = result.value;
           }
-        } catch {
+        } catch (error) {
+          if (updatedSession.stayTogetherPairs?.length) throw error;
           // If proposal cannot be generated with current configuration, leave undefined
         }
       }
@@ -280,9 +323,10 @@ export class SessionService {
       this.repository.listStartedRounds(sessionId),
     ]);
     const result = generateRound({
-      players: matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber),
+      players: matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)),
       courts: session.courtCount,
       courtPlayerCounts: session.courtPlayerCounts,
+      stayTogetherPairs: session.stayTogetherPairs,
       pairHistory: sessionPairHistory(rounds),
       config: DEFAULT_MATCHMAKING_CONFIG,
       seed,
@@ -292,11 +336,24 @@ export class SessionService {
     return result.value;
   }
 
-  async startRound(sessionId: string, proposal: RoundProposal): Promise<RoundRecord> {
+  async startRound(sessionId: string, proposal: RoundProposal, expectedVersion?: number): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, sessionId);
       if (session.status !== "active") {
         throw new DomainError("INVALID_STATE", "The session has ended.");
+      }
+      if (expectedVersion !== undefined && session.version !== expectedVersion) throw new DomainError("INVALID_STATE", "The session changed. Refresh the lineup before starting.");
+      if (session.stayTogetherPairs?.length) {
+        const [roster, attendance, rounds] = await Promise.all([repository.listPlayers(session.groupId), repository.listAttendance(sessionId), repository.listStartedRounds(sessionId)]);
+        const present = matchmakingPlayers(roster, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)).map(p => p.id);
+        const all = [...proposal.courts.flatMap(c => [...c.team1, ...c.team2]), ...proposal.sitting];
+        const doubles = Math.min(Math.floor(present.length / 4), session.courtCount);
+        const sizes = session.courtPlayerCounts ?? [...Array<number>(doubles).fill(4), ...(session.courtCount > doubles && present.length - doubles * 4 >= 2 ? [2] : [])];
+        if (all.length !== present.length || new Set(all).size !== all.length || all.some(id => !present.includes(id)) || proposal.courts.length !== sizes.length || proposal.courts.some((c, i) => c.courtNumber !== i + 1 || c.team1.length + c.team2.length !== sizes[i] || c.team1.length < 1 || c.team2.length < 1 || c.team1.length > 2 || c.team2.length > 2)) {
+          throw new DomainError("INVALID_STATE", "The lineup must include every present player once and match the configured courts.");
+        }
+        const error = validateStayTogetherLineup(proposal, session.stayTogetherPairs, present);
+        if (error) throw new DomainError("INVALID_STATE", error);
       }
       const now = this.dependencies.now();
       const round: RoundRecord = {
@@ -503,9 +560,10 @@ export class SessionService {
         repository.listStartedRounds(sessionId),
       ]);
       const result = generateRound({
-        players: matchmakingPlayers(players, attendance, remainingRounds, updatedSession.currentRoundNumber),
+        players: matchmakingPlayers(players, attendance, remainingRounds, updatedSession.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)),
         courts: session.courtCount,
         courtPlayerCounts: session.courtPlayerCounts,
+      stayTogetherPairs: session.stayTogetherPairs,
         pairHistory: sessionPairHistory(remainingRounds),
         config: DEFAULT_MATCHMAKING_CONFIG,
         seed,

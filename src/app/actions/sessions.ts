@@ -27,10 +27,23 @@ import {
   reshuffleRoundSchema,
   startRoundSchema,
   startSessionSchema,
+  updateStayTogetherPairsSchema,
   undoLatestRoundSchema,
   updateCourtConfigSchema,
   updateSessionNameSchema,
 } from "@/lib/validation/session";
+
+async function requireSessionOrganizer(groupId: string, sessionId: string, roundId?: string): Promise<SessionRecord> {
+  const repository = getActionRepository();
+  const session = await repository.getSession(sessionId);
+  if (!session || session.groupId !== groupId) throw new Error("Session not found.");
+  if (roundId) {
+    const round = await repository.getRound(roundId);
+    if (!round || round.sessionId !== sessionId) throw new Error("Round not found in this session.");
+  }
+  await requireOrganizer(session.groupId);
+  return session;
+}
 
 export async function startSessionAction(
   input: unknown,
@@ -52,6 +65,7 @@ export async function startSessionAction(
       courtCount: parsed.data.courtCount,
       courtPlayerCounts: parsed.data.courtPlayerCounts as (2 | 3 | 4)[] | undefined,
       playerIds: parsed.data.playerIds,
+      stayTogetherPairs: parsed.data.stayTogetherPairs,
     });
     revalidatePath(`/g/${parsed.data.groupId}`);
     return { ok: true, data: session };
@@ -60,6 +74,21 @@ export async function startSessionAction(
       ok: false,
       error: err instanceof Error ? err.message : "Failed to start session",
     };
+  }
+}
+
+export async function updateStayTogetherPairsAction(input: unknown): Promise<ActionResult<SessionRecord>> {
+  const parsed = updateStayTogetherPairsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Choose valid Stay Together pairs." };
+  try {
+    const session = await getActionRepository().getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) return { ok: false, error: "Session not found." };
+    await requireOrganizer(session.groupId);
+    const updated = await getActionSessionService().updateStayTogetherPairs(parsed.data);
+    revalidatePath(`/g/${session.groupId}/sessions/${session.id}`);
+    return { ok: true, data: updated };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to save Stay Together pairs." };
   }
 }
 
@@ -74,7 +103,7 @@ export async function changeAttendanceAction(input: unknown): Promise<ActionResu
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     await service.changeAttendance({
       sessionId: parsed.data.sessionId,
@@ -104,7 +133,7 @@ export async function updateCourtConfigAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     const result = await service.updateCourtConfig({
       sessionId: parsed.data.sessionId,
@@ -134,7 +163,7 @@ export async function proposeRoundAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     const proposal = await service.proposeRound(
       parsed.data.sessionId,
@@ -163,7 +192,9 @@ export async function startRoundAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    const session = await getActionRepository().getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) return { ok: false, error: "Session not found." };
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     let proposal: RoundProposal;
     if (parsed.data.manualCourts && parsed.data.manualSitting) {
@@ -194,7 +225,7 @@ export async function startRoundAction(
         parsed.data.seed,
       );
     }
-    const started = await service.startRound(parsed.data.sessionId, proposal);
+    const started = await service.startRound(parsed.data.sessionId, proposal, parsed.data.sessionVersion);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: started };
   } catch (err) {
@@ -218,7 +249,7 @@ export async function completeRoundAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId, parsed.data.roundId);
     const service = getActionSessionService();
     const completed = await service.completeRound(parsed.data.roundId);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
@@ -244,7 +275,7 @@ export async function undoLatestRoundAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId, parsed.data.roundId);
     const service = getActionSessionService();
     const undone = await service.undoLatestRound(parsed.data.sessionId);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
@@ -270,7 +301,7 @@ export async function reshuffleRoundAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId, parsed.data.roundId);
     const service = getActionSessionService();
     const proposal = await service.reshuffleRound(
       parsed.data.sessionId,
@@ -300,7 +331,7 @@ export async function endSessionAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     const ended = await service.endSession(parsed.data.sessionId);
     revalidatePath(`/g/${parsed.data.groupId}`);
@@ -328,7 +359,7 @@ export async function updateSessionNameAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const repository = getActionRepository();
     const session = await repository.getSession(parsed.data.sessionId);
     if (!session || session.groupId !== parsed.data.groupId) {
@@ -366,7 +397,7 @@ export async function deleteSessionAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const repository = getActionRepository();
     const session = await repository.getSession(parsed.data.sessionId);
     if (!session || session.groupId !== parsed.data.groupId) {
@@ -406,7 +437,7 @@ export async function duplicateSessionAction(
   }
 
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const repository = getActionRepository();
     const sourceSession = await repository.getSession(parsed.data.sessionId);
     if (!sourceSession || sourceSession.groupId !== parsed.data.groupId) {

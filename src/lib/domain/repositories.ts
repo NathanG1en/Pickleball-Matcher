@@ -1,5 +1,6 @@
 import type {
   AttendanceRecord,
+  PartnerRequestRecord,
   GroupRecord,
   GroupOrganizerRecord,
   PublicGroupRecord,
@@ -55,6 +56,11 @@ export interface DomainRepository {
   deleteGroup(groupId: string): Promise<void>;
   listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]>;
   insertGroup(group: GroupRecord): Promise<void>;
+  lockPartnerRequests(sessionId: string): Promise<void>;
+  listPartnerRequests(sessionId: string): Promise<readonly PartnerRequestRecord[]>;
+  getPartnerRequest(requestId: string): Promise<PartnerRequestRecord | null>;
+  insertPartnerRequest(request: PartnerRequestRecord): Promise<void>;
+  updatePartnerRequest(request: PartnerRequestRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;
   updateSessionName(sessionId: string, name: string): Promise<void>;

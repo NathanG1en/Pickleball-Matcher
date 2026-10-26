@@ -1,5 +1,6 @@
 "use client";
 
+import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -69,6 +70,7 @@ export function NewSessionClient({
     courtCount: number;
     courtPlayerCounts: (2 | 3 | 4)[];
     selectedPlayerIds: string[];
+    stayTogetherPairs: readonly StayTogetherPair[];
   }) => {
     setError(null);
     setIsPending(true);
@@ -79,6 +81,7 @@ export function NewSessionClient({
         courtCount: data.courtCount,
         courtPlayerCounts: data.courtPlayerCounts,
         playerIds: data.selectedPlayerIds,
+        stayTogetherPairs: data.stayTogetherPairs,
         idempotencyKey: createIdempotencyKey("session"),
       });
 

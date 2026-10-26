@@ -1,3 +1,4 @@
+import { generatePairedRound } from "./generate-paired-round";
 import { DEFAULT_MATCHMAKING_CONFIG } from "@/lib/matchmaking/config";
 import { buildPairHistoryIndex } from "@/lib/matchmaking/pairs";
 import { createSeededRandom } from "@/lib/matchmaking/random";
@@ -184,6 +185,8 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
   )) {
     return { ok: false, error: { code: "INVALID_COURT_COUNT", message: "Court sizes must be 2, 3, or 4 and fit the selected players." } };
   }
+
+  if (input.stayTogetherPairs?.length) return generatePairedRound(input);
 
   const config = input.config ?? DEFAULT_MATCHMAKING_CONFIG;
   const temperature = Math.max(0, input.temperature ?? 0);
