@@ -802,3 +802,55 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await expect(reaction).toHaveCount(0);
   });
 }
+
+test("Open Play chemistry corrections replace the game's contribution", async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  await createTestGroup(page, `Open chemistry correction ${Date.now()}`);
+  for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
+    const context = await browser.newContext();
+    try {
+      const other = await context.newPage();
+      const player = await createAndSignInPlayer(other, { name });
+      await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(player.username);
+      await page.getByRole("button", { name: "Add", exact: true }).click();
+      await expect(page.getByRole("link", { name: `@${player.username}`, exact: true })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByRole("button", { name: "Select Open Play →", exact: true }).click();
+  await page.getByRole("button", { name: "Start Open Play", exact: true }).click();
+  for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
+    await page.getByRole("combobox", { name: "Add Existing Group Member", exact: true }).click();
+    await page.getByRole("option").filter({ hasText: name }).click();
+    await expect(page.getByTestId("open-play-attendees").getByText(name, { exact: true })).toBeVisible();
+  }
+  for (const [label, name] of [["Team 1 Player 2", "Blake Chemistry"], ["Team 2 Player 1", "Casey Chemistry"], ["Team 2 Player 2", "Drew Chemistry"]]) {
+    await page.getByRole("combobox", { name: label, exact: true }).click();
+    await page.getByRole("option").filter({ hasText: name }).click();
+  }
+  await page.getByRole("spinbutton", { name: "Team 1 Score", exact: true }).fill("11");
+  await page.getByRole("spinbutton", { name: "Team 2 Score", exact: true }).fill("0");
+  await page.getByRole("button", { name: "Record Game Result", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Games Played (1)", exact: true })).toBeVisible({ timeout: 20_000 });
+  const profile = await page.context().newPage();
+  await profile.goto("/players");
+  await expect(profile.getByText("+5 Synergy", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Edit Team 1 Score", exact: true }).fill("0");
+  await page.getByRole("spinbutton", { name: "Edit Team 2 Score", exact: true }).fill("11");
+  await page.getByRole("button", { name: "Save Changes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible({ timeout: 20_000 });
+  await profile.reload();
+  await expect(profile.getByText("-5 Synergy", { exact: true })).toBeVisible();
+  await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  // The list hides the game optimistically; wait for the committed save before reloading.
+  await expect(page.getByText("✓ Game deleted.", { exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Games Played (0)", exact: true })).toBeVisible();
+  await profile.reload();
+  await expect(profile.getByRole("heading", { name: "Best Partner", exact: true })).toHaveCount(0);
+  await profile.close();
+});

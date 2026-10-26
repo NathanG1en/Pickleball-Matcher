@@ -13,6 +13,7 @@ import {
   updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
 import { setActionRepository } from "@/app/actions/action-context";
+import { replaySynergies } from "@/lib/domain/synergy-replay";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import type { PlayerRecord } from "@/lib/domain/types";
 
@@ -149,6 +150,48 @@ describe("Open Play Server Actions", () => {
     const updatedAttendance = await repository.listAttendance(startRes.data.id);
     const user3Att = updatedAttendance.find((a) => a.playerId === "p-user3");
     expect(user3Att?.leftRound).toBe(1);
+  });
+
+  async function chemistryGame() {
+    const started = await startOpenPlaySessionAction({ groupId: "g1" });
+    if (!started.ok) throw new Error(started.error);
+    for (const playerId of ["p-user2", "p-user3", "p-user4"]) {
+      await repository.saveAttendance({ sessionId: started.data.id, playerId, joinedRound: 1, leftRound: null });
+    }
+    return { groupId: "g1", sessionId: started.data.id, team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"], team1Score: 11, team2Score: 0 };
+  }
+
+  it("does not append chemistry twice when another replay observes a newly inserted Open Play game", async () => {
+    const input = await chemistryGame();
+    const insertMatch = repository.insertMatch.bind(repository);
+    vi.spyOn(repository, "insertMatch").mockImplementationOnce(async (match, members) => {
+      await insertMatch(match, members);
+      // Force the former visibility gap: another replay already counted this game.
+      await replaySynergies(repository);
+    });
+    expect((await submitOpenPlayGameAction(input)).ok).toBe(true);
+    expect(await repository.getPairSynergy("acc-host", "acc-user2")).toMatchObject({ matchesPlayed: 1, wins: 1 });
+  });
+
+  it("replaces edited Open Play chemistry and removes it after deletion", async () => {
+    const input = await chemistryGame();
+    const submitted = await submitOpenPlayGameAction(input);
+    if (!submitted.ok) throw new Error(submitted.error);
+    for (let repeat = 0; repeat < 2; repeat++) {
+      expect((await updateOpenPlayGameAction({ ...input, matchId: submitted.data.id, team1Score: 0, team2Score: 11 })).ok).toBe(true);
+    }
+    expect(await repository.getPairSynergy("acc-host", "acc-user2")).toMatchObject({ matchesPlayed: 1, wins: 0 });
+    expect((await deleteOpenPlayGameAction({ groupId: "g1", sessionId: input.sessionId, matchId: submitted.data.id })).ok).toBe(true);
+    expect(await repository.getPairSynergy("acc-host", "acc-user2")).toBeNull();
+  });
+
+  it("rolls back Open Play source writes when the chemistry rebuild fails", async () => {
+    const input = await chemistryGame();
+    const before = structuredClone(repository.state);
+    vi.spyOn(repository, "replaceSynergyState").mockRejectedValueOnce(new Error("Storage failure"));
+    expect(await submitOpenPlayGameAction(input)).toMatchObject({ ok: false });
+    expect(repository.state).toEqual(before);
   });
 
   it("submits games, calculates rating updates, and records synergy", async () => {

@@ -41,6 +41,9 @@ export interface DomainRepository {
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;
   getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null>;
   recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void>;
+  /** Acquire before result/session mutations and rating writes to serialize chemistry writers. */
+  lockSynergyState(): Promise<void>;
+  replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void>;
   searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   listPlayerAccounts(search?: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;

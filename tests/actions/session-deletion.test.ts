@@ -115,6 +115,19 @@ describe("deleteSessionAction", () => {
     expect(rounds).toHaveLength(0);
   });
 
+  it("removes obsolete pair chemistry when deleting a session", async () => {
+    await repository.recordMatchesSynergy([{ accountIdA: "a", accountIdB: "b", won: true }]);
+    expect((await deleteSessionAction({ groupId: "g1", sessionId: "ses_1" })).ok).toBe(true);
+    expect(await repository.getPairSynergy("a", "b")).toBeNull();
+  });
+
+  it("rolls back session deletion if chemistry persistence fails", async () => {
+    const before = structuredClone(repository.state);
+    vi.spyOn(repository, "replaceSynergyState").mockRejectedValueOnce(new Error("Storage failure"));
+    expect((await deleteSessionAction({ groupId: "g1", sessionId: "ses_1" })).ok).toBe(false);
+    expect(repository.state).toEqual(before);
+  });
+
   it("rejects deletion when caller is not an organizer", async () => {
     mockOrganizerAllowed = false;
 

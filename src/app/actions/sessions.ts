@@ -16,6 +16,7 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { replaySynergies } from "@/lib/domain/synergy-replay";
 import {
   changeAttendanceSchema,
   completeRoundSchema,
@@ -372,8 +373,12 @@ export async function deleteSessionAction(
       return { ok: false, error: "Session not found." };
     }
 
-    await repository.deleteSession(session.id, session.groupId);
-    await replayRatings(session.groupId, repository);
+    await repository.transaction(async transaction => {
+      await transaction.lockSynergyState();
+      await transaction.deleteSession(session.id, session.groupId);
+      await replayRatings(session.groupId, transaction);
+      await replaySynergies(transaction);
+    });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);

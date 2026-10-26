@@ -161,6 +161,8 @@ export type RoundProposal = GeneratedRound;
 export interface ReplayMatch {
   readonly id: string;
   readonly groupId: string;
+  /** True only for finalized normal rounds or completed Open Play games. */
+  readonly synergyEligible?: boolean;
   readonly status: "completed" | "cancelled";
   readonly completedAt: Date;
   readonly team1: readonly [string, string];

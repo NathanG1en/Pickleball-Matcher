@@ -1,12 +1,12 @@
 import { DomainError } from "@/lib/domain/errors";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { replaySynergies } from "@/lib/domain/synergy-replay";
 import type {
   AttendanceRecord,
   ChangeAttendanceInput,
   MatchPlayerRecord,
   MatchRecord,
-  PairMatchSynergyResult,
   PlayerRecord,
   RecordResultInput,
   RoundProposal,
@@ -369,6 +369,7 @@ export class SessionService {
       throw new DomainError("INVALID_RESULT", "Enter two different non-negative whole scores.");
     }
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const match = await requiredMatch(repository, input.matchId);
       const round = await requiredRound(repository, match.roundId);
       const session = await requiredSession(repository, round.sessionId);
@@ -377,17 +378,19 @@ export class SessionService {
         status: "completed",
         team1Score: input.team1Score,
         team2Score: input.team2Score,
-        completedAt: this.dependencies.now(),
+        completedAt: match.completedAt ?? this.dependencies.now(),
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
       await replayRatings(session.groupId, repository);
+      await replaySynergies(repository);
       return updated;
     });
   }
 
   async cancelMatch(matchId: string): Promise<MatchRecord> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const match = await requiredMatch(repository, matchId);
       const round = await requiredRound(repository, match.roundId);
       const session = await requiredSession(repository, round.sessionId);
@@ -396,28 +399,32 @@ export class SessionService {
         status: "cancelled",
         team1Score: null,
         team2Score: null,
-        completedAt: this.dependencies.now(),
+        completedAt: match.completedAt ?? this.dependencies.now(),
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
       await replayRatings(session.groupId, repository);
+      await replaySynergies(repository);
       return updated;
     });
   }
 
   async deleteMatch(matchId: string): Promise<void> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const match = await repository.getMatch(matchId);
       if (!match) return;
       const round = await requiredRound(repository, match.roundId);
       const session = await requiredSession(repository, round.sessionId);
       await repository.deleteMatch(matchId);
       await replayRatings(session.groupId, repository);
+      await replaySynergies(repository);
     });
   }
 
   async completeRound(roundId: string): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const round = await requiredRound(repository, roundId);
       const records = await repository.listStartedRounds(round.sessionId);
       const record = records.find((item) => item.round.id === roundId)!;
@@ -444,64 +451,7 @@ export class SessionService {
       };
       await repository.updateRound(updated);
 
-      const session = await requiredSession(repository, round.sessionId);
-      const groupPlayers = await repository.listPlayers(session.groupId);
-      const playerAccountMap = new Map<string, string | null>(
-        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
-      );
-
-      const playerRatingMap = new Map<string, number>(
-        groupPlayers.map((p) => [p.id, p.rating]),
-      );
-
-      const pairResults: PairMatchSynergyResult[] = [];
-      for (const match of record.matches) {
-        if (match.status === "completed" && match.team1Score !== null && match.team2Score !== null) {
-          const mps = record.matchPlayers.filter((item) => item.matchId === match.id);
-          const t1 = mps.filter((m) => m.team === 1);
-          const t2 = mps.filter((m) => m.team === 2);
-          if (t1.length === 2 && t2.length === 2) {
-            const t1R1 = t1[0].ratingBefore ?? playerRatingMap.get(t1[0].playerId) ?? 1000;
-            const t1R2 = t1[1].ratingBefore ?? playerRatingMap.get(t1[1].playerId) ?? 1000;
-            const t2R1 = t2[0].ratingBefore ?? playerRatingMap.get(t2[0].playerId) ?? 1000;
-            const t2R2 = t2[1].ratingBefore ?? playerRatingMap.get(t2[1].playerId) ?? 1000;
-            const team1Rating = (t1R1 + t1R2) / 2;
-            const team2Rating = (t2R1 + t2R2) / 2;
-            const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
-            const pTeam2 = 1 - pTeam1;
-
-            const t1Acc1 = playerAccountMap.get(t1[0].playerId);
-            const t1Acc2 = playerAccountMap.get(t1[1].playerId);
-            if (t1Acc1 && t1Acc2) {
-              pairResults.push({
-                accountIdA: t1Acc1,
-                accountIdB: t1Acc2,
-                won: match.team1Score > match.team2Score,
-                expectedWinProbability: pTeam1,
-                ownScore: match.team1Score,
-                opponentScore: match.team2Score,
-              });
-            }
-
-            const t2Acc1 = playerAccountMap.get(t2[0].playerId);
-            const t2Acc2 = playerAccountMap.get(t2[1].playerId);
-            if (t2Acc1 && t2Acc2) {
-              pairResults.push({
-                accountIdA: t2Acc1,
-                accountIdB: t2Acc2,
-                won: match.team2Score > match.team1Score,
-                expectedWinProbability: pTeam2,
-                ownScore: match.team2Score,
-                opponentScore: match.team1Score,
-              });
-            }
-          }
-        }
-      }
-
-      if (pairResults.length > 0) {
-        await repository.recordMatchesSynergy(pairResults);
-      }
+      await replaySynergies(repository);
 
       return updated;
     });
@@ -509,6 +459,7 @@ export class SessionService {
 
   async undoLatestRound(sessionId: string): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const session = await requiredSession(repository, sessionId);
       const rounds = await repository.listStartedRounds(sessionId);
       const latest = rounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0];
@@ -520,6 +471,7 @@ export class SessionService {
         version: session.version + 1,
       });
       await replayRatings(session.groupId, repository);
+      await replaySynergies(repository);
       return latest.round;
     });
   }
@@ -530,6 +482,7 @@ export class SessionService {
     temperature = 0,
   ): Promise<RoundProposal> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const session = await requiredSession(repository, sessionId);
       const rounds = await repository.listStartedRounds(sessionId);
       const latest = rounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0];
@@ -542,6 +495,7 @@ export class SessionService {
       };
       await repository.updateSession(updatedSession);
       await replayRatings(session.groupId, repository);
+      await replaySynergies(repository);
 
       const [players, attendance, remainingRounds] = await Promise.all([
         repository.listPlayers(session.groupId),
@@ -564,18 +518,10 @@ export class SessionService {
 
   async endSession(sessionId: string): Promise<SessionRecord> {
     return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
       const session = await requiredSession(repository, sessionId);
       const startedRounds = await repository.listStartedRounds(sessionId);
       let hadUnfinishedMatches = false;
-
-      const groupPlayers = await repository.listPlayers(session.groupId);
-      const playerAccountMap = new Map<string, string | null>(
-        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
-      );
-      const playerRatingMap = new Map<string, number>(
-        groupPlayers.map((p) => [p.id, p.rating]),
-      );
-      const pairResults: PairMatchSynergyResult[] = [];
 
       for (const sr of startedRounds) {
         if (sr.round.status === "started") {
@@ -590,45 +536,6 @@ export class SessionService {
                 completedAt: this.dependencies.now(),
                 version: match.version + 1,
               });
-            } else if (match.status === "completed" && match.team1Score !== null && match.team2Score !== null) {
-              const mps = sr.matchPlayers.filter((item) => item.matchId === match.id);
-              const t1 = mps.filter((m) => m.team === 1);
-              const t2 = mps.filter((m) => m.team === 2);
-              if (t1.length === 2 && t2.length === 2) {
-                const t1R1 = t1[0].ratingBefore ?? playerRatingMap.get(t1[0].playerId) ?? 1000;
-                const t1R2 = t1[1].ratingBefore ?? playerRatingMap.get(t1[1].playerId) ?? 1000;
-                const t2R1 = t2[0].ratingBefore ?? playerRatingMap.get(t2[0].playerId) ?? 1000;
-                const t2R2 = t2[1].ratingBefore ?? playerRatingMap.get(t2[1].playerId) ?? 1000;
-                const team1Rating = (t1R1 + t1R2) / 2;
-                const team2Rating = (t2R1 + t2R2) / 2;
-                const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
-                const pTeam2 = 1 - pTeam1;
-
-                const t1Acc1 = playerAccountMap.get(t1[0].playerId);
-                const t1Acc2 = playerAccountMap.get(t1[1].playerId);
-                if (t1Acc1 && t1Acc2) {
-                  pairResults.push({
-                    accountIdA: t1Acc1,
-                    accountIdB: t1Acc2,
-                    won: match.team1Score > match.team2Score,
-                    expectedWinProbability: pTeam1,
-                    ownScore: match.team1Score,
-                    opponentScore: match.team2Score,
-                  });
-                }
-                const t2Acc1 = playerAccountMap.get(t2[0].playerId);
-                const t2Acc2 = playerAccountMap.get(t2[1].playerId);
-                if (t2Acc1 && t2Acc2) {
-                  pairResults.push({
-                    accountIdA: t2Acc1,
-                    accountIdB: t2Acc2,
-                    won: match.team2Score > match.team1Score,
-                    expectedWinProbability: pTeam2,
-                    ownScore: match.team2Score,
-                    opponentScore: match.team1Score,
-                  });
-                }
-              }
             }
           }
           await repository.updateRound({
@@ -638,10 +545,6 @@ export class SessionService {
             version: sr.round.version + 1,
           });
         }
-      }
-
-      if (pairResults.length > 0) {
-        await repository.recordMatchesSynergy(pairResults);
       }
 
       const updated = {
@@ -654,6 +557,7 @@ export class SessionService {
       if (hadUnfinishedMatches) {
         await replayRatings(session.groupId, repository);
       }
+      await replaySynergies(repository);
       return updated;
     });
   }

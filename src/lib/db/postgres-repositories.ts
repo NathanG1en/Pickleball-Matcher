@@ -297,12 +297,14 @@ const mapSit = (row: SitRow): RoundSitRecord => ({
 
 export class PostgresRepositories implements DomainRepository {
   private readonly query: postgres.Sql;
+  private readonly inTransaction: boolean;
 
   constructor(
     private readonly database: postgres.Sql,
     transaction?: postgres.TransactionSql,
   ) {
     this.query = (transaction ?? database) as unknown as postgres.Sql;
+    this.inTransaction = Boolean(transaction);
   }
 
   async transaction<T>(operation: (repository: DomainRepository) => Promise<T>): Promise<T> {
@@ -499,7 +501,7 @@ export class PostgresRepositories implements DomainRepository {
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
     if (accountIds.length < 2) return [];
     const rows = await this.query<PlayerSynergyRow[]>`
-      select account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at
+      select account_id_1, account_id_2, matches_played, wins, synergy_score, weight_sum, contribution_sum, weight_sq_sum, updated_at
       from player_synergy
       where account_id_1 = any(${[...accountIds]}::text[])
         and account_id_2 = any(${[...accountIds]}::text[])
@@ -511,7 +513,7 @@ export class PostgresRepositories implements DomainRepository {
     if (accountIdA === accountIdB) return null;
     const [first, second] = accountIdA < accountIdB ? [accountIdA, accountIdB] : [accountIdB, accountIdA];
     const rows = await this.query<PlayerSynergyRow[]>`
-      select account_id_1, account_id_2, matches_played, wins, synergy_score, updated_at
+      select account_id_1, account_id_2, matches_played, wins, synergy_score, weight_sum, contribution_sum, weight_sq_sum, updated_at
       from player_synergy
       where account_id_1 = ${first} and account_id_2 = ${second}
     `;
@@ -541,8 +543,34 @@ export class PostgresRepositories implements DomainRepository {
     };
   }
 
+  async lockSynergyState(): Promise<void> {
+    if (!this.inTransaction) throw new Error("Chemistry replay requires a transaction.");
+    await this.query`select pg_advisory_xact_lock(hashtextextended('pickleball:synergy-state', 0))`;
+  }
+
+  async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
+    if (!this.inTransaction) throw new Error("Chemistry replacement requires a transaction.");
+    await this.query`delete from player_synergy`;
+    if (records.length === 0) return;
+    await this.query`
+      insert into player_synergy (account_id_1, account_id_2, matches_played, wins, synergy_score,
+        weight_sum, contribution_sum, weight_sq_sum, updated_at)
+      select * from unnest(
+        ${records.map(r => r.accountId1)}::text[], ${records.map(r => r.accountId2)}::text[],
+        ${records.map(r => r.matchesPlayed)}::int[], ${records.map(r => r.wins)}::int[],
+        ${records.map(r => r.synergyScore)}::float8[], ${records.map(r => r.weightSum ?? 0)}::float8[],
+        ${records.map(r => r.contributionSum ?? 0)}::float8[], ${records.map(r => r.weightSqSum ?? 0)}::float8[],
+        ${records.map(r => r.updatedAt.toISOString())}::timestamptz[])
+    `;
+  }
+
   async recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void> {
     if (pairResults.length === 0) return;
+    if (!this.inTransaction) {
+      await this.transaction(repository => repository.recordMatchesSynergy(pairResults));
+      return;
+    }
+    await this.lockSynergyState();
     for (const pair of pairResults) {
       if (pair.accountIdA === pair.accountIdB) continue;
       const [first, second] = pair.accountIdA < pair.accountIdB
@@ -1481,11 +1509,11 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
-    type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2 };
+    type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2; synergy_eligible: boolean };
     const rows = await this.query<ReplayRow[]>`
       select m.id, m.round_id, m.court_number, m.status, m.team1_score,
              m.team2_score, m.completed_at, m.version, m.rated, s.group_id,
-             mp.player_id, mp.team
+             mp.player_id, mp.team, (r.status = 'completed' or s.type = 'open_play') as synergy_eligible
       from matches m
       join rounds r on r.id = m.round_id
       join sessions s on s.id = r.session_id
@@ -1508,6 +1536,7 @@ export class PostgresRepositories implements DomainRepository {
         {
           id: first.id,
           groupId: first.group_id,
+          synergyEligible: first.synergy_eligible,
           status: first.status === "cancelled" ? "cancelled" : "completed",
           completedAt: first.completed_at,
           team1: [team1[0], team1[1]],

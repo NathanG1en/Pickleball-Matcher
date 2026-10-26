@@ -1363,6 +1363,7 @@ export class SqliteDomainRepository implements DomainRepository {
     type Row = {
       id: string;
       group_id: string;
+      synergy_eligible: number;
       status: string;
       team1_score: number | null;
       team2_score: number | null;
@@ -1377,7 +1378,7 @@ export class SqliteDomainRepository implements DomainRepository {
     const rows = this.db
       .prepare(
         `SELECT m.id, s.group_id, m.status, m.team1_score, m.team2_score,
-                m.completed_at, mp.player_id, mp.team
+                m.completed_at, mp.player_id, mp.team, (r.status = 'completed' OR s.type = 'open_play') AS synergy_eligible
          FROM matches m
          JOIN rounds r ON r.id = m.round_id
          JOIN sessions s ON s.id = r.session_id
@@ -1404,6 +1405,7 @@ export class SqliteDomainRepository implements DomainRepository {
         {
           id: first.id,
           groupId: first.group_id,
+          synergyEligible: Boolean(first.synergy_eligible),
           status: first.status === "cancelled" ? "cancelled" : "completed",
           completedAt: new Date(first.completed_at),
           team1: [team1[0], team1[1]],
@@ -1467,6 +1469,12 @@ export class SqliteDomainRepository implements DomainRepository {
         updateMP.run(entry.ratingBefore, entry.ratingAfter, matchId, entry.playerId);
       }
     }
+  }
+
+  async lockSynergyState(): Promise<void> { /* Simulations are single threaded. */ }
+
+  async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
+    void records; // Simulation fixtures have no chemistry storage.
   }
 
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {

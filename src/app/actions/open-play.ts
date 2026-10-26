@@ -17,12 +17,12 @@ import type {
   AttendanceRecord,
   MatchPlayerRecord,
   MatchRecord,
-  PairMatchSynergyResult,
   PlayerRecord,
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { replaySynergies } from "@/lib/domain/synergy-replay";
 import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const startOpenPlaySessionSchema = z.object({
@@ -410,129 +410,85 @@ export async function submitOpenPlayGameAction(
       }
     }
 
-    const startedRounds = await repository.listStartedRounds(session.id);
-    let targetRound = startedRounds[0]?.round;
-    if (!targetRound) {
-      const newRoundId = defaultDependencies.nextId("round");
-      const newRound: StartedRoundRecord = {
-        round: {
-          id: newRoundId,
-          sessionId: session.id,
-          roundNumber: 1,
-          status: "started",
-          seed: defaultDependencies.nextSeed(),
-          scoreBreakdown: {
-            playingTime: 0,
-            consecutiveSit: 0,
-            partnerRepeat: 0,
-            skillBalance: 0,
-            opponentRepeat: 0,
-            tieBreak: 0,
-            total: 0,
+    const saved = await repository.transaction(async repository => {
+      await repository.lockSynergyState();
+      const startedRounds = await repository.listStartedRounds(session.id);
+      let targetRound = startedRounds[0]?.round;
+      if (!targetRound) {
+        const newRoundId = defaultDependencies.nextId("round");
+        const newRound: StartedRoundRecord = {
+          round: {
+            id: newRoundId,
+            sessionId: session.id,
+            roundNumber: 1,
+            status: "started",
+            seed: defaultDependencies.nextSeed(),
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: defaultDependencies.now(),
+            startedAt: defaultDependencies.now(),
+            completedAt: null,
+            version: 1,
           },
-          createdAt: defaultDependencies.now(),
-          startedAt: defaultDependencies.now(),
-          completedAt: null,
-          version: 1,
-        },
-        matches: [],
-        matchPlayers: [],
-        sits: [],
+          matches: [],
+          matchPlayers: [],
+          sits: [],
+        };
+        await repository.insertStartedRound(newRound);
+        targetRound = newRound.round;
+      }
+
+      const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
+      const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+      const courtNumber = parsed.data.courtNumber ?? (maxCourtNumber + 1);
+
+      const matchId = defaultDependencies.nextId("match");
+      const match: MatchRecord = {
+        id: matchId,
+        roundId: targetRound.id,
+        courtNumber,
+        status: "completed",
+        team1Score: parsed.data.team1Score,
+        team2Score: parsed.data.team2Score,
+        completedAt: defaultDependencies.now(),
+        version: 1,
+        rated: true,
       };
-      await repository.insertStartedRound(newRound);
-      targetRound = newRound.round;
-    }
 
-    const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
-    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
-    const courtNumber = parsed.data.courtNumber ?? (maxCourtNumber + 1);
+      const matchPlayers: MatchPlayerRecord[] = [
+        ...parsed.data.team1PlayerIds.map((playerId) => ({
+          matchId,
+          playerId,
+          team: 1 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+        ...parsed.data.team2PlayerIds.map((playerId) => ({
+          matchId,
+          playerId,
+          team: 2 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+      ];
 
-    const matchId = defaultDependencies.nextId("match");
-    const match: MatchRecord = {
-      id: matchId,
-      roundId: targetRound.id,
-      courtNumber,
-      status: "completed",
-      team1Score: parsed.data.team1Score,
-      team2Score: parsed.data.team2Score,
-      completedAt: defaultDependencies.now(),
-      version: 1,
-      rated: true,
-    };
+      await repository.insertMatch(match, matchPlayers);
 
-    const matchPlayers: MatchPlayerRecord[] = [
-      ...parsed.data.team1PlayerIds.map((playerId) => ({
-        matchId,
-        playerId,
-        team: 1 as const,
-        ratingBefore: null,
-        ratingAfter: null,
-      })),
-      ...parsed.data.team2PlayerIds.map((playerId) => ({
-        matchId,
-        playerId,
-        team: 2 as const,
-        ratingBefore: null,
-        ratingAfter: null,
-      })),
-    ];
-
-    await repository.insertMatch(match, matchPlayers);
-
-    await replayRatings(parsed.data.groupId, repository);
-
-    if (parsed.data.team1PlayerIds.length === 2 && parsed.data.team2PlayerIds.length === 2) {
-      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
-      const playerAccountMap = new Map<string, string | null>(
-        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
-      );
-      const playerRatingMap = new Map<string, number>(
-        groupPlayers.map((p) => [p.id, p.rating]),
-      );
-      const [t1A, t1B] = parsed.data.team1PlayerIds;
-      const [t2A, t2B] = parsed.data.team2PlayerIds;
-      const t1R1 = playerRatingMap.get(t1A) ?? 1000;
-      const t1R2 = playerRatingMap.get(t1B) ?? 1000;
-      const t2R1 = playerRatingMap.get(t2A) ?? 1000;
-      const t2R2 = playerRatingMap.get(t2B) ?? 1000;
-      const team1Rating = (t1R1 + t1R2) / 2;
-      const team2Rating = (t2R1 + t2R2) / 2;
-      const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
-      const pTeam2 = 1 - pTeam1;
-
-      const pairResults: PairMatchSynergyResult[] = [];
-      const t1AccA = playerAccountMap.get(t1A);
-      const t1AccB = playerAccountMap.get(t1B);
-      if (t1AccA && t1AccB) {
-        pairResults.push({
-          accountIdA: t1AccA,
-          accountIdB: t1AccB,
-          won: parsed.data.team1Score > parsed.data.team2Score,
-          expectedWinProbability: pTeam1,
-          ownScore: parsed.data.team1Score,
-          opponentScore: parsed.data.team2Score,
-        });
-      }
-      const t2AccA = playerAccountMap.get(t2A);
-      const t2AccB = playerAccountMap.get(t2B);
-      if (t2AccA && t2AccB) {
-        pairResults.push({
-          accountIdA: t2AccA,
-          accountIdB: t2AccB,
-          won: parsed.data.team2Score > parsed.data.team1Score,
-          expectedWinProbability: pTeam2,
-          ownScore: parsed.data.team2Score,
-          opponentScore: parsed.data.team1Score,
-        });
-      }
-      if (pairResults.length > 0) {
-        await repository.recordMatchesSynergy(pairResults);
-      }
-    }
+      await replayRatings(parsed.data.groupId, repository);
+      await replaySynergies(repository);
+      return match;
+    });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
-    return { ok: true, data: match };
+    return { ok: true, data: saved };
   } catch (err) {
     return {
       ok: false,
@@ -638,88 +594,44 @@ export async function updateOpenPlayGameAction(
       }
     }
 
-    const updatedMatch: MatchRecord = {
-      ...match,
-      team1Score: parsed.data.team1Score,
-      team2Score: parsed.data.team2Score,
-      status: "completed",
-      version: match.version + 1,
-      completedAt: match.completedAt ?? defaultDependencies.now(),
-    };
-    await repository.updateMatch(updatedMatch);
+    const saved = await repository.transaction(async repository => {
+      await repository.lockSynergyState();
+      const updatedMatch: MatchRecord = {
+        ...match,
+        team1Score: parsed.data.team1Score,
+        team2Score: parsed.data.team2Score,
+        status: "completed",
+        version: match.version + 1,
+        completedAt: match.completedAt ?? defaultDependencies.now(),
+      };
+      await repository.updateMatch(updatedMatch);
 
-    const matchPlayers: MatchPlayerRecord[] = [
-      ...parsed.data.team1PlayerIds.map((playerId) => ({
-        matchId: match.id,
-        playerId,
-        team: 1 as const,
-        ratingBefore: null,
-        ratingAfter: null,
-      })),
-      ...parsed.data.team2PlayerIds.map((playerId) => ({
-        matchId: match.id,
-        playerId,
-        team: 2 as const,
-        ratingBefore: null,
-        ratingAfter: null,
-      })),
-    ];
-    await repository.updateMatchPlayers(match.id, matchPlayers);
+      const matchPlayers: MatchPlayerRecord[] = [
+        ...parsed.data.team1PlayerIds.map((playerId) => ({
+          matchId: match.id,
+          playerId,
+          team: 1 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+        ...parsed.data.team2PlayerIds.map((playerId) => ({
+          matchId: match.id,
+          playerId,
+          team: 2 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+      ];
+      await repository.updateMatchPlayers(match.id, matchPlayers);
 
-    await replayRatings(parsed.data.groupId, repository);
-
-    if (parsed.data.team1PlayerIds.length === 2 && parsed.data.team2PlayerIds.length === 2) {
-      const groupPlayers = await repository.listPlayers(parsed.data.groupId, { includeInactive: true });
-      const playerAccountMap = new Map<string, string | null>(
-        groupPlayers.map((p) => [p.id, p.accountId ?? null]),
-      );
-      const playerRatingMap = new Map<string, number>(
-        groupPlayers.map((p) => [p.id, p.rating]),
-      );
-      const [t1A, t1B] = parsed.data.team1PlayerIds;
-      const [t2A, t2B] = parsed.data.team2PlayerIds;
-      const t1R1 = playerRatingMap.get(t1A) ?? 1000;
-      const t1R2 = playerRatingMap.get(t1B) ?? 1000;
-      const t2R1 = playerRatingMap.get(t2A) ?? 1000;
-      const t2R2 = playerRatingMap.get(t2B) ?? 1000;
-      const team1Rating = (t1R1 + t1R2) / 2;
-      const team2Rating = (t2R1 + t2R2) / 2;
-      const pTeam1 = 1 / (1 + Math.pow(10, (team2Rating - team1Rating) / 400));
-      const pTeam2 = 1 - pTeam1;
-
-      const pairResults: PairMatchSynergyResult[] = [];
-      const t1AccA = playerAccountMap.get(t1A);
-      const t1AccB = playerAccountMap.get(t1B);
-      if (t1AccA && t1AccB) {
-        pairResults.push({
-          accountIdA: t1AccA,
-          accountIdB: t1AccB,
-          won: parsed.data.team1Score > parsed.data.team2Score,
-          expectedWinProbability: pTeam1,
-          ownScore: parsed.data.team1Score,
-          opponentScore: parsed.data.team2Score,
-        });
-      }
-      const t2AccA = playerAccountMap.get(t2A);
-      const t2AccB = playerAccountMap.get(t2B);
-      if (t2AccA && t2AccB) {
-        pairResults.push({
-          accountIdA: t2AccA,
-          accountIdB: t2AccB,
-          won: parsed.data.team2Score > parsed.data.team1Score,
-          expectedWinProbability: pTeam2,
-          ownScore: parsed.data.team2Score,
-          opponentScore: parsed.data.team1Score,
-        });
-      }
-      if (pairResults.length > 0) {
-        await repository.recordMatchesSynergy(pairResults);
-      }
-    }
+      await replayRatings(parsed.data.groupId, repository);
+      await replaySynergies(repository);
+      return updatedMatch;
+    });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
-    return { ok: true, data: updatedMatch };
+    return { ok: true, data: saved };
   } catch (err) {
     return {
       ok: false,

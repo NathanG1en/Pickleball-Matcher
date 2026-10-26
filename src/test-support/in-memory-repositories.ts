@@ -825,7 +825,7 @@ export class InMemoryRepositories implements DomainRepository {
         .map((round) => [round.id, round]),
     );
     const actual = this.state.matches.flatMap((match): ReplayMatch[] => {
-      if (!rounds.has(match.roundId) || match.status === "pending" || !match.completedAt) return [];
+      if (!rounds.has(match.roundId) || match.rated === false || match.status === "pending" || !match.completedAt) return [];
       const session = sessions.get(rounds.get(match.roundId)!.sessionId);
       if (!session) return [];
       const members = this.state.matchPlayers.filter((item) => item.matchId === match.id);
@@ -836,6 +836,7 @@ export class InMemoryRepositories implements DomainRepository {
         {
           id: match.id,
           groupId: session.groupId,
+          synergyEligible: rounds.get(match.roundId)!.status === "completed" || session.type === "open_play",
           status: match.status,
           completedAt: match.completedAt,
           team1: [team1[0], team1[1]],
@@ -899,6 +900,13 @@ export class InMemoryRepositories implements DomainRepository {
       (account as { isPublic?: boolean }).isPublic = isPublic;
       this.writeCount += 1;
     }
+  }
+
+  async lockSynergyState(): Promise<void> { /* Test adapter has no database locks; concurrency is covered against Postgres. */ }
+
+  async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
+    this.state.synergies = structuredClone([...records]);
+    this.writeCount += 1;
   }
 
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
