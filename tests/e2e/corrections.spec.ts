@@ -87,24 +87,37 @@ test.describe("Corrections and Replay Workflow", () => {
     // 8. Test reshuffling in-progress round matchups and round undo
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 2 Results");
+    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
 
     // Click Reshuffle Matchups during in-progress round
     page.once("dialog", (dialog) => dialog.accept());
+    const reshufflePromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("[data-testid='reshuffle-matchups-button']");
-    await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
+    await reshufflePromise;
+    await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
     await expect(page.locator("button:has-text('Start Round')")).toBeVisible();
+    await expect(page.locator("button:has-text('Start Round')")).toBeEnabled();
 
     // Start Round 2 again and test Undo Round 2
+    const startRoundPromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 2 Results");
+    await startRoundPromise;
+    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
 
     // Click Undo Round 2
     page.once("dialog", (dialog) => dialog.accept());
+    const undoPromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("button:has-text('Undo Round 2')");
+    await undoPromise;
     // After undo, should be back to proposal or previous state
-    await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
+    await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
 
     // 9. Test mid-session attendance correction and court configuration
     await page.click("button:has-text('Attendance')");

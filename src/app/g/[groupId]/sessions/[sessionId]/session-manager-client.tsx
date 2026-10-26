@@ -361,6 +361,11 @@ export function SessionManagerClient({
         clearLineupDraft(lineupDraftKey(currentSession.id));
         setRegeneratedProposal(res.data);
         setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+        setCurrentSession((prev) => ({
+          ...prev,
+          currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+          version: prev.version + 1,
+        }));
         setScoreDrafts({});
         router.refresh();
       } else {
@@ -397,6 +402,11 @@ export function SessionManagerClient({
       if (res.ok) {
         clearLineupDraft(lineupDraftKey(currentSession.id));
         setRegeneratedProposal(null);
+        setCurrentSession((prev) => ({
+          ...prev,
+          currentRoundNumber: res.data.roundNumber,
+          version: prev.version + 1,
+        }));
         router.refresh();
       } else {
         setError(res.error);
@@ -574,6 +584,11 @@ export function SessionManagerClient({
       if (res.ok) {
         setRegeneratedProposal(null);
         setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+        setCurrentSession((prev) => ({
+          ...prev,
+          currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+          version: prev.version + 1,
+        }));
         router.refresh();
       } else {
         setError(res.error);
