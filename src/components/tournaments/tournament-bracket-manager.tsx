@@ -83,7 +83,29 @@ export function TournamentBracketManager({
   const finalMatch = matches.find(
     (m) => m.round === roundNumbers.length && m.matchNumber === 1,
   );
-  const championParticipant = participants.find((p) => p.id === finalMatch?.winnerId);
+  const hasFinalResult = finalMatch?.status === "bye" ||
+    (finalMatch?.status === "completed" && finalMatch.participant1Id && finalMatch.participant2Id);
+  const championParticipant = hasFinalResult
+    ? participants.find((p) => p.id === finalMatch?.winnerId &&
+      (p.id === finalMatch.participant1Id || p.id === finalMatch.participant2Id))
+    : undefined;
+
+  const applyMatchUpdate = (updatedTournament: TournamentRecord) => {
+    const updatedMatches = updatedTournament.brackets[effectiveActiveDivision]?.matches ?? [];
+    setMatchScores((previousDrafts) => {
+      const nextDrafts = { ...previousDrafts };
+      for (const updated of updatedMatches) {
+        const previous = matches.find((match) => match.id === updated.id);
+        if (!previous || previous.participant1Id !== updated.participant1Id ||
+          previous.participant2Id !== updated.participant2Id || previous.winnerId !== updated.winnerId ||
+          previous.status !== updated.status || previous.score1 !== updated.score1 || previous.score2 !== updated.score2) {
+          delete nextDrafts[updated.id];
+        }
+      }
+      return nextDrafts;
+    });
+    setTournament(updatedTournament);
+  };
 
   const getParticipant = (id: string | null): TournamentParticipant | undefined => {
     if (!id) return undefined;
@@ -110,7 +132,7 @@ export function TournamentBracketManager({
         score2,
       });
       if (res.ok) {
-        setTournament(res.data);
+        applyMatchUpdate(res.data);
       } else {
         setError(res.error);
       }
@@ -275,14 +297,7 @@ export function TournamentBracketManager({
       });
 
       if (res.ok) {
-        setTournament(res.data);
-        setMatchScores((prev) => ({
-          ...prev,
-          [editingMatch.id]: {
-            s1: s1 !== null ? String(s1) : "",
-            s2: s2 !== null ? String(s2) : "",
-          },
-        }));
+        applyMatchUpdate(res.data);
       } else {
         setError(res.error);
       }
