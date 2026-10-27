@@ -328,6 +328,7 @@ export function OpenPlayManagerClient({
 
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
+  const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState(3.5);
 
   const rosterPlayerOptions = useMemo(
@@ -410,12 +411,17 @@ export function OpenPlayManagerClient({
     if (!guestName.trim()) return;
     setIsAddingGuest(true);
     setError(null);
+    const ratingToAdd = guestRating;
+    const genderToAdd = guestGender;
+    setGuestRating(3.5);
+    setGuestGender("male");
     try {
       const res = await addOpenPlayGuestAction({
         groupId,
         sessionId: session.id,
         guestName: guestName.trim(),
-        initialRating: guestRating,
+        gender: genderToAdd,
+        initialRating: ratingToAdd,
       });
       if (res.ok) {
         const guestPlayer = res.data;
@@ -436,7 +442,6 @@ export function OpenPlayManagerClient({
           ];
         });
         setGuestName("");
-        setGuestRating(3.5);
         if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
         setGuestAddedPopup(guestPlayer.name);
         guestPopupTimeoutRef.current = setTimeout(() => {
@@ -891,6 +896,7 @@ export function OpenPlayManagerClient({
                 groupId={groupId}
                 sessionId={session.id}
                 sessionName={sessionName}
+                sessionDate={session.startedAt}
                 redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                 onRenamed={(newName) => setSessionName(newName)}
               />
@@ -1071,6 +1077,16 @@ export function OpenPlayManagerClient({
                   onChange={(e) => setGuestName(e.target.value)}
                   className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 />
+                <select
+                  id="open-play-guest-gender"
+                  aria-label="Guest Gender"
+                  value={guestGender}
+                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
                 <button
                   type="submit"
                   disabled={!guestName.trim() || isAddingGuest}

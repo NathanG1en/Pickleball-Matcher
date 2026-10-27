@@ -89,25 +89,28 @@ export function TournamentCreationForm({
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) return;
+    const ratingToAdd = guestRating;
+    const genderToAdd = guestGender;
+    setGuestRating(3.5);
+    setGuestGender("male");
 
     try {
       const res = await createPlayerAction({
         groupId,
         name: guestName.trim(),
-        gender: guestGender,
-        initialRating: guestRating,
+        gender: genderToAdd,
+        initialRating: ratingToAdd,
         idempotencyKey: createIdempotencyKey("guest"),
       });
 
       if (res.ok) {
         const newPlayer: PlayerRecord = {
           ...res.data,
-          gender: guestGender,
+          gender: genderToAdd,
         };
         setPlayers((prev) => [...prev, newPlayer]);
         setSelectedPlayerIds((prev) => new Set([...prev, newPlayer.id]));
         setGuestName("");
-        setGuestRating(3.5);
       } else {
         setError(res.error);
       }
@@ -364,6 +367,8 @@ export function TournamentCreationForm({
               className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
             <select
+              id="tournament-guest-gender"
+              aria-label="Guest Gender"
               value={guestGender}
               onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
               className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] cursor-pointer"

@@ -50,6 +50,8 @@ export function PlayerSignupForm() {
     const skillLevel: "beginner" | "intermediate" | "advanced" =
       duprValue < 3.0 ? "beginner" : duprValue < 4.0 ? "intermediate" : "advanced";
 
+    setSignupRating(3.5);
+
     const result = await playerSignupAction({
       username,
       name,

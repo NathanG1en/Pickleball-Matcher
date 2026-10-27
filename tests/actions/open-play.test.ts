@@ -124,16 +124,18 @@ describe("Open Play Server Actions", () => {
     });
     expect(addPlayerRes.ok).toBe(true);
 
-    // Add guest player with selected rating (4.0 DUPR -> 1200 Elo)
+    // Add guest player with selected rating (4.0 DUPR -> 1200 Elo) and selected gender
     const addGuestRes = await addOpenPlayGuestAction({
       groupId: "g1",
       sessionId: startRes.data.id,
       guestName: "Guest Gary",
+      gender: "female",
       initialRating: 4.0,
     });
     expect(addGuestRes.ok).toBe(true);
     if (!addGuestRes.ok) return;
     expect(addGuestRes.data.rating).toBe(1200);
+    expect(addGuestRes.data.gender).toBe("female");
 
     const attendance = await repository.listAttendance(startRes.data.id);
     const attendedIds = attendance.map((a) => a.playerId);

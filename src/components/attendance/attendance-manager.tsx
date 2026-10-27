@@ -5,6 +5,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import React, { useMemo, useState } from "react";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
+import { RatingSlider } from "@/components/ui/rating-slider";
 import { formatDupr } from "@/lib/domain/rating-display";
 
 export interface AttendancePlayer {
@@ -23,7 +24,7 @@ export interface AttendanceManagerProps {
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
   readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[]; stayTogetherPairs: readonly StayTogetherPair[] }) => void;
-  readonly onAddGuest?: (name: string, initialRating?: number) => void;
+  readonly onAddGuest?: (name: string, initialRating?: number, gender?: "male" | "female") => void;
 }
 
 export function AttendanceManager({
@@ -58,9 +59,8 @@ export function AttendanceManager({
     });
   });
   const [guestName, setGuestName] = useState<string>("");
-  const [guestRatingPreset, setGuestRatingPreset] = useState<string>("3.5");
-  const [isCustomGuestRating, setIsCustomGuestRating] = useState<boolean>(false);
-  const [customGuestRating, setCustomGuestRating] = useState<string>("3.5");
+  const [guestGender, setGuestGender] = useState<"male" | "female">("male");
+  const [guestRating, setGuestRating] = useState<number>(3.5);
 
   const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
   const togglePlayer = (id: string) => {
@@ -97,14 +97,12 @@ export function AttendanceManager({
   const handleAddGuest = (e: React.FormEvent) => {
     e.preventDefault();
     if (guestName.trim() && onAddGuest) {
-      const dupr = isCustomGuestRating
-        ? parseFloat(customGuestRating) || 3.5
-        : parseFloat(guestRatingPreset);
-      onAddGuest(guestName.trim(), dupr);
+      const ratingToAdd = guestRating;
+      const genderToAdd = guestGender;
+      setGuestRating(3.5);
+      setGuestGender("male");
       setGuestName("");
-      setGuestRatingPreset("3.5");
-      setIsCustomGuestRating(false);
-      setCustomGuestRating("3.5");
+      onAddGuest(guestName.trim(), ratingToAdd, genderToAdd);
     }
   };
 
@@ -301,43 +299,28 @@ export function AttendanceManager({
               className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
             <select
-              id="normal-session-guest-rating"
-              aria-label="Guest rating"
-              value={isCustomGuestRating ? "custom" : guestRatingPreset}
-              onChange={(e) => {
-                if (e.target.value === "custom") {
-                  setIsCustomGuestRating(true);
-                } else {
-                  setIsCustomGuestRating(false);
-                  setGuestRatingPreset(e.target.value);
-                  setCustomGuestRating(e.target.value);
-                }
-              }}
-              className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000]"
+              id="normal-session-guest-gender"
+              aria-label="Guest Gender"
+              value={guestGender}
+              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
             >
-              <option value="2.0">2.0 (Beginner)</option>
-              <option value="2.5">2.5 (Adv. Beginner)</option>
-              <option value="3.0">3.0 (Intermediate)</option>
-              <option value="3.5">3.5 (Adv. Intermediate)</option>
-              <option value="4.0">4.0 (Competitive)</option>
-              <option value="4.5">4.5 (Adv. Competitive)</option>
-              <option value="custom">Custom...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
-            {isCustomGuestRating && (
-              <input
-                type="number"
-                aria-label="Custom guest rating"
-                min={2.0}
-                max={8.0}
-                step={0.1}
-                value={customGuestRating}
-                onChange={(e) => setCustomGuestRating(e.target.value)}
-                className="w-20 bg-white border-2 border-black rounded-xl px-2.5 py-2 text-black font-mono font-bold text-xs shadow-[2px_2px_0px_0px_#000]"
-              />
-            )}
-            <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider">
+            <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider shrink-0">
               Add
             </Button>
+          </div>
+          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+            <RatingSlider
+              id="normal-session-guest-rating"
+              dataTestId="normal-session-guest-rating"
+              label="Guest Rating"
+              value={guestRating}
+              onChange={setGuestRating}
+              showDescription={true}
+            />
           </div>
         </form>
       </section>

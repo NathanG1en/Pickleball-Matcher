@@ -182,19 +182,20 @@ export function GroupOrganizersPanel({
     if (!trimmed || guestSaving) return;
     setGuestSaving(true);
     setMessage(null);
+    const ratingToAdd = guestRating;
+    setGuestRating(3.5);
     try {
       const res = await createPlayerAction({
         groupId,
         name: trimmed,
         gender: guestGender,
-        initialRating: guestRating,
+        initialRating: ratingToAdd,
         idempotencyKey: createIdempotencyKey("guest_add"),
       });
       if (res.ok) {
         setMessage(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
         setGuestGender("male");
-        setGuestRating(3.5);
         router.refresh();
       } else {
         setMessage(res.error ?? "Failed to add guest player.");

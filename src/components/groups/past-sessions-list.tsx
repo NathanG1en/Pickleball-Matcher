@@ -128,6 +128,7 @@ export function PastSessionsList({
                     groupId={groupId}
                     sessionId={session.id}
                     sessionName={currentName}
+                    sessionDate={session.startedAt}
                     redirectTo={`/g/${groupId}`}
                     dataTestId={`session-options-menu-button-${session.id}`}
                     onRenamed={(newName) => {

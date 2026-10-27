@@ -67,6 +67,7 @@ describe("Tournament UI Components", () => {
 
       // Add guest form
       expect(html).toContain("Add guest player name...");
+      expect(html).toContain('aria-label="Guest Gender"');
       expect(html).toContain("Guest Starting Rating");
 
       // Submit action bar
@@ -393,6 +394,7 @@ describe("Tournament UI Components", () => {
       expect(html).toContain("Pre-Formed Doubles Pairs");
       expect(html).toContain("Link Two Players as Doubles Partners");
       expect(html).toContain("Lock Partner Pair");
+      expect(html).toContain('aria-label="Guest Gender"');
       expect(html).toContain("Team Rosters");
       expect(html).toContain("Auto-Balance Teams");
       expect(html).toContain("Create Team Tournament →");

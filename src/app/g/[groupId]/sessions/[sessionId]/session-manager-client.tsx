@@ -989,6 +989,7 @@ export function SessionManagerClient({
                   groupId={groupId}
                   sessionId={session.id}
                   sessionName={sessionName}
+                  sessionDate={session.startedAt}
                   redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                   onRenamed={(newName) => setSessionName(newName)}
                 />
@@ -1059,6 +1060,7 @@ export function SessionManagerClient({
                     groupId={groupId}
                     sessionId={session.id}
                     sessionName={sessionName}
+                    sessionDate={session.startedAt}
                     redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                     onRenamed={(newName) => setSessionName(newName)}
                   />

@@ -153,5 +153,28 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("font-mono font-bold text-sm text-center");
     expect(html).not.toContain("font-mono font-black text-lg text-center");
   });
+
+  it("renders guest player form with gender select options", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('id="guest-name-input"');
+    expect(html).toContain('aria-label="Guest Gender"');
+    expect(html).toContain('id="open-play-guest-gender"');
+    expect(html).toContain("Male");
+    expect(html).toContain("Female");
+  });
 });
 

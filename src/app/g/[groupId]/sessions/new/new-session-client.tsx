@@ -48,11 +48,12 @@ export function NewSessionClient({
     }
   };
 
-  const handleAddGuest = async (name: string, rating: number = 3.5) => {
+  const handleAddGuest = async (name: string, rating: number = 3.5, gender?: "male" | "female") => {
     try {
       const res = await createPlayerAction({
         groupId,
         name,
+        gender,
         initialRating: rating,
         idempotencyKey: createIdempotencyKey("guest"),
       });

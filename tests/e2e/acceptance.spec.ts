@@ -292,7 +292,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     const confirmModal = page.locator("[role='alertdialog']");
     await expect(confirmModal).toBeVisible();
     await expect(confirmModal).toContainText("Delete Session");
-    await expect(confirmModal).toContainText(/Are you sure you want to delete ("Championship Night"|this session)\?/);
+    await expect(confirmModal).toContainText(/Are you sure you want to delete the session ("Championship Night"|"[^"]+")\?/);
 
     // Test canceling the deletion
     await confirmModal.locator("button:has-text('Cancel')").click();

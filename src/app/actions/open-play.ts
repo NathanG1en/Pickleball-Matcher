@@ -229,6 +229,7 @@ const addOpenPlayGuestSchema = z.object({
   groupId: z.string().min(1),
   sessionId: z.string().min(1),
   guestName: z.string().trim().min(1, "Guest name is required").max(80, "Guest name must be 80 characters or fewer"),
+  gender: z.enum(["male", "female"]).default("male"),
   initialRating: z.coerce
     .number()
     .finite()
@@ -274,6 +275,7 @@ export async function addOpenPlayGuestAction(
       id: playerId,
       groupId: parsed.data.groupId,
       name: parsed.data.guestName,
+      gender: parsed.data.gender,
       initialRating,
       rating: initialRating,
       ratedGamesPlayed: 0,

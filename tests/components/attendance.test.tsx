@@ -67,7 +67,7 @@ describe("AttendanceManager Component", () => {
     expect(html).toContain("Start Session");
   });
 
-  it("renders guest player input with rating selection options", () => {
+  it("renders guest player input with rating slider", () => {
     const html = renderToStaticMarkup(
       <AttendanceManager
         groupId="group-1"
@@ -78,8 +78,11 @@ describe("AttendanceManager Component", () => {
     );
 
     expect(html).toContain('aria-label="Guest player name"');
-    expect(html).toContain('aria-label="Guest rating"');
-    expect(html).toContain("3.5 (Adv. Intermediate)");
-    expect(html).toContain("2.0 (Beginner)");
+    expect(html).toContain('aria-label="Guest Gender"');
+    expect(html).toContain('aria-label="Guest Rating"');
+    expect(html).toContain('data-testid="normal-session-guest-rating"');
+    expect(html).toContain("3.50");
+    expect(html).toContain("Advanced Intermediate");
+    expect(html).toContain('data-testid="rating-tick-2"');
   });
 });

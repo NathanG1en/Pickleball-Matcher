@@ -125,25 +125,28 @@ export function TeamTournamentCreationForm({
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) return;
+    const ratingToAdd = guestRating;
+    const genderToAdd = guestGender;
+    setGuestRating(3.5);
+    setGuestGender("male");
 
     try {
       const res = await createPlayerAction({
         groupId,
         name: guestName.trim(),
-        gender: guestGender,
-        initialRating: guestRating,
+        gender: genderToAdd,
+        initialRating: ratingToAdd,
         idempotencyKey: createIdempotencyKey("guest"),
       });
 
       if (res.ok) {
         const newPlayer: PlayerRecord = {
           ...res.data,
-          gender: guestGender,
+          gender: genderToAdd,
         };
         setPlayers((prev) => [...prev, newPlayer]);
         setSelectedPlayerIds((prev) => new Set([...prev, newPlayer.id]));
         setGuestName("");
-        setGuestRating(3.5);
       } else {
         setError(res.error);
       }
@@ -421,54 +424,50 @@ export function TeamTournamentCreationForm({
         </div>
 
         {/* Add Guest Form */}
-        <div className="pt-3 border-t-2 border-dashed border-neutral-200">
-          <div className="flex gap-2">
+        <div className="pt-3 border-t-2 border-dashed border-neutral-200 space-y-2">
+          <label className="block text-xs font-black uppercase tracking-wider text-black">
+            Add Guest Player
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
+              aria-label="Guest player name"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="Add guest player name..."
-              className="flex-1 px-3 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
+              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
+            <select
+              id="team-tournament-guest-gender"
+              aria-label="Guest Gender"
+              value={guestGender}
+              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
             <Button
               type="button"
               onClick={(e) => void handleAddGuest(e)}
+              variant="secondary"
+              size="sm"
               disabled={!guestName.trim()}
-              className="text-xs font-black"
+              className="font-display uppercase tracking-wider shrink-0"
             >
-              Add Guest
+              Add
             </Button>
           </div>
-          {guestName.trim() && (
-            <div className="mt-3 p-3 bg-neutral-50 border-2 border-black rounded-xl space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-black uppercase text-black">Gender:</span>
-                <label className="text-xs font-bold flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="guestGender"
-                    checked={guestGender === "male"}
-                    onChange={() => setGuestGender("male")}
-                  />
-                  Male
-                </label>
-                <label className="text-xs font-bold flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="guestGender"
-                    checked={guestGender === "female"}
-                    onChange={() => setGuestGender("female")}
-                  />
-                  Female
-                </label>
-              </div>
-              <RatingSlider
-                label="Guest Starting Rating"
-                value={guestRating}
-                onChange={setGuestRating}
-              />
-            </div>
-          )}
+          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+            <RatingSlider
+              id="team-tournament-guest-rating"
+              dataTestId="team-tournament-guest-rating"
+              label="Guest Starting Rating"
+              value={guestRating}
+              onChange={setGuestRating}
+              showDescription={true}
+            />
+          </div>
         </div>
       </section>
 

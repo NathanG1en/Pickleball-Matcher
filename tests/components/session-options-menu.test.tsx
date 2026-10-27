@@ -68,5 +68,46 @@ describe("SessionOptionsMenu Component", () => {
 
     expect(html).toContain('data-testid="session-options-menu-button"');
   });
+
+  it("confirms deletion with the session name when sessionName is provided", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        sessionName="Oct 27, 2026"
+        initialDeleteModalOpen={true}
+      />
+    );
+
+    expect(html).toContain("Delete Session");
+    expect(html).toContain("Are you sure you want to delete the session &quot;Oct 27, 2026&quot;?");
+  });
+
+  it("confirms deletion using the formatted session date when sessionName is not set", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        sessionDate="2026-10-27T17:00:00.000Z"
+        initialDeleteModalOpen={true}
+      />
+    );
+
+    expect(html).toContain("Delete Session");
+    expect(html).toContain("Are you sure you want to delete the session &quot;Oct 27, 2026&quot;?");
+  });
+
+  it("falls back to generic deletion message when neither sessionName nor sessionDate is provided", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        initialDeleteModalOpen={true}
+      />
+    );
+
+    expect(html).toContain("Delete Session");
+    expect(html).toContain("Are you sure you want to delete this session?");
+  });
 });
 

@@ -5,39 +5,48 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Modal } from "@/components/ui/modal";
 import { deleteSessionAction, duplicateSessionAction, updateSessionNameAction } from "@/app/actions/sessions";
+import { formatSessionDate } from "@/lib/utils/date";
 import type { SessionRecord } from "@/lib/domain/types";
 
 export interface SessionOptionsMenuProps {
   readonly groupId: string;
   readonly sessionId: string;
   readonly sessionName?: string | null;
+  readonly sessionDate?: Date | string | number | null;
   readonly redirectTo?: string;
   readonly onDeleted?: () => void;
   readonly onDuplicated?: (newSession: SessionRecord) => void;
   readonly onRenamed?: (newName: string) => void;
   readonly dataTestId?: string;
+  readonly initialDeleteModalOpen?: boolean;
 }
 
 export function SessionOptionsMenu({
   groupId,
   sessionId,
   sessionName,
+  sessionDate,
   redirectTo,
   onDeleted,
   onDuplicated,
   onRenamed,
   dataTestId = "session-options-menu-button",
+  initialDeleteModalOpen = false,
 }: SessionOptionsMenuProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameInput, setRenameInput] = useState(sessionName ?? "");
   const [renameError, setRenameError] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(initialDeleteModalOpen);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const effectiveSessionName =
+    sessionName?.trim() ||
+    (sessionDate ? formatSessionDate(sessionDate) : null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -52,14 +61,14 @@ export function SessionOptionsMenu({
 
   const handleOpenRename = () => {
     setMenuOpen(false);
-    setRenameInput(sessionName ?? "");
+    setRenameInput(effectiveSessionName ?? "");
     setRenameError(null);
     setShowRenameModal(true);
   };
 
   const handleCloseRename = () => {
     if (isPending) return;
-    setRenameInput(sessionName ?? "");
+    setRenameInput(effectiveSessionName ?? "");
     setRenameError(null);
     setShowRenameModal(false);
   };
@@ -68,7 +77,7 @@ export function SessionOptionsMenu({
     e.preventDefault();
     const trimmed = renameInput.trim();
     if (!trimmed || isPending) return;
-    if (trimmed === (sessionName ?? "").trim()) {
+    if (trimmed === (effectiveSessionName ?? "").trim()) {
       setShowRenameModal(false);
       return;
     }
@@ -280,7 +289,7 @@ export function SessionOptionsMenu({
         description={
           <div className="space-y-3">
             <p>
-              Are you sure you want to duplicate {sessionName ? `"${sessionName}"` : "this session"}? A new session will be created
+              Are you sure you want to duplicate {effectiveSessionName ? `the session "${effectiveSessionName}"` : "this session"}? A new session will be created
               with attendance copied from the end of this session, and its name will be set to today&apos;s date.
             </p>
             {error && (
@@ -308,7 +317,7 @@ export function SessionOptionsMenu({
         description={
           <div className="space-y-3">
             <p>
-              Are you sure you want to delete {sessionName ? `"${sessionName}"` : "this session"}? All rounds, matches, and
+              Are you sure you want to delete {effectiveSessionName ? `the session "${effectiveSessionName}"` : "this session"}? All rounds, matches, and
               scores in this session will be permanently deleted. This action cannot be undone.
             </p>
             {error && (
