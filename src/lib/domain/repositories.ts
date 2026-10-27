@@ -1,5 +1,6 @@
 import type {
   AttendanceRecord,
+  PartnerRequestRecord,
   GroupRecord,
   GroupOrganizerRecord,
   PublicGroupRecord,
@@ -41,6 +42,9 @@ export interface DomainRepository {
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;
   getBestPartner(accountId: string): Promise<{ partnerAccountId: string; username: string; synergyScore: number; matchesPlayed: number } | null>;
   recordMatchesSynergy(pairResults: readonly PairMatchSynergyResult[]): Promise<void>;
+  /** Acquire before result/session mutations and rating writes to serialize chemistry writers. */
+  lockSynergyState(): Promise<void>;
+  replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void>;
   searchPlayerAccounts(query: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   listPlayerAccounts(search?: string, limit?: number): Promise<readonly PlayerAccountRecord[]>;
   addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null>;
@@ -52,6 +56,11 @@ export interface DomainRepository {
   deleteGroup(groupId: string): Promise<void>;
   listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]>;
   insertGroup(group: GroupRecord): Promise<void>;
+  lockPartnerRequests(sessionId: string): Promise<void>;
+  listPartnerRequests(sessionId: string): Promise<readonly PartnerRequestRecord[]>;
+  getPartnerRequest(requestId: string): Promise<PartnerRequestRecord | null>;
+  insertPartnerRequest(request: PartnerRequestRecord): Promise<void>;
+  updatePartnerRequest(request: PartnerRequestRecord): Promise<void>;
   getSession(sessionId: string): Promise<SessionRecord | null>;
   listSessions(groupId: string): Promise<readonly SessionRecord[]>;
   updateSessionName(sessionId: string, name: string): Promise<void>;

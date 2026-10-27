@@ -1080,7 +1080,7 @@ function CurrentRoundEditor({
                 type="button"
                 variant="primary"
                 onClick={handleStartConfirm}
-                disabled={isPending || (hasModifications && !acknowledgedOverride) || !isValidLineup}
+                disabled={isPending || isGeneratingRound || (hasModifications && !acknowledgedOverride) || !isValidLineup}
                 className="font-display uppercase tracking-wider text-xs"
               >
                 Confirm &amp; Start
@@ -1124,7 +1124,7 @@ function CurrentRoundEditor({
                   setAcknowledgedOverride(false);
                   setShowConfirmStart(true);
                 }}
-                disabled={isPending || !isValidLineup}
+                disabled={isPending || isGeneratingRound || !isValidLineup}
                 className="flex-1 font-display text-lg uppercase tracking-wider"
               >
                 Start Round

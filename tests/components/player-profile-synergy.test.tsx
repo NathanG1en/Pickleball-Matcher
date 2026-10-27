@@ -276,5 +276,190 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("Past Sessions");
       expect(html).not.toContain("This Profile is Private");
     });
+
+    it("shows wins and losses for past sessions but hides the 'Go to session' button when viewing another player's profile", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_public_user",
+            username: "charlie_pb",
+            name: "Charlie Pickle",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            rating: 1050,
+            createdAt: new Date(),
+          },
+        ],
+        groups: [
+          { id: "grp-1", name: "Metro Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        ],
+        players: [
+          { id: "p-charlie", groupId: "grp-1", accountId: "target_public_user", name: "Charlie Pickle", initialRating: 1000, rating: 1050, ratedGamesPlayed: 1, active: true },
+        ],
+      });
+
+      repository.state.sessions.push({
+        id: "sess-1",
+        groupId: "grp-1",
+        name: "Morning Open Play",
+        courtCount: 2,
+        currentRoundNumber: 1,
+        status: "completed",
+        type: "open_play",
+        startedAt: new Date(),
+        endedAt: new Date(),
+        version: 1,
+      });
+      repository.state.attendance.push({
+        sessionId: "sess-1",
+        playerId: "p-charlie",
+        joinedRound: 1,
+        leftRound: null,
+      });
+      repository.state.rounds.push({
+        id: "r-1",
+        sessionId: "sess-1",
+        roundNumber: 1,
+        status: "completed",
+        seed: 1,
+        scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+        createdAt: new Date(),
+        startedAt: new Date(),
+        completedAt: new Date(),
+        version: 1,
+      });
+      repository.state.matches.push({
+        id: "m-1",
+        roundId: "r-1",
+        courtNumber: 1,
+        status: "completed",
+        team1Score: 11,
+        team2Score: 7,
+        completedAt: new Date(),
+        version: 1,
+      });
+      repository.state.matchPlayers.push({
+        matchId: "m-1",
+        playerId: "p-charlie",
+        team: 1,
+        ratingBefore: 1000,
+        ratingAfter: 1050,
+      });
+
+      setActionRepository(repository);
+
+      // Viewer is another user (not the owner)
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_other_user");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "charlie_pb" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      // Past sessions and wins/losses should be visible
+      expect(html).toContain("Past Sessions");
+      expect(html).toContain("Morning Open Play");
+      expect(html).toContain("Metro Club (Open Play)");
+      expect(html).toContain("1W – 0L");
+
+      // Go to session button and session links should NOT be present for other players
+      expect(html).not.toContain("Go to session");
+      expect(html).not.toContain('href="/g/grp-1/sessions/sess-1');
+    });
+
+    it("shows the 'Go to session' button when a player views their own profile at /players/[username]", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_public_user",
+            username: "charlie_pb",
+            name: "Charlie Pickle",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            rating: 1050,
+            createdAt: new Date(),
+          },
+        ],
+        groups: [
+          { id: "grp-1", name: "Metro Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        ],
+        players: [
+          { id: "p-charlie", groupId: "grp-1", accountId: "target_public_user", name: "Charlie Pickle", initialRating: 1000, rating: 1050, ratedGamesPlayed: 1, active: true },
+        ],
+      });
+
+      repository.state.sessions.push({
+        id: "sess-1",
+        groupId: "grp-1",
+        name: "Morning Open Play",
+        courtCount: 2,
+        currentRoundNumber: 1,
+        status: "completed",
+        type: "open_play",
+        startedAt: new Date(),
+        endedAt: new Date(),
+        version: 1,
+      });
+      repository.state.attendance.push({
+        sessionId: "sess-1",
+        playerId: "p-charlie",
+        joinedRound: 1,
+        leftRound: null,
+      });
+      repository.state.rounds.push({
+        id: "r-1",
+        sessionId: "sess-1",
+        roundNumber: 1,
+        status: "completed",
+        seed: 1,
+        scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+        createdAt: new Date(),
+        startedAt: new Date(),
+        completedAt: new Date(),
+        version: 1,
+      });
+      repository.state.matches.push({
+        id: "m-1",
+        roundId: "r-1",
+        courtNumber: 1,
+        status: "completed",
+        team1Score: 11,
+        team2Score: 7,
+        completedAt: new Date(),
+        version: 1,
+      });
+      repository.state.matchPlayers.push({
+        matchId: "m-1",
+        playerId: "p-charlie",
+        team: 1,
+        ratingBefore: 1000,
+        ratingAfter: 1050,
+      });
+
+      setActionRepository(repository);
+
+      // Viewer IS the owner
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("target_public_user");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "charlie_pb" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      // Past sessions and wins/losses should be visible
+      expect(html).toContain("Past Sessions");
+      expect(html).toContain("Morning Open Play");
+      expect(html).toContain("Metro Club (Open Play)");
+      expect(html).toContain("1W – 0L");
+
+      // Go to session button and link SHOULD be present for the owner
+      expect(html).toContain("Go to session");
+      expect(html).toContain('href="/g/grp-1/sessions/sess-1?from=profile"');
+    });
   });
 });
+

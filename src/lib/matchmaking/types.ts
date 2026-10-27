@@ -1,4 +1,5 @@
 export type PlayerId = string;
+export type StayTogetherPair = readonly [PlayerId, PlayerId];
 
 export type Team = readonly [PlayerId, PlayerId] | readonly [PlayerId];
 
@@ -53,7 +54,7 @@ export interface GeneratedRound extends RoundCandidate {
 }
 
 export interface GenerationError {
-  readonly code: "INSUFFICIENT_PLAYERS" | "INVALID_COURT_COUNT";
+  readonly code: "INSUFFICIENT_PLAYERS" | "INVALID_COURT_COUNT" | "INCOMPATIBLE_PARTNERS";
   readonly message: string;
 }
 
@@ -111,6 +112,7 @@ export interface SittingPenalty {
 }
 
 export interface RoundScoringContext {
+  readonly stayTogetherPairs?: readonly StayTogetherPair[];
   readonly players: readonly MatchmakingPlayer[];
   readonly pairHistory: readonly PairHistory[] | ReadonlyMap<string, PairHistory>;
   readonly config: MatchmakingConfig;
@@ -131,6 +133,7 @@ export interface SittingChoiceInput {
 }
 
 export interface GenerateRoundInput {
+  readonly stayTogetherPairs?: readonly StayTogetherPair[];
   readonly players: readonly MatchmakingPlayer[];
   readonly courts: number;
   readonly pairHistory: readonly PairHistory[];

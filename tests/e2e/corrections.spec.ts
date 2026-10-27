@@ -87,24 +87,37 @@ test.describe("Corrections and Replay Workflow", () => {
     // 8. Test reshuffling in-progress round matchups and round undo
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 2 Results");
+    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
 
     // Click Reshuffle Matchups during in-progress round
     page.once("dialog", (dialog) => dialog.accept());
+    const reshufflePromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("[data-testid='reshuffle-matchups-button']");
-    await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
+    await reshufflePromise;
+    await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
     await expect(page.locator("button:has-text('Start Round')")).toBeVisible();
+    await expect(page.locator("button:has-text('Start Round')")).toBeEnabled();
 
     // Start Round 2 again and test Undo Round 2
+    const startRoundPromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 2 Results");
+    await startRoundPromise;
+    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
 
     // Click Undo Round 2
     page.once("dialog", (dialog) => dialog.accept());
+    const undoPromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
     await page.click("button:has-text('Undo Round 2')");
+    await undoPromise;
     // After undo, should be back to proposal or previous state
-    await expect(page.locator("h1:has-text('Round 2')")).toBeVisible();
+    await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
 
     // 9. Test mid-session attendance correction and court configuration
     await page.click("button:has-text('Attendance')");
@@ -576,3 +589,53 @@ test("organizer can end an active session (normal or open play) directly from gr
   await expect(page.locator("h2:has-text('Ready to Play?')")).toBeVisible();
 });
 
+
+test("normal score corrections refresh chemistry without adding shared games", async ({ page, browser }, testInfo) => {
+  test.setTimeout(120_000);
+  await createTestGroup(page, `Chemistry correction ${Date.now()}`);
+  for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
+    const context = await browser.newContext();
+    try {
+      const other = await context.newPage();
+      const player = await createAndSignInPlayer(other, { name });
+      await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(player.username);
+      await page.getByRole("button", { name: "Add", exact: true }).click();
+      await expect(page.getByRole("link", { name: `@${player.username}`, exact: true })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByRole("button", { name: "Select Normal Session →", exact: true }).click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
+  await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("0");
+  await page.getByRole("button", { name: "Save Result", exact: true }).click();
+  await page.getByRole("button", { name: "Next Round", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
+  const profile = await page.context().newPage();
+  await profile.goto("/players");
+  const score = profile.getByText(/[+−-]5 Synergy/i);
+  await expect(score).toBeVisible();
+  const originalScore = await score.innerText();
+  const correctedScore = originalScore.startsWith("+") ? "-5 Synergy" : "+5 Synergy";
+  await profile.screenshot({ path: testInfo.outputPath("chemistry-before-correction.png"), fullPage: true });
+  await page.getByRole("button", { name: "Edit Result", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "T1", exact: true }).fill("0");
+  await page.getByRole("spinbutton", { name: "T2", exact: true }).fill("11");
+  await page.getByRole("button", { name: "Save Score", exact: true }).click();
+  await expect(page.getByRole("spinbutton", { name: "T1", exact: true })).toBeHidden();
+  await profile.reload();
+  await expect(profile.getByText(correctedScore, { exact: true })).toBeVisible();
+  await profile.screenshot({ path: testInfo.outputPath("chemistry-after-correction.png"), fullPage: true });
+  await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
+  // Saving the same correction again must not create a second chemistry match.
+  await page.getByRole("button", { name: "Edit Result", exact: true }).click();
+  await page.getByRole("button", { name: "Save Score", exact: true }).click();
+  await expect(page.getByRole("spinbutton", { name: "T1", exact: true })).toBeHidden();
+  await profile.reload();
+  await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
+  await profile.close();
+});

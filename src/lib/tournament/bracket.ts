@@ -313,7 +313,8 @@ export function reshuffleBracketMatchups(bracket: TournamentBracket): Tournament
 
 /**
  * Sets the winner of a match and advances them to the downstream match.
- * If winnerId is null, resets the winner and downstream matches.
+ * Changing the advancing participant invalidates every dependent result.
+ * Score-only corrections with the same winner preserve downstream results.
  */
 export function setMatchWinner(
   bracket: TournamentBracket,
@@ -334,37 +335,32 @@ export function setMatchWinner(
     }
   }
 
-  const previousWinnerId = target.winnerId;
   target.winnerId = winnerId;
   target.status = winnerId ? "completed" : "pending";
-  if (scores) {
+  if (winnerId === null) {
+    target.score1 = null;
+    target.score2 = null;
+  } else if (scores) {
     target.score1 = scores.score1;
     target.score2 = scores.score2;
   }
 
-  // Advance or clear in next round
-  if (target.nextMatchId) {
-    const nextMatch = matches.find((m) => m.id === target.nextMatchId);
-    if (nextMatch) {
-      if (winnerId) {
-        if (target.nextMatchSlot === 1) {
-          nextMatch.participant1Id = winnerId;
-        } else {
-          nextMatch.participant2Id = winnerId;
-        }
-      } else {
-        // If we unset or changed the winner, clear previous winner downstream
-        if (target.nextMatchSlot === 1) {
-          if (nextMatch.participant1Id === previousWinnerId) nextMatch.participant1Id = null;
-        } else {
-          if (nextMatch.participant2Id === previousWinnerId) nextMatch.participant2Id = null;
-        }
-        // If downstream match was completed, unset it as well
-        if (nextMatch.winnerId === previousWinnerId) {
-          return setMatchWinner({ ...bracket, matches }, nextMatch.id, null);
-        }
-      }
-    }
+  // A changed opponent invalidates a result even if that opponent lost.
+  // Keep the unaffected side of each match, but clear the dependent winner
+  // all the way to the final rather than transferring an old score to new players.
+  let upstream = target;
+  while (upstream.nextMatchId) {
+    const downstream = matches.find((match) => match.id === upstream.nextMatchId);
+    if (!downstream || !upstream.nextMatchSlot) break;
+    const slot = upstream.nextMatchSlot === 1 ? "participant1Id" : "participant2Id";
+    if (downstream[slot] === upstream.winnerId) break;
+
+    downstream[slot] = upstream.winnerId;
+    downstream.winnerId = null;
+    downstream.score1 = null;
+    downstream.score2 = null;
+    downstream.status = "pending";
+    upstream = downstream;
   }
 
   return {

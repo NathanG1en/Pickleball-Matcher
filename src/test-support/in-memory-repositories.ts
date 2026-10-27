@@ -1,6 +1,7 @@
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  PartnerRequestRecord,
   GroupRecord,
   GroupOrganizerRecord,
   PlayerAccountRecord,
@@ -28,6 +29,7 @@ interface InMemoryState {
   groupOrganizers: { groupId: string; accountId: string }[];
   players: PlayerRecord[];
   sessions: SessionRecord[];
+  partnerRequests: PartnerRequestRecord[];
   attendance: AttendanceRecord[];
   rounds: RoundRecord[];
   matches: MatchRecord[];
@@ -55,6 +57,7 @@ export class InMemoryRepositories implements DomainRepository {
       groupOrganizers: structuredClone(seed.groupOrganizers ?? []),
       players: structuredClone(seed.players ?? []),
       sessions: structuredClone(seed.sessions ?? []),
+      partnerRequests: structuredClone(seed.partnerRequests ?? []),
       attendance: structuredClone(seed.attendance ?? []),
       rounds: structuredClone(seed.rounds ?? []),
       matches: structuredClone(seed.matches ?? []),
@@ -660,6 +663,26 @@ export class InMemoryRepositories implements DomainRepository {
   }
 
 
+  async lockPartnerRequests(sessionId: string): Promise<void> { void sessionId; /* Database serialization is covered in Postgres. */ }
+  async listPartnerRequests(sessionId: string): Promise<readonly PartnerRequestRecord[]> {
+    return this.state.partnerRequests.filter(request => request.sessionId === sessionId)
+      .toSorted((a, b) => Number(b.status === "pending") - Number(a.status === "pending") || b.createdAt.getTime() - a.createdAt.getTime());
+  }
+  async getPartnerRequest(requestId: string): Promise<PartnerRequestRecord | null> {
+    return this.state.partnerRequests.find(request => request.id === requestId) ?? null;
+  }
+  async insertPartnerRequest(request: PartnerRequestRecord): Promise<void> {
+    if (this.state.partnerRequests.some(item => item.id === request.id || (item.sessionId === request.sessionId && item.status === "pending" && (item.requesterPlayerId === request.requesterPlayerId || [item.requesterPlayerId, item.partnerPlayerId].sort().join(":") === [request.requesterPlayerId, request.partnerPlayerId].sort().join(":"))))) throw new Error("A request is already pending.");
+    this.state.partnerRequests.push(structuredClone(request));
+    this.writeCount++;
+  }
+  async updatePartnerRequest(request: PartnerRequestRecord): Promise<void> {
+    const index = this.state.partnerRequests.findIndex(item => item.id === request.id && item.version === request.version - 1);
+    if (index === -1) throw new Error("The request changed. Refresh and try again.");
+    this.state.partnerRequests[index] = structuredClone(request);
+    this.writeCount++;
+  }
+
   async getSession(sessionId: string) {
     return this.state.sessions.find((session) => session.id === sessionId) ?? null;
   }
@@ -733,6 +756,7 @@ export class InMemoryRepositories implements DomainRepository {
   }
 
   async deleteSession(sessionId: string, groupId: string): Promise<void> {
+    if (this.state.sessions.some(session => session.id === sessionId && session.groupId === groupId)) this.state.partnerRequests = this.state.partnerRequests.filter(request => request.sessionId !== sessionId);
     const session = this.state.sessions.find((s) => s.id === sessionId && s.groupId === groupId);
     if (!session) return;
 
@@ -825,7 +849,7 @@ export class InMemoryRepositories implements DomainRepository {
         .map((round) => [round.id, round]),
     );
     const actual = this.state.matches.flatMap((match): ReplayMatch[] => {
-      if (!rounds.has(match.roundId) || match.status === "pending" || !match.completedAt) return [];
+      if (!rounds.has(match.roundId) || match.rated === false || match.status === "pending" || !match.completedAt) return [];
       const session = sessions.get(rounds.get(match.roundId)!.sessionId);
       if (!session) return [];
       const members = this.state.matchPlayers.filter((item) => item.matchId === match.id);
@@ -836,6 +860,7 @@ export class InMemoryRepositories implements DomainRepository {
         {
           id: match.id,
           groupId: session.groupId,
+          synergyEligible: rounds.get(match.roundId)!.status === "completed" || session.type === "open_play",
           status: match.status,
           completedAt: match.completedAt,
           team1: [team1[0], team1[1]],
@@ -899,6 +924,13 @@ export class InMemoryRepositories implements DomainRepository {
       (account as { isPublic?: boolean }).isPublic = isPublic;
       this.writeCount += 1;
     }
+  }
+
+  async lockSynergyState(): Promise<void> { /* Test adapter has no database locks; concurrency is covered against Postgres. */ }
+
+  async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
+    this.state.synergies = structuredClone([...records]);
+    this.writeCount += 1;
   }
 
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {

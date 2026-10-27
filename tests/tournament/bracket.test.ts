@@ -187,3 +187,78 @@ describe("Tournament Bracket Utilities", () => {
   });
 });
 
+
+
+describe("Tournament result corrections", () => {
+  const entrants = Array.from({ length: 8 }, (_, index) => ({
+    id: `p${index + 1}`, name: `Player ${index + 1}`, playerIds: [`p${index + 1}`],
+  }));
+
+  function completedBracket(size = 4) {
+    let bracket = generateBracket("mens_singles", entrants.slice(0, size), { randomize: false });
+    for (const match of bracket.matches) {
+      const current = bracket.matches.find((item) => item.id === match.id)!;
+      bracket = setMatchWinner(bracket, current.id, current.participant1Id, { score1: 11, score2: 5 });
+    }
+    return bracket;
+  }
+
+  it.each([1, 2])("invalidates the final when semifinal %i changes winner", (semifinalNumber) => {
+    const original = completedBracket();
+    const corrected = setMatchWinner(original, `mens_singles_r1_m${semifinalNumber}`,
+      semifinalNumber === 1 ? "p2" : "p4", { score1: 5, score2: 11 });
+
+    expect(corrected.matches[2]).toMatchObject({
+      participant1Id: semifinalNumber === 1 ? "p2" : "p1",
+      participant2Id: semifinalNumber === 2 ? "p4" : "p3",
+      winnerId: null, score1: null, score2: null, status: "pending",
+    });
+    expect(original.matches[2]).toMatchObject({ winnerId: "p1", score1: 11, score2: 5, status: "completed" });
+    expect(corrected.matches[semifinalNumber === 1 ? 1 : 0]).toEqual(original.matches[semifinalNumber === 1 ? 1 : 0]);
+  });
+
+  it("clears every dependent result after a quarterfinal correction", () => {
+    const original = completedBracket(8);
+    const corrected = setMatchWinner(original, "mens_singles_r1_m2", "p4", { score1: 5, score2: 11 });
+
+    expect(corrected.matches.find((match) => match.id === "mens_singles_r2_m1")).toMatchObject({
+      participant1Id: "p1", participant2Id: "p4", winnerId: null, score1: null, score2: null, status: "pending",
+    });
+    expect(corrected.matches.find((match) => match.id === "mens_singles_r3_m1")).toMatchObject({
+      participant1Id: null, participant2Id: "p5", winnerId: null, score1: null, score2: null, status: "pending",
+    });
+    expect(corrected.matches.find((match) => match.id === "mens_singles_r2_m2"))
+      .toEqual(original.matches.find((match) => match.id === "mens_singles_r2_m2"));
+  });
+
+  it("invalidates the final even when the reset semifinal's winner lost the final", () => {
+    const corrected = setMatchWinner(completedBracket(), "mens_singles_r1_m2", null);
+    expect(corrected.matches[1]).toMatchObject({ winnerId: null, score1: null, score2: null, status: "pending" });
+    expect(corrected.matches[2]).toMatchObject({ participant1Id: "p1", participant2Id: null,
+      winnerId: null, score1: null, score2: null, status: "pending" });
+  });
+
+  it("keeps downstream results when only the score changes and the winner is unchanged", () => {
+    const original = completedBracket();
+    const corrected = setMatchWinner(original, "mens_singles_r1_m1", "p1", { score1: 11, score2: 9 });
+    expect(corrected.matches[0]).toMatchObject({ winnerId: "p1", score1: 11, score2: 9 });
+    expect(corrected.matches[2]).toEqual(original.matches[2]);
+  });
+
+  it("invalidates dependent results after replacing a participant in a completed semifinal", () => {
+    const corrected = updateMatchParticipant(completedBracket(), "mens_singles_r1_m2", 2, "replacement");
+    expect(corrected.matches[1]).toMatchObject({ participant2Id: "replacement", winnerId: null, score1: null, score2: null });
+    expect(corrected.matches[2]).toMatchObject({ participant1Id: "p1", participant2Id: null,
+      winnerId: null, score1: null, score2: null, status: "pending" });
+  });
+
+  it("preserves an automatic bye while correcting the played semifinal", () => {
+    let bracket = generateBracket("mens_singles", entrants.slice(0, 3), { randomize: false });
+    bracket = setMatchWinner(bracket, "mens_singles_r1_m2", "p2", { score1: 11, score2: 5 });
+    bracket = setMatchWinner(bracket, "mens_singles_r2_m1", "p1", { score1: 11, score2: 5 });
+    const corrected = setMatchWinner(bracket, "mens_singles_r1_m2", "p3", { score1: 5, score2: 11 });
+    expect(corrected.matches[0]).toEqual(bracket.matches[0]);
+    expect(corrected.matches[2]).toMatchObject({ participant1Id: "p1", participant2Id: "p3",
+      winnerId: null, score1: null, score2: null, status: "pending" });
+  });
+});

@@ -13,7 +13,7 @@ import {
   updateTournamentNameAction,
   updateTournamentStatusAction,
 } from "@/app/actions/tournaments";
-import { generateBracket } from "@/lib/tournament/bracket";
+import { generateBracket, setMatchWinner } from "@/lib/tournament/bracket";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
@@ -121,6 +121,31 @@ describe("Tournament Server Actions", () => {
     });
     expect(result).toEqual({ ok: false, error: "Both participants must be known before recording a winner" });
     expect((await repository.getTournament("tr_pending"))?.brackets.mens_singles?.matches.find((match) => match.id === final.id)?.winnerId).toBeNull();
+  });
+
+  it("persists a cleared final after correcting a semifinal winner", async () => {
+    let bracket = generateBracket("mens_singles", samplePlayers.map((player) => ({
+      id: player.id, name: player.name, playerIds: [player.id],
+    })), { randomize: false });
+    bracket = setMatchWinner(bracket, "mens_singles_r1_m1", "p1", { score1: 11, score2: 5 });
+    bracket = setMatchWinner(bracket, "mens_singles_r1_m2", "p3", { score1: 11, score2: 6 });
+    bracket = setMatchWinner(bracket, "mens_singles_r2_m1", "p1", { score1: 11, score2: 3 });
+    await repository.createTournament({
+      id: "tr_correction", groupId: "g1", name: "Correction regression", status: "active",
+      divisions: ["mens_singles"], brackets: { mens_singles: bracket },
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+
+    const result = await updateTournamentMatchAction({
+      tournamentId: "tr_correction", groupId: "g1", division: "mens_singles",
+      matchId: "mens_singles_r1_m1", winnerId: "p2", score1: 5, score2: 11,
+    });
+    expect(result.ok).toBe(true);
+    const stored = await repository.getTournament("tr_correction");
+    expect(stored?.brackets.mens_singles?.matches[2]).toMatchObject({
+      participant1Id: "p2", participant2Id: "p3", winnerId: null,
+      score1: null, score2: null, status: "pending",
+    });
   });
 
   it("swaps participant slots in a match", async () => {

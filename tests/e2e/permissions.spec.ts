@@ -551,6 +551,7 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(page.getByText("Public", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Rating over time" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Past Sessions" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Go to session" })).not.toBeVisible();
     await expect(page.getByText("This Profile is Private")).not.toBeVisible();
 
     // Navigate back to the group page

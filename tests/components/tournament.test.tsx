@@ -205,6 +205,23 @@ describe("Tournament UI Components", () => {
       expect(html).toContain("Reset Winner");
     });
 
+    it.each(["missing-finalist", "pending-result"])("hides a champion for an invalid final: %s", (reason) => {
+      const bracket = generateBracket("mens_singles", [
+        { id: "p1", name: "Alice", playerIds: ["p1"] },
+        { id: "p2", name: "Bob", playerIds: ["p2"] },
+        { id: "p3", name: "Charlie", playerIds: ["p3"] },
+      ], { randomize: false });
+      const final = bracket.matches.find((match) => match.round === 2)!;
+      final.participant1Id = "p1";
+      final.participant2Id = "p2";
+      final.winnerId = reason === "missing-finalist" ? "p3" : "p1";
+      final.status = reason === "pending-result" ? "pending" : "completed";
+      const html = renderToStaticMarkup(<TournamentBracketManager isOrganizer={false}
+        initialTournament={{ id: "tr_invalid", groupId: "g1", name: "Invalid final", status: "active",
+          divisions: ["mens_singles"], brackets: { mens_singles: bracket }, createdAt: new Date(), updatedAt: new Date() }} />);
+      expect(html).not.toContain("Men&#x27;s Singles Champion");
+    });
+
     it("renders 'Skipped' instead of 'BYE' when a match has a bye", () => {
       const bMens = generateBracket(
         "mens_singles",

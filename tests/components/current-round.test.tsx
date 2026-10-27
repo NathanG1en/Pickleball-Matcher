@@ -83,4 +83,13 @@ describe("CurrentRoundView Component", () => {
     expect(html).toContain("Wild");
     expect(html).toContain('aria-label="What is Matchmaking Variety?"');
   });
+
+  it("disables Start Round while round generation is active", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView {...sampleProps} isGeneratingRound={true} />
+    );
+
+    // The Start Round button should have the disabled attribute
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Start Round[\s\S]*?<\/button>/);
+  });
 });

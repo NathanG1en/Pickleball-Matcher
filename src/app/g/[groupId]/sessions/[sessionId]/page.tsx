@@ -1,3 +1,4 @@
+import { DomainError } from "@/lib/domain/errors";
 import React from "react";
 import { redirect } from "next/navigation";
 
@@ -35,7 +36,7 @@ export default async function ActiveSessionPage({
     repository.listAttendance(sessionId),
   ]);
 
-  if (!group || !sessionRecord) {
+  if (!group || !sessionRecord || sessionRecord.groupId !== groupId) {
     redirect(`/g/${groupId}`);
   }
 
@@ -88,7 +89,11 @@ export default async function ActiveSessionPage({
     );
   }
 
+  const allRequests = await repository.listPartnerRequests(sessionId);
+  const partnerRequests = isOrganizer ? allRequests : allRequests.filter(request => request.requesterPlayerId === viewerPlayer?.id || request.partnerPlayerId === viewerPlayer?.id);
+
   let initialProposal: RoundProposal | null = null;
+  let initialProposalError: string | null = null;
   const latestStarted = startedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
@@ -96,7 +101,8 @@ export default async function ActiveSessionPage({
     try {
       const sessionService = getActionSessionService();
       initialProposal = await sessionService.proposeRound(sessionId);
-    } catch {
+    } catch (error) {
+      if (error instanceof DomainError) initialProposalError = error.message;
       // In case not enough players or state error, proposal will remain null
       initialProposal = null;
     }
@@ -116,7 +122,9 @@ export default async function ActiveSessionPage({
         players={players}
         attendance={sanitizedAttendance}
         startedRounds={startedRounds}
+        partnerRequests={partnerRequests}
         initialProposal={initialProposal}
+        initialProposalError={initialProposalError}
         canManage={isOrganizer}
         currentViewerPlayerId={viewerPlayer?.id ?? null}
         pairSynergies={pairSynergies}

@@ -301,12 +301,14 @@ export default async function PlayerPublicProfilePage({
                       {item.wins}W – {item.losses}L
                     </p>
                   </div>
-                  <Link
-                    href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                    className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
-                  >
-                    Go to session
-                  </Link>
+                  {isOwner && (
+                    <Link
+                      href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
+                      className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+                    >
+                      Go to session
+                    </Link>
+                  )}
                 </article>
               );
             })
