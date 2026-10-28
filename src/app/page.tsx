@@ -153,7 +153,7 @@ export default async function HomePage() {
               <Link href="/player-signup" className="block w-full py-3 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Create an Account</Link>
               <div className="border-t-2 border-dashed border-neutral-300 pt-4">
                 <p className="mb-3 text-xs font-black uppercase tracking-wider text-neutral-600">In a rush?</p>
-                <Link href="/temporary" className="block w-full py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Make a Temporary Group</Link>
+                <Link href="/temporary" className="block w-full py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-black text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display">Start a Quick Session</Link>
               </div>
             </>
           )}
