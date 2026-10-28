@@ -903,6 +903,17 @@ export function SessionManagerClient({
     })
     .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || a.name.localeCompare(b.name));
 
+  const viewerSessionStats = currentViewerPlayerId
+    ? sessionPlayerStats.find((stat) => stat.id === currentViewerPlayerId) ?? {
+        id: currentViewerPlayerId,
+        name: players.find((p) => p.id === currentViewerPlayerId)?.name ?? playerNames[currentViewerPlayerId] ?? "You",
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+      }
+    : null;
+
   let durationFormatted: string | null = null;
   if (session.endedAt && session.startedAt) {
     const startMs = new Date(session.startedAt).getTime();
@@ -999,7 +1010,7 @@ export function SessionManagerClient({
         </header>
       )}
 
-      {(currentSession.status === "active" || currentSession.stayTogetherPairs?.length) && <StayTogetherEditor
+      {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && <StayTogetherEditor
         players={players}
         pairs={currentSession.stayTogetherPairs ?? []}
         eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
@@ -1087,6 +1098,35 @@ export function SessionManagerClient({
                 <span className="font-display text-xl font-black text-black">{sessionPlayerStats.length}</span>
               </div>
             </div>
+
+            {/* Personal Session View (when a player is signed in) */}
+            {viewerSessionStats && (
+              <div
+                data-testid="personal-session-summary"
+                className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
+              >
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+                  Your Session
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-neutral-700">
+                  You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
+                </p>
+              </div>
+            )}
 
             {/* Time / Duration info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">

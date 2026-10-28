@@ -112,6 +112,31 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain("11");
     expect(html).toContain("7");
     expect(html).toContain("← Back to Group");
+    expect(html).not.toContain('0<section data-testid="partner-requests"');
+  });
+
+  it("renders personal session view in session summary when a player is signed in", () => {
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        groupName="Downtown Club"
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="personal-session-summary"');
+    expect(html).toContain("Your Session");
+    expect(html).toContain("Games Won");
+    expect(html).toContain("Games Lost");
+    expect(html).toContain("Games Played");
+    expect(html).toContain("You won 1 game and lost 0 games.");
   });
 
   it.each(["active", "empty"] as const)("does not show recap highlights for an %s session", (scenario) => {

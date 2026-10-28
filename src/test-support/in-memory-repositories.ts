@@ -401,8 +401,21 @@ export class InMemoryRepositories implements DomainRepository {
     const history: PlayerSessionHistoryRecord[] = [];
     for (const player of memberships) {
       const group = this.state.groups.find((item) => item.id === player.groupId);
-      for (const attendance of this.state.attendance.filter((entry) => entry.playerId === player.id)) {
-        const session = this.state.sessions.find((item) => item.id === attendance.sessionId);
+      const sessionIds = new Set<string>();
+      for (const entry of this.state.attendance.filter((entry) => entry.playerId === player.id)) {
+        sessionIds.add(entry.sessionId);
+      }
+      for (const matchPlayer of this.state.matchPlayers.filter((mp) => mp.playerId === player.id)) {
+        const match = this.state.matches.find((m) => m.id === matchPlayer.matchId);
+        if (match) {
+          const round = this.state.rounds.find((r) => r.id === match.roundId);
+          if (round) {
+            sessionIds.add(round.sessionId);
+          }
+        }
+      }
+      for (const sId of sessionIds) {
+        const session = this.state.sessions.find((item) => item.id === sId);
         if (!session || !group) continue;
         const rounds = this.state.rounds.filter((round) => round.sessionId === session.id);
         const roundIds = new Set(rounds.map((round) => round.id));

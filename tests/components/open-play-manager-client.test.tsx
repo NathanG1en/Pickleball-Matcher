@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OpenPlayManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/open-play-manager-client";
-import type { AttendanceRecord, PlayerRecord, SessionRecord } from "@/lib/domain/types";
+import type { AttendanceRecord, PlayerRecord, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -175,6 +175,138 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('id="open-play-guest-gender"');
     expect(html).toContain("Male");
     expect(html).toContain("Female");
+  });
+
+  it("renders general session info and personal session view with games won and lost in open play", () => {
+    const startedRounds: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:05:00.000Z"),
+          startedAt: new Date("2026-10-10T14:05:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 8,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:20:00.000Z"),
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_1", playerId: "p1", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p2", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p3", team: 2, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p4", team: 2, ratingBefore: 1200, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // General session info
+    expect(html).toContain("Courts");
+    expect(html).toContain("Total Games");
+    expect(html).toContain("Players");
+    expect(html).toContain("Started:");
+
+    // Personal session view
+    expect(html).toContain('data-testid="personal-session-summary"');
+    expect(html).toContain("Your Session");
+    expect(html).toContain("Games Won");
+    expect(html).toContain("Games Lost");
+    expect(html).toContain("Games Played");
+    expect(html).toContain("You won 1 game and lost 0 games.");
+  });
+
+  it("renders Player Summary leaderboard when open play session is completed", () => {
+    const completedSession: SessionRecord = {
+      ...session,
+      status: "completed",
+      endedAt: new Date("2026-10-10T15:30:00.000Z"),
+    };
+
+    const startedRounds: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "completed",
+          seed: 1,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:05:00.000Z"),
+          startedAt: new Date("2026-10-10T14:05:00.000Z"),
+          completedAt: new Date("2026-10-10T14:20:00.000Z"),
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 8,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:20:00.000Z"),
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_1", playerId: "p1", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p2", team: 1, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p3", team: 2, ratingBefore: 1200, ratingAfter: null },
+          { matchId: "m_1", playerId: "p4", team: 2, ratingBefore: 1200, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain("Player Summary");
+    expect(html).toContain("1W – 0L");
+    expect(html).toContain("0W – 1L");
+    expect(html).toContain("Ended:");
+    expect(html).toContain("Duration:");
   });
 });
 

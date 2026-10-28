@@ -490,6 +490,8 @@ export async function submitOpenPlayGameAction(
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: saved };
   } catch (err) {
     return {
@@ -633,6 +635,8 @@ export async function updateOpenPlayGameAction(
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: saved };
   } catch (err) {
     return {
@@ -683,8 +687,13 @@ export async function endOpenPlaySessionAction(
     };
     await repository.updateSession(updatedSession);
 
+    await replayRatings(parsed.data.groupId, repository);
+    await replaySynergies(repository);
+
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: updatedSession };
   } catch (err) {
     return {
@@ -850,6 +859,8 @@ export async function deleteOpenPlayGameAction(
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
     return { ok: true, data: { id: parsed.data.matchId } };
   } catch (err) {
     return {
