@@ -30,7 +30,7 @@ import type {
 } from "@/lib/domain/types";
 
 import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rating-slider";
-import { ClientDate } from "@/components/ui/client-date-time";
+import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { formatSessionDate } from "@/lib/utils/date";
 export { RATING_TICKS, type RatingTick };
 
@@ -169,6 +169,78 @@ export function OpenPlayManagerClient({
         };
       }),
   ), [localStartedRounds, playerMap, deletedMatchIds]);
+
+  const completedMatches = useMemo(
+    () => allMatches.filter((m) => m.status === "completed"),
+    [allMatches],
+  );
+
+  const openPlayPlayerStats = useMemo(() => {
+    const participantIds = new Set<string>();
+    for (const p of checkedInPlayers) {
+      participantIds.add(p.id);
+    }
+    for (const m of completedMatches) {
+      for (const id of [...m.team1PlayerIds, ...m.team2PlayerIds]) {
+        participantIds.add(id);
+      }
+    }
+
+    return Array.from(participantIds)
+      .map((pId) => {
+        const player = playerMap.get(pId);
+        let gamesPlayed = 0;
+        let wins = 0;
+        let losses = 0;
+
+        for (const m of completedMatches) {
+          if (m.team1Score === null || m.team2Score === null) continue;
+          const isT1 = m.team1PlayerIds.includes(pId);
+          const isT2 = m.team2PlayerIds.includes(pId);
+          if (!isT1 && !isT2) continue;
+          gamesPlayed += 1;
+          if (isT1 && m.team1Score > m.team2Score) wins += 1;
+          else if (isT2 && m.team2Score > m.team1Score) wins += 1;
+          else losses += 1;
+        }
+
+        const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+        return {
+          id: pId,
+          name: player?.name ?? pId,
+          gamesPlayed,
+          wins,
+          losses,
+          winRate,
+        };
+      })
+      .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || a.name.localeCompare(b.name));
+  }, [checkedInPlayers, completedMatches, playerMap]);
+
+  const viewerSessionStats = currentViewerPlayerId
+    ? openPlayPlayerStats.find((stat) => stat.id === currentViewerPlayerId) ?? {
+        id: currentViewerPlayerId,
+        name: playerMap.get(currentViewerPlayerId)?.name ?? "You",
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+      }
+    : null;
+
+  let durationFormatted: string | null = null;
+  if (session.endedAt && session.startedAt) {
+    const startMs = new Date(session.startedAt).getTime();
+    const endMs = new Date(session.endedAt).getTime();
+    const diffMinutes = Math.max(1, Math.round((endMs - startMs) / (1000 * 60)));
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    if (hours > 0) {
+      durationFormatted = `${hours}h ${mins}m`;
+    } else {
+      durationFormatted = `${mins}m`;
+    }
+  }
 
   // Automatically find the last game in the session for the logged in user (or most recent game in session)
   const lastSessionGame = useMemo(() => {
@@ -941,6 +1013,70 @@ export function OpenPlayManagerClient({
           )}
         </div>
 
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
+            <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
+          </div>
+          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+            <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
+          </div>
+          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+            <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
+          </div>
+        </div>
+
+        {/* Personal Session View (when a player is signed in) */}
+        {viewerSessionStats && (
+          <div
+            data-testid="personal-session-summary"
+            className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
+          >
+            <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+              Your Session
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
+              </div>
+              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
+              </div>
+              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
+              </div>
+            </div>
+            <p className="text-xs font-bold text-neutral-700">
+              You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
+            </p>
+          </div>
+        )}
+
+        {/* Time / Duration info */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
+          <ClientTime
+            date={session.startedAt}
+            prefix={<strong className="text-black">Started: </strong>}
+          />
+          {session.endedAt && (
+            <ClientTime
+              date={session.endedAt}
+              prefix={<strong className="text-black">Ended: </strong>}
+            />
+          )}
+          {durationFormatted && (
+            <span>
+              <strong className="text-black">Duration:</strong> {durationFormatted}
+            </span>
+          )}
+        </div>
+
         {error && (
           <div role="alert" className="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-700 text-xs font-bold">
             {error}
@@ -957,6 +1093,36 @@ export function OpenPlayManagerClient({
 
       {session.status === "completed" && (
         <SessionHighlights rounds={localStartedRounds} players={players} excludedMatchIds={deletedMatchIds} />
+      )}
+
+      {session.status === "completed" && openPlayPlayerStats.length > 0 && (
+        <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+          <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
+            Player Summary
+          </h2>
+          <div className="divide-y-2 divide-neutral-100">
+            {openPlayPlayerStats.map((stat) => (
+              <div key={stat.id} className="py-2.5 flex items-center justify-between">
+                <div>
+                  <span className="font-black text-black text-sm block">{stat.name}</span>
+                  <span className="text-xs font-bold text-neutral-500">
+                    {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg border-2 border-black bg-neutral-50 shadow-[1px_1px_0px_0px_#000]">
+                    {stat.wins}W – {stat.losses}L
+                  </span>
+                  {stat.gamesPlayed > 0 && (
+                    <span className="text-xs font-bold text-neutral-600">
+                      ({stat.winRate}%)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Attendance & Join Section */}

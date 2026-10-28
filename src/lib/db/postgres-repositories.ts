@@ -946,6 +946,14 @@ export class PostgresRepositories implements DomainRepository {
         join rounds r on r.id = m.round_id
         join sessions s on s.id = r.session_id
         group by mp.player_id, s.id
+      ), player_sessions as (
+        select sa.player_id, sa.session_id
+        from session_attendance sa
+        union
+        select mp.player_id, r.session_id
+        from match_players mp
+        join matches m on m.id = mp.match_id
+        join rounds r on r.id = m.round_id
       )
       select s.id as session_id, g.id as group_id, g.name as group_name,
         s.started_at, coalesce(res.wins, 0)::int as wins,
@@ -955,8 +963,8 @@ export class PostgresRepositories implements DomainRepository {
         s.name as session_name
       from memberships membership
       join groups g on g.id = membership.group_id
-      join session_attendance sa on sa.player_id = membership.id
-      join sessions s on s.id = sa.session_id
+      join player_sessions ps on ps.player_id = membership.id
+      join sessions s on s.id = ps.session_id
       left join results res on res.player_id = membership.id and res.session_id = s.id
       order by s.started_at desc, g.name
     `;

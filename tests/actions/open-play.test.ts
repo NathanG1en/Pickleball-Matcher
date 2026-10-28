@@ -271,10 +271,24 @@ describe("Open Play Server Actions", () => {
     expect(synergy?.wins).toBe(1);
   });
 
-  it("ends open play session and marks session and rounds completed", async () => {
+  it("ends open play session and marks session and rounds completed, updating player profiles", async () => {
     const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
     expect(startRes.ok).toBe(true);
     if (!startRes.ok) return;
+
+    await joinOpenPlaySessionAction({ groupId: "g1", sessionId: startRes.data.id });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user2" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user3" });
+    await addOpenPlayPlayerAction({ groupId: "g1", sessionId: startRes.data.id, playerId: "p-user4" });
+
+    await submitOpenPlayGameAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+      team1PlayerIds: ["p-host", "p-user2"],
+      team2PlayerIds: ["p-user3", "p-user4"],
+      team1Score: 11,
+      team2Score: 7,
+    });
 
     const endRes = await endOpenPlaySessionAction({
       groupId: "g1",
@@ -288,6 +302,21 @@ describe("Open Play Server Actions", () => {
 
     const rounds = await repository.listStartedRounds(startRes.data.id);
     expect(rounds[0].round.status).toBe("completed");
+
+    // Verify player profile has wins and losses from open play session
+    const historyHost = await repository.listPlayerSessionHistory("acc-host");
+    const sessionHistory = historyHost.find((h) => h.sessionId === startRes.data.id);
+    expect(sessionHistory).toBeDefined();
+    expect(sessionHistory?.type).toBe("open_play");
+    expect(sessionHistory?.wins).toBe(1);
+    expect(sessionHistory?.losses).toBe(0);
+
+    const historyUser3 = await repository.listPlayerSessionHistory("acc-user3");
+    const user3SessionHistory = historyUser3.find((h) => h.sessionId === startRes.data.id);
+    expect(user3SessionHistory).toBeDefined();
+    expect(user3SessionHistory?.type).toBe("open_play");
+    expect(user3SessionHistory?.wins).toBe(0);
+    expect(user3SessionHistory?.losses).toBe(1);
   });
 
   it("deletes a recorded open play game and recalculates", async () => {
