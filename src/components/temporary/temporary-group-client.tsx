@@ -706,6 +706,7 @@ export function TemporaryGroupClient({
               required
               rows={6}
               value={playerNames}
+              aria-label="Player names · one per line"
               onChange={(event) => {
                 const value = event.target.value;
                 const count = value.split(/[\n,]/).map((name) => name.trim()).filter(Boolean).length;
@@ -726,6 +727,7 @@ export function TemporaryGroupClient({
             </label>
             <select
               value={courtCount}
+              aria-label="Number of courts"
               onChange={(event) => {
                 const count = Number(event.target.value);
                 updateDraft({ courtCount: count, courtSizes: defaultCourtSizes(parsedNames.length, count) });
