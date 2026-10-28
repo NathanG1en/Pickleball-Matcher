@@ -10,6 +10,7 @@ export interface BackButtonProps {
   label?: React.ReactNode;
   ariaLabel?: string;
   className?: string;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
 }
 
 export function BackButton({
@@ -18,6 +19,7 @@ export function BackButton({
   label = "← Back",
   ariaLabel = "Go back",
   className,
+  onClick,
 }: BackButtonProps) {
   const router = useRouter();
 
@@ -27,13 +29,22 @@ export function BackButton({
 
   if (href) {
     return (
-      <Link href={href} className={buttonClass} aria-label={ariaLabel}>
+      <Link
+        href={href}
+        className={buttonClass}
+        aria-label={ariaLabel}
+        onClick={onClick}
+      >
         {label}
       </Link>
     );
   }
 
-  const handleBack = () => {
+  const handleBack = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (onClick) {
+      onClick(event);
+      return;
+    }
     if (typeof window !== "undefined") {
       const hasExternalReferrer =
         typeof document !== "undefined" &&

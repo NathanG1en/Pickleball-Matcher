@@ -45,6 +45,8 @@ export const saveTemporaryGroupSchema = z.object({
   players: z.array(z.object({ id: z.string().min(1).max(128), name: z.string().trim().min(1).max(80), rating: z.number().finite().min(100).max(3_000) }).strict()).min(2).max(24),
   rounds: z.array(tempRoundSchema).max(100),
   currentRound: tempRoundSchema.nullable().optional(),
+  targetGroupId: z.string().min(1).max(128).optional(),
+  playerMappings: z.record(z.string().min(1).max(128), z.string().max(128)).optional(),
 }).strict().superRefine((data, context) => {
   const playerIds = data.players.map((player) => player.id);
   const playerSet = new Set(playerIds);

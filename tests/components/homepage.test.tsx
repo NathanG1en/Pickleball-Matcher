@@ -83,7 +83,7 @@ describe("HomePage authentication states", () => {
     // Sign in and temporary group options should be visible
     expect(html).toContain("Sign In to Play");
     expect(html).toContain("Create an Account");
-    expect(html).toContain("Make a Temporary Group");
+    expect(html).toContain("Start a Quick Session");
     expect(html).not.toContain("Legacy organizer PIN sign in");
 
     // Elevated pickleball experience present, but feature slogans/boxes removed
@@ -158,7 +158,7 @@ describe("HomePage authentication states", () => {
 
     // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
     expect(html).not.toContain("Sign In to Play");
-    expect(html).not.toContain("Make a Temporary Group");
+    expect(html).not.toContain("Start a Quick Session");
     expect(html).not.toContain("Legacy organizer PIN sign in");
   });
 

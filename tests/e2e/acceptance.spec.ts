@@ -351,7 +351,6 @@ for (const courtSizes of [[4], [4, 3, 2]]) {
   test(`temporary group summarizes ${courtSizes.length} courts separately from player capacity`, async ({ page }) => {
     const capacity = courtSizes.reduce((sum, size) => sum + size, 0);
     await page.goto("/temporary");
-    await page.getByRole("textbox", { name: "Group name", exact: true }).fill("Court summary regression");
     await page.getByRole("textbox", { name: "Player names · one per line", exact: true }).fill(
       Array.from({ length: capacity + 1 }, (_, index) => `Player ${index + 1}`).join("\n"),
     );
@@ -359,7 +358,7 @@ for (const courtSizes of [[4], [4, 3, 2]]) {
     for (const [index, size] of courtSizes.entries()) {
       await page.getByRole("combobox", { name: `Court ${index + 1}`, exact: true }).selectOption(String(size));
     }
-    await page.getByRole("button", { name: "Start Temporary Group", exact: true }).click();
+    await page.getByRole("button", { name: "Start Quick Session", exact: true }).click();
     const summary = `${courtSizes.length} court${courtSizes.length === 1 ? "" : "s"} · ${capacity} playing · 1 sitting out`;
     await expect(page.getByText(summary, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Generate First Round", exact: true }).click();

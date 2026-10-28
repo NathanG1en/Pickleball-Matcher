@@ -228,6 +228,15 @@ describe("Reusable UI Components", () => {
       expect(html).toContain('href="/g/group_1"');
       expect(html).toContain('aria-label="Return to group dashboard"');
     });
+
+    it("renders button with custom onClick handler", () => {
+      const handleClick = vi.fn();
+      const html = renderToStaticMarkup(
+        <BackButton onClick={handleClick} ariaLabel="Go back" />
+      );
+      expect(html).toContain("← Back");
+      expect(html).toContain('aria-label="Go back"');
+    });
   });
 
   describe("RatingSlider", () => {
