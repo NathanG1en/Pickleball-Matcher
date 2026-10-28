@@ -836,14 +836,14 @@ test("Open Play chemistry corrections replace the game's contribution", async ({
   await expect(page.getByRole("heading", { name: "Games Played (1)", exact: true })).toBeVisible({ timeout: 20_000 });
   const profile = await page.context().newPage();
   await profile.goto("/players");
-  await expect(profile.getByText("+5 Synergy", { exact: true })).toBeVisible();
+  await expect(profile.getByText("+5% Synergy", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByRole("spinbutton", { name: "Edit Team 1 Score", exact: true }).fill("0");
   await page.getByRole("spinbutton", { name: "Edit Team 2 Score", exact: true }).fill("11");
   await page.getByRole("button", { name: "Save Changes", exact: true }).click();
   await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible({ timeout: 20_000 });
   await profile.reload();
-  await expect(profile.getByText("-5 Synergy", { exact: true })).toBeVisible();
+  await expect(profile.getByText("-5% Synergy", { exact: true })).toBeVisible();
   await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Delete", exact: true }).click();

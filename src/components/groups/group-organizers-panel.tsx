@@ -420,7 +420,7 @@ export function GroupOrganizersPanel({
                                   <span className="inline-flex items-center gap-1 text-amber-700">
                                     <span>·</span>
                                     <HandshakeIcon className="h-3 w-3 shrink-0" />
-                                    <span>Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore > 0 ? `+${result.bestPartner.synergyScore}` : result.bestPartner.synergyScore})</span>
+                                    <span>Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore > 0 ? `+${result.bestPartner.synergyScore}%` : `${result.bestPartner.synergyScore}%`})</span>
                                   </span>
                                 )}
                               </div>

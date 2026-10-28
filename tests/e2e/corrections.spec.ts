@@ -293,8 +293,8 @@ test("host synergy follows current partners after manual swaps and new proposals
 
   await arrangeTeam1(winners);
   await reveal();
-  await expectCurrentSynergy(1, "+4 (1 games)");
-  await expectCurrentSynergy(2, "-4 (1 games)");
+  await expectCurrentSynergy(1, "+4% (1 games)");
+  await expectCurrentSynergy(2, "-4% (1 games)");
   await close();
 
   // Neither mixed partnership has ever played, so neither may inherit a saved score.
@@ -307,14 +307,14 @@ test("host synergy follows current partners after manual swaps and new proposals
   // Moving a known partnership to the other team slot preserves its history.
   await arrangeTeam1(losers);
   await reveal();
-  await expectCurrentSynergy(1, "-4 (1 games)");
-  await expectCurrentSynergy(2, "+4 (1 games)");
+  await expectCurrentSynergy(1, "-4% (1 games)");
+  await expectCurrentSynergy(2, "+4% (1 games)");
   await close();
 
   // A refreshed lineup must agree with the same account-pair history.
   await page.reload();
   const pairKey = (pair: string[]) => [...pair].sort().join("|");
-  const expected = new Map([[pairKey(winners), "+4 (1 games)"], [pairKey(losers), "-4 (1 games)"]]);
+  const expected = new Map([[pairKey(winners), "+4% (1 games)"], [pairKey(losers), "-4% (1 games)"]]);
   await reveal();
   for (const team of [1, 2]) {
     await expectCurrentSynergy(team, expected.get(pairKey(await teamNames(team))) ?? "New Duo (0 games)");
@@ -617,10 +617,10 @@ test("normal score corrections refresh chemistry without adding shared games", a
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   const profile = await page.context().newPage();
   await profile.goto("/players");
-  const score = profile.getByText(/[+−-]5 Synergy/i);
+  const score = profile.getByText(/[+−-]5% Synergy/i);
   await expect(score).toBeVisible();
   const originalScore = await score.innerText();
-  const correctedScore = originalScore.startsWith("+") ? "-5 Synergy" : "+5 Synergy";
+  const correctedScore = originalScore.startsWith("+") ? "-5% Synergy" : "+5% Synergy";
   await profile.screenshot({ path: testInfo.outputPath("chemistry-before-correction.png"), fullPage: true });
   await page.getByRole("button", { name: "Edit Result", exact: true }).click();
   await page.getByRole("spinbutton", { name: "T1", exact: true }).fill("0");

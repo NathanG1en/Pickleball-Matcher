@@ -166,7 +166,7 @@ export default async function PlayerPublicProfilePage({
                 {(() => {
                   const raw = bestPartner.synergyScore;
                   const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
-                  const sign = score > 0 ? `+${score}` : `${score}`;
+                  const sign = score > 0 ? `+${score}%` : `${score}%`;
                   return (
                     <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000] ${
                       score > 0
@@ -217,9 +217,11 @@ export default async function PlayerPublicProfilePage({
               </div>
               <div className="text-right">
                 <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000]">
-                  {viewerSynergy.synergyScore > 1
-                    ? Math.round(viewerSynergy.synergyScore)
-                    : Math.round(viewerSynergy.synergyScore * 100)}%
+                  {(() => {
+                    const raw = viewerSynergy.synergyScore;
+                    const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                    return score > 0 ? `+${score}%` : `${score}%`;
+                  })()}
                 </span>
               </div>
             </div>

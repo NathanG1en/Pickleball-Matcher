@@ -116,7 +116,7 @@ function CurrentRoundEditor({
     return (
       <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-[10px] font-black uppercase`}>
         <ZapIcon className="h-3 w-3 shrink-0" />
-        <span>{score > 0 ? `+${score}` : `${score}`} Synergy</span>
+        <span>{score > 0 ? `+${score}%` : `${score}%`} Synergy</span>
       </span>
     );
   };

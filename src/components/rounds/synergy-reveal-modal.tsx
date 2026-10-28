@@ -59,7 +59,7 @@ function resolveTeamSynergy(
   }
 
   if (synInfo?.score !== undefined && synInfo?.matchesPlayed !== undefined) {
-    const formatted = synInfo.score > 0 ? `+${synInfo.score}` : `${synInfo.score}`;
+    const formatted = synInfo.score > 0 ? `+${synInfo.score}%` : `${synInfo.score}%`;
     const badgeStyle =
       synInfo.score > 0
         ? "border-black bg-[#ccff00] text-black"
