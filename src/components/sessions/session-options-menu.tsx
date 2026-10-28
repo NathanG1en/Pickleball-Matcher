@@ -61,14 +61,14 @@ export function SessionOptionsMenu({
 
   const handleOpenRename = () => {
     setMenuOpen(false);
-    setRenameInput(effectiveSessionName ?? "");
+    setRenameInput(sessionName ?? "");
     setRenameError(null);
     setShowRenameModal(true);
   };
 
   const handleCloseRename = () => {
     if (isPending) return;
-    setRenameInput(effectiveSessionName ?? "");
+    setRenameInput(sessionName ?? "");
     setRenameError(null);
     setShowRenameModal(false);
   };
@@ -77,7 +77,7 @@ export function SessionOptionsMenu({
     e.preventDefault();
     const trimmed = renameInput.trim();
     if (!trimmed || isPending) return;
-    if (trimmed === (effectiveSessionName ?? "").trim()) {
+    if (trimmed === (sessionName ?? "").trim()) {
       setShowRenameModal(false);
       return;
     }
