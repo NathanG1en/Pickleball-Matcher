@@ -37,6 +37,8 @@ export interface ResultsEntryViewProps {
   readonly scoreDrafts?: ScoreDrafts;
   readonly hasUnsavedScores?: boolean;
   readonly onScoreChange?: (matchId: string, team: "team1" | "team2", value: string) => void;
+  readonly courtCount?: number;
+  readonly sittingNames?: readonly string[];
 }
 
 export function ResultsEntryView({
@@ -55,6 +57,8 @@ export function ResultsEntryView({
   scoreDrafts = {},
   hasUnsavedScores = false,
   onScoreChange,
+  courtCount,
+  sittingNames = [],
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -106,6 +110,14 @@ export function ResultsEntryView({
         </div>
       </div>
 
+      {/* Sitting Out Action Bar */}
+      {sittingNames && sittingNames.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+          <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
+          <span className="text-xs font-black text-black">{sittingNames.join(", ")}</span>
+        </div>
+      )}
+
       <div className="space-y-4">
         {matches.map((match) => {
           const matchScores = getScores(match);
@@ -113,6 +125,7 @@ export function ResultsEntryView({
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
           const isMatchSaving = isPending || Boolean(savingMatchIds?.has(match.id));
+          const isPickup = courtCount !== undefined && match.courtNumber > courtCount;
 
           const isSingles = match.team1Names.length === 1 && match.team2Names.length === 1;
 
@@ -133,6 +146,11 @@ export function ResultsEntryView({
                   <span className="font-display text-2xl font-black uppercase text-black">
                     Court {match.courtNumber}
                   </span>
+                  {isPickup && (
+                    <span className="text-xs font-black uppercase text-black bg-[#ccff00] border border-black px-2 py-0.5 rounded-md shadow-[1px_1px_0px_0px_#000]">
+                      Pickup Game
+                    </span>
+                  )}
                   {isSingles && (
                     <span className="text-xs font-black uppercase text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded-md">
                       Singles (Optional)

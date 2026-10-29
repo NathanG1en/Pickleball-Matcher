@@ -32,6 +32,7 @@ import { formatDupr } from "@/lib/domain/rating-display";
 import { XIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
+  MatchPlayerRecord,
   PartnerRequestRecord,
   MatchRecord,
   PlayerRecord,
@@ -43,6 +44,7 @@ import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
+import { AddPickupGameModal } from "@/components/sessions/add-pickup-game-modal";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
@@ -158,6 +160,7 @@ export function SessionManagerClient({
   const [showInProgressModal, setShowInProgressModal] = useState(false);
   const [doNotAskAgain, setDoNotAskAgain] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showAddPickupModal, setShowAddPickupModal] = useState(false);
   const [modalTab, setModalTab] = useState<"attendance" | "court_config">("attendance");
   const [courtConfigCourts, setCourtConfigCourts] = useState<number>(session.courtCount);
   const [courtConfigPlayerCounts, setCourtConfigPlayerCounts] = useState<(2 | 3 | 4)[]>(
@@ -169,6 +172,71 @@ export function SessionManagerClient({
   const [courtConfigMessage, setCourtConfigMessage] = useState<string | null>(null);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
+
+  const handlePickupGameAdded = (match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]) => {
+    let hadNoRound = false;
+    setLocalStartedRounds((prev) => {
+      const target = prev.find((sr) => sr.round.id === match.roundId);
+      if (!target) {
+        hadNoRound = true;
+        const newRoundNumber = prev.length + 1;
+        const completedDate =
+          match.completedAt instanceof Date
+            ? match.completedAt
+            : match.completedAt
+              ? new Date(match.completedAt)
+              : new Date();
+        const newRoundRecord: StartedRoundRecord = {
+          round: {
+            id: match.roundId,
+            sessionId: currentSession.id,
+            roundNumber: newRoundNumber,
+            status: "completed",
+            seed: 0,
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: completedDate,
+            startedAt: completedDate,
+            completedAt: completedDate,
+            version: 1,
+          },
+          matches: [match],
+          matchPlayers: [...matchPlayers],
+          sits: [],
+        };
+        return [...prev, newRoundRecord];
+      }
+      return prev.map((sr) => {
+        if (sr.round.id !== match.roundId) return sr;
+        return {
+          ...sr,
+          matches: [...sr.matches.filter((m) => m.id !== match.id), match],
+          matchPlayers: [
+            ...(sr.matchPlayers ?? []).filter((mp) => mp.matchId !== match.id),
+            ...matchPlayers,
+          ],
+        };
+      });
+    });
+    if (hadNoRound) {
+      setCurrentSession((prev) => ({
+        ...prev,
+        currentRoundNumber: Math.max(prev.currentRoundNumber, 1),
+        version: prev.version + 1,
+      }));
+      if (canManage) {
+        handleRegenerate();
+      }
+    }
+    router.refresh();
+  };
 
   const openAttendanceModal = () => {
     setModalTab("attendance");
@@ -950,6 +1018,13 @@ export function SessionManagerClient({
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
+                onClick={() => setShowAddPickupModal(true)}
+                className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              >
+                + Add Game
+              </button>
+              <button
+                type="button"
                 onClick={openAttendanceModal}
                 className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
               >
@@ -1232,7 +1307,14 @@ export function SessionManagerClient({
                             data-testid={`completed-match-${m.id}`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-black text-black">Court {m.courtNumber}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-black text-black">Court {m.courtNumber}</span>
+                                {m.courtNumber > session.courtCount && (
+                                  <Badge variant="muted" className="text-[10px] py-0 px-1.5">
+                                    Pickup
+                                  </Badge>
+                                )}
+                              </div>
                               <span className="font-display text-sm font-black text-black">
                                 {m.status === "cancelled"
                                   ? "Cancelled"
@@ -1354,6 +1436,8 @@ export function SessionManagerClient({
                 pickledMatchId={pickledMatchId}
                 roundId={latestStarted.round.id}
                 roundNumber={latestStarted.round.roundNumber}
+                courtCount={currentSession.courtCount}
+                sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
                 matches={scoreEntries}
                 fieldErrors={fieldErrors}
                 isPending={isPending}
@@ -1862,6 +1946,21 @@ export function SessionManagerClient({
             </div>
           </div>
         </Modal>
+      )}
+
+      {canManage && (
+        <AddPickupGameModal
+          isOpen={showAddPickupModal}
+          onClose={() => setShowAddPickupModal(false)}
+          groupId={groupId}
+          sessionId={currentSession.id}
+          players={players}
+          attendance={currentAttendance}
+          activeRound={latestStarted}
+          activeProposal={activeProposal}
+          courtCount={currentSession.courtCount}
+          onSuccess={handlePickupGameAdded}
+        />
       )}
     </div>
   );

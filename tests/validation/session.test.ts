@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { deleteSessionSchema, manualCourtSchema, startRoundSchema, updateCourtConfigSchema } from "@/lib/validation/session";
+import {
+  deleteSessionSchema,
+  manualCourtSchema,
+  startRoundSchema,
+  submitSessionPickupGameSchema,
+  updateCourtConfigSchema,
+} from "@/lib/validation/session";
 
 describe("manualCourtSchema", () => {
   it("accepts balanced doubles court (2 vs 2)", () => {
@@ -177,6 +183,89 @@ describe("updateCourtConfigSchema", () => {
       ...baseInput,
       courtCount: 2,
       courtPlayerCounts: [5, 4],
+    });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("submitSessionPickupGameSchema", () => {
+  const basePickupInput = {
+    groupId: "grp-1",
+    sessionId: "ses-1",
+    team1PlayerIds: ["p1", "p2"],
+    team2PlayerIds: ["p3", "p4"],
+    team1Score: 11,
+    team2Score: 7,
+    rated: true,
+  };
+
+  it("accepts valid doubles pickup game", () => {
+    const res = submitSessionPickupGameSchema.safeParse(basePickupInput);
+    expect(res.success).toBe(true);
+  });
+
+  it("accepts valid singles pickup game", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1PlayerIds: ["p1"],
+      team2PlayerIds: ["p3"],
+      team1Score: 15,
+      team2Score: 13,
+      rated: false,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects ties", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1Score: 11,
+      team2Score: 11,
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects duplicate players across teams", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1PlayerIds: ["p1", "p2"],
+      team2PlayerIds: ["p1", "p4"],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects duplicate players within the same team", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1PlayerIds: ["p1", "p1"],
+      team2PlayerIds: ["p3", "p4"],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects teams with more than 2 players", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1PlayerIds: ["p1", "p2", "p5"],
+      team2PlayerIds: ["p3", "p4"],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects empty teams", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1PlayerIds: [],
+      team2PlayerIds: ["p3", "p4"],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects negative scores", () => {
+    const res = submitSessionPickupGameSchema.safeParse({
+      ...basePickupInput,
+      team1Score: -1,
+      team2Score: 11,
     });
     expect(res.success).toBe(false);
   });

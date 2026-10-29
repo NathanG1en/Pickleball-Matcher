@@ -240,7 +240,7 @@ describe("Reusable UI Components", () => {
   });
 
   describe("RatingSlider", () => {
-    it("renders slider with floating value box, ticks, and description", () => {
+    it("renders slider with floating value box, ticks, and description with touch-pan-y for scroll safety", () => {
       const html = renderToStaticMarkup(
         <RatingSlider
           value={3.5}
@@ -255,6 +255,8 @@ describe("Reusable UI Components", () => {
       expect(html).toContain('data-testid="rating-tick-2"');
       expect(html).toContain('data-testid="rating-tick-6"');
       expect(html).toContain("Advanced Intermediate");
+      expect(html).toContain("touch-pan-y");
+      expect(html).not.toContain("touch-none");
     });
   });
 });
