@@ -57,7 +57,11 @@ export function FilterablePlayerSelect({
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return uniqueOptions;
-    return uniqueOptions.filter((opt) => opt.name.toLowerCase().includes(q));
+    return uniqueOptions.filter(
+      (opt) =>
+        opt.name.toLowerCase().includes(q) ||
+        Boolean(opt.selectedElsewhere && "(selected)".includes(q)),
+    );
   }, [uniqueOptions, searchQuery]);
 
   // Close on click outside or Escape

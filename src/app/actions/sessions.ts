@@ -5,11 +5,15 @@ import {
   defaultDependencies,
   getActionRepository,
   getActionSessionService,
+  getActiveOrganizerSession,
+  getActivePlayerAccountId,
   requireOrganizer,
 } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
 import type {
   AttendanceRecord,
+  MatchPlayerRecord,
+  MatchRecord,
   RoundProposal,
   RoundRecord,
   SessionRecord,
@@ -27,6 +31,7 @@ import {
   reshuffleRoundSchema,
   startRoundSchema,
   startSessionSchema,
+  submitSessionPickupGameSchema,
   updateStayTogetherPairsSchema,
   undoLatestRoundSchema,
   updateCourtConfigSchema,
@@ -587,5 +592,155 @@ export async function duplicateSessionAction(
     };
   }
 }
+
+export async function submitSessionPickupGameAction(
+  input: unknown,
+): Promise<ActionResult<{ match: MatchRecord; matchPlayers: readonly MatchPlayerRecord[] }>> {
+  const parsed = submitSessionPickupGameSchema.safeParse(input);
+  if (!parsed.success) {
+    const errorMap = parsed.error.flatten().fieldErrors;
+    const msg =
+      errorMap.team2Score?.[0] ??
+      errorMap.team1Score?.[0] ??
+      errorMap.team2PlayerIds?.[0] ??
+      parsed.error.issues[0]?.message ??
+      "Invalid pickup game submission.";
+    return { ok: false, error: msg, fieldErrors: errorMap };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+
+    const isCompleted = session.status === "completed";
+    const accountId = await getActivePlayerAccountId();
+    const isOrganizer = accountId ? await repository.isGroupOrganizer(parsed.data.groupId, accountId) : false;
+    const organizerSession = await getActiveOrganizerSession();
+    const hasOrgSession = organizerSession?.groupId === parsed.data.groupId;
+    const isOrganizerOrHost = isOrganizer || hasOrgSession;
+
+    if (isCompleted && !isOrganizerOrHost) {
+      return { ok: false, error: "Only organizers can add games to an ended session." };
+    }
+
+    const attendance = await repository.listAttendance(session.id);
+    const presentPlayerIds = new Set(
+      attendance.filter((a) => a.leftRound === null).map((a) => a.playerId),
+    );
+
+    const allGamePlayerIds = [...parsed.data.team1PlayerIds, ...parsed.data.team2PlayerIds];
+    for (const pid of allGamePlayerIds) {
+      if (!presentPlayerIds.has(pid)) {
+        return {
+          ok: false,
+          error: "All players in a pickup game must be currently checked in to the session.",
+        };
+      }
+    }
+
+    const saved = await repository.transaction(async (repo) => {
+      await repo.lockSynergyState();
+      const startedRounds = await repo.listStartedRounds(session.id);
+
+      // Prefer currently in-progress round, then latest round, or create initial round
+      let targetRound = startedRounds.find((r) => r.round.status === "started")?.round;
+      if (!targetRound) {
+        targetRound = startedRounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0]?.round;
+      }
+
+      if (!targetRound) {
+        const newRoundId = defaultDependencies.nextId("round");
+        const newRound: StartedRoundRecord = {
+          round: {
+            id: newRoundId,
+            sessionId: session.id,
+            roundNumber: 1,
+            status: "completed",
+            seed: defaultDependencies.nextSeed(),
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: defaultDependencies.now(),
+            startedAt: defaultDependencies.now(),
+            completedAt: defaultDependencies.now(),
+            version: 1,
+          },
+          matches: [],
+          matchPlayers: [],
+          sits: [],
+        };
+        await repo.insertStartedRound(newRound);
+        await repo.updateSession({
+          ...session,
+          currentRoundNumber: 1,
+          version: session.version + 1,
+        });
+        targetRound = newRound.round;
+      }
+
+      const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
+      const maxCourt = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+      const courtNumber = Math.max(maxCourt + 1, session.courtCount + 1);
+
+      const matchId = defaultDependencies.nextId("match");
+      const match: MatchRecord = {
+        id: matchId,
+        roundId: targetRound.id,
+        courtNumber,
+        status: "completed",
+        team1Score: parsed.data.team1Score,
+        team2Score: parsed.data.team2Score,
+        completedAt: defaultDependencies.now(),
+        version: 1,
+        rated: parsed.data.rated,
+      };
+
+      const matchPlayers: MatchPlayerRecord[] = [
+        ...parsed.data.team1PlayerIds.map((playerId) => ({
+          matchId,
+          playerId,
+          team: 1 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+        ...parsed.data.team2PlayerIds.map((playerId) => ({
+          matchId,
+          playerId,
+          team: 2 as const,
+          ratingBefore: null,
+          ratingAfter: null,
+        })),
+      ];
+
+      await repo.insertMatch(match, matchPlayers);
+
+      if (parsed.data.rated) {
+        await replayRatings(session.groupId, repo);
+      }
+      await replaySynergies(repo);
+
+      return { match, matchPlayers };
+    });
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    return { ok: true, data: saved };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to record pickup game.",
+    };
+  }
+}
+
 
 

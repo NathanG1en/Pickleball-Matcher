@@ -61,6 +61,11 @@ export function RatingSlider({
   const isDraggingRef = React.useRef(false);
   const hasDraggedRef = React.useRef(false);
   const startXRef = React.useRef(0);
+  const startYRef = React.useRef(0);
+  const isTouchRef = React.useRef(false);
+  const touchPendingRef = React.useRef(false);
+  const isScrollingRef = React.useRef(false);
+  const pointerIdRef = React.useRef<number | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
 
   const calculateValueFromPointer = React.useCallback((clientX: number) => {
@@ -79,21 +84,80 @@ export function RatingSlider({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    isDraggingRef.current = true;
-    hasDraggedRef.current = false;
-    startXRef.current = e.clientX;
-    setIsDragging(true);
-    inputRef.current?.focus();
 
-    const newVal = calculateValueFromPointer(e.clientX);
-    if (newVal !== undefined && newVal !== value) {
-      onChange(newVal);
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    hasDraggedRef.current = false;
+    isScrollingRef.current = false;
+
+    if (e.pointerType === "mouse") {
+      isTouchRef.current = false;
+      touchPendingRef.current = false;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      inputRef.current?.focus();
+
+      const newVal = calculateValueFromPointer(e.clientX);
+      if (newVal !== undefined && newVal !== value) {
+        onChange(newVal);
+      }
+    } else {
+      // Touch: do not immediately change value or capture pointer.
+      // Wait to verify if the gesture is vertical scroll or an intentional slide/tap.
+      isTouchRef.current = true;
+      touchPendingRef.current = true;
+      isDraggingRef.current = false;
+      pointerIdRef.current = e.pointerId;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current || disabled) return;
+    if (disabled) return;
+
+    if (isTouchRef.current) {
+      if (isScrollingRef.current) return;
+
+      if (touchPendingRef.current) {
+        const dx = Math.abs(e.clientX - startXRef.current);
+        const dy = Math.abs(e.clientY - startYRef.current);
+
+        // Vertical movement detected -> User is scrolling the page, leave rating untouched
+        if (dy > dx && dy > 4) {
+          isScrollingRef.current = true;
+          touchPendingRef.current = false;
+          return;
+        }
+
+        // Horizontal movement detected -> User intentionally sliding the rating
+        if (dx > dy && dx > 6) {
+          touchPendingRef.current = false;
+          isDraggingRef.current = true;
+          hasDraggedRef.current = true;
+          setIsDragging(true);
+          try {
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          } catch {
+            // Ignore if pointer capture fails
+          }
+          inputRef.current?.focus();
+          const newVal = calculateValueFromPointer(e.clientX);
+          if (newVal !== undefined && newVal !== value) {
+            onChange(newVal);
+          }
+          return;
+        }
+      } else if (isDraggingRef.current) {
+        hasDraggedRef.current = true;
+        const newVal = calculateValueFromPointer(e.clientX);
+        if (newVal !== undefined && newVal !== value) {
+          onChange(newVal);
+        }
+      }
+      return;
+    }
+
+    if (!isDraggingRef.current) return;
     if (Math.abs(e.clientX - startXRef.current) > 3) {
       hasDraggedRef.current = true;
     }
@@ -104,6 +168,43 @@ export function RatingSlider({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isTouchRef.current) {
+      if (isScrollingRef.current) {
+        isScrollingRef.current = false;
+        touchPendingRef.current = false;
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        return;
+      }
+
+      // Tap without scrolling or dragging = Intentional rating click
+      if (touchPendingRef.current && !hasDraggedRef.current) {
+        touchPendingRef.current = false;
+        inputRef.current?.focus();
+        const newVal = calculateValueFromPointer(e.clientX);
+        if (newVal !== undefined && newVal !== value) {
+          onChange(newVal);
+        }
+      }
+
+      if (isDraggingRef.current) {
+        try {
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore
+        }
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        setTimeout(() => {
+          hasDraggedRef.current = false;
+        }, 100);
+      }
+
+      touchPendingRef.current = false;
+      isScrollingRef.current = false;
+      return;
+    }
+
     if (isDraggingRef.current) {
       try {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -119,16 +220,16 @@ export function RatingSlider({
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isDraggingRef.current) {
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {
-        // Ignore
-      }
-      isDraggingRef.current = false;
-      setIsDragging(false);
-      hasDraggedRef.current = false;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore
     }
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    hasDraggedRef.current = false;
+    touchPendingRef.current = false;
+    isScrollingRef.current = false;
   };
 
   return (
@@ -146,7 +247,7 @@ export function RatingSlider({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        className={`relative pt-6 pb-7 px-0 select-none touch-none ${
+        className={`relative pt-6 pb-7 px-0 select-none touch-pan-y ${
           disabled ? "cursor-not-allowed opacity-60" : isDragging ? "cursor-grabbing" : "cursor-pointer"
         }`}
       >
@@ -190,7 +291,7 @@ export function RatingSlider({
                 type="button"
                 disabled={disabled}
                 onClick={(e) => {
-                  if (hasDraggedRef.current) {
+                  if (hasDraggedRef.current || isScrollingRef.current) {
                     e.preventDefault();
                     return;
                   }
@@ -198,7 +299,7 @@ export function RatingSlider({
                 }}
                 aria-label={`Set rating to ${tick.value}`}
                 data-testid={`rating-tick-${tick.value}`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 top-3 flex flex-col items-center cursor-pointer pointer-events-auto group focus:outline-none z-20 disabled:cursor-not-allowed w-6 h-8 justify-center"
+                className="absolute -translate-x-1/2 -translate-y-1/2 top-3 flex flex-col items-center cursor-pointer pointer-events-auto touch-pan-y group focus:outline-none z-20 disabled:cursor-not-allowed w-6 h-8 justify-center"
                 style={{ left: `calc(8px + (100% - 16px) * ${tick.percent / 100})` }}
               >
                 {/* Tick mark passing directly through the number line */}

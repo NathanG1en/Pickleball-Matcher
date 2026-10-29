@@ -158,3 +158,32 @@ export const updateCourtConfigSchema = z
     },
   );
 
+export const submitSessionPickupGameSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+    team1PlayerIds: z.array(entityIdSchema).min(1).max(2),
+    team2PlayerIds: z.array(entityIdSchema).min(1).max(2),
+    team1Score: z.coerce.number().int().min(0, "Scores cannot be negative.").max(99, "Scores must be under 100."),
+    team2Score: z.coerce.number().int().min(0, "Scores cannot be negative.").max(99, "Scores must be under 100."),
+    rated: z.boolean().optional().default(true),
+  })
+  .strict()
+  .refine((data) => data.team1Score !== data.team2Score, {
+    path: ["team2Score"],
+    message: "Ties are not allowed. Please enter winning and losing scores.",
+  })
+  .refine(
+    (data) => {
+      const all = [...data.team1PlayerIds, ...data.team2PlayerIds];
+      return new Set(all).size === all.length;
+    },
+    {
+      path: ["team2PlayerIds"],
+      message: "A player cannot be selected more than once in the same game.",
+    },
+  );
+
+export type SubmitSessionPickupGameInput = z.infer<typeof submitSessionPickupGameSchema>;
+
+

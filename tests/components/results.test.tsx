@@ -83,4 +83,50 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("mobile-action-bar");
     expect(html).toContain("Next Round");
   });
+
+  it("renders sitting players banner when sitting players exist", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        sittingNames={["George", "Hannah"]}
+        canManage={true}
+      />
+    );
+
+    expect(html).toContain("Sitting Out:");
+    expect(html).toContain("George, Hannah");
+    expect(html).not.toContain("+ Add Pickup Game");
+  });
+
+  it("renders Pickup Game badge when courtNumber exceeds courtCount", () => {
+    const pickupMatches = [
+      ...sampleMatches,
+      {
+        id: "m3",
+        courtNumber: 3,
+        team1Names: ["Ian", "Julia"] as [string, string],
+        team2Names: ["Kevin", "Laura"] as [string, string],
+        team1Score: 11,
+        team2Score: 8,
+        status: "completed" as const,
+        version: 1,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={pickupMatches}
+        fieldErrors={{}}
+        courtCount={2}
+      />
+    );
+
+    expect(html).toContain("Court 3");
+    expect(html).toContain("Pickup Game");
+  });
 });
