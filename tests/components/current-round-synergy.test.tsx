@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CurrentRoundView } from "@/components/rounds/current-round";
-import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
+import { SynergyRevealModal, SynergyPanel } from "@/components/rounds/synergy-reveal-modal";
 
 describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
   it("allows player to see their own partner synergy badge on their court", () => {
@@ -40,7 +40,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
     expect(html).not.toContain("+84% Synergy");
   });
 
-  it("renders partner synergies button only for organizers", () => {
+  it("does not render partner synergies button directly in current round view as it was moved to session settings modal", () => {
     const html = renderToStaticMarkup(
       <CurrentRoundView
         round={{ id: "r1", roundNumber: 1, status: "started", seed: 1 }}
@@ -52,7 +52,7 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         pairSynergies={{ '["acc1","acc2"]': { score: 84, matchesPlayed: 10 } }}
       />
     );
-    expect(html).toContain("Partner Synergies");
+    expect(html).not.toContain("Partner Synergies");
   });
 
   it("follows the same account pair across courts, team slots, and player order", () => {
@@ -116,5 +116,26 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
     // Team 2 with 2 accounts but 0 matches shows New Duo
     expect(html).toContain("New Duo (0 games)");
     expect(html).toContain("First match together");
+  });
+
+  it("renders synergy cards directly inside SynergyPanel for session settings modal tab", () => {
+    const html = renderToStaticMarkup(
+      <SynergyPanel
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        courtSynergies={{
+          1: {
+            team1: { score: 90, matchesPlayed: 8, status: "calculated" },
+            team2: { score: -10, matchesPlayed: 4, status: "calculated" },
+          },
+        }}
+        playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+      />
+    );
+    expect(html).toContain("Court 1");
+    expect(html).toContain("Alice &amp; Bob");
+    expect(html).toContain("+90% (8 games)");
+    expect(html).toContain("Charlie &amp; Dave");
+    expect(html).toContain("-10% (4 games)");
   });
 });

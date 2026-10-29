@@ -32,6 +32,7 @@ test("joining a new session without playing does not reset the rating graph", as
   await page.goto(`/g/${groupId}`);
   await page.getByTestId("start-new-session-button").click();
   await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page).toHaveURL(/\/sessions\/session_/);
   for (const route of ["/players", `/players/${hostUsername}`]) {

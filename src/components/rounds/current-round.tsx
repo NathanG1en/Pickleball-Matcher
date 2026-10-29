@@ -5,7 +5,6 @@ import { clearLineupDraft, readLineupDraft, saveLineupDraft } from "@/lib/rounds
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SynergyRevealModal } from "@/components/rounds/synergy-reveal-modal";
 import { Modal } from "@/components/ui/modal";
 import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup";
 import {
@@ -53,6 +52,7 @@ export interface CurrentRoundViewProps {
   readonly canManage?: boolean;
   readonly matchmakingVariety?: number;
   readonly onChangeMatchmakingVariety?: (variety: number) => void;
+  readonly onAddGame?: () => void;
 }
 
 const subscribeToHydration = () => () => {};
@@ -77,7 +77,6 @@ function CurrentRoundEditor({
   isGeneratingRound = false,
   currentViewerPlayerId = null,
   pairSynergies = {},
-  isOrganizer = false,
   playerAccounts,
   onStartRound,
   onRegenerate,
@@ -85,6 +84,7 @@ function CurrentRoundEditor({
   canManage = true,
   matchmakingVariety = 0,
   onChangeMatchmakingVariety,
+  onAddGame,
 }: CurrentRoundViewProps & { restoreDraft: boolean }) {
   const allowRegenerate = canRegenerate !== undefined ? canRegenerate : Boolean(onRegenerate);
   const [showVarietyInfo, setShowVarietyInfo] = useState(false);
@@ -125,7 +125,6 @@ function CurrentRoundEditor({
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showConfirmStart, setShowConfirmStart] = useState(false);
-  const [showSynergyModal, setShowSynergyModal] = useState(false);
   const [acknowledgedOverride, setAcknowledgedOverride] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [draggedPlayerId, setDraggedPlayerId] = useState<string | null>(null);
@@ -376,6 +375,15 @@ function CurrentRoundEditor({
           {round.status === "proposed" && (
             canManage ? (
               <>
+                {canManage && onAddGame && (
+                  <button
+                    type="button"
+                    onClick={onAddGame}
+                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                  >
+                    <span>+ Add Game</span>
+                  </button>
+                )}
                 {isUnlocked ? (
                   <button
                     type="button"
@@ -389,7 +397,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <PencilIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Manual Edit</span>
@@ -399,16 +407,6 @@ function CurrentRoundEditor({
             ) : (
               <Badge variant="warning">Upcoming Round</Badge>
             )
-          )}
-          {isOrganizer && courtSynergies && Object.keys(courtSynergies).length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowSynergyModal(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
-            >
-              <ZapIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Partner Synergies</span>
-            </button>
           )}
           {round.status === "started" && <Badge variant="success">In Progress</Badge>}
           {round.status === "completed" && <Badge variant="default">Completed</Badge>}
@@ -1145,17 +1143,6 @@ function CurrentRoundEditor({
             )}
           </div>
         </div>
-      )}
-
-      {showSynergyModal && courtSynergies && (
-        <SynergyRevealModal
-          isOpen={showSynergyModal}
-          onClose={() => setShowSynergyModal(false)}
-          courts={localCourts}
-          courtSynergies={courtSynergies}
-          playerNames={playerNames}
-          playerAccounts={playerAccounts}
-        />
       )}
 
       {showVarietyInfo && (

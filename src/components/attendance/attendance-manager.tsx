@@ -1,6 +1,5 @@
 "use client";
 
-import { StayTogetherEditor } from "./stay-together-editor";
 import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import React, { useMemo, useState } from "react";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
@@ -23,6 +22,7 @@ export interface AttendanceManagerProps {
   readonly maxCourts?: number;
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
+  readonly submitLabel?: string;
   readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[]; stayTogetherPairs: readonly StayTogetherPair[] }) => void;
   readonly onAddGuest?: (name: string, initialRating?: number, gender?: "male" | "female") => void;
 }
@@ -34,6 +34,7 @@ export function AttendanceManager({
   maxCourts = 6,
   isEditingSession = false,
   isPending = false,
+  submitLabel,
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
@@ -325,8 +326,6 @@ export function AttendanceManager({
         </form>
       </section>
 
-      {!isEditingSession && <StayTogetherEditor players={players} pairs={stayTogetherPairs} eligibleIds={[...selectedIds]} onChange={setStayTogetherPairs} disabled={isPending} />}
-
       {/* Sticky Mobile Action Bar */}
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
@@ -342,13 +341,14 @@ export function AttendanceManager({
             size="lg"
             disabled={count < 2 || capacity > count || isPending}
             onClick={handleSubmit}
+            data-testid="continue-to-pairings-button"
             className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
           >
             {isPending
               ? "Saving..."
               : isEditingSession
               ? "Update Attendance"
-              : "Start Session"}
+              : submitLabel ?? "Continue to Pairings →"}
           </Button>
         </div>
       </div>

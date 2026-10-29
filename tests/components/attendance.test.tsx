@@ -64,7 +64,7 @@ describe("AttendanceManager Component", () => {
     );
 
     expect(html).toContain("mobile-action-bar");
-    expect(html).toContain("Start Session");
+    expect(html).toContain("Continue to Pairings");
   });
 
   it("renders guest player input with rating slider", () => {

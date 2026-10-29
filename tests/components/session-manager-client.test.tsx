@@ -384,7 +384,7 @@ describe("SessionManagerClient Component", () => {
     expect(memberHtml).not.toContain("Reshuffle");
   });
 
-  it("renders Attendance button for organizer in active session", () => {
+  it("renders Session Settings button for organizer and member in active session", () => {
     const activeSession: SessionRecord = {
       ...completedSession,
       status: "active",
@@ -405,7 +405,22 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    expect(organizerHtml).toContain("Attendance");
+    expect(organizerHtml).toContain("Session Settings");
+
+    const memberHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={false}
+        isOrganizer={false}
+      />
+    );
+
+    expect(memberHtml).toContain("Session Settings");
   });
 
   it("does not treat cancelled matches in started rounds as games in progress", () => {

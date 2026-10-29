@@ -87,6 +87,129 @@ function resolveTeamSynergy(
   };
 }
 
+export interface SynergyPanelProps {
+  readonly courts: readonly RoundCourtData[];
+  readonly courtSynergies: CourtSynergiesMap;
+  readonly playerNames: Record<string, string>;
+  readonly playerAccounts?: Record<string, string | null>;
+}
+
+export function SynergyPanel({
+  courts,
+  courtSynergies,
+  playerNames,
+  playerAccounts,
+}: SynergyPanelProps) {
+  const nameFor = (id: string) => playerNames[id] ?? id;
+  const validCourts = courts.filter((c) => c.team1.length > 0 && c.team2.length > 0);
+
+  const hasUncalculated = validCourts.some((c) => {
+    const t1 = resolveTeamSynergy(c.team1, courtSynergies[c.courtNumber]?.team1, playerAccounts, playerNames);
+    const t2 = resolveTeamSynergy(c.team2, courtSynergies[c.courtNumber]?.team2, playerAccounts, playerNames);
+    return t1.status !== "calculated" || t2.status !== "calculated";
+  });
+
+  if (validCourts.length === 0) {
+    return (
+      <div className="p-4 rounded-xl border-2 border-neutral-300 bg-neutral-50 text-center text-xs font-bold text-neutral-600">
+        No active courts in this round yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {hasUncalculated && (
+        <div className="rounded-2xl border-2 border-black bg-amber-50 p-4 shadow-[3px_3px_0px_0px_#000] text-black">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangleIcon className="h-5 w-5 text-amber-900 shrink-0 select-none mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <h4 className="font-display font-black uppercase tracking-wider text-amber-950">
+                Notice: Synergy Not Yet Available For Some Duos
+              </h4>
+              <p className="font-medium text-neutral-700">
+                Doubles synergy cannot be calculated when:
+              </p>
+              <ul className="list-disc list-inside space-y-0.5 text-neutral-600 font-semibold pl-1">
+                <li><strong>Guest Players:</strong> Players without a registered account cannot track chemistry across sessions.</li>
+                <li><strong>New Duos:</strong> Chemistry score unlocks after partners complete their 1st doubles match together.</li>
+                <li><strong>Singles:</strong> Solo matches do not track doubles chemistry.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {validCourts.map((court) => {
+          const syn = courtSynergies[court.courtNumber];
+          const t1Names = court.team1.map(nameFor).join(" & ");
+          const t2Names = court.team2.map(nameFor).join(" & ");
+          const t1Res = resolveTeamSynergy(court.team1, syn?.team1, playerAccounts, playerNames);
+          const t2Res = resolveTeamSynergy(court.team2, syn?.team2, playerAccounts, playerNames);
+
+          return (
+            <div
+              key={court.courtNumber}
+              className="rounded-2xl border-2 border-black bg-neutral-50 p-4 shadow-[3px_3px_0px_0px_#000]"
+            >
+              <h4 className="mb-2 font-display text-base font-black uppercase text-black">
+                Court {court.courtNumber}
+              </h4>
+
+              <div className="space-y-2 text-xs font-bold">
+                {/* Team 1 */}
+                <div className="rounded-xl border border-black/20 bg-[#e0f2fe] p-2.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-sky-950 truncate">{t1Names}</span>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t1Res.badgeStyle}`}>
+                      {t1Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
+                      {t1Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
+                      <span>{t1Res.badgeText}</span>
+                    </span>
+                  </div>
+                  {t1Res.message && (
+                    <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
+                      {t1Res.iconType === "warning" ? (
+                        <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
+                      ) : (
+                        <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
+                      )}
+                      <span>{t1Res.message}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Team 2 */}
+                <div className="rounded-xl border border-black/20 bg-[#ffedd5] p-2.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-amber-950 truncate">{t2Names}</span>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t2Res.badgeStyle}`}>
+                      {t2Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
+                      {t2Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
+                      <span>{t2Res.badgeText}</span>
+                    </span>
+                  </div>
+                  {t2Res.message && (
+                    <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
+                      {t2Res.iconType === "warning" ? (
+                        <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
+                      ) : (
+                        <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
+                      )}
+                      <span>{t2Res.message}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function SynergyRevealModal({
   isOpen,
   onClose,
@@ -96,14 +219,6 @@ export function SynergyRevealModal({
   playerAccounts,
 }: SynergyRevealModalProps) {
   if (!isOpen) return null;
-
-  const nameFor = (id: string) => playerNames[id] ?? id;
-
-  const hasUncalculated = courts.some((c) => {
-    const t1 = resolveTeamSynergy(c.team1, courtSynergies[c.courtNumber]?.team1, playerAccounts, playerNames);
-    const t2 = resolveTeamSynergy(c.team2, courtSynergies[c.courtNumber]?.team2, playerAccounts, playerNames);
-    return t1.status !== "calculated" || t2.status !== "calculated";
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
@@ -126,95 +241,12 @@ export function SynergyRevealModal({
           </button>
         </div>
 
-        {hasUncalculated && (
-          <div className="mb-4 rounded-2xl border-2 border-black bg-amber-50 p-4 shadow-[3px_3px_0px_0px_#000] text-black">
-            <div className="flex items-start gap-2.5">
-              <AlertTriangleIcon className="h-5 w-5 text-amber-900 shrink-0 select-none mt-0.5" />
-              <div className="space-y-1 text-xs">
-                <h4 className="font-display font-black uppercase tracking-wider text-amber-950">
-                  Notice: Synergy Not Yet Available For Some Duos
-                </h4>
-                <p className="font-medium text-neutral-700">
-                  Doubles synergy cannot be calculated when:
-                </p>
-                <ul className="list-disc list-inside space-y-0.5 text-neutral-600 font-semibold pl-1">
-                  <li><strong>Guest Players:</strong> Players without a registered account cannot track chemistry across sessions.</li>
-                  <li><strong>New Duos:</strong> Chemistry score unlocks after partners complete their 1st doubles match together.</li>
-                  <li><strong>Singles:</strong> Solo matches do not track doubles chemistry.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {courts
-            .filter((c) => c.team1.length > 0 && c.team2.length > 0)
-            .map((court) => {
-              const syn = courtSynergies[court.courtNumber];
-              const t1Names = court.team1.map(nameFor).join(" & ");
-              const t2Names = court.team2.map(nameFor).join(" & ");
-              const t1Res = resolveTeamSynergy(court.team1, syn?.team1, playerAccounts, playerNames);
-              const t2Res = resolveTeamSynergy(court.team2, syn?.team2, playerAccounts, playerNames);
-
-              return (
-                <div
-                  key={court.courtNumber}
-                  className="rounded-2xl border-2 border-black bg-neutral-50 p-4 shadow-[3px_3px_0px_0px_#000]"
-                >
-                  <h3 className="mb-2 font-display text-lg font-black uppercase">
-                    Court {court.courtNumber}
-                  </h3>
-
-                  <div className="space-y-2 text-xs font-bold">
-                    {/* Team 1 */}
-                    <div className="rounded-xl border border-black/20 bg-[#e0f2fe] p-2.5 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-black text-sky-950 truncate">{t1Names}</span>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t1Res.badgeStyle}`}>
-                          {t1Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
-                          {t1Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
-                          <span>{t1Res.badgeText}</span>
-                        </span>
-                      </div>
-                      {t1Res.message && (
-                        <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
-                          {t1Res.iconType === "warning" ? (
-                            <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
-                          ) : (
-                            <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
-                          )}
-                          <span>{t1Res.message}</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Team 2 */}
-                    <div className="rounded-xl border border-black/20 bg-[#ffedd5] p-2.5 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-black text-amber-950 truncate">{t2Names}</span>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t2Res.badgeStyle}`}>
-                          {t2Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
-                          {t2Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
-                          <span>{t2Res.badgeText}</span>
-                        </span>
-                      </div>
-                      {t2Res.message && (
-                        <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
-                          {t2Res.iconType === "warning" ? (
-                            <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
-                          ) : (
-                            <InfoIcon className="h-3 w-3 shrink-0 text-neutral-600" />
-                          )}
-                          <span>{t2Res.message}</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
+        <SynergyPanel
+          courts={courts}
+          courtSynergies={courtSynergies}
+          playerNames={playerNames}
+          playerAccounts={playerAccounts}
+        />
 
         <button
           type="button"

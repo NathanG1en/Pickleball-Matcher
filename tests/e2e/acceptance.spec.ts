@@ -62,6 +62,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator("text=14 players selected")).toBeVisible();
 
     // Start session
+    await page.click("button[data-testid='continue-to-pairings-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/, { timeout: 15000 });
 
@@ -396,6 +397,7 @@ test("round generation indicator follows pending requests and clears on success 
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
   await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
@@ -512,6 +514,7 @@ test("session setup court settles once without replaying during attendance or co
   }
   await checkAnimationReplay(page, court, "Replay court animation", "courtSettles", { touch: Boolean(testInfo.project.use.hasTouch) });
   await page.screenshot({ path: testInfo.outputPath("setup-court.png"), fullPage: true });
+  await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
 });

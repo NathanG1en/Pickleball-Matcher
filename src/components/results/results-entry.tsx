@@ -39,6 +39,7 @@ export interface ResultsEntryViewProps {
   readonly onScoreChange?: (matchId: string, team: "team1" | "team2", value: string) => void;
   readonly courtCount?: number;
   readonly sittingNames?: readonly string[];
+  readonly onAddGame?: () => void;
 }
 
 export function ResultsEntryView({
@@ -59,6 +60,7 @@ export function ResultsEntryView({
   onScoreChange,
   courtCount,
   sittingNames = [],
+  onAddGame,
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -90,20 +92,34 @@ export function ResultsEntryView({
           </h1>
         </div>
         <div className="flex flex-col items-end gap-1">
-          {canManage && onReshuffleRound && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onReshuffleRound}
-              disabled={isPending || isGeneratingRound}
-              data-testid="reshuffle-matchups-button"
-              className="font-display uppercase text-xs inline-flex items-center gap-1.5"
-            >
-              <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Reshuffle</span>
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {canManage && onAddGame && (
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={onAddGame}
+                disabled={isPending || isGeneratingRound}
+                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+              >
+                <span>+ Add Game</span>
+              </Button>
+            )}
+            {canManage && onReshuffleRound && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onReshuffleRound}
+                disabled={isPending || isGeneratingRound}
+                data-testid="reshuffle-matchups-button"
+                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+              >
+                <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Reshuffle</span>
+              </Button>
+            )}
+          </div>
           <p className="text-xs font-bold text-neutral-600 hidden sm:block">
             {canManage ? "Enter non-tied scores (e.g. 11–9)" : "Current games and live scores"}
           </p>

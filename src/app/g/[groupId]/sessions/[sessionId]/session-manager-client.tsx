@@ -23,13 +23,14 @@ import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
+import { SynergyPanel } from "@/components/rounds/synergy-reveal-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
-import { XIcon } from "@/components/ui/icons";
+import { GearIcon, XIcon, ZapIcon } from "@/components/ui/icons";
 import type {
   AttendanceRecord,
   MatchPlayerRecord,
@@ -45,9 +46,9 @@ import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { AddPickupGameModal } from "@/components/sessions/add-pickup-game-modal";
-import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
+import { clearLineupDraft, lineupDraftKey, readLineupDraft } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
-import type { PairSynergiesMap } from "@/lib/synergy/lineup";
+import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
 
@@ -161,9 +162,9 @@ export function SessionManagerClient({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showInProgressModal, setShowInProgressModal] = useState(false);
   const [doNotAskAgain, setDoNotAskAgain] = useState(false);
-  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(false);
   const [showAddPickupModal, setShowAddPickupModal] = useState(false);
-  const [modalTab, setModalTab] = useState<"attendance" | "court_config">("attendance");
+  const [modalTab, setModalTab] = useState<"attendance" | "stay_together" | "synergies" | "court_config">("attendance");
   const [courtConfigCourts, setCourtConfigCourts] = useState<number>(session.courtCount);
   const [courtConfigPlayerCounts, setCourtConfigPlayerCounts] = useState<(2 | 3 | 4)[]>(
     () =>
@@ -240,8 +241,8 @@ export function SessionManagerClient({
     router.refresh();
   };
 
-  const openAttendanceModal = () => {
-    setModalTab("attendance");
+  const openSessionSettingsModal = (tab: "attendance" | "stay_together" | "synergies" | "court_config" = "attendance") => {
+    setModalTab(tab);
     setCourtConfigCourts(currentSession.courtCount);
     setCourtConfigPlayerCounts(
       currentSession.courtPlayerCounts && currentSession.courtPlayerCounts.length === currentSession.courtCount
@@ -249,7 +250,7 @@ export function SessionManagerClient({
         : Array.from({ length: currentSession.courtCount }, () => 4 as const)
     );
     setCourtConfigMessage(null);
-    setShowAttendanceModal(true);
+    setShowSessionSettingsModal(true);
   };
 
   const presentAttendance = currentAttendance.filter((a) => a.leftRound === null);
@@ -333,15 +334,72 @@ export function SessionManagerClient({
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, [router]);
 
-  const playerNames: Record<string, string> = {};
-  const playerAccounts: Record<string, string | null> = {};
-  for (const p of players) {
-    playerNames[p.id] = p.name;
-    playerAccounts[p.id] = p.accountId ?? null;
-  }
+  const { playerNames, playerAccounts } = useMemo(() => {
+    const names: Record<string, string> = {};
+    const accounts: Record<string, string | null> = {};
+    for (const p of players) {
+      names[p.id] = p.name;
+      accounts[p.id] = p.accountId ?? null;
+    }
+    return { playerNames: names, playerAccounts: accounts };
+  }, [players]);
 
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
+
+  const activeCourtsForSynergy = useMemo(() => {
+    // Re-evaluate whenever session settings modal opens or tab changes to pick up any manual edits
+    if (!showSessionSettingsModal && modalTab !== "chemistry") {
+      // Still compute if needed, but condition explicitly references state
+    }
+    if (activeProposal) {
+      if (typeof window !== "undefined") {
+        const draftKey = lineupDraftKey(session.id);
+        const draftContext = `${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`;
+        const draft = readLineupDraft(draftKey, draftContext, {
+          courts: activeProposal.courts,
+          sitting: activeProposal.sitting,
+        });
+        if (draft && draft.courts.length > 0) {
+          return draft.courts.map((c) => ({
+            courtNumber: c.courtNumber,
+            team1: c.team1,
+            team2: c.team2,
+          }));
+        }
+      }
+      return activeProposal.courts.map((c) => ({
+        courtNumber: c.courtNumber,
+        team1: c.team1,
+        team2: c.team2,
+      }));
+    }
+    if (isRoundInProgress && latestStarted) {
+      return latestStarted.matches.map((m) => ({
+        courtNumber: m.courtNumber,
+        team1: (latestStarted.matchPlayers ?? [])
+          .filter((mp) => mp.matchId === m.id && mp.team === 1)
+          .map((mp) => mp.playerId),
+        team2: (latestStarted.matchPlayers ?? [])
+          .filter((mp) => mp.matchId === m.id && mp.team === 2)
+          .map((mp) => mp.playerId),
+      }));
+    }
+    return [];
+  }, [
+    activeProposal,
+    isRoundInProgress,
+    latestStarted,
+    session.id,
+    currentSession.version,
+    currentSession.stayTogetherPairs,
+    showSessionSettingsModal,
+    modalTab,
+  ]);
+
+  const activeCourtSynergies = useMemo(() => {
+    return buildCourtSynergies(activeCourtsForSynergy, playerAccounts, pairSynergies);
+  }, [activeCourtsForSynergy, playerAccounts, pairSynergies]);
 
   const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
 
@@ -1012,26 +1070,30 @@ export function SessionManagerClient({
           className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
-          <Badge variant="muted" className="text-xs font-black uppercase">
-            Completed Session
-          </Badge>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Badge variant="muted" className="text-xs font-black uppercase">
+              Completed Session
+            </Badge>
+            <button
+              type="button"
+              onClick={() => openSessionSettingsModal("attendance")}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            >
+              <GearIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Session Settings</span>
+            </button>
+          </div>
         ) : (
-          canManage && (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setShowAddPickupModal(true)}
-                className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-              >
-                + Add Game
-              </button>
-              <button
-                type="button"
-                onClick={openAttendanceModal}
-                className="px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-              >
-                Attendance
-              </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => openSessionSettingsModal("attendance")}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            >
+              <GearIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Session Settings</span>
+            </button>
+            {canManage && (
               <button
                 type="button"
                 onClick={handleEndSession}
@@ -1042,8 +1104,8 @@ export function SessionManagerClient({
               >
                 {isPending ? "Ending..." : "End Session"}
               </button>
-            </div>
-          )
+            )}
+          </div>
         )}
       </div>
 
@@ -1087,18 +1149,6 @@ export function SessionManagerClient({
         </header>
       )}
 
-      {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && <StayTogetherEditor
-        players={players}
-        pairs={currentSession.stayTogetherPairs ?? []}
-        eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
-        onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
-        disabled={isPending}
-        pending={isActionPending}
-      />}
-      <PartnerRequests groupId={groupId} session={currentSession} players={players}
-        presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
-        currentViewerPlayerId={currentViewerPlayerId} canManage={canManage} initialRequests={partnerRequests}
-        disabled={isPending} onBusyChange={setRequestPending} onSessionUpdated={applyPartnerSession} />
       {!activeProposal && initialProposalError && !error && <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>}
       {activeProposal?.sitting.length === 1 && (currentSession.stayTogetherPairs ?? []).some(pair => pair.includes(activeProposal.sitting[0]) && pair.every(id => currentAttendance.some(a => a.playerId === id && a.leftRound === null))) && <p role="status" className="rounded-xl border-2 border-black bg-amber-50 p-3 text-sm font-bold">{playerNames[activeProposal.sitting[0]]} is sitting this round to rotate playing time. Their Stay Together pairing is saved for later rounds.</p>}
       {error && (
@@ -1453,6 +1503,7 @@ export function SessionManagerClient({
                 scoreDrafts={scoreDrafts}
                 onScoreChange={handleScoreChange}
                 hasUnsavedScores={hasUnsavedScores}
+                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">
@@ -1506,6 +1557,7 @@ export function SessionManagerClient({
               canManage={canManage}
               matchmakingVariety={matchmakingVariety}
               onChangeMatchmakingVariety={handleChangeVariety}
+              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
             />
           ) : (
             <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
@@ -1513,9 +1565,14 @@ export function SessionManagerClient({
                 {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
               </p>
               {canManage ? (
-                <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-                  {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                    {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                    + Add Game
+                  </Button>
+                </div>
               ) : (
                 <p className="text-sm font-bold text-neutral-600">
                   The organizer has not started the next round yet.
@@ -1637,15 +1694,18 @@ export function SessionManagerClient({
         </>
       )}
 
-      {/* Attendance & Court Configuration Modal */}
-      {canManage && showAttendanceModal && (
+      {/* Session Settings Modal */}
+      {showSessionSettingsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-[8px_8px_0px_0px_#000] max-h-[85vh] overflow-y-auto text-black">
             <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">
-              <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">Session Attendance</h3>
+              <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">
+                <GearIcon className="h-6 w-6 text-black shrink-0" />
+                <span>Session Settings</span>
+              </h3>
               <button
                 type="button"
-                onClick={() => setShowAttendanceModal(false)}
+                onClick={() => setShowSessionSettingsModal(false)}
                 className="inline-flex items-center gap-1 text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
               >
                 <XIcon className="h-4 w-4" />
@@ -1654,7 +1714,7 @@ export function SessionManagerClient({
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex items-center gap-2" role="tablist" aria-label="Attendance modal tabs">
+            <div className="flex items-center gap-2" role="tablist" aria-label="Session settings modal tabs">
               <button
                 type="button"
                 role="tab"
@@ -1673,21 +1733,55 @@ export function SessionManagerClient({
               <button
                 type="button"
                 role="tab"
-                id="tab-court-config"
-                aria-controls="tabpanel-court-config"
-                aria-selected={modalTab === "court_config"}
-                onClick={() => setModalTab("court_config")}
+                id="tab-stay-together"
+                aria-controls="tabpanel-stay-together"
+                aria-selected={modalTab === "stay_together"}
+                onClick={() => setModalTab("stay_together")}
                 className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                  modalTab === "court_config"
+                  modalTab === "stay_together"
                     ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                     : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
                 }`}
               >
-                Court Configuration
+                Stay Together
               </button>
+              {canManage && (
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-synergies"
+                  aria-controls="tabpanel-synergies"
+                  aria-selected={modalTab === "synergies"}
+                  onClick={() => setModalTab("synergies")}
+                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                    modalTab === "synergies"
+                      ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                  }`}
+                >
+                  Partner Synergies
+                </button>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-court-config"
+                  aria-controls="tabpanel-court-config"
+                  aria-selected={modalTab === "court_config"}
+                  onClick={() => setModalTab("court_config")}
+                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                    modalTab === "court_config"
+                      ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                  }`}
+                >
+                  Court Configuration
+                </button>
+              )}
             </div>
 
-            {modalTab === "attendance" ? (
+            {modalTab === "attendance" && (
               <div
                 role="tabpanel"
                 id="tabpanel-attendance"
@@ -1695,7 +1789,9 @@ export function SessionManagerClient({
                 className="space-y-4"
               >
                 <p className="text-xs font-bold text-neutral-600">
-                  Manage player arrivals or early departures mid-session.
+                  {canManage
+                    ? "Manage player arrivals or early departures mid-session."
+                    : "Session player attendance roster."}
                 </p>
                 <div className="space-y-2">
                   {sortedPlayers.map((p) => {
@@ -1715,23 +1811,83 @@ export function SessionManagerClient({
                           <Badge variant={isPresent ? "success" : "muted"}>
                             {isPresent ? "Present" : "Away"}
                           </Badge>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={isPresent ? "outline" : "primary"}
-                            onClick={() => handleToggleAttendance(p.id, isPresent)}
-                            disabled={isPending}
-                            className="font-display text-xs uppercase"
-                          >
-                            {isPresent ? "Mark Left" : "Mark Present"}
-                          </Button>
+                          {canManage && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={isPresent ? "outline" : "primary"}
+                              onClick={() => handleToggleAttendance(p.id, isPresent)}
+                              disabled={isPending}
+                              className="font-display text-xs uppercase"
+                            >
+                              {isPresent ? "Mark Left" : "Mark Present"}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            ) : (
+            )}
+
+            {modalTab === "stay_together" && (
+              <div
+                role="tabpanel"
+                id="tabpanel-stay-together"
+                aria-labelledby="tab-stay-together"
+                className="space-y-4"
+              >
+                {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && (
+                  <StayTogetherEditor
+                    players={players}
+                    pairs={currentSession.stayTogetherPairs ?? []}
+                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                    onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
+                    disabled={isPending}
+                    pending={isActionPending}
+                  />
+                )}
+                <PartnerRequests
+                  groupId={groupId}
+                  session={currentSession}
+                  players={players}
+                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                  currentViewerPlayerId={currentViewerPlayerId}
+                  canManage={canManage}
+                  initialRequests={partnerRequests}
+                  disabled={isPending}
+                  onBusyChange={setRequestPending}
+                  onSessionUpdated={applyPartnerSession}
+                />
+              </div>
+            )}
+
+            {modalTab === "synergies" && canManage && (
+              <div
+                role="tabpanel"
+                id="tabpanel-synergies"
+                aria-labelledby="tab-synergies"
+                className="space-y-4"
+              >
+                <div>
+                  <h4 className="font-display text-sm font-black uppercase flex items-center gap-1.5 text-black">
+                    <ZapIcon className="h-4 w-4 text-black shrink-0" />
+                    <span>Court Synergy &amp; Chemistry</span>
+                  </h4>
+                  <p className="text-xs font-bold text-neutral-600">Historical doubles chemistry across active courts</p>
+                </div>
+
+                <SynergyPanel
+                  courts={activeCourtsForSynergy}
+                  courtSynergies={activeCourtSynergies}
+                  playerNames={playerNames}
+                  playerAccounts={playerAccounts}
+                />
+              </div>
+            )}
+
+            {modalTab === "court_config" && canManage && (
               <div
                 role="tabpanel"
                 id="tabpanel-court-config"

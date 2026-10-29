@@ -372,9 +372,10 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).toContain("Member Joe");
       expect(html).toContain("Live Games");
 
-      // No attendance or end session buttons
-      expect(html).not.toContain("Attendance");
+      // Session Settings is available to view roster, partner requests, and court configuration, but no management controls
+      expect(html).toContain("Session Settings");
       expect(html).not.toContain("End Session");
+      expect(html).not.toContain("+ Add Game");
 
       // No score input fields or save buttons
       expect(html).not.toContain('type="number"');

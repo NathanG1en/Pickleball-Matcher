@@ -4,9 +4,9 @@ Implemented on `codex/stay-together-partners`, based on development commit `03f7
 
 ## Using it
 
-In normal-session setup, select attendees and optionally add two-person **Stay Together** pairs. Registered players and guests are supported. Each player can have one partner.
+In normal-session setup, select attendees and available courts, then proceed to the **Stay Together** page to optionally configure two-person pairings. Registered players and guests are supported. Each player can have one partner.
 
-Organizers can add/remove pairs from an active session; these changes save immediately and affect future rounds. Members can see the pairs. Settings survive refreshes, regeneration and reshuffling, but are not automatically copied into a new session.
+Organizers can add/remove pairs from an active session via the **Session Settings modal** (under the **Stay Together** tab); these changes save immediately and affect future rounds. Members can view pairs in the Session Settings modal. Settings survive refreshes, regeneration and reshuffling, but are not automatically copied into a new session.
 
 Both active friends are always teammates. With multiple bench places they sit as a whole pair. **When the total bench count is exactly one**, the individual bench place rotates through paired and unpaired players. If one friend sits, their partner can have a temporary teammate; the saved pairing remains intact. A proposed round explains that exception.
 
@@ -16,7 +16,7 @@ Configurations that cannot fit fixed pairs, such as two fixed pairs on two singl
 
 ## Player partner requests
 
-In an active normal session, an attending member can choose an attending, unpaired friend in **Partner requests** and press **Request Stay Together**. The request stays pending until a group organizer approves or declines it. Either the host or a secondary organizer can decide; the friend does not need to confirm. Organizers can still create pairs directly through the existing pair editor.
+In an active normal session, players can open the **Session Settings modal** and navigate to the **Stay Together** tab. An attending member can choose an attending, unpaired friend in **Partner requests** and press **Request Stay Together**. The request stays pending until a group organizer approves or declines it. Either the host or a secondary organizer can decide; the friend does not need to confirm. Organizers can still create pairs directly through the existing pair editor.
 
 Each player has at most one outgoing pending request. They can cancel it before requesting someone else. Members see requests involving themselves; organizers see the whole session queue. Refresh requests with the button or by returning focus to the tab. There is no interval polling or notification service. Refresh also retrieves current roster names and attendance, including changes made in another browser.
 

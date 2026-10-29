@@ -12,6 +12,8 @@ import {
   AttendanceManager,
   type AttendancePlayer,
 } from "@/components/attendance/attendance-manager";
+import { StayTogetherEditor } from "@/components/attendance/stay-together-editor";
+import { Button } from "@/components/ui/button";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 
 export type SessionFormat = "normal" | "open_play";
@@ -30,12 +32,22 @@ export function NewSessionClient({
     initialType ?? null
   );
   const [players, setPlayers] = useState<readonly AttendancePlayer[]>(initialPlayers);
+  const [normalStep, setNormalStep] = useState<"attendance" | "stay_together">("attendance");
+  const [normalConfig, setNormalConfig] = useState<{
+    courtCount: number;
+    courtPlayerCounts: (2 | 3 | 4)[];
+    selectedPlayerIds: string[];
+  } | null>(null);
+  const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
   const [openPlayName, setOpenPlayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
   const handleSelectFormat = (format: SessionFormat | null) => {
     setSelectedFormat(format);
+    setNormalStep("attendance");
+    setNormalConfig(null);
+    setStayTogetherPairs([]);
     setError(null);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
@@ -246,6 +258,81 @@ export function NewSessionClient({
   }
 
   if (selectedFormat === "normal") {
+    if (normalStep === "stay_together" && normalConfig) {
+      return (
+        <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setNormalStep("attendance")}
+              data-testid="back-to-players-button"
+              className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+            >
+              ← Back to Players
+            </button>
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              Step 3 of 3
+            </span>
+          </div>
+
+          <header>
+            <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+              Stay Together Pairings
+            </h1>
+            <p className="text-sm font-bold text-neutral-700 mt-1">
+              Are there any pairs of friends who want to stay together as teammates for this session?
+            </p>
+          </header>
+
+          {error && (
+            <div role="alert" className="p-4 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <StayTogetherEditor
+              players={players}
+              pairs={stayTogetherPairs}
+              eligibleIds={normalConfig.selectedPlayerIds}
+              onChange={setStayTogetherPairs}
+              disabled={isPending}
+            />
+          </div>
+
+          {/* Sticky Mobile Action Bar */}
+          <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+            <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+              <div className="text-left">
+                <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
+                <p className="font-display text-base font-black uppercase text-black tracking-tight">
+                  {normalConfig.selectedPlayerIds.length} players · {stayTogetherPairs.length} {stayTogetherPairs.length === 1 ? "pair" : "pairs"}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                disabled={isPending}
+                onClick={() =>
+                  handleStartNormalSession({
+                    courtCount: normalConfig.courtCount,
+                    courtPlayerCounts: normalConfig.courtPlayerCounts,
+                    selectedPlayerIds: normalConfig.selectedPlayerIds,
+                    stayTogetherPairs,
+                  })
+                }
+                data-testid="start-session-button"
+                className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+              >
+                {isPending ? "Starting..." : "Start Session"}
+              </Button>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
         <div className="flex items-center justify-between">
@@ -257,7 +344,7 @@ export function NewSessionClient({
             ← Change Format
           </button>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-            Step 2 of 2
+            Step 2 of 3
           </span>
         </div>
 
@@ -280,8 +367,20 @@ export function NewSessionClient({
           <AttendanceManager
             groupId={groupId}
             players={players}
+            courtCount={normalConfig?.courtCount}
+            selectedPlayerIds={normalConfig?.selectedPlayerIds}
             isPending={isPending}
-            onSubmit={handleStartNormalSession}
+            onSubmit={(data) => {
+              setNormalConfig({
+                courtCount: data.courtCount,
+                courtPlayerCounts: data.courtPlayerCounts,
+                selectedPlayerIds: data.selectedPlayerIds,
+              });
+              setStayTogetherPairs((prev) =>
+                prev.filter((pair) => pair.every((id) => data.selectedPlayerIds.includes(id)))
+              );
+              setNormalStep("stay_together");
+            }}
             onAddGuest={handleAddGuest}
           />
         </div>

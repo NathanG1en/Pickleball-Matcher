@@ -72,6 +72,19 @@ describe("CurrentRoundView Component", () => {
     expect(html).not.toContain("Round Proposal");
   });
 
+  it("renders + Add Game next to Manual Edit when onAddGame is provided", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView {...sampleProps} canManage={true} onAddGame={() => {}} />
+    );
+
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("Manual Edit");
+    const addGameIdx = html.indexOf("+ Add Game");
+    const manualEditIdx = html.indexOf("Manual Edit");
+    expect(addGameIdx).toBeGreaterThan(-1);
+    expect(manualEditIdx).toBeGreaterThan(addGameIdx);
+  });
+
   it("renders matchmaking variety controls with intuitive info trigger when canManage is true", () => {
     const html = renderToStaticMarkup(
       <CurrentRoundView {...sampleProps} canManage={true} canRegenerate={true} />

@@ -31,6 +31,7 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page).toHaveURL(/\/sessions\/new/);
     await page.click("button[data-testid='select-normal-session-button']");
     await expect(page.locator("text=8 players selected")).toBeVisible();
+    await page.click("button[data-testid='continue-to-pairings-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
 
@@ -120,8 +121,8 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
 
     // 9. Test mid-session attendance correction and court configuration
-    await page.click("button:has-text('Attendance')");
-    await expect(page.locator("h3:has-text('Session Attendance')")).toBeVisible();
+    await page.click("button:has-text('Session Settings')");
+    await expect(page.locator("h3:has-text('Session Settings')")).toBeVisible();
 
     // Verify both tabs are visible
     const attendanceTab = page.locator("button[role='tab']:has-text('Attendance')");
@@ -149,7 +150,7 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // Close modal
     await page.click("button:has-text('Close')");
-    await expect(page.locator("h3:has-text('Session Attendance')")).not.toBeVisible();
+    await expect(page.locator("h3:has-text('Session Settings')")).not.toBeVisible();
   });
 
   test("warns about in-progress games when ending session, but not cancelled games", async ({
@@ -175,6 +176,7 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
     await page.click("button[data-testid='select-normal-session-button']");
+    await page.click("button[data-testid='continue-to-pairings-button']");
     await page.click("button:has-text('Start Session')");
     await expect(page).toHaveURL(/\/sessions\/session_/);
 
@@ -253,6 +255,7 @@ test("host synergy follows current partners after manual swaps and new proposals
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
   await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -284,8 +287,11 @@ test("host synergy follows current partners after manual swaps and new proposals
       }
     }
   };
-  const reveal = () => page.getByRole("button", { name: "Partner Synergies", exact: true }).click();
-  const close = () => page.getByRole("button", { name: "Close Breakdown", exact: true }).click();
+  const reveal = async () => {
+    await page.getByRole("button", { name: "Session Settings", exact: true }).click();
+    await page.getByRole("tab", { name: "Partner Synergies", exact: true }).click();
+  };
+  const close = () => page.getByRole("button", { name: "Close", exact: true }).click();
   const expectCurrentSynergy = async (team: number, badge: string) => {
     const pairNames = (await teamNames(team)).join(" & ");
     await expect(page.getByText(pairNames, { exact: true }).locator("..")).toContainText(badge);
@@ -333,6 +339,7 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
   await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
   const card = page.locator(".court-card");
@@ -389,6 +396,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
     await page.getByTestId("select-normal-session-button").click();
+    await page.getByTestId("continue-to-pairings-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
     const sessionUrl = page.url();
@@ -451,6 +459,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await expect(page.locator("#guest-player-name")).toHaveValue("");
     await page.getByRole("link", { name: "Start New Session", exact: true }).click();
     await page.getByTestId("select-normal-session-button").click();
+    await page.getByTestId("continue-to-pairings-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
     await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
@@ -518,6 +527,7 @@ test("organizer can end an active session (normal or open play) directly from gr
   // 1. Normal Session: Start session
   await page.click("a[href*='/sessions/new']");
   await page.click("button[data-testid='select-normal-session-button']");
+  await page.click("button[data-testid='continue-to-pairings-button']");
   await page.click("button:has-text('Start Session')");
   await expect(page).toHaveURL(/\/sessions\/session_/);
 
