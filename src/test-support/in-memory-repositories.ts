@@ -398,6 +398,14 @@ export class InMemoryRepositories implements DomainRepository {
 
   async listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]> {
     const memberships = this.state.players.filter((player) => player.accountId === accountId);
+    const account = this.state.playerAccounts.find(item => item.id === accountId);
+    const memberIds = new Set(memberships.map(player => player.id));
+    const ratingHistory = this.state.matchPlayers.flatMap(member => {
+      const match = this.state.matches.find(item => item.id === member.matchId);
+      return memberIds.has(member.playerId) && member.ratingAfter != null && match?.status === "completed" && match.rated !== false && match.completedAt
+        ? [{ rating: member.ratingAfter, completedAt: match.completedAt, matchId: match.id }]
+        : [];
+    }).toSorted((a, b) => b.completedAt.getTime() - a.completedAt.getTime() || b.matchId.localeCompare(a.matchId));
     const history: PlayerSessionHistoryRecord[] = [];
     for (const player of memberships) {
       const group = this.state.groups.find((item) => item.id === player.groupId);
@@ -422,18 +430,18 @@ export class InMemoryRepositories implements DomainRepository {
         const matchIds = new Set(this.state.matches.filter((match) => roundIds.has(match.roundId) && match.status === "completed").map((match) => match.id));
         let wins = 0;
         let losses = 0;
-        const account = this.state.playerAccounts.find((item) => item.id === accountId);
-        let rating = account?.rating ?? account?.initialRating ?? player.initialRating;
+        const prior = ratingHistory.find(item => item.completedAt.getTime() <= session.startedAt.getTime());
+        let rating = prior?.rating ?? account?.initialRating ?? player.initialRating;
         const playerMatches = this.state.matchPlayers
           .filter((membership) => membership.playerId === player.id && matchIds.has(membership.matchId))
-          .sort((first, second) => (this.state.matches.find((match) => match.id === first.matchId)?.completedAt?.getTime() ?? 0) - (this.state.matches.find((match) => match.id === second.matchId)?.completedAt?.getTime() ?? 0));
+          .sort((first, second) => (this.state.matches.find((match) => match.id === first.matchId)?.completedAt?.getTime() ?? 0) - (this.state.matches.find((match) => match.id === second.matchId)?.completedAt?.getTime() ?? 0) || first.matchId.localeCompare(second.matchId));
         for (const matchPlayer of playerMatches) {
           const match = this.state.matches.find((item) => item.id === matchPlayer.matchId);
           if (!match || match.team1Score === null || match.team2Score === null) continue;
           const won = (matchPlayer.team === 1 && match.team1Score > match.team2Score) || (matchPlayer.team === 2 && match.team2Score > match.team1Score);
           if (won) wins += 1;
           else losses += 1;
-          if (matchPlayer.ratingAfter !== null) rating = matchPlayer.ratingAfter ?? rating;
+          if (match.rated !== false && matchPlayer.ratingAfter != null) rating = matchPlayer.ratingAfter;
         }
         history.push({
           sessionId: session.id,

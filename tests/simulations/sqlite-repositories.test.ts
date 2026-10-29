@@ -226,3 +226,15 @@ describe("SqliteDomainRepository", () => {
     db.close();
   });
 });
+
+it("preserves the rating as of each empty session rather than filling history with today's account rating", async () => {
+  const { seedRatingHistory, expectedHistoryRatings } = await import("../fixtures/rating-history");
+  const db = new DatabaseSync(":memory:");
+  try {
+    const repository = new SqliteDomainRepository(db);
+    await seedRatingHistory(repository);
+    db.prepare("update player_accounts set rating = 1120, rated_games_played = 2 where id = 'history-account'").run();
+    const history = await repository.listPlayerSessionHistory("history-account");
+    expect(Object.fromEntries(history.map(session => [session.sessionId, session.rating]))).toEqual(expectedHistoryRatings);
+  } finally { db.close(); }
+});

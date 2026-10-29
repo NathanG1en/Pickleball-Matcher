@@ -927,7 +927,9 @@ export class PostgresRepositories implements DomainRepository {
       session_name?: string | null;
     }[]>`
       with memberships as (
-        select id, group_id, initial_rating from players where account_id = ${accountId}
+        select p.id, p.group_id, coalesce(a.initial_rating, p.initial_rating) as initial_rating
+        from players p left join player_accounts a on a.id = p.account_id
+        where p.account_id = ${accountId}
       ), results as (
         select mp.player_id, s.id as session_id,
           count(*) filter (where
@@ -938,8 +940,8 @@ export class PostgresRepositories implements DomainRepository {
             (mp.team = 1 and m.team1_score < m.team2_score) or
             (mp.team = 2 and m.team2_score < m.team1_score)
           )::int as losses,
-          (array_agg(mp.rating_after order by m.completed_at desc)
-            filter (where mp.rating_after is not null))[1] as rating
+          (array_agg(mp.rating_after order by m.completed_at desc, m.id desc)
+            filter (where mp.rating_after is not null and m.rated = true))[1] as rating
         from memberships p
         join match_players mp on mp.player_id = p.id
         join matches m on m.id = mp.match_id and m.status = 'completed'
@@ -958,7 +960,7 @@ export class PostgresRepositories implements DomainRepository {
       select s.id as session_id, g.id as group_id, g.name as group_name,
         s.started_at, coalesce(res.wins, 0)::int as wins,
         coalesce(res.losses, 0)::int as losses,
-        coalesce(res.rating, membership.initial_rating)::float8 as rating,
+        coalesce(res.rating, prior.rating, membership.initial_rating)::float8 as rating,
         s.type as type,
         s.name as session_name
       from memberships membership
@@ -966,6 +968,17 @@ export class PostgresRepositories implements DomainRepository {
       join player_sessions ps on ps.player_id = membership.id
       join sessions s on s.id = ps.session_id
       left join results res on res.player_id = membership.id and res.session_id = s.id
+      left join lateral (
+        select mp.rating_after as rating
+        from players history_player
+        join match_players mp on mp.player_id = history_player.id
+        join matches m on m.id = mp.match_id
+        where history_player.account_id = ${accountId}
+          and m.status = 'completed' and m.rated = true
+          and mp.rating_after is not null and m.completed_at <= s.started_at
+        order by m.completed_at desc, m.id desc
+        limit 1
+      ) prior on res.rating is null
       order by s.started_at desc, g.name
     `;
     return rows.map((row) => ({

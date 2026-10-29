@@ -690,9 +690,17 @@ export class SqliteDomainRepository implements DomainRepository {
           JOIN matches m2 ON m2.id = mp2.match_id
           JOIN rounds r2 ON r2.id = m2.round_id
           WHERE mp2.player_id = p.id AND r2.session_id = s.id AND m2.status = 'completed'
-            AND mp2.rating_after IS NOT NULL
-          ORDER BY m2.completed_at DESC LIMIT 1
-        ), acc.rating, p.initial_rating) AS rating
+            AND mp2.rating_after IS NOT NULL AND m2.rated = 1
+          ORDER BY m2.completed_at DESC, m2.id DESC LIMIT 1
+        ), (
+          SELECT history_mp.rating_after FROM players history_player
+          JOIN match_players history_mp ON history_mp.player_id = history_player.id
+          JOIN matches history_match ON history_match.id = history_mp.match_id
+          WHERE history_player.account_id = p.account_id
+            AND history_match.status = 'completed' AND history_match.rated = 1
+            AND history_mp.rating_after IS NOT NULL AND history_match.completed_at <= s.started_at
+          ORDER BY history_match.completed_at DESC, history_match.id DESC LIMIT 1
+        ), acc.initial_rating, p.initial_rating) AS rating
       FROM players p
       JOIN groups g ON g.id = p.group_id
       LEFT JOIN player_accounts acc ON acc.id = p.account_id
