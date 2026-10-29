@@ -49,11 +49,11 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // 6. Verify Open Play session page loaded with Host checked in
-    const todayFormatted = new Date().toLocaleDateString(undefined, {
+    const todayFormatted = await page.evaluate(() => new Date().toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
+    }));
     await expect(page.locator("h1")).toContainText(todayFormatted);
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
@@ -362,7 +362,7 @@ test.describe("Open Play Workflow", () => {
 
     // Verify duplicated session has active Open Play status, attendees, and current date in title
     await expect(page.locator("text=In Progress")).toBeVisible();
-    const todayFormattedMonth = new Date().toLocaleDateString("en-US", { month: "short" });
+    const todayFormattedMonth = await page.evaluate(() => new Date().toLocaleDateString("en-US", { month: "short" }));
     await expect(page.locator("h1")).toContainText(todayFormattedMonth);
     const attendeesList = page.locator("[data-testid='open-play-attendees']");
     await expect(attendeesList).toBeVisible();
@@ -617,11 +617,11 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // Verify initial session name
-    const todayFormatted = new Date().toLocaleDateString(undefined, {
+    const todayFormatted = await page.evaluate(() => new Date().toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
+    }));
     await expect(page.locator("h1")).toContainText(todayFormatted);
 
     // Host renames session using edit pencil

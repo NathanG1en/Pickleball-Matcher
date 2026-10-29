@@ -14,12 +14,12 @@ export function ClientDate({ date, options, className, prefix }: ClientDateProps
   const isHydrated = useHydrated();
   const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;
   const iso = !isNaN(d.getTime()) ? d.toISOString() : undefined;
-  const formatted = !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, options) : "";
+  const formatted = isHydrated && iso ? d.toLocaleDateString(undefined, options) : "";
 
   return (
     <span className={className}>
       {prefix}
-      <time dateTime={iso} className={isHydrated ? undefined : "invisible"} suppressHydrationWarning>
+      <time dateTime={iso} className={isHydrated ? undefined : "invisible"}>
         {formatted}
       </time>
     </span>
@@ -37,14 +37,14 @@ export function ClientTime({ date, options, className, prefix }: ClientTimeProps
   const isHydrated = useHydrated();
   const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;
   const iso = !isNaN(d.getTime()) ? d.toISOString() : undefined;
-  const formatted = !isNaN(d.getTime())
+  const formatted = isHydrated && iso
     ? d.toLocaleTimeString(undefined, options ?? { hour: "numeric", minute: "2-digit" })
     : "";
 
   return (
     <span className={className}>
       {prefix}
-      <time dateTime={iso} className={isHydrated ? undefined : "invisible"} suppressHydrationWarning>
+      <time dateTime={iso} className={isHydrated ? undefined : "invisible"}>
         {formatted}
       </time>
     </span>

@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerSessionHistoryRecord } from "@/lib/domain/types";
 import { formatDupr } from "@/lib/domain/rating-display";
+import { useHydrated } from "@/lib/utils/hydration";
 
-function formatDate(date: Date | string): string {
+function formatDate(date: Date | string, isHydrated: boolean): string {
+  if (!isHydrated) return "";
   const d = date instanceof Date ? date : new Date(date);
   return d.toLocaleDateString(undefined, {
     month: "short",
@@ -14,6 +16,7 @@ function formatDate(date: Date | string): string {
 }
 
 export function ScoreHistoryChart({ history }: { history: readonly PlayerSessionHistoryRecord[] }) {
+  const isHydrated = useHydrated();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,8 +79,8 @@ export function ScoreHistoryChart({ history }: { history: readonly PlayerSession
     }
   }
 
-  const firstDate = formatDate(ordered[0].startedAt);
-  const lastDate = formatDate(ordered.at(-1)!.startedAt);
+  const firstDate = formatDate(ordered[0].startedAt, isHydrated);
+  const lastDate = formatDate(ordered.at(-1)!.startedAt, isHydrated);
 
   return (
     <div ref={containerRef} className="pt-8">
@@ -103,7 +106,7 @@ export function ScoreHistoryChart({ history }: { history: readonly PlayerSession
             const item = ordered[index];
             const isActive = activeIndex === index;
             const isSelected = selectedIndex === index;
-            const pointDate = formatDate(item.startedAt);
+            const pointDate = formatDate(item.startedAt, isHydrated);
             const pointRating = formatDupr(item.rating);
 
             return (
@@ -186,7 +189,7 @@ export function ScoreHistoryChart({ history }: { history: readonly PlayerSession
               <span className="text-xs font-bold uppercase text-neutral-500">Rating</span>
             </div>
             <div data-testid="tooltip-date" className="text-xs font-bold text-neutral-600 leading-tight mt-0.5">
-              {formatDate(activeRecord.startedAt)}
+              {formatDate(activeRecord.startedAt, isHydrated)}
             </div>
 
             {/* Tooltip pointer arrow pointing to the dot */}
@@ -206,7 +209,7 @@ export function ScoreHistoryChart({ history }: { history: readonly PlayerSession
           <p data-testid="active-rating-details" className="text-black font-black">
             <span>{formatDupr(activeRecord.rating)} rating</span>
             <span className="text-neutral-500 font-bold ml-1.5">
-              ({formatDate(activeRecord.startedAt)})
+              ({formatDate(activeRecord.startedAt, isHydrated)})
             </span>
           </p>
         )}

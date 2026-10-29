@@ -463,11 +463,6 @@ export async function duplicateSessionAction(
       .map((a) => a.playerId);
 
     const now = defaultDependencies.now();
-    const sessionName = now.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
 
     const isOp = sourceSession.type === "open_play";
     const sessionId = defaultDependencies.nextId("session");
@@ -484,7 +479,7 @@ export async function duplicateSessionAction(
         endedAt: null,
         version: 1,
         type: "open_play",
-        name: sessionName,
+        name: null,
       };
 
       const attendance: AttendanceRecord[] = attendedPlayerIds.map((playerId) => ({
@@ -567,7 +562,7 @@ export async function duplicateSessionAction(
         endedAt: null,
         version: 1,
         type: "regular",
-        name: sessionName,
+        name: null,
       };
 
       const attendance: AttendanceRecord[] = attendedPlayerIds.map((playerId) => ({

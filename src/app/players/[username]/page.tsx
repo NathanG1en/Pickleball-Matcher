@@ -14,7 +14,7 @@ import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
 import { GlobeIcon, HandshakeIcon, LockIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
-import { formatSessionDate } from "@/lib/utils/date";
+import { ClientDate } from "@/components/ui/client-date-time";
 
 export async function generateMetadata({
   params,
@@ -285,7 +285,6 @@ export default async function PlayerPublicProfilePage({
             <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
           ) : (
             history.map((item) => {
-              const formattedDate = formatSessionDate(item.startedAt);
               return (
                 <article
                   key={`${item.groupId}-${item.sessionId}`}
@@ -293,8 +292,9 @@ export default async function PlayerPublicProfilePage({
                   className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
                 >
                   <div>
-                    <h3 suppressHydrationWarning className="font-black text-black">
-                      {item.sessionName ? `${item.sessionName} · ${formattedDate}` : formattedDate}
+                    <h3 className="font-black text-black">
+                      {item.sessionName ? `${item.sessionName} · ` : null}
+                      <ClientDate date={item.startedAt} options={{ month: "short", day: "numeric", year: "numeric" }} />
                     </h3>
                     <p className="text-xs font-bold text-neutral-600">
                       {item.groupName}

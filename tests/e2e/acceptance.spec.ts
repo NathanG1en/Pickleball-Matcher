@@ -270,7 +270,8 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     expect(newSessionUrl).not.toBe(sessionUrl);
 
     // Verify duplicated session has active status and players
-    await expect(page.locator("h2, h1").filter({ hasText: new RegExp(new Date().toLocaleDateString("en-US", { month: "short" })) })).toBeVisible();
+    const localMonth = await page.evaluate(() => new Date().toLocaleDateString("en-US", { month: "short" }));
+    await expect(page.locator("h2, h1").filter({ hasText: new RegExp(localMonth) })).toBeVisible();
 
     // Delete the duplicated session
     const newSessionOptionsButton = page.locator("[data-testid='session-options-menu-button']");

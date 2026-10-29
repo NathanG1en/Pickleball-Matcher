@@ -776,7 +776,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const pageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(pageElement);
 
-    expect(html).toContain("Spring Kickoff · Apr 12, 2026");
+    expect(html).toContain("Spring Kickoff · ");
+    expect(html).toMatch(/<time[^>]*dateTime="2026-04-12T10:00:00.000Z"[^>]*>Apr 12, 2026<\/time>/);
   });
 });
 

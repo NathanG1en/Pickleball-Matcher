@@ -47,6 +47,7 @@ import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
+import { useHydrated } from "@/lib/utils/hydration";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -84,6 +85,7 @@ export function SessionManagerClient({
   isFromProfile = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
+  const isHydrated = useHydrated();
 
   const sortedPlayers = useMemo(
     () =>
@@ -104,7 +106,7 @@ export function SessionManagerClient({
     setSessionName(session.name ?? null);
   }
 
-  const formattedDate = formatSessionDate(session.startedAt);
+  const formattedDate = isHydrated ? formatSessionDate(session.startedAt) : "";
   const initialSessionName = sessionName || formattedDate;
 
   const [prevInitialProposal, setPrevInitialProposal] = useState(initialProposal);

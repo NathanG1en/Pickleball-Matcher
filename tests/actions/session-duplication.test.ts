@@ -94,7 +94,7 @@ describe("duplicateSessionAction", () => {
     setActionRepository(repository);
   });
 
-  it("duplicates a normal session with attendance from the end of the session and name set to current date", async () => {
+  it("duplicates a normal session with attendance from the end of the session and no stored date-based custom name", async () => {
     const result = await duplicateSessionAction({
       groupId: "g1",
       sessionId: "ses_regular",
@@ -110,13 +110,8 @@ describe("duplicateSessionAction", () => {
     expect(newSession.currentRoundNumber).toBe(0);
     expect(newSession.type).toBe("regular");
 
-    // The name should be formatted current date (not the old session name)
-    const todayFormatted = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    expect(newSession.name).toBe(todayFormatted);
+    // Default date labels must be calculated in the viewer’s browser, not stored as server-local names.
+    expect(newSession.name).toBeNull();
 
     // Verify attendance: p1, p2, p3 were attending at the end.
     // p4 left at round 2 so should NOT be included.
@@ -159,7 +154,7 @@ describe("duplicateSessionAction", () => {
     expect(p1Att?.leftRound).not.toBeNull();
   });
 
-  it("duplicates an open play session with who was checked in and name set to current date", async () => {
+  it("duplicates an open play session with who was checked in and no stored date-based custom name", async () => {
     const result = await duplicateSessionAction({
       groupId: "g1",
       sessionId: "ses_open_play",
@@ -175,12 +170,7 @@ describe("duplicateSessionAction", () => {
     expect(newSession.currentRoundNumber).toBe(1);
     expect(newSession.type).toBe("open_play");
 
-    const todayFormatted = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    expect(newSession.name).toBe(todayFormatted);
+    expect(newSession.name).toBeNull();
 
     // p1 and p2 were checked in. p3 had left.
     const newAttendance = await repository.listAttendance(newSession.id);

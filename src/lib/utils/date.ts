@@ -1,5 +1,6 @@
 /**
- * Formats a session date consistently across the app as "MMM D, YYYY" (e.g. "Oct 23, 2026").
+ * Formats a session date using the current runtime’s timezone as "MMM D, YYYY".
+ * Use in client components; server components should render ClientDate instead.
  */
 export function formatSessionDate(date: Date | string | number): string {
   const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;

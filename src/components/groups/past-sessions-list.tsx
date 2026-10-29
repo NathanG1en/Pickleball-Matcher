@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { formatSessionDate } from "@/lib/utils/date";
+import { useHydrated } from "@/lib/utils/hydration";
 
 export interface PastSessionMatchData {
   readonly id: string;
@@ -50,6 +51,7 @@ export function PastSessionsList({
   isOrganizer = false,
   initialExpandedSessionIds,
 }: PastSessionsListProps) {
+  const isHydrated = useHydrated();
   const [expandedSessionIds, setExpandedSessionIds] = useState<Record<string, boolean>>(
     initialExpandedSessionIds ?? {},
   );
@@ -71,7 +73,7 @@ export function PastSessionsList({
       {sessions.map((session) => {
         const isExpanded = Boolean(expandedSessionIds[session.id]);
         const currentName = renamedSessionNames[session.id] ?? session.name;
-        const formattedDate = formatSessionDate(session.startedAt);
+        const formattedDate = isHydrated ? formatSessionDate(session.startedAt) : "";
 
         return (
           <div key={session.id} className="py-3.5 space-y-3" data-testid={`past-session-item-${session.id}`}>

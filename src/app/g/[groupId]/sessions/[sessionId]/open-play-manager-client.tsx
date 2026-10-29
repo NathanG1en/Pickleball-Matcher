@@ -32,6 +32,7 @@ import type {
 import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rating-slider";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { formatSessionDate } from "@/lib/utils/date";
+import { useHydrated } from "@/lib/utils/hydration";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -62,10 +63,11 @@ export function OpenPlayManagerClient({
   isFromProfile = false,
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
+  const isHydrated = useHydrated();
 
   // Local state for instant UI updates without waiting for router.refresh()
   const [sessionName, setSessionName] = useState(session.name ?? null);
-  const formattedDate = formatSessionDate(session.startedAt);
+  const formattedDate = isHydrated ? formatSessionDate(session.startedAt) : "";
   const initialSessionName = sessionName || formattedDate;
 
   const [prevPlayers, setPrevPlayers] = useState(players);
