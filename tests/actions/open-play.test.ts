@@ -271,6 +271,18 @@ describe("Open Play Server Actions", () => {
     expect(synergy?.wins).toBe(1);
   });
 
+  it("keeps the session and rounds active if chemistry rebuild fails during completion", async () => {
+    const started = await startOpenPlaySessionAction({ groupId: "g1" });
+    if (!started.ok) throw new Error(started.error);
+    const before = structuredClone(repository.state);
+    const replacement = vi.spyOn(repository, "replaceSynergyState").mockRejectedValueOnce(new Error("Chemistry write failed"));
+    try {
+      const result = await endOpenPlaySessionAction({ groupId: "g1", sessionId: started.data.id });
+      expect(result.ok).toBe(false);
+      expect(repository.state).toEqual(before);
+    } finally { replacement.mockRestore(); }
+  });
+
   it("ends open play session and marks session and rounds completed, updating player profiles", async () => {
     const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
     expect(startRes.ok).toBe(true);

@@ -3,7 +3,7 @@ import postgres from "postgres";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import { SessionService } from "@/lib/domain/session-service";
-import { submitOpenPlayGameAction, updateOpenPlayGameAction } from "@/app/actions/open-play";
+import { submitOpenPlayGameAction, updateOpenPlayGameAction, endOpenPlaySessionAction } from "@/app/actions/open-play";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/app/actions/action-context", async importOriginal => ({
@@ -11,6 +11,7 @@ vi.mock("@/app/actions/action-context", async importOriginal => ({
   getActionRepository: () => repository,
   getActivePlayerAccountId: async () => "account-a",
   getActiveOrganizerSession: async () => null,
+  requireOrganizer: async () => null,
 }));
 
 const schema = `chemistry_concurrency_${randomUUID().replaceAll("-", "")}`;
@@ -107,3 +108,19 @@ it("serializes a normal correction behind an Open Play edit before taking player
     hook.mockRestore();
   }
 }, 30_000);
+
+it("finishes Open Play and replays chemistry inside the same transaction", async () => {
+  await repository.insertGroup({ id: "completion", name: "Completion fixture", organizerPinHash: "fixture", createdAt: new Date() });
+  await repository.insertSession({ id: "completion-session", groupId: "completion", type: "open_play", status: "active", courtCount: 1,
+    currentRoundNumber: 1, version: 1, startedAt: new Date(), endedAt: null }, []);
+  await repository.insertStartedRound({ round: { id: "completion-round", sessionId: "completion-session", roundNumber: 1, status: "started", seed: 1,
+    scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+    createdAt: new Date(), startedAt: new Date(), completedAt: null, version: 1 }, matches: [], matchPlayers: [], sits: [] });
+  const accounts = ["account-a", "account-b", "account-c", "account-d"];
+  const before = await repository.listPairSynergies(accounts);
+  const result = await endOpenPlaySessionAction({ groupId: "completion", sessionId: "completion-session" });
+  expect(result).toMatchObject({ ok: true, data: { status: "completed", version: 2 } });
+  expect(await repository.getSession("completion-session")).toMatchObject({ status: "completed" });
+  expect((await repository.listStartedRounds("completion-session"))[0].round.status).toBe("completed");
+  expect(await repository.listPairSynergies(accounts)).toEqual(before);
+});

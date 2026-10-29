@@ -662,36 +662,41 @@ export async function endOpenPlaySessionAction(
   try {
     await requireOrganizer(parsed.data.groupId);
     const repository = getActionRepository();
-    const session = await repository.getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId) {
-      return { ok: false, error: "Session not found." };
-    }
-
-    const startedRounds = await repository.listStartedRounds(session.id);
-    for (const sr of startedRounds) {
-      if (sr.round.status === "started") {
-        await repository.updateRound({
-          ...sr.round,
-          status: "completed",
-          completedAt: defaultDependencies.now(),
-          version: sr.round.version + 1,
-        });
+    const updatedSession = await repository.transaction(async transaction => {
+      await transaction.lockSynergyState();
+      const session = await transaction.getSession(parsed.data.sessionId);
+      if (!session || session.groupId !== parsed.data.groupId) {
+        throw new Error("Session not found.");
       }
-    }
 
-    const updatedSession: SessionRecord = {
-      ...session,
-      status: "completed",
-      endedAt: defaultDependencies.now(),
-      version: session.version + 1,
-    };
-    await repository.updateSession(updatedSession);
+      const startedRounds = await transaction.listStartedRounds(session.id);
+      for (const sr of startedRounds) {
+        if (sr.round.status === "started") {
+          await transaction.updateRound({
+            ...sr.round,
+            status: "completed",
+            completedAt: defaultDependencies.now(),
+            version: sr.round.version + 1,
+          });
+        }
+      }
 
-    await replayRatings(parsed.data.groupId, repository);
-    await replaySynergies(repository);
+      const updatedSession: SessionRecord = {
+        ...session,
+        status: "completed",
+        endedAt: defaultDependencies.now(),
+        version: session.version + 1,
+      };
+      await transaction.updateSession(updatedSession);
+
+      await replayRatings(parsed.data.groupId, transaction);
+      await replaySynergies(transaction);
+
+      return updatedSession;
+    });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
-    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${updatedSession.id}`);
     revalidatePath("/players");
     revalidatePath("/players/groups");
     return { ok: true, data: updatedSession };
