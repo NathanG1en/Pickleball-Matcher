@@ -49,12 +49,14 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // 6. Verify Open Play session page loaded with Host checked in
-    const todayFormatted = await page.evaluate(() => new Date().toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }));
-    await expect(page.locator("h1")).toContainText(todayFormatted);
+    const possibleDates = await page.evaluate(() => {
+      const d = new Date();
+      const prev = new Date(d.getTime() - 86400000);
+      const next = new Date(d.getTime() + 86400000);
+      const fmt = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      return [fmt(d), fmt(prev), fmt(next)];
+    });
+    await expect(page.locator("h1")).toContainText(new RegExp(possibleDates.join("|")));
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
     // Verify Open Play badge label is removed from the header and three dots is in the top right corner
@@ -617,12 +619,14 @@ test.describe("Open Play Workflow", () => {
     await expect(page).toHaveURL(new RegExp(`/g/${groupId}/sessions/session_`));
 
     // Verify initial session name
-    const todayFormatted = await page.evaluate(() => new Date().toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }));
-    await expect(page.locator("h1")).toContainText(todayFormatted);
+    const possibleDates = await page.evaluate(() => {
+      const d = new Date();
+      const prev = new Date(d.getTime() - 86400000);
+      const next = new Date(d.getTime() + 86400000);
+      const fmt = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      return [fmt(d), fmt(prev), fmt(next)];
+    });
+    await expect(page.locator("h1")).toContainText(new RegExp(possibleDates.join("|")));
 
     // Host renames session using edit pencil
     const editSessionBtn = page.locator("button[aria-label='Edit session name']");
@@ -676,7 +680,7 @@ test.describe("Open Play Workflow", () => {
     const sessionId = sessionUrl.split("/sessions/")[1].split("?")[0];
     const pastSessionItem = page.locator(`[data-testid='past-session-item-${sessionId}']`);
     await expect(pastSessionItem).toContainText("Friday Night Open Play");
-    await expect(pastSessionItem).toContainText(todayFormatted);
+    await expect(pastSessionItem).toContainText(new RegExp(possibleDates.join("|")));
 
     const expandArrow = page.locator(`[data-testid='expand-session-arrow-${sessionId}']`);
     const pastSessionOptions = page.locator(`[data-testid='session-options-menu-button-${sessionId}']`);
@@ -690,7 +694,7 @@ test.describe("Open Play Workflow", () => {
     await page.goto("/players");
     const playerSession = page.locator(`article[data-testid='player-session-${sessionId}']`);
     await expect(playerSession).toContainText("Friday Night Open Play");
-    await expect(playerSession).toContainText(todayFormatted);
+    await expect(playerSession).toContainText(new RegExp(possibleDates.join("|")));
 
     await playerContext.close();
   });

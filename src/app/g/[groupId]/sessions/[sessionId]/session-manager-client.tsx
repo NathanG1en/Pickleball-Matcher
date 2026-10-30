@@ -349,7 +349,7 @@ export function SessionManagerClient({
 
   const activeCourtsForSynergy = useMemo(() => {
     // Re-evaluate whenever session settings modal opens or tab changes to pick up any manual edits
-    if (!showSessionSettingsModal && modalTab !== "chemistry") {
+    if (!showSessionSettingsModal && modalTab !== "synergies") {
       // Still compute if needed, but condition explicitly references state
     }
     if (activeProposal) {

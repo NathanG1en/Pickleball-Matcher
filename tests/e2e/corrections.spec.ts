@@ -617,6 +617,7 @@ test("normal score corrections refresh chemistry without adding shared games", a
   }
   await page.getByRole("link", { name: "Start New Session", exact: true }).click();
   await page.getByRole("button", { name: "Select Normal Session →", exact: true }).click();
+  await page.getByRole("button", { name: "Continue to Pairings →", exact: true }).click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
