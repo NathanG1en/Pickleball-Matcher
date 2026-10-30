@@ -18,7 +18,7 @@ import {
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
-import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
+import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
@@ -513,6 +513,7 @@ export function SessionManagerClient({
     if (!activeProposal) return;
     setIsPending(true);
     setError(null);
+    const proposalToUse = customProposal ?? activeProposal;
     try {
       const res = await startRoundAction({
         groupId,
@@ -520,12 +521,12 @@ export function SessionManagerClient({
         sessionVersion: currentSession.version,
         seed: activeProposal.seed,
         idempotencyKey: createIdempotencyKey("start_rd"),
-        manualCourts: customProposal?.courts.map((c) => ({
+        manualCourts: proposalToUse.courts.map((c) => ({
           courtNumber: c.courtNumber,
           team1: [...c.team1],
           team2: [...c.team2],
         })),
-        manualSitting: customProposal ? [...customProposal.sitting] : undefined,
+        manualSitting: [...proposalToUse.sitting],
       });
       if (res.ok) {
         clearLineupDraft(lineupDraftKey(currentSession.id));
@@ -545,6 +546,81 @@ export function SessionManagerClient({
       setIsPending(false);
     }
   };
+
+  const handleSaveAllScores = async () => {
+    if (!latestStarted) return;
+    const entriesToSave: { matchId: string; team1Score: number; team2Score: number; version: number }[] = [];
+    for (const match of scoreEntries) {
+      const draft = scoreDrafts[match.id];
+      if (draft && draft.team1 !== "" && draft.team2 !== "") {
+        const t1 = parseInt(draft.team1, 10);
+        const t2 = parseInt(draft.team2, 10);
+        if (!isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0) {
+          entriesToSave.push({ matchId: match.id, team1Score: t1, team2Score: t2, version: match.version });
+        }
+      }
+    }
+    if (entriesToSave.length === 0) return;
+
+    const matchIds = new Set(entriesToSave.map((e) => e.matchId));
+    setSavingMatchIds((prev) => new Set([...prev, ...matchIds]));
+    setError(null);
+
+    try {
+      const res = await recordMultipleResultsAction({
+        groupId,
+        sessionId: currentSession.id,
+        results: entriesToSave.map((e) => ({
+          matchId: e.matchId,
+          team1Score: e.team1Score,
+          team2Score: e.team2Score,
+          matchVersion: e.version,
+        })),
+        idempotencyKey: createIdempotencyKey("save_all"),
+      });
+      if (res.ok) {
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) => {
+              const saved = entriesToSave.find((e) => e.matchId === m.id);
+              return saved
+                ? {
+                    ...m,
+                    status: "completed" as const,
+                    team1Score: saved.team1Score,
+                    team2Score: saved.team2Score,
+                    version: m.version + 1,
+                  }
+                : m;
+            }),
+          }))
+        );
+        setScoreDrafts((prev) => {
+          const next = { ...prev };
+          for (const entry of entriesToSave) {
+            delete next[entry.matchId];
+          }
+          return next;
+        });
+        const pickle = entriesToSave.find((e) => isPickleScore(e.team1Score, e.team2Score));
+        setPickledMatchId(pickle ? pickle.matchId : null);
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to save match results.");
+    } finally {
+      setSavingMatchIds((prev) => {
+        const next = new Set(prev);
+        for (const entry of entriesToSave) {
+          next.delete(entry.matchId);
+        }
+        return next;
+      });
+    }
+  };
+
 
   const handleSaveResult = async (matchId: string, team1Score: number, team2Score: number) => {
     if (!latestStarted) return;
@@ -1504,6 +1580,7 @@ export function SessionManagerClient({
                 onScoreChange={handleScoreChange}
                 hasUnsavedScores={hasUnsavedScores}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                onSaveAllScores={canManage ? handleSaveAllScores : undefined}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">

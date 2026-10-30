@@ -392,5 +392,31 @@ describe("SessionService", () => {
         expect(r2Players).not.toContain(p);
       }
     });
+
+    it("records multiple match results in a single transaction", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 2,
+        playerIds: players.map((p) => p.id),
+      });
+      const round = await service.startRound(session.id, await service.proposeRound(session.id, 10));
+      const roundMatches = repository.state.matches.filter((m) => m.roundId === round.id);
+
+      const results = await service.recordMultipleResults([
+        { matchId: roundMatches[0].id, team1Score: 11, team2Score: 8 },
+        { matchId: roundMatches[1].id, team1Score: 5, team2Score: 11 },
+      ]);
+
+      expect(results).toHaveLength(2);
+      expect(results[0].status).toBe("completed");
+      expect(results[0].team1Score).toBe(11);
+      expect(results[1].status).toBe("completed");
+      expect(results[1].team2Score).toBe(11);
+    });
+
+    it("recalculates synergies on demand via recalculateSynergies", async () => {
+      await expect(service.recalculateSynergies()).resolves.toBeUndefined();
+    });
   });
 });
+

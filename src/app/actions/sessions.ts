@@ -352,6 +352,27 @@ export async function endSessionAction(
   }
 }
 
+export async function recalculateGroupSynergiesAction(
+  input: { groupId: string; sessionId?: string },
+): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    await requireOrganizer(input.groupId);
+    const service = getActionSessionService();
+    await service.recalculateSynergies();
+    revalidatePath(`/g/${input.groupId}`);
+    if (input.sessionId) {
+      revalidatePath(`/g/${input.groupId}/sessions/${input.sessionId}`);
+    }
+    return { ok: true, data: { success: true } };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to recalculate chemistry",
+    };
+  }
+}
+
+
 export async function updateSessionNameAction(
   input: unknown,
 ): Promise<{ ok: boolean; error?: string }> {

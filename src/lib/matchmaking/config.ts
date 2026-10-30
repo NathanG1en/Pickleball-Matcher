@@ -1,7 +1,7 @@
 import type { MatchmakingConfig } from "@/lib/matchmaking/types";
 
 export const DEFAULT_MATCHMAKING_CONFIG: MatchmakingConfig = Object.freeze({
-  iterations: 5_000,
+  iterations: 1_200,
   weights: Object.freeze({
     consecutiveSit: 100,
     playingTime: 80,

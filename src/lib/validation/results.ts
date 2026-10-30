@@ -35,3 +35,26 @@ export const cancelMatchSchema = z
     idempotencyKey: entityIdSchema.optional(),
   })
   .strict();
+
+export const singleMatchResultSchema = z
+  .object({
+    matchId: entityIdSchema,
+    team1Score: requiredScore,
+    team2Score: requiredScore,
+    matchVersion: z.coerce.number().int().positive().optional(),
+  })
+  .strict()
+  .refine(({ team1Score, team2Score }) => team1Score !== team2Score, {
+    path: ["team2Score"],
+    message: "Pickleball matches cannot end in a tie",
+  });
+
+export const recordMultipleResultsMutationSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema.optional(),
+    results: z.array(singleMatchResultSchema).min(1),
+    idempotencyKey: entityIdSchema.optional(),
+  })
+  .strict();
+
