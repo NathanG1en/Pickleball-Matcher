@@ -13,10 +13,12 @@ const testUrl = process.env.TEST_DATABASE_URL;
 const allowlistedReplayEndpoint = !!testUrl && /^ep-cold-band-b491lrgj\./.test(new URL(testUrl).hostname);
 if (!allowlistedReplayEndpoint && !process.env.CI) throw new Error("Temporary replay tests require the allowlisted direct test endpoint");
 const replayIt = allowlistedReplayEndpoint || !process.env.CI ? it : it.skip;
-const sql = allowlistedReplayEndpoint ? postgres(testUrl, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capture) queries++; } }) : null as any;
-const repository = allowlistedReplayEndpoint ? new PostgresRepositories(sql) : null as any;
+let sql: postgres.Sql;
+let repository: PostgresRepositories;
 beforeAll(async () => {
   if (!allowlistedReplayEndpoint) return;
+  sql = postgres(testUrl!, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capture) queries++; } });
+  repository = new PostgresRepositories(sql);
   await createReplayTables(sql);
   await seedReplayHistory(repository);
   // A shared account in another group remains part of global replay outputs.
