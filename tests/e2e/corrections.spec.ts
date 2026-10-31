@@ -137,14 +137,14 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(attendanceTab).toBeVisible();
     await expect(courtConfigTab).toBeVisible();
 
-    // Toggle player Charlie to Away
+    // Toggle player Charlie to Left
     const charlieRow = page.locator("[data-testid='attendance-row-Charlie']");
-    await charlieRow.locator("button:has-text('Mark Left')").click();
-    await expect(charlieRow.locator("text=Away")).toBeVisible();
+    await charlieRow.locator("button:has-text('Left')").click();
+    await expect(charlieRow.getByTestId("attendance-left-Charlie")).toHaveAttribute("aria-pressed", "true");
 
     // Toggle Charlie back to Present
-    await charlieRow.locator("button:has-text('Mark Present')").click();
-    await expect(charlieRow.locator("text=Present")).toBeVisible();
+    await charlieRow.locator("button:has-text('Present')").click();
+    await expect(charlieRow.getByTestId("attendance-present-Charlie")).toHaveAttribute("aria-pressed", "true");
 
     // Switch to Court Configuration tab
     await courtConfigTab.click();

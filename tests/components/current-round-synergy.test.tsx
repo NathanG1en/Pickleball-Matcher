@@ -104,8 +104,10 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
         playerAccounts={{ p1: "acc1", p2: null, p3: "acc3", p4: "acc4" }}
       />
     );
-    // Ineligibility warning banner is present in modal
+    // Ineligibility warning banner is present in modal with dismiss button
     expect(html).toContain("Notice: Synergy Not Yet Available For Some Duos");
+    expect(html).toContain('data-testid="dismiss-synergy-notice-button"');
+    expect(html).toContain('aria-label="Dismiss synergy notice"');
     expect(html).toContain("Guest Players");
     expect(html).toContain("New Duos");
 
@@ -137,5 +139,65 @@ describe("CurrentRoundView & SynergyRevealModal synergy display", () => {
     expect(html).toContain("+90% (8 games)");
     expect(html).toContain("Charlie &amp; Dave");
     expect(html).toContain("-10% (4 games)");
+  });
+
+  it("allows the partner synergies notice to be dismissed, while still appearing for sessions where it applies", () => {
+    // 1. In a session where it applies (uncalculated duos), the notice appears with an X button
+    const appliesHtml = renderToStaticMarkup(
+      <SynergyPanel
+        sessionId="session-1"
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        courtSynergies={{}}
+        playerNames={{ p1: "Alice", p2: "GuestBob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: null, p3: "acc3", p4: "acc4" }}
+      />
+    );
+    expect(appliesHtml).toContain("Notice: Synergy Not Yet Available For Some Duos");
+    expect(appliesHtml).toContain('data-testid="dismiss-synergy-notice-button"');
+
+    // 2. When dismissed for session-1, the notice is hidden
+    const dismissedHtml = renderToStaticMarkup(
+      <SynergyPanel
+        sessionId="session-1"
+        initialDismissed={true}
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        courtSynergies={{}}
+        playerNames={{ p1: "Alice", p2: "GuestBob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: null, p3: "acc3", p4: "acc4" }}
+      />
+    );
+    expect(dismissedHtml).not.toContain("Notice: Synergy Not Yet Available For Some Duos");
+    expect(dismissedHtml).not.toContain('data-testid="dismiss-synergy-notice-button"');
+
+    // 3. For another session (session-2) where it applies, it still appears
+    const otherSessionHtml = renderToStaticMarkup(
+      <SynergyPanel
+        sessionId="session-2"
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        courtSynergies={{}}
+        playerNames={{ p1: "Alice", p2: "GuestBob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: null, p3: "acc3", p4: "acc4" }}
+      />
+    );
+    expect(otherSessionHtml).toContain("Notice: Synergy Not Yet Available For Some Duos");
+    expect(otherSessionHtml).toContain('data-testid="dismiss-synergy-notice-button"');
+
+    // 4. For a session where all duos are calculated (it does not apply), it does not appear
+    const fullyCalculatedHtml = renderToStaticMarkup(
+      <SynergyPanel
+        sessionId="session-3"
+        courts={[{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }]}
+        courtSynergies={{
+          1: {
+            team1: { score: 80, matchesPlayed: 5, status: "calculated" },
+            team2: { score: 60, matchesPlayed: 3, status: "calculated" },
+          },
+        }}
+        playerNames={{ p1: "Alice", p2: "Bob", p3: "Charlie", p4: "Dave" }}
+        playerAccounts={{ p1: "acc1", p2: "acc2", p3: "acc3", p4: "acc4" }}
+      />
+    );
+    expect(fullyCalculatedHtml).not.toContain("Notice: Synergy Not Yet Available For Some Duos");
+    expect(fullyCalculatedHtml).not.toContain('data-testid="dismiss-synergy-notice-button"');
   });
 });
