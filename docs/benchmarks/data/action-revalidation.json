@@ -1,0 +1,478 @@
+{
+  "baselineCommit": "75e4c27",
+  "scope": "One baseline desktop and optimized desktop/mobile workflow; local Next development server, Neon test branch",
+  "fixture": {
+    "accounts": 1,
+    "guests": 7,
+    "courts": 2
+  },
+  "queryMetric": "Attempted Postgres Query executions, including BEGIN/COMMIT; not wire messages or returned rows",
+  "unattributedQueries": 0,
+  "timingNote": "One observation per step and device, includes dev overhead; browser timings include a network-idle settling wait. No production latency claim.",
+  "runs": [
+    {
+      "variant": "baseline",
+      "project": "Desktop Chrome",
+      "steps": [
+        {
+          "step": "start",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 20,
+          "getQueries": 10,
+          "postMs": 1511,
+          "getMs": [
+            388
+          ],
+          "browserMs": 1648.832124999999
+        },
+        {
+          "step": "cancel",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 30,
+          "getQueries": 10,
+          "postMs": 2117,
+          "getMs": [
+            380
+          ],
+          "browserMs": 2167.58475
+        },
+        {
+          "step": "save-score-control",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 25,
+          "getQueries": 0,
+          "postMs": 1571,
+          "getMs": [],
+          "browserMs": 1614.5867089999992
+        },
+        {
+          "step": "advance",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 27,
+          "getQueries": 10,
+          "postMs": 1833,
+          "getMs": [
+            432
+          ],
+          "browserMs": 1896.5170419999995
+        },
+        {
+          "step": "historical-score",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 30,
+          "getQueries": 10,
+          "postMs": 2292,
+          "getMs": [
+            406
+          ],
+          "browserMs": 2332.767416999999
+        },
+        {
+          "step": "historical-cancel",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 30,
+          "getQueries": 10,
+          "postMs": 2568,
+          "getMs": [
+            384
+          ],
+          "browserMs": 2618.64675
+        },
+        {
+          "step": "attendance-left",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 18,
+          "getQueries": 10,
+          "postMs": 886,
+          "getMs": [
+            390
+          ],
+          "browserMs": 939.0226670000011
+        },
+        {
+          "step": "attendance-present",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 19,
+          "getQueries": 10,
+          "postMs": 1129,
+          "getMs": [
+            414
+          ],
+          "browserMs": 1170.112792
+        },
+        {
+          "step": "court-config",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 22,
+          "getQueries": 10,
+          "postMs": 1345,
+          "getMs": [
+            338
+          ],
+          "browserMs": 1412.4092920000003
+        },
+        {
+          "step": "start-second",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 20,
+          "getQueries": 10,
+          "postMs": 1198,
+          "getMs": [
+            412
+          ],
+          "browserMs": 1280.2435829999995
+        },
+        {
+          "step": "reshuffle-active",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 41,
+          "getQueries": 10,
+          "postMs": 3795,
+          "getMs": [
+            434
+          ],
+          "browserMs": 3842.3829589999987
+        },
+        {
+          "step": "start-third",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 20,
+          "getQueries": 10,
+          "postMs": 1214,
+          "getMs": [
+            460
+          ],
+          "browserMs": 1333.4043330000022
+        },
+        {
+          "step": "undo",
+          "posts": 1,
+          "gets": 1,
+          "postQueries": 35,
+          "getQueries": 10,
+          "postMs": 2518,
+          "getMs": [
+            438
+          ],
+          "browserMs": 2631.627166000002
+        }
+      ],
+      "totals": {
+        "posts": 13,
+        "gets": 12,
+        "queries": 457
+      },
+      "recovery": []
+    },
+    {
+      "variant": "optimized",
+      "project": "Mobile Chrome",
+      "steps": [
+        {
+          "step": "start",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1165,
+          "getMs": [],
+          "browserMs": 1239.589041000001
+        },
+        {
+          "step": "cancel",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1925,
+          "getMs": [],
+          "browserMs": 1975.7290830000002
+        },
+        {
+          "step": "save-score-control",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 25,
+          "getQueries": 0,
+          "postMs": 1625,
+          "getMs": [],
+          "browserMs": 1671.4264170000006
+        },
+        {
+          "step": "advance",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 27,
+          "getQueries": 0,
+          "postMs": 1757,
+          "getMs": [],
+          "browserMs": 1839.2338330000002
+        },
+        {
+          "step": "historical-score",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1905,
+          "getMs": [],
+          "browserMs": 1953.6180420000019
+        },
+        {
+          "step": "historical-cancel",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1930,
+          "getMs": [],
+          "browserMs": 1976.0143329999992
+        },
+        {
+          "step": "attendance-left",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 18,
+          "getQueries": 0,
+          "postMs": 980,
+          "getMs": [],
+          "browserMs": 1044.6195829999997
+        },
+        {
+          "step": "attendance-present",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 19,
+          "getQueries": 0,
+          "postMs": 1064,
+          "getMs": [],
+          "browserMs": 1138.3018330000014
+        },
+        {
+          "step": "court-config",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 22,
+          "getQueries": 0,
+          "postMs": 1318,
+          "getMs": [],
+          "browserMs": 1377.2336670000004
+        },
+        {
+          "step": "start-second",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1207,
+          "getMs": [],
+          "browserMs": 1264.879667000001
+        },
+        {
+          "step": "reshuffle-active",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 41,
+          "getQueries": 0,
+          "postMs": 2886,
+          "getMs": [],
+          "browserMs": 2933.583416999998
+        },
+        {
+          "step": "start-third",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1139,
+          "getMs": [],
+          "browserMs": 1229.6727079999982
+        },
+        {
+          "step": "undo",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 35,
+          "getQueries": 0,
+          "postMs": 2336,
+          "getMs": [],
+          "browserMs": 2398.7283330000027
+        }
+      ],
+      "totals": {
+        "posts": 13,
+        "gets": 0,
+        "queries": 337
+      },
+      "recovery": [
+        {
+          "step": "bfcache-restore",
+          "method": "GET",
+          "queries": 10,
+          "ms": 358
+        }
+      ]
+    },
+    {
+      "variant": "optimized",
+      "project": "Desktop Chrome",
+      "steps": [
+        {
+          "step": "start",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1170,
+          "getMs": [],
+          "browserMs": 1290.0922499999997
+        },
+        {
+          "step": "cancel",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1965,
+          "getMs": [],
+          "browserMs": 2019.4146660000006
+        },
+        {
+          "step": "save-score-control",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 25,
+          "getQueries": 0,
+          "postMs": 1783,
+          "getMs": [],
+          "browserMs": 1837.151582999999
+        },
+        {
+          "step": "advance",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 27,
+          "getQueries": 0,
+          "postMs": 1773,
+          "getMs": [],
+          "browserMs": 1839.9129169999997
+        },
+        {
+          "step": "historical-score",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1926,
+          "getMs": [],
+          "browserMs": 1973.9272090000013
+        },
+        {
+          "step": "historical-cancel",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 30,
+          "getQueries": 0,
+          "postMs": 1947,
+          "getMs": [],
+          "browserMs": 1990.2463329999991
+        },
+        {
+          "step": "attendance-left",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 18,
+          "getQueries": 0,
+          "postMs": 969,
+          "getMs": [],
+          "browserMs": 1031.0387499999997
+        },
+        {
+          "step": "attendance-present",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 19,
+          "getQueries": 0,
+          "postMs": 1056,
+          "getMs": [],
+          "browserMs": 1112.2121669999979
+        },
+        {
+          "step": "court-config",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 22,
+          "getQueries": 0,
+          "postMs": 1412,
+          "getMs": [],
+          "browserMs": 1471.3149999999987
+        },
+        {
+          "step": "start-second",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1149,
+          "getMs": [],
+          "browserMs": 1242.9052499999998
+        },
+        {
+          "step": "reshuffle-active",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 41,
+          "getQueries": 0,
+          "postMs": 3170,
+          "getMs": [],
+          "browserMs": 3231.811292000002
+        },
+        {
+          "step": "start-third",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 20,
+          "getQueries": 0,
+          "postMs": 1168,
+          "getMs": [],
+          "browserMs": 1267.4619579999999
+        },
+        {
+          "step": "undo",
+          "posts": 1,
+          "gets": 0,
+          "postQueries": 35,
+          "getQueries": 0,
+          "postMs": 2817,
+          "getMs": [],
+          "browserMs": 2872.6834579999995
+        }
+      ],
+      "totals": {
+        "posts": 13,
+        "gets": 0,
+        "queries": 337
+      },
+      "recovery": [
+        {
+          "step": "bfcache-restore",
+          "method": "GET",
+          "queries": 10,
+          "ms": 452
+        }
+      ]
+    }
+  ]
+}
