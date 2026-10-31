@@ -1425,7 +1425,25 @@ export class PostgresRepositories implements DomainRepository {
         ${session.type ?? "regular"}, ${session.name ?? null}
       )
     `;
-    for (const item of attendance) await this.saveAttendance(item);
+    if (attendance.length > 0) {
+      const sessionIds = attendance.map((a) => a.sessionId);
+      const playerIds = attendance.map((a) => a.playerId);
+      const joinedRounds = attendance.map((a) => a.joinedRound);
+      const leftRounds = attendance.map((a) => a.leftRound);
+
+      await this.query`
+        insert into session_attendance (session_id, player_id, joined_round, left_round)
+        select * from unnest(
+          ${sessionIds}::text[],
+          ${playerIds}::text[],
+          ${joinedRounds}::int[],
+          ${leftRounds}::int[]
+        )
+        on conflict (session_id, player_id) do update set
+          joined_round = excluded.joined_round,
+          left_round = excluded.left_round
+      `;
+    }
   }
 
   async updateSession(session: SessionRecord) {
@@ -1472,29 +1490,67 @@ export class PostgresRepositories implements DomainRepository {
         ${record.round.version}
       )
     `;
-    for (const match of record.matches) {
+
+    if (record.matches.length > 0) {
+      const matchIds = record.matches.map((m) => m.id);
+      const roundIds = record.matches.map((m) => m.roundId);
+      const courtNumbers = record.matches.map((m) => m.courtNumber);
+      const statuses = record.matches.map((m) => m.status);
+      const team1Scores = record.matches.map((m) => m.team1Score);
+      const team2Scores = record.matches.map((m) => m.team2Score);
+      const completedAts = record.matches.map((m) => (m.completedAt ? m.completedAt.toISOString() : null));
+      const versions = record.matches.map((m) => m.version);
+      const rateds = record.matches.map((m) => m.rated ?? true);
+
       await this.query`
         insert into matches (
           id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
-        ) values (
-          ${match.id}, ${match.roundId}, ${match.courtNumber}, ${match.status},
-          ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
+        )
+        select * from unnest(
+          ${matchIds}::text[],
+          ${roundIds}::text[],
+          ${courtNumbers}::int[],
+          ${statuses}::text[],
+          ${team1Scores}::int[],
+          ${team2Scores}::int[],
+          ${completedAts}::timestamptz[],
+          ${versions}::int[],
+          ${rateds}::boolean[]
         )
       `;
     }
-    for (const member of record.matchPlayers) {
+
+    if (record.matchPlayers.length > 0) {
+      const mpMatchIds = record.matchPlayers.map((mp) => mp.matchId);
+      const mpPlayerIds = record.matchPlayers.map((mp) => mp.playerId);
+      const mpTeams = record.matchPlayers.map((mp) => mp.team);
+      const mpRatingBefores = record.matchPlayers.map((mp) => mp.ratingBefore);
+      const mpRatingAfters = record.matchPlayers.map((mp) => mp.ratingAfter);
+
       await this.query`
         insert into match_players (
           match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
+        )
+        select * from unnest(
+          ${mpMatchIds}::text[],
+          ${mpPlayerIds}::text[],
+          ${mpTeams}::smallint[],
+          ${mpRatingBefores}::float8[],
+          ${mpRatingAfters}::float8[]
         )
       `;
     }
-    for (const sit of record.sits) {
+
+    if (record.sits.length > 0) {
+      const sitRoundIds = record.sits.map((s) => s.roundId);
+      const sitPlayerIds = record.sits.map((s) => s.playerId);
+
       await this.query`
-        insert into round_sits (round_id, player_id) values (${sit.roundId}, ${sit.playerId})
+        insert into round_sits (round_id, player_id)
+        select * from unnest(
+          ${sitRoundIds}::text[],
+          ${sitPlayerIds}::text[]
+        )
       `;
     }
   }
@@ -1508,13 +1564,23 @@ export class PostgresRepositories implements DomainRepository {
         ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
       )
     `;
-    for (const member of matchPlayers) {
+    if (matchPlayers.length > 0) {
+      const mpMatchIds = matchPlayers.map((mp) => mp.matchId);
+      const mpPlayerIds = matchPlayers.map((mp) => mp.playerId);
+      const mpTeams = matchPlayers.map((mp) => mp.team);
+      const mpRatingBefores = matchPlayers.map((mp) => mp.ratingBefore);
+      const mpRatingAfters = matchPlayers.map((mp) => mp.ratingAfter);
+
       await this.query`
         insert into match_players (
           match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
+        )
+        select * from unnest(
+          ${mpMatchIds}::text[],
+          ${mpPlayerIds}::text[],
+          ${mpTeams}::smallint[],
+          ${mpRatingBefores}::float8[],
+          ${mpRatingAfters}::float8[]
         )
       `;
     }
@@ -1535,13 +1601,23 @@ export class PostgresRepositories implements DomainRepository {
 
   async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
     await this.query`delete from match_players where match_id = ${matchId}`;
-    for (const member of matchPlayers) {
+    if (matchPlayers.length > 0) {
+      const mpMatchIds = matchPlayers.map((mp) => mp.matchId);
+      const mpPlayerIds = matchPlayers.map((mp) => mp.playerId);
+      const mpTeams = matchPlayers.map((mp) => mp.team);
+      const mpRatingBefores = matchPlayers.map((mp) => mp.ratingBefore);
+      const mpRatingAfters = matchPlayers.map((mp) => mp.ratingAfter);
+
       await this.query`
         insert into match_players (
           match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
+        )
+        select * from unnest(
+          ${mpMatchIds}::text[],
+          ${mpPlayerIds}::text[],
+          ${mpTeams}::smallint[],
+          ${mpRatingBefores}::float8[],
+          ${mpRatingAfters}::float8[]
         )
       `;
     }

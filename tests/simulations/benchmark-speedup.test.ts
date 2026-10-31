@@ -21,32 +21,21 @@ describe("Performance Speedup Benchmark", () => {
 
     const matchmakingPlayers = players.map((p) => ({
       id: p.id,
+      name: p.name,
       rating: p.rating,
-      sits: 0,
-      consecutiveSits: 0,
-      played: 2,
+      gamesPlayed: 2,
+      eligibleRounds: 2,
+      satPreviousRound: false,
     }));
 
     // 1. Benchmark: Proposing a Round (5,000 vs 1,200 iterations)
-    const repoA = new InMemoryRepositories({ players });
-    const svcA = new SessionService(repoA, {
-      now: () => new Date(),
-      nextId: (k) => `${k}_${Math.random()}`,
-      nextSeed: () => 10,
-    });
-    const sessionA = await svcA.startSession({
-      groupId: "grp_1",
-      courtCount,
-      playerIds: players.map((p) => p.id),
-    });
-
     const oldConfig = { ...DEFAULT_MATCHMAKING_CONFIG, iterations: 5_000 };
     const newConfig = { ...DEFAULT_MATCHMAKING_CONFIG, iterations: 1_200 };
 
     const startOldGen = performance.now();
     for (let i = 0; i < 5; i++) {
       generateRound({
-        players: matchmakingPlayers.map(p => ({ ...p, active: true })),
+        players: matchmakingPlayers,
         courts: courtCount,
         pairHistory: [],
         config: oldConfig,
@@ -58,7 +47,7 @@ describe("Performance Speedup Benchmark", () => {
     const startNewGen = performance.now();
     for (let i = 0; i < 5; i++) {
       generateRound({
-        players: matchmakingPlayers.map(p => ({ ...p, active: true })),
+        players: matchmakingPlayers,
         courts: courtCount,
         pairHistory: [],
         config: newConfig,
@@ -104,11 +93,12 @@ describe("Performance Speedup Benchmark", () => {
     const newStartTime = performance.now() - startNewStart;
 
     // 3. Benchmark: Score Saving (4 Individual Saves vs 1 Batch Save)
-    const matchesToScore = repo2.state.matches.filter((m) => m.roundId === repo2.state.rounds[0].id);
+    const matches1 = repo1.state.matches.filter((m) => m.roundId === repo1.state.rounds[0].id);
+    const matches2 = repo2.state.matches.filter((m) => m.roundId === repo2.state.rounds[0].id);
 
     // Old way: 4 sequential recordResult calls
     const startOldSave = performance.now();
-    for (const m of matchesToScore) {
+    for (const m of matches1) {
       await svc1.recordResult({ matchId: m.id, team1Score: 11, team2Score: 8 });
     }
     const oldSaveTime = performance.now() - startOldSave;
@@ -116,7 +106,7 @@ describe("Performance Speedup Benchmark", () => {
     // New way: 1 batch recordMultipleResults call
     const startNewSave = performance.now();
     await svc2.recordMultipleResults(
-      matchesToScore.map((m) => ({ matchId: m.id, team1Score: 11, team2Score: 8 }))
+      matches2.map((m) => ({ matchId: m.id, team1Score: 11, team2Score: 8 }))
     );
     const newSaveTime = performance.now() - startNewSave;
 
