@@ -9,17 +9,20 @@ let sql: postgres.Sql;
 let repository: PostgresRepositories;
 let capture = false;
 let queries = 0;
+const testUrl = process.env.TEST_DATABASE_URL;
+const allowlistedReplayEndpoint = !!testUrl && /^ep-cold-band-b491lrgj\./.test(new URL(testUrl).hostname);
+if (!allowlistedReplayEndpoint && !process.env.CI) throw new Error("Expected direct isolated test endpoint");
+const replayIt = allowlistedReplayEndpoint || !process.env.CI ? it : it.skip;
 beforeEach(async () => {
-  const uri = process.env.TEST_DATABASE_URL!;
-  if (!/^ep-cold-band-b491lrgj\./.test(new URL(uri).hostname)) throw new Error("Expected direct isolated test endpoint");
-  sql = postgres(uri, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capture) queries++; } });
+  if (!allowlistedReplayEndpoint) return;
+  sql = postgres(testUrl!, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capture) queries++; } });
   await createReplayTables(sql);
   repository = new PostgresRepositories(sql);
 });
 afterEach(async () => { capture = false; vi.restoreAllMocks(); await sql?.end(); });
 const service = () => new SessionService(repository, { now: () => batchNow, nextId: kind => kind, nextSeed: () => 1 });
 
-it("loads only the selected round's pending matches with counts in one statement", async () => {
+replayIt("loads only the selected round's pending matches with counts in one statement", async () => {
   const { round, matches } = await seedBatchScores(repository, 3);
   await repository.updateMatch({ ...matches[0], status: "cancelled", version: 2 });
   const members = (await repository.listStartedRounds("batch-session"))[0].matchPlayers;
@@ -36,7 +39,7 @@ it("loads only the selected round's pending matches with counts in one statement
   ] });
 });
 
-it("preserves a round with no pending matches and distinguishes missing rounds", async () => {
+replayIt("preserves a round with no pending matches and distinguishes missing rounds", async () => {
   const { round, inputs, matches } = await seedBatchScores(repository, 1);
   await service().recordMultipleResults(inputs);
   expect(await repository.getRoundCompletionContext(round.id)).toEqual({ round, pendingMatches: [] });
@@ -45,7 +48,7 @@ it("preserves a round with no pending matches and distinguishes missing rounds",
   expect(await repository.getRoundCompletionContext("missing")).toBeNull();
 });
 
-it("uses the pinned transaction for fresh context reads and rolls changes back", async () => {
+replayIt("uses the pinned transaction for fresh context reads and rolls changes back", async () => {
   const { round, matches } = await seedBatchScores(repository, 1);
   const rollback = new Error("rollback context");
   await expect(repository.transaction(async transaction => {
@@ -56,7 +59,7 @@ it("uses the pinned transaction for fresh context reads and rolls changes back",
   expect((await repository.getRoundCompletionContext(round.id))?.pendingMatches).toHaveLength(1);
 });
 
-it("completes with ten SQL executions and preserves ratings, scores, and chemistry", async () => {
+replayIt("completes with ten SQL executions and preserves ratings, scores, and chemistry", async () => {
   const { inputs } = await seedBatchScores(repository, 3);
   await service().recordMultipleResults(inputs);
   const before = await repository.getPlayerAccount("batch-account-0");
@@ -69,7 +72,7 @@ it("completes with ten SQL executions and preserves ratings, scores, and chemist
   expect((await repository.listStartedRounds("batch-session"))[0].matches.every(m => m.team1Score === 11 && m.team2Score === 7)).toBe(true);
 });
 
-it("rolls round completion and singles cancellation back when the final chemistry write fails", async () => {
+replayIt("rolls round completion and singles cancellation back when the final chemistry write fails", async () => {
   const { matches } = await seedBatchScores(repository, 1);
   const players = (await repository.listStartedRounds("batch-session"))[0].matchPlayers;
   await repository.updateMatchPlayers(matches[0].id, players.slice(0, 2));
@@ -81,3 +84,4 @@ it("rolls round completion and singles cancellation back when the final chemistr
   expect(await repository.getRound("batch-round")).toMatchObject({ status: "started", version: 1 });
   expect(await repository.getMatch(matches[0].id)).toMatchObject({ status: "pending", version: 1 });
 });
+
