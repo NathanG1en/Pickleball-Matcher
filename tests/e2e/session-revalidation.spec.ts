@@ -33,7 +33,6 @@ test("session mutations render fresh state in the action response without an ext
       await operation();
       const response = await posted;
       expect(response.ok(), step).toBe(true);
-      await response.finished();
       await verify();
       await page.waitForLoadState("networkidle");
       const sample = { step, posts: requests.filter(r => r.method === "POST").length, gets: requests.filter(r => r.method === "GET").length, ms: performance.now() - start };
