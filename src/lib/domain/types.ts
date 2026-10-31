@@ -188,6 +188,14 @@ export interface StartedRoundRecord {
 
 export type RoundProposal = GeneratedRound;
 
+/** Server-loaded inputs for read-only proposal calculation within one request. */
+export interface RoundProposalSnapshot {
+  readonly session: SessionRecord;
+  readonly players: readonly PlayerRecord[];
+  readonly attendance: readonly AttendanceRecord[];
+  readonly rounds: readonly StartedRoundRecord[];
+}
+
 export interface ReplayMatch {
   readonly id: string;
   readonly groupId: string;

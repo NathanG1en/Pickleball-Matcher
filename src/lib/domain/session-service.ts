@@ -13,6 +13,7 @@ import type {
   RecordResultInput,
   BatchRecordResultInput,
   RoundProposal,
+  RoundProposalSnapshot,
   RoundRecord,
   SessionRecord,
   SessionServiceDependencies,
@@ -318,11 +319,29 @@ export class SessionService {
     temperature = 0,
   ): Promise<RoundProposal> {
     const session = await requiredSession(this.repository, sessionId);
+    return this.proposeRoundForSession(session, seed, temperature);
+  }
+
+  /** Reuse an authorized session record while loading the remaining read inputs. */
+  async proposeRoundForSession(
+    session: SessionRecord,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     const [players, attendance, rounds] = await Promise.all([
       this.repository.listPlayers(session.groupId),
-      this.repository.listAttendance(sessionId),
-      this.repository.listStartedRounds(sessionId),
+      this.repository.listAttendance(session.id),
+      this.repository.listStartedRounds(session.id),
     ]);
+    return this.proposeRoundFromSnapshot({ session, players, attendance, rounds }, seed, temperature);
+  }
+
+  /** No reads or caching: callers supply data loaded for this read-only request. */
+  proposeRoundFromSnapshot(
+    { session, players, attendance, rounds }: RoundProposalSnapshot,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): RoundProposal {
     const result = generateRound({
       players: matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)),
       courts: session.courtCount,

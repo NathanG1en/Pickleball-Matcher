@@ -15,6 +15,13 @@ test("Save All persists every court and rejects a stale tab without replacing ne
   await page.getByTestId("select-normal-session-button").click();
   await page.getByTestId("continue-to-pairings-button").click();
   await page.getByTestId("start-session-button").click();
+  // Exercise proposal preparation with the authorized session reused by the action.
+  const reshuffle = page.getByTestId("reshuffle-matchups-button");
+  await expect(reshuffle).toBeEnabled();
+  const proposalResponse = page.waitForResponse(response => response.request().method() === "POST" && response.url() === page.url());
+  await reshuffle.click();
+  expect((await proposalResponse).ok()).toBe(true);
+  await expect(reshuffle).toBeEnabled();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible();

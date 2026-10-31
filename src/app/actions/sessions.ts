@@ -168,10 +168,10 @@ export async function proposeRoundAction(
   }
 
   try {
-    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
+    const session = await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
-    const proposal = await service.proposeRound(
-      parsed.data.sessionId,
+    const proposal = await service.proposeRoundForSession(
+      session,
       parsed.data.seed,
       parsed.data.temperature,
     );
@@ -197,9 +197,7 @@ export async function startRoundAction(
   }
 
   try {
-    const session = await getActionRepository().getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId) return { ok: false, error: "Session not found." };
-    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
+    const session = await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     let proposal: RoundProposal;
     if (parsed.data.manualCourts && parsed.data.manualSitting) {
@@ -225,8 +223,8 @@ export async function startRoundAction(
       };
     } else {
       // Re-generate deterministic proposal using seed
-      proposal = await service.proposeRound(
-        parsed.data.sessionId,
+      proposal = await service.proposeRoundForSession(
+        session,
         parsed.data.seed,
       );
     }
