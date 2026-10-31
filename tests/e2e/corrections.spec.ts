@@ -98,15 +98,19 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.click("[data-testid='reshuffle-matchups-button']");
     await reshufflePromise;
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
-    await expect(page.locator("button:has-text('Start Round')")).toBeVisible();
-    await expect(page.locator("button:has-text('Start Round')")).toBeEnabled();
+    const startRoundBtn = page.locator("button:has-text('Start Round')");
+    await expect(startRoundBtn).toBeVisible({ timeout: 15000 });
+    await expect(startRoundBtn).toBeEnabled({ timeout: 15000 });
 
     // Start Round 2 again and test Undo Round 2
     const startRoundPromise = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.status() === 200
     );
-    await page.click("button:has-text('Start Round')");
-    await page.click("button:has-text('Confirm & Start')");
+    await startRoundBtn.click();
+    const confirmStartBtn = page.locator("button:has-text('Confirm & Start')");
+    await expect(confirmStartBtn).toBeVisible({ timeout: 15000 });
+    await expect(confirmStartBtn).toBeEnabled({ timeout: 15000 });
+    await confirmStartBtn.click();
     await startRoundPromise;
     await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
 
@@ -121,7 +125,10 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
 
     // 9. Test mid-session attendance correction and court configuration
-    await page.click("button:has-text('Session Settings')");
+    const sessionSettingsBtn = page.locator("button:has-text('Session Settings')");
+    await expect(sessionSettingsBtn).toBeVisible({ timeout: 15000 });
+    await expect(sessionSettingsBtn).toBeEnabled({ timeout: 15000 });
+    await sessionSettingsBtn.click();
     await expect(page.locator("h3:has-text('Session Settings')")).toBeVisible();
 
     // Verify both tabs are visible

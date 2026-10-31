@@ -18,7 +18,7 @@ import {
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
-import { cancelMatchAction, recordResultAction } from "@/app/actions/results";
+import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
@@ -464,7 +464,7 @@ export function SessionManagerClient({
     handleRegenerate(newVariety);
   };
 
-  const handleReshuffleInProgressRound = async () => {
+  const handleReshuffleInProgressRound = () => {
     if (!latestStarted || isPending) return;
     if (
       !confirm(
@@ -473,78 +473,156 @@ export function SessionManagerClient({
     ) {
       return;
     }
-    setIsPending(true);
     setError(null);
-    try {
-      const res = await reshuffleRoundAction({
-        groupId,
-        sessionId: currentSession.id,
-        sessionVersion: currentSession.version,
-        roundId: latestStarted.round.id,
-        roundVersion: latestStarted.round.version,
-        idempotencyKey: createIdempotencyKey("reshuffle"),
-        temperature: matchmakingVariety,
-      });
-      if (res.ok) {
-        clearLineupDraft(lineupDraftKey(currentSession.id));
-        setRegeneratedProposal(res.data);
-        setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
-        setCurrentSession((prev) => ({
-          ...prev,
-          currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
-          version: prev.version + 1,
-        }));
-        setScoreDrafts({});
-        router.refresh();
-      } else {
-        setError(res.error);
+    startGeneratingRound(async () => {
+      try {
+        const res = await reshuffleRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          idempotencyKey: createIdempotencyKey("reshuffle"),
+          temperature: matchmakingVariety,
+        });
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          startGeneratingRound(() => {
+            setRegeneratedProposal(res.data);
+            setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+            setCurrentSession((prev) => ({
+              ...prev,
+              currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+              version: prev.version + 1,
+            }));
+            setScoreDrafts({});
+            router.refresh();
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to reshuffle matchups.");
       }
-    } catch {
-      setError("Failed to reshuffle matchups.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
-  const handleStartRound = async (customProposal?: {
+  const handleStartRound = (customProposal?: {
     courts: readonly { courtNumber: number; team1: readonly string[]; team2: readonly string[] }[];
     sitting: readonly string[];
   }) => {
-    if (!activeProposal) return;
-    setIsPending(true);
+    if (!activeProposal || isPending) return;
     setError(null);
+    const proposalToUse = customProposal ?? activeProposal;
+    startGeneratingRound(async () => {
+      try {
+        const res = await startRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          seed: activeProposal.seed,
+          idempotencyKey: createIdempotencyKey("start_rd"),
+          manualCourts: proposalToUse.courts.map((c) => ({
+            courtNumber: c.courtNumber,
+            team1: [...c.team1],
+            team2: [...c.team2],
+          })),
+          manualSitting: [...proposalToUse.sitting],
+        });
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          startGeneratingRound(() => {
+            setRegeneratedProposal(null);
+            setCurrentSession((prev) => ({
+              ...prev,
+              currentRoundNumber: res.data.roundNumber,
+              version: prev.version + 1,
+            }));
+            router.refresh();
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to start round.");
+      }
+    });
+  };
+
+  const handleSaveAllScores = async () => {
+    if (!latestStarted) return;
+    const entriesToSave: { matchId: string; team1Score: number; team2Score: number; version: number }[] = [];
+    for (const match of scoreEntries) {
+      const draft = scoreDrafts[match.id];
+      if (draft && draft.team1 !== "" && draft.team2 !== "") {
+        const t1 = parseInt(draft.team1, 10);
+        const t2 = parseInt(draft.team2, 10);
+        if (!isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0) {
+          entriesToSave.push({ matchId: match.id, team1Score: t1, team2Score: t2, version: match.version });
+        }
+      }
+    }
+    if (entriesToSave.length === 0) return;
+
+    const matchIds = new Set(entriesToSave.map((e) => e.matchId));
+    setSavingMatchIds((prev) => new Set([...prev, ...matchIds]));
+    setError(null);
+
     try {
-      const res = await startRoundAction({
+      const res = await recordMultipleResultsAction({
         groupId,
         sessionId: currentSession.id,
-        sessionVersion: currentSession.version,
-        seed: activeProposal.seed,
-        idempotencyKey: createIdempotencyKey("start_rd"),
-        manualCourts: customProposal?.courts.map((c) => ({
-          courtNumber: c.courtNumber,
-          team1: [...c.team1],
-          team2: [...c.team2],
+        results: entriesToSave.map((e) => ({
+          matchId: e.matchId,
+          team1Score: e.team1Score,
+          team2Score: e.team2Score,
+          matchVersion: e.version,
         })),
-        manualSitting: customProposal ? [...customProposal.sitting] : undefined,
+        idempotencyKey: createIdempotencyKey("save_all"),
       });
       if (res.ok) {
-        clearLineupDraft(lineupDraftKey(currentSession.id));
-        setRegeneratedProposal(null);
-        setCurrentSession((prev) => ({
-          ...prev,
-          currentRoundNumber: res.data.roundNumber,
-          version: prev.version + 1,
-        }));
-        router.refresh();
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) => {
+              const saved = entriesToSave.find((e) => e.matchId === m.id);
+              return saved
+                ? {
+                    ...m,
+                    status: "completed" as const,
+                    team1Score: saved.team1Score,
+                    team2Score: saved.team2Score,
+                    version: m.version + 1,
+                  }
+                : m;
+            }),
+          }))
+        );
+        setScoreDrafts((prev) => {
+          const next = { ...prev };
+          for (const entry of entriesToSave) {
+            delete next[entry.matchId];
+          }
+          return next;
+        });
+        const pickle = entriesToSave.find((e) => isPickleScore(e.team1Score, e.team2Score));
+        setPickledMatchId(pickle ? pickle.matchId : null);
       } else {
         setError(res.error);
       }
     } catch {
-      setError("Failed to start round.");
+      setError("Failed to save match results.");
     } finally {
-      setIsPending(false);
+      setSavingMatchIds((prev) => {
+        const next = new Set(prev);
+        for (const entry of entriesToSave) {
+          next.delete(entry.matchId);
+        }
+        return next;
+      });
     }
   };
+
 
   const handleSaveResult = async (matchId: string, team1Score: number, team2Score: number) => {
     if (!latestStarted) return;
@@ -693,39 +771,40 @@ export function SessionManagerClient({
     });
   };
 
-  const handleUndo = async () => {
-    if (!latestStarted) return;
+  const handleUndo = () => {
+    if (!latestStarted || isPending) return;
     if (!confirm("Are you sure you want to undo the latest round? This will revert results and ratings.")) {
       return;
     }
-    setIsPending(true);
     setError(null);
-    try {
-      const res = await undoLatestRoundAction({
-        groupId,
-        sessionId: currentSession.id,
-        sessionVersion: currentSession.version,
-        roundId: latestStarted.round.id,
-        roundVersion: latestStarted.round.version,
-        idempotencyKey: createIdempotencyKey("undo"),
-      });
-      if (res.ok) {
-        setRegeneratedProposal(null);
-        setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
-        setCurrentSession((prev) => ({
-          ...prev,
-          currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
-          version: prev.version + 1,
-        }));
-        router.refresh();
-      } else {
-        setError(res.error);
+    startGeneratingRound(async () => {
+      try {
+        const res = await undoLatestRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          idempotencyKey: createIdempotencyKey("undo"),
+        });
+        if (res.ok) {
+          startGeneratingRound(() => {
+            setRegeneratedProposal(null);
+            setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+            setCurrentSession((prev) => ({
+              ...prev,
+              currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+              version: prev.version + 1,
+            }));
+            router.refresh();
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to undo round.");
       }
-    } catch {
-      setError("Failed to undo round.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
   const inProgressMatches = localStartedRounds
@@ -1504,6 +1583,7 @@ export function SessionManagerClient({
                 onScoreChange={handleScoreChange}
                 hasUnsavedScores={hasUnsavedScores}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                onSaveAllScores={canManage ? handleSaveAllScores : undefined}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">

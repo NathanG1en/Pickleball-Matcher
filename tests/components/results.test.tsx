@@ -129,4 +129,21 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Court 3");
     expect(html).toContain("Pickup Game");
   });
+
+  it("renders Save All Scores button when hasUnsavedScores and onSaveAllScores are provided", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={true}
+        onSaveAllScores={() => {}}
+      />
+    );
+
+    expect(html).toContain("Save All Scores");
+    expect(html).toContain('data-testid="save-all-scores-button"');
+  });
 });
+

@@ -10,8 +10,10 @@ import type { ActionResult } from "@/app/actions/auth";
 import type { MatchRecord } from "@/lib/domain/types";
 import {
   cancelMatchSchema,
+  recordMultipleResultsMutationSchema,
   recordResultMutationSchema,
 } from "@/lib/validation/results";
+
 
 export async function recordResultAction(
   input: unknown,
@@ -82,3 +84,40 @@ export async function cancelMatchAction(
     };
   }
 }
+
+export async function recordMultipleResultsAction(
+  input: unknown,
+): Promise<ActionResult<MatchRecord[]>> {
+  const parsed = recordMultipleResultsMutationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Please enter valid scores for all matches (ties not allowed).",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireOrganizer(parsed.data.groupId);
+    const service = getActionSessionService();
+    const matches = await service.recordMultipleResults(
+      parsed.data.results.map((r) => ({
+        matchId: r.matchId,
+        team1Score: r.team1Score,
+        team2Score: r.team2Score,
+      })),
+    );
+    const sessionId = parsed.data.sessionId;
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    if (sessionId) {
+      revalidatePath(`/g/${parsed.data.groupId}/sessions/${sessionId}`);
+    }
+    return { ok: true, data: matches };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to record match results",
+    };
+  }
+}
+

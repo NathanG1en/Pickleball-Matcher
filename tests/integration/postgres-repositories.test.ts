@@ -73,7 +73,7 @@ function roundRecord(): StartedRoundRecord {
 
 describe("PostgresRepositories", () => {
   beforeEach(async () => {
-    await sql`truncate groups cascade`;
+    await sql`truncate groups, player_accounts cascade`;
     await seedPlayers();
   });
 

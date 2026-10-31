@@ -40,6 +40,7 @@ export interface ResultsEntryViewProps {
   readonly courtCount?: number;
   readonly sittingNames?: readonly string[];
   readonly onAddGame?: () => void;
+  readonly onSaveAllScores?: () => void;
 }
 
 export function ResultsEntryView({
@@ -61,6 +62,7 @@ export function ResultsEntryView({
   courtCount,
   sittingNames = [],
   onAddGame,
+  onSaveAllScores,
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -308,17 +310,32 @@ export function ResultsEntryView({
                 {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
               </p>
             </div>
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
-              aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
-              onClick={onNextRound}
-              className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
-            >
-              {isGeneratingRound ? <RoundGenerationIndicator /> : "Next Round"}
-            </Button>
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              {hasUnsavedScores && onSaveAllScores && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  disabled={isPending || Boolean(savingMatchIds && savingMatchIds.size > 0)}
+                  onClick={onSaveAllScores}
+                  data-testid="save-all-scores-button"
+                  className="font-display text-base tracking-wide uppercase bg-[#ccff00] text-black"
+                >
+                  {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save All Scores"}
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant={hasUnsavedScores ? "secondary" : "primary"}
+                size="lg"
+                disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
+                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
+                onClick={onNextRound}
+                className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+              >
+                {isGeneratingRound ? <RoundGenerationIndicator /> : "Next Round"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

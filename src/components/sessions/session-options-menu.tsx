@@ -4,7 +4,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Modal } from "@/components/ui/modal";
-import { deleteSessionAction, duplicateSessionAction, updateSessionNameAction } from "@/app/actions/sessions";
+import {
+  deleteSessionAction,
+  duplicateSessionAction,
+  recalculateGroupSynergiesAction,
+  updateSessionNameAction,
+} from "@/app/actions/sessions";
 import { formatSessionDate } from "@/lib/utils/date";
 import type { SessionRecord } from "@/lib/domain/types";
 
@@ -41,6 +46,7 @@ export function SessionOptionsMenu({
   const [showDeleteModal, setShowDeleteModal] = useState(initialDeleteModalOpen);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -172,6 +178,24 @@ export function SessionOptionsMenu({
     }
   };
 
+  const handleRecalculateChemistry = async () => {
+    setIsRecalculating(true);
+    setMenuOpen(false);
+    setError(null);
+    try {
+      const res = await recalculateGroupSynergiesAction({ groupId, sessionId });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        setError(res.error ?? "Failed to recalculate chemistry.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to recalculate chemistry.");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   return (
     <div className="relative inline-block" ref={menuRef}>
       <button
@@ -211,6 +235,16 @@ export function SessionOptionsMenu({
             className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
           >
             Duplicate Session
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="refresh-chemistry-menu-item"
+            onClick={handleRecalculateChemistry}
+            disabled={isPending || isRecalculating}
+            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors disabled:opacity-50"
+          >
+            {isRecalculating ? "Updating Chemistry..." : "Refresh Chemistry"}
           </button>
           <button
             type="button"

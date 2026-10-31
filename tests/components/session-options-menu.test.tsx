@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/app/actions/sessions", () => ({
   deleteSessionAction: vi.fn(async () => ({ ok: true, data: undefined })),
   duplicateSessionAction: vi.fn(async () => ({ ok: true, data: { id: "ses_dup" } })),
+  recalculateGroupSynergiesAction: vi.fn(async () => ({ ok: true, data: { success: true } })),
   updateSessionNameAction: vi.fn(async () => ({ ok: true })),
 }));
 

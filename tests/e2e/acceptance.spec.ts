@@ -421,7 +421,7 @@ test("round generation indicator follows pending requests and clears on success 
   const save = await pauseAction();
   try {
     await page.getByRole("button", { name: "Save Result", exact: true }).click();
-    await expect(page.getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
+    await expect(page.getByTestId("court-match-1").getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
     await expect(indicator).toHaveCount(0);
     save.release();
     await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });

@@ -440,8 +440,66 @@ export class SessionService {
       };
       await repository.updateMatch(updated);
       await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      if (round.status === "completed" || session.status === "completed") {
+        await replaySynergies(repository);
+      }
       return updated;
+    });
+  }
+
+  async recordMultipleResults(inputs: readonly RecordResultInput[]): Promise<MatchRecord[]> {
+    if (inputs.length === 0) return [];
+    for (const input of inputs) {
+      if (
+        !Number.isSafeInteger(input.team1Score) ||
+        !Number.isSafeInteger(input.team2Score) ||
+        input.team1Score < 0 ||
+        input.team2Score < 0 ||
+        input.team1Score === input.team2Score
+      ) {
+        throw new DomainError("INVALID_RESULT", "Enter two different non-negative whole scores for each match.");
+      }
+    }
+    return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
+      const updatedMatches: MatchRecord[] = [];
+      let groupId: string | null = null;
+      let shouldReplaySynergies = false;
+      for (const input of inputs) {
+        const match = await requiredMatch(repository, input.matchId);
+        const round = await requiredRound(repository, match.roundId);
+        const session = await requiredSession(repository, round.sessionId);
+        if (!groupId) {
+          groupId = session.groupId;
+        }
+        if (round.status === "completed" || session.status === "completed") {
+          shouldReplaySynergies = true;
+        }
+        const updated: MatchRecord = {
+          ...match,
+          status: "completed",
+          team1Score: input.team1Score,
+          team2Score: input.team2Score,
+          completedAt: match.completedAt ?? this.dependencies.now(),
+          version: match.version + 1,
+        };
+        await repository.updateMatch(updated);
+        updatedMatches.push(updated);
+      }
+      if (groupId) {
+        await replayRatings(groupId, repository);
+      }
+      if (shouldReplaySynergies) {
+        await replaySynergies(repository);
+      }
+      return updatedMatches;
+    });
+  }
+
+  async recalculateSynergies(): Promise<void> {
+    return this.repository.transaction(async (repository) => {
+      await repository.lockSynergyState();
+      await replaySynergies(repository);
     });
   }
 

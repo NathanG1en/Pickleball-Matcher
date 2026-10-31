@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { recordResultSchema } from "@/lib/validation/results";
+import { recordMultipleResultsMutationSchema, recordResultSchema } from "@/lib/validation/results";
 
 describe("recordResultSchema", () => {
   it.each([
@@ -33,3 +33,37 @@ describe("recordResultSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("recordMultipleResultsMutationSchema", () => {
+  it("accepts a valid batch of match results", () => {
+    const result = recordMultipleResultsMutationSchema.safeParse({
+      groupId: "grp_123",
+      sessionId: "ses_123",
+      results: [
+        { matchId: "m_1", team1Score: 11, team2Score: 9 },
+        { matchId: "m_2", team1Score: 4, team2Score: 11 },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects when any match is tied", () => {
+    const result = recordMultipleResultsMutationSchema.safeParse({
+      groupId: "grp_123",
+      results: [
+        { matchId: "m_1", team1Score: 11, team2Score: 11 },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an empty batch", () => {
+    const result = recordMultipleResultsMutationSchema.safeParse({
+      groupId: "grp_123",
+      results: [],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+

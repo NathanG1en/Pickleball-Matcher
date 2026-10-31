@@ -1425,7 +1425,20 @@ export class PostgresRepositories implements DomainRepository {
         ${session.type ?? "regular"}, ${session.name ?? null}
       )
     `;
-    for (const item of attendance) await this.saveAttendance(item);
+    if (attendance.length > 0) {
+      const rows = attendance.map((a) => ({
+        session_id: a.sessionId,
+        player_id: a.playerId,
+        joined_round: a.joinedRound,
+        left_round: a.leftRound,
+      }));
+      await this.query`
+        insert into session_attendance ${this.query(rows, "session_id", "player_id", "joined_round", "left_round")}
+        on conflict (session_id, player_id) do update set
+          joined_round = excluded.joined_round,
+          left_round = excluded.left_round
+      `;
+    }
   }
 
   async updateSession(session: SessionRecord) {
@@ -1472,29 +1485,62 @@ export class PostgresRepositories implements DomainRepository {
         ${record.round.version}
       )
     `;
-    for (const match of record.matches) {
+
+    if (record.matches.length > 0) {
+      const matchRows = record.matches.map((m) => ({
+        id: m.id,
+        round_id: m.roundId,
+        court_number: m.courtNumber,
+        status: m.status,
+        team1_score: m.team1Score,
+        team2_score: m.team2Score,
+        completed_at: m.completedAt,
+        version: m.version,
+        rated: m.rated ?? true,
+      }));
       await this.query`
-        insert into matches (
-          id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
-        ) values (
-          ${match.id}, ${match.roundId}, ${match.courtNumber}, ${match.status},
-          ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
-        )
+        insert into matches ${this.query(
+          matchRows,
+          "id",
+          "round_id",
+          "court_number",
+          "status",
+          "team1_score",
+          "team2_score",
+          "completed_at",
+          "version",
+          "rated",
+        )}
       `;
     }
-    for (const member of record.matchPlayers) {
+
+    if (record.matchPlayers.length > 0) {
+      const mpRows = record.matchPlayers.map((mp) => ({
+        match_id: mp.matchId,
+        player_id: mp.playerId,
+        team: mp.team,
+        rating_before: mp.ratingBefore,
+        rating_after: mp.ratingAfter,
+      }));
       await this.query`
-        insert into match_players (
-          match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
-        )
+        insert into match_players ${this.query(
+          mpRows,
+          "match_id",
+          "player_id",
+          "team",
+          "rating_before",
+          "rating_after",
+        )}
       `;
     }
-    for (const sit of record.sits) {
+
+    if (record.sits.length > 0) {
+      const sitRows = record.sits.map((s) => ({
+        round_id: s.roundId,
+        player_id: s.playerId,
+      }));
       await this.query`
-        insert into round_sits (round_id, player_id) values (${sit.roundId}, ${sit.playerId})
+        insert into round_sits ${this.query(sitRows, "round_id", "player_id")}
       `;
     }
   }
@@ -1508,14 +1554,23 @@ export class PostgresRepositories implements DomainRepository {
         ${match.team1Score}, ${match.team2Score}, ${match.completedAt}, ${match.version}, ${match.rated ?? true}
       )
     `;
-    for (const member of matchPlayers) {
+    if (matchPlayers.length > 0) {
+      const mpRows = matchPlayers.map((mp) => ({
+        match_id: mp.matchId,
+        player_id: mp.playerId,
+        team: mp.team,
+        rating_before: mp.ratingBefore,
+        rating_after: mp.ratingAfter,
+      }));
       await this.query`
-        insert into match_players (
-          match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
-        )
+        insert into match_players ${this.query(
+          mpRows,
+          "match_id",
+          "player_id",
+          "team",
+          "rating_before",
+          "rating_after",
+        )}
       `;
     }
   }
@@ -1535,14 +1590,23 @@ export class PostgresRepositories implements DomainRepository {
 
   async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
     await this.query`delete from match_players where match_id = ${matchId}`;
-    for (const member of matchPlayers) {
+    if (matchPlayers.length > 0) {
+      const mpRows = matchPlayers.map((mp) => ({
+        match_id: mp.matchId,
+        player_id: mp.playerId,
+        team: mp.team,
+        rating_before: mp.ratingBefore,
+        rating_after: mp.ratingAfter,
+      }));
       await this.query`
-        insert into match_players (
-          match_id, player_id, team, rating_before, rating_after
-        ) values (
-          ${member.matchId}, ${member.playerId}, ${member.team},
-          ${member.ratingBefore}, ${member.ratingAfter}
-        )
+        insert into match_players ${this.query(
+          mpRows,
+          "match_id",
+          "player_id",
+          "team",
+          "rating_before",
+          "rating_after",
+        )}
       `;
     }
   }
