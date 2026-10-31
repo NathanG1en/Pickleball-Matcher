@@ -31,7 +31,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Code Quality (ESLint)
         run: npm run lint
@@ -86,7 +86,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Maintenance CLI Permissions and Transaction Tests
         run: npm run test:maintenance
@@ -145,7 +145,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Setup Test Database
         run: node scripts/create-test-db.js
