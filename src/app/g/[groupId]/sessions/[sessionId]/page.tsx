@@ -100,7 +100,9 @@ export default async function ActiveSessionPage({
   if (sessionRecord.status !== "completed" && !isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
-      initialProposal = await sessionService.proposeRound(sessionId);
+      initialProposal = sessionService.proposeRoundFromSnapshot({
+        session: sessionRecord, players, attendance, rounds: startedRounds,
+      });
     } catch (error) {
       if (error instanceof DomainError) initialProposalError = error.message;
       // In case not enough players or state error, proposal will remain null

@@ -105,7 +105,9 @@ export async function recordMultipleResultsAction(
         matchId: r.matchId,
         team1Score: r.team1Score,
         team2Score: r.team2Score,
+        matchVersion: r.matchVersion,
       })),
+      { groupId: parsed.data.groupId, sessionId: parsed.data.sessionId },
     );
     const sessionId = parsed.data.sessionId;
     revalidatePath(`/g/${parsed.data.groupId}`);

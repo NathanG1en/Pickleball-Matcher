@@ -312,7 +312,6 @@ export function SessionManagerClient({
           setRegeneratedProposal(null);
         }
         setCourtConfigMessage("Court configuration updated successfully.");
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -496,7 +495,7 @@ export function SessionManagerClient({
               version: prev.version + 1,
             }));
             setScoreDrafts({});
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -538,7 +537,7 @@ export function SessionManagerClient({
               currentRoundNumber: res.data.roundNumber,
               version: prev.version + 1,
             }));
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -726,9 +725,7 @@ export function SessionManagerClient({
         matchVersion: matchToCancel.version,
         idempotencyKey: createIdempotencyKey(`cancel_${matchId}`),
       });
-      if (res.ok) {
-        router.refresh();
-      } else {
+      if (!res.ok) {
         setLocalStartedRounds(previousRounds);
         setError(res.error);
       }
@@ -758,10 +755,8 @@ export function SessionManagerClient({
           idempotencyKey: createIdempotencyKey("next_rd"),
         });
         if (res.ok) {
-          startGeneratingRound(() => {
-            setRegeneratedProposal(null);
-            router.refresh();
-          });
+          // The action revalidates this route and returns its fresh server tree.
+          setRegeneratedProposal(null);
         } else {
           setError(res.error);
         }
@@ -796,7 +791,7 @@ export function SessionManagerClient({
               currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
               version: prev.version + 1,
             }));
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -921,7 +916,6 @@ export function SessionManagerClient({
               : a,
           );
         });
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -961,7 +955,6 @@ export function SessionManagerClient({
           }))
         );
         setEditingHistoricalMatchId(null);
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -993,7 +986,6 @@ export function SessionManagerClient({
           }))
         );
         setEditingHistoricalMatchId(null);
-        router.refresh();
       } else {
         setError(res.error);
       }

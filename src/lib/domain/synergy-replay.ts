@@ -45,8 +45,24 @@ export function calculateSynergyReplay(
  */
 export async function replaySynergies(repository: DomainRepository): Promise<void> {
   await repository.lockSynergyState();
+  const { players, history, replay } = await loadGlobalReplay(repository);
+  await repository.replaceSynergyState(calculateSynergyReplay(players, history, replay.snapshots));
+}
+
+/**
+ * Rebuild both states from one authoritative, transaction-local calculation.
+ * Callers must hold the chemistry lock before changing source matches, just as
+ * for replaySynergies. Keep this last, after every source mutation in the tx.
+ */
+export async function replayRatingsAndSynergies(groupId: string, repository: DomainRepository): Promise<void> {
+  await repository.lockSynergyState();
+  const { players, history, replay } = await loadGlobalReplay(repository);
+  await repository.replaceRatingState(groupId, replay.players, replay.snapshots);
+  await repository.replaceSynergyState(calculateSynergyReplay(players, history, replay.snapshots));
+}
+
+async function loadGlobalReplay(repository: DomainRepository) {
   const players = await repository.listPlayers(undefined, { includeInactive: true });
   const history = await repository.listReplayMatches();
-  const { snapshots } = calculateRatingReplay(players, history);
-  await repository.replaceSynergyState(calculateSynergyReplay(players, history, snapshots));
+  return { players, history, replay: calculateRatingReplay(players, history) };
 }
