@@ -68,10 +68,10 @@ test("session mutations render fresh state in the action response without an ext
 
     await page.getByRole("button", { name: "Session Settings", exact: true }).click();
     const guest = page.getByTestId("attendance-row-Refresh Guest 1");
-    await measure("attendance-left", () => guest.getByRole("button", { name: "Mark Left", exact: true }).click(),
-      () => expect(guest.getByText("Away", { exact: true })).toBeVisible());
-    await measure("attendance-present", () => guest.getByRole("button", { name: "Mark Present", exact: true }).click(),
-      () => expect(guest.getByText("Present", { exact: true })).toBeVisible());
+    await measure("attendance-left", () => guest.getByTestId("attendance-left-Refresh Guest 1").click(),
+      () => expect(guest.getByTestId("attendance-left-Refresh Guest 1")).toHaveAttribute("aria-pressed", "true"));
+    await measure("attendance-present", () => guest.getByTestId("attendance-present-Refresh Guest 1").click(),
+      () => expect(guest.getByTestId("attendance-present-Refresh Guest 1")).toHaveAttribute("aria-pressed", "true"));
     await page.getByRole("tab", { name: "Court Configuration", exact: true }).click();
     await measure("court-config", () => page.getByRole("button", { name: "Save Court Configuration", exact: true }).click(),
       () => expect(page.getByText("Court configuration updated successfully.", { exact: true })).toBeVisible());
