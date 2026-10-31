@@ -83,12 +83,16 @@ test("session mutations render fresh state in the action response without an ext
     page.once("dialog", dialog => dialog.accept());
     await measure("reshuffle-active", () => page.getByTestId("reshuffle-matchups-button").click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
+    await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Confirm & Start", exact: true })).toBeEnabled();
     await measure("start-third", () => page.getByRole("button", { name: "Confirm & Start", exact: true }).click(),
       () => expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible());
+    await expect(page.getByRole("button", { name: "Undo Round 2", exact: true })).toBeEnabled();
     page.once("dialog", dialog => dialog.accept());
     await measure("undo", () => page.getByRole("button", { name: "Undo Round 2", exact: true }).click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
+    await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeEnabled();
     // This non-mutation freshness path must still fetch authoritative state.
     await measure("bfcache-restore", () => page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible(), 1, 0);
