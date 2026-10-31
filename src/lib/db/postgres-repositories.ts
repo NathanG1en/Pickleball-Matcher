@@ -8,6 +8,7 @@ import type {
   GroupOrganizerRecord,
   MatchPlayerRecord,
   MatchRecord,
+  MatchResultContext,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -1414,6 +1415,25 @@ export class PostgresRepositories implements DomainRepository {
     return rows[0] ? mapMatch(rows[0]) : null;
   }
 
+  async getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]> {
+    if (matchIds.length === 0) return [];
+    const rows = await this.query<(MatchRow & {
+      group_id: string; session_id: string;
+      round_status: MatchResultContext["roundStatus"];
+      session_status: MatchResultContext["sessionStatus"];
+    })[]>`
+      select m.id, m.round_id, m.court_number, m.status, m.team1_score, m.team2_score,
+             m.completed_at, m.version, m.rated, s.group_id, s.id as session_id,
+             r.status as round_status, s.status as session_status
+      from matches m
+      join rounds r on r.id = m.round_id
+      join sessions s on s.id = r.session_id
+      where m.id = any(${[...matchIds]}::text[])
+    `;
+    return rows.map(row => ({ match: mapMatch(row), groupId: row.group_id,
+      sessionId: row.session_id, roundStatus: row.round_status, sessionStatus: row.session_status }));
+  }
+
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]) {
     await this.query`
       insert into sessions (
@@ -1586,6 +1606,34 @@ export class PostgresRepositories implements DomainRepository {
       returning id
     `;
     if (rows.length === 0) throw new RepositoryConflictError();
+  }
+
+  async updateMatches(matches: readonly MatchRecord[]): Promise<void> {
+    if (matches.length === 0) return;
+    if (new Set(matches.map(match => match.id)).size !== matches.length) throw new RepositoryConflictError();
+    // A partial version conflict must roll back the rows that did match too.
+    // Transactional callers must let the conflict escape their callback.
+    if (!this.inTransaction) {
+      await this.transaction(repository => repository.updateMatches(matches));
+      return;
+    }
+    const rows = await this.query<{ id: string }[]>`
+      update matches as m
+      set status = v.status, team1_score = v.team1_score, team2_score = v.team2_score,
+          completed_at = v.completed_at, version = v.version, rated = v.rated
+      from unnest(
+        ${matches.map(match => match.id)}::text[],
+        ${matches.map(match => match.status)}::text[],
+        ${matches.map(match => match.team1Score)}::int[],
+        ${matches.map(match => match.team2Score)}::int[],
+        ${matches.map(match => match.completedAt?.toISOString() ?? null)}::timestamptz[],
+        ${matches.map(match => match.version)}::int[],
+        ${this.query.array(matches.map(match => match.rated ?? true), 16)}::boolean[]
+      ) as v(id, status, team1_score, team2_score, completed_at, version, rated)
+      where m.id = v.id and m.version = v.version - 1
+      returning m.id
+    `;
+    if (rows.length !== matches.length) throw new RepositoryConflictError();
   }
 
   async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {

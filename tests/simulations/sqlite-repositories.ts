@@ -11,6 +11,7 @@ import type {
   PlayerSynergyRecord,
   MatchPlayerRecord,
   MatchRecord,
+  MatchResultContext,
   PlayerRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -1366,6 +1367,27 @@ export class SqliteDomainRepository implements DomainRepository {
         match.version - 1,
       );
     if (result.changes === 0) throw new RepositoryConflictError();
+  }
+
+  async getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]> {
+    if (matchIds.length === 0) return [];
+    const rows = this.db.prepare(`
+      SELECT m.*, s.group_id, s.id as session_id, r.status as round_status, s.status as session_status
+      FROM matches m JOIN rounds r ON r.id=m.round_id JOIN sessions s ON s.id=r.session_id
+      WHERE m.id IN (${matchIds.map(() => "?").join(",")})
+    `).all(...matchIds) as unknown as (MatchRow & { group_id: string; session_id: string; round_status: MatchResultContext["roundStatus"]; session_status: MatchResultContext["sessionStatus"] })[];
+    return rows.map(row => ({ match: { id: row.id, roundId: row.round_id, courtNumber: row.court_number,
+      status: row.status, team1Score: row.team1_score, team2Score: row.team2_score,
+      completedAt: row.completed_at ? new Date(row.completed_at) : null, version: row.version, rated: row.rated === 1 },
+      groupId: row.group_id, sessionId: row.session_id, roundStatus: row.round_status, sessionStatus: row.session_status }));
+  }
+
+  async updateMatches(matches: readonly MatchRecord[]): Promise<void> {
+    if (matches.length === 0) return;
+    if (new Set(matches.map(match => match.id)).size !== matches.length) throw new RepositoryConflictError();
+    await this.transaction(async () => {
+      for (const match of matches) await this.updateMatch(match);
+    });
   }
 
   async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {

@@ -11,6 +11,7 @@ import type {
   MatchRecord,
   PlayerRecord,
   RecordResultInput,
+  BatchRecordResultInput,
   RoundProposal,
   RoundRecord,
   SessionRecord,
@@ -447,8 +448,14 @@ export class SessionService {
     });
   }
 
-  async recordMultipleResults(inputs: readonly RecordResultInput[]): Promise<MatchRecord[]> {
+  async recordMultipleResults(
+    inputs: readonly BatchRecordResultInput[],
+    scope?: { readonly groupId: string; readonly sessionId?: string },
+  ): Promise<MatchRecord[]> {
     if (inputs.length === 0) return [];
+    if (new Set(inputs.map(input => input.matchId)).size !== inputs.length) {
+      throw new DomainError("INVALID_RESULT", "A match can only appear once in a score batch.");
+    }
     for (const input of inputs) {
       if (
         !Number.isSafeInteger(input.team1Score) ||
@@ -462,20 +469,24 @@ export class SessionService {
     }
     return this.repository.transaction(async (repository) => {
       await repository.lockSynergyState();
-      const updatedMatches: MatchRecord[] = [];
-      let groupId: string | null = null;
-      let shouldReplaySynergies = false;
+      const contexts = await repository.getMatchResultContexts(inputs.map(input => input.matchId));
+      const byId = new Map(contexts.map(context => [context.match.id, context]));
+      const first = byId.get(inputs[0].matchId);
+      if (!first) throw new DomainError("NOT_FOUND", "Match not found.");
       for (const input of inputs) {
-        const match = await requiredMatch(repository, input.matchId);
-        const round = await requiredRound(repository, match.roundId);
-        const session = await requiredSession(repository, round.sessionId);
-        if (!groupId) {
-          groupId = session.groupId;
+        const context = byId.get(input.matchId);
+        if (!context) throw new DomainError("NOT_FOUND", "Match not found.");
+        if (context.groupId !== (scope?.groupId ?? first.groupId) ||
+            context.sessionId !== (scope?.sessionId ?? first.sessionId)) {
+          throw new DomainError("INVALID_STATE", "Every match must belong to the selected group and session.");
         }
-        if (round.status === "completed" || session.status === "completed") {
-          shouldReplaySynergies = true;
+        if (input.matchVersion !== undefined && input.matchVersion !== context.match.version) {
+          throw new DomainError("INVALID_STATE", "A match changed. Refresh the session before saving these scores.");
         }
-        const updated: MatchRecord = {
+      }
+      const updatedMatches = inputs.map((input): MatchRecord => {
+        const match = byId.get(input.matchId)!.match;
+        return {
           ...match,
           status: "completed",
           team1Score: input.team1Score,
@@ -483,13 +494,10 @@ export class SessionService {
           completedAt: match.completedAt ?? this.dependencies.now(),
           version: match.version + 1,
         };
-        await repository.updateMatch(updated);
-        updatedMatches.push(updated);
-      }
-      if (groupId) {
-        await replayRatings(groupId, repository);
-      }
-      if (shouldReplaySynergies) {
+      });
+      await repository.updateMatches(updatedMatches);
+      await replayRatings(first.groupId, repository);
+      if (contexts.some(context => context.roundStatus === "completed" || context.sessionStatus === "completed")) {
         await replaySynergies(repository);
       }
       return updatedMatches;

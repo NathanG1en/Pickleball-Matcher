@@ -165,6 +165,15 @@ export interface MatchPlayerRecord {
   ratingAfter: number | null;
 }
 
+/** Context needed to validate and save a batch without per-match parent reads. */
+export interface MatchResultContext {
+  readonly match: MatchRecord;
+  readonly groupId: string;
+  readonly sessionId: string;
+  readonly roundStatus: RoundRecord["status"];
+  readonly sessionStatus: SessionRecord["status"];
+}
+
 export interface RoundSitRecord {
   readonly roundId: string;
   readonly playerId: string;
@@ -233,6 +242,10 @@ export interface RecordResultInput {
   readonly matchId: string;
   readonly team1Score: number;
   readonly team2Score: number;
+}
+
+export interface BatchRecordResultInput extends RecordResultInput {
+  readonly matchVersion?: number;
 }
 
 export type TournamentDivision =
