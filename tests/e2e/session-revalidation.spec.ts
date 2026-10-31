@@ -57,6 +57,8 @@ test("session mutations render fresh state in the action response without an ext
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
 
     const history = page.getByRole("heading", { name: "Past Rounds History", exact: true }).locator("..");
+    await expect(history.getByText("11 – 7", { exact: true })).toBeVisible();
+    await expect(history.getByText("Cancelled", { exact: true })).toHaveCount(1);
     await history.getByRole("button", { name: "Edit Result", exact: true }).first().click();
     await history.getByPlaceholder("T2", { exact: true }).fill("9");
     await measure("historical-score", () => history.getByRole("button", { name: "Save Score", exact: true }).click(),

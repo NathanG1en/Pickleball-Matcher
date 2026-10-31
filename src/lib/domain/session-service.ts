@@ -567,22 +567,18 @@ export class SessionService {
   async completeRound(roundId: string): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
       await repository.lockSynergyState();
-      const round = await requiredRound(repository, roundId);
-      const records = await repository.listStartedRounds(round.sessionId);
-      const record = records.find((item) => item.round.id === roundId)!;
-      for (const match of record.matches) {
-        if (match.status === "pending") {
-          const playersForMatch = record.matchPlayers.filter((item) => item.matchId === match.id);
-          const isSingles = playersForMatch.length === 2;
-          if (isSingles) {
-            await repository.updateMatch({
-              ...match,
-              status: "cancelled",
-              version: match.version + 1,
-            });
-          } else {
-            throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
-          }
+      const context = await repository.getRoundCompletionContext(roundId);
+      if (!context) throw new DomainError("NOT_FOUND", "Round not found.");
+      const { round } = context;
+      for (const { match, playerCount } of context.pendingMatches) {
+        if (playerCount === 2) {
+          await repository.updateMatch({
+            ...match,
+            status: "cancelled",
+            version: match.version + 1,
+          });
+        } else {
+          throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
         }
       }
       const updated = {

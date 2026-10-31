@@ -1,0 +1,208 @@
+{
+  "scope": "Backend completion only; not browser latency",
+  "database": "Test branch, connection-local temporary tables only",
+  "players": 16,
+  "courts": 4,
+  "rounds": 10,
+  "warmupsPerVariant": 1,
+  "order": "alternating",
+  "equality": "Completed round, matches, ratings, snapshots and chemistry after every observation",
+  "observations": [
+    {
+      "variant": "legacy",
+      "iteration": 0,
+      "ms": 1200.7451249999995,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 0,
+      "ms": 610.1707499999993,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 1,
+      "ms": 598.9563749999998,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 1,
+      "ms": 992.0434999999998,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 2,
+      "ms": 1206.6311249999999,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 2,
+      "ms": 683.0062500000022,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 3,
+      "ms": 965.9290000000001,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 3,
+      "ms": 972.8177080000023,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 4,
+      "ms": 1058.1556659999987,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 4,
+      "ms": 680.5780830000003,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 5,
+      "ms": 609.4077920000018,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 5,
+      "ms": 1078.3506249999991,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 6,
+      "ms": 1324.3417090000003,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 6,
+      "ms": 633.7714999999989,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 7,
+      "ms": 605.2015419999989,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 7,
+      "ms": 1060.521291000001,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 8,
+      "ms": 1034.568166000001,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 8,
+      "ms": 654.903999999995,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 9,
+      "ms": 787.9292090000017,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 9,
+      "ms": 1556.1406669999997,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 10,
+      "ms": 1029.6675420000029,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 10,
+      "ms": 739.8035830000008,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 11,
+      "ms": 604.940582999996,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 11,
+      "ms": 1036.2731249999997,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 12,
+      "ms": 1114.2925419999956,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 12,
+      "ms": 744.2771670000002,
+      "queries": 10
+    },
+    {
+      "variant": "focused",
+      "iteration": 13,
+      "ms": 634.1673329999976,
+      "queries": 10
+    },
+    {
+      "variant": "legacy",
+      "iteration": 13,
+      "ms": 987.6373749999984,
+      "queries": 14
+    },
+    {
+      "variant": "legacy",
+      "iteration": 14,
+      "ms": 1173.864290999998,
+      "queries": 14
+    },
+    {
+      "variant": "focused",
+      "iteration": 14,
+      "ms": 615.287040999996,
+      "queries": 10
+    }
+  ],
+  "summary": {
+    "legacy": {
+      "n": 15,
+      "queries": 14,
+      "medianMs": 1060.521291000001,
+      "minMs": 972.8177080000023,
+      "maxMs": 1556.1406669999997
+    },
+    "focused": {
+      "n": 15,
+      "queries": 10,
+      "medianMs": 634.1673329999976,
+      "minMs": 598.9563749999998,
+      "maxMs": 965.9290000000001
+    }
+  }
+}

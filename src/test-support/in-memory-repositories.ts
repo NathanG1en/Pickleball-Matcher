@@ -16,6 +16,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   RoundSitRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -751,6 +752,15 @@ export class InMemoryRepositories implements DomainRepository {
 
   async getRound(roundId: string) {
     return this.state.rounds.find((round) => round.id === roundId) ?? null;
+  }
+
+  async getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null> {
+    const round = this.state.rounds.find(item => item.id === roundId);
+    if (!round) return null;
+    return { round, pendingMatches: this.state.matches
+      .filter(match => match.roundId === roundId && match.status === "pending")
+      .sort((a, b) => a.courtNumber - b.courtNumber)
+      .map(match => ({ match, playerCount: this.state.matchPlayers.filter(player => player.matchId === match.id).length })) };
   }
 
   async getMatch(matchId: string) {

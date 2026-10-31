@@ -16,6 +16,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   SessionRecord,
   StartedRoundRecord,
   TournamentRecord,
@@ -80,6 +81,7 @@ export interface DomainRepository {
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;
+  getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null>;
   getMatch(matchId: string): Promise<MatchRecord | null>;
   getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]>;
   insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void>;

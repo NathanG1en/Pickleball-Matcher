@@ -19,6 +19,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   RoundSitRecord,
   SessionRecord,
   SessionType,
@@ -1406,6 +1407,35 @@ export class PostgresRepositories implements DomainRepository {
       from rounds where id = ${roundId}
     `;
     return rows[0] ? mapRound(rows[0]) : null;
+  }
+
+  async getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null> {
+    type CompletionRow = RoundRow & {
+      pending_id: string | null; court_number: number; pending_status: MatchRow["status"];
+      team1_score: number | null; team2_score: number | null; pending_completed_at: Date | null;
+      pending_version: number; rated: boolean; player_count: number;
+    };
+    // Keep the round even when it has no pending matches. Use this.query so a
+    // completion transaction reads its own writes on its pinned connection.
+    const rows = await this.query<CompletionRow[]>`
+      select r.id, r.session_id, r.round_number, r.status, r.seed, r.score_breakdown,
+             r.created_at, r.started_at, r.completed_at, r.version,
+             m.id as pending_id, m.court_number, m.status as pending_status,
+             m.team1_score, m.team2_score, m.completed_at as pending_completed_at,
+             m.version as pending_version, m.rated,
+             (select count(*)::int from match_players mp where mp.match_id = m.id) as player_count
+      from rounds r
+      left join matches m on m.round_id = r.id and m.status = 'pending'
+      where r.id = ${roundId}
+      order by m.court_number
+    `;
+    if (!rows[0]) return null;
+    return { round: mapRound(rows[0]), pendingMatches: rows.flatMap(row => row.pending_id === null ? [] : [{
+      match: mapMatch({ id: row.pending_id, round_id: row.id, court_number: row.court_number,
+        status: row.pending_status, team1_score: row.team1_score, team2_score: row.team2_score,
+        completed_at: row.pending_completed_at, version: row.pending_version, rated: row.rated }),
+      playerCount: row.player_count,
+    }]) };
   }
 
   async getMatch(matchId: string): Promise<MatchRecord | null> {

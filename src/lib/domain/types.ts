@@ -145,6 +145,12 @@ export interface RoundRecord {
   version: number;
 }
 
+/** Fresh completion input; resolved matches and unrelated round history are omitted. */
+export interface RoundCompletionContext {
+  readonly round: RoundRecord;
+  readonly pendingMatches: readonly { readonly match: MatchRecord; readonly playerCount: number }[];
+}
+
 export interface MatchRecord {
   readonly id: string;
   readonly roundId: string;

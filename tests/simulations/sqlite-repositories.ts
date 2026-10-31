@@ -16,6 +16,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   RoundSitRecord,
   SessionRecord,
   SessionType,
@@ -1181,6 +1182,34 @@ export class SqliteDomainRepository implements DomainRepository {
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
       version: row.version,
     };
+  }
+
+  async getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null> {
+    type CompletionRow = RoundRow & {
+      pending_id: string | null; court_number: number; pending_status: MatchRecord["status"];
+      team1_score: number | null; team2_score: number | null; pending_completed_at: string | null;
+      pending_version: number; rated: number; player_count: number;
+    };
+    const rows = this.db.prepare(`
+      SELECT r.*, m.id AS pending_id, m.court_number, m.status AS pending_status,
+             m.team1_score, m.team2_score, m.completed_at AS pending_completed_at,
+             m.version AS pending_version, m.rated,
+             (SELECT count(*) FROM match_players mp WHERE mp.match_id = m.id) AS player_count
+      FROM rounds r LEFT JOIN matches m ON m.round_id = r.id AND m.status = 'pending'
+      WHERE r.id = ? ORDER BY m.court_number
+    `).all(roundId) as unknown as CompletionRow[];
+    const row = rows[0];
+    if (!row) return null;
+    const round: RoundRecord = { id: row.id, sessionId: row.session_id, roundNumber: row.round_number,
+      status: row.status, seed: row.seed, scoreBreakdown: JSON.parse(row.score_breakdown) as ScoreBreakdown,
+      createdAt: new Date(row.created_at), startedAt: new Date(row.started_at),
+      completedAt: row.completed_at ? new Date(row.completed_at) : null, version: row.version };
+    return { round, pendingMatches: rows.flatMap(item => item.pending_id === null ? [] : [{
+      match: { id: item.pending_id, roundId: item.id, courtNumber: item.court_number,
+        status: item.pending_status, team1Score: item.team1_score, team2Score: item.team2_score,
+        completedAt: item.pending_completed_at ? new Date(item.pending_completed_at) : null,
+        version: item.pending_version, rated: item.rated === 1 }, playerCount: item.player_count,
+    }]) };
   }
 
   async getMatch(matchId: string): Promise<MatchRecord | null> {
