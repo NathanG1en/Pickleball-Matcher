@@ -30,7 +30,12 @@ import { Modal } from "@/components/ui/modal";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
-import { GearIcon, XIcon, ZapIcon } from "@/components/ui/icons";
+import { GearIcon, PinIcon, SearchIcon, XIcon, ZapIcon } from "@/components/ui/icons";
+import {
+  sortPlayersWithPinned,
+  togglePinnedPlayer,
+  usePinnedPlayerIds,
+} from "@/lib/storage/pinned-players";
 import type {
   AttendanceRecord,
   MatchPlayerRecord,
@@ -52,6 +57,8 @@ import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
 
+export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "synergies" | "stay_together";
+
 export interface SessionManagerClientProps {
   readonly groupId: string;
   readonly groupName?: string;
@@ -68,6 +75,8 @@ export interface SessionManagerClientProps {
   readonly isOrganizer?: boolean;
   readonly isHost?: boolean;
   readonly isFromProfile?: boolean;
+  readonly initialOpenSettingsModal?: boolean;
+  readonly initialSettingsModalTab?: SessionSettingsTab;
 }
 
 export function SessionManagerClient({
@@ -86,19 +95,29 @@ export function SessionManagerClient({
   isOrganizer = false,
   isHost = false,
   isFromProfile = false,
+  initialOpenSettingsModal = false,
+  initialSettingsModalTab,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const isHydrated = useHydrated();
 
+  const pinnedPlayerIds = usePinnedPlayerIds(groupId);
+  const [attendanceSearchQuery, setAttendanceSearchQuery] = useState("");
+
   const sortedPlayers = useMemo(
     () =>
-      players
-        .filter((p) => p.active)
-        .sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-        ),
-    [players],
+      sortPlayersWithPinned(
+        players.filter((p) => p.active),
+        pinnedPlayerIds,
+      ),
+    [players, pinnedPlayerIds],
   );
+
+  const displayedAttendancePlayers = useMemo(() => {
+    const q = attendanceSearchQuery.trim().toLowerCase();
+    if (!q) return sortedPlayers;
+    return sortedPlayers.filter((p) => p.name.toLowerCase().includes(q));
+  }, [sortedPlayers, attendanceSearchQuery]);
 
   const [prevSession, setPrevSession] = useState(session);
   const [currentSession, setCurrentSession] = useState(session);
@@ -127,6 +146,20 @@ export function SessionManagerClient({
     setPrevAttendance(attendance);
     setCurrentAttendance(attendance);
   }
+
+  const presentAttendancePlayers = useMemo(() => {
+    return displayedAttendancePlayers.filter((p) => {
+      const rec = currentAttendance.find((a) => a.playerId === p.id);
+      return rec ? rec.leftRound === null : false;
+    });
+  }, [displayedAttendancePlayers, currentAttendance]);
+
+  const notPresentAttendancePlayers = useMemo(() => {
+    return displayedAttendancePlayers.filter((p) => {
+      const rec = currentAttendance.find((a) => a.playerId === p.id);
+      return rec ? rec.leftRound !== null : true;
+    });
+  }, [displayedAttendancePlayers, currentAttendance]);
 
   const [prevStartedRounds, setPrevStartedRounds] = useState(startedRounds);
   const [localStartedRounds, setLocalStartedRounds] = useState<readonly StartedRoundRecord[]>(startedRounds);
@@ -162,9 +195,13 @@ export function SessionManagerClient({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showInProgressModal, setShowInProgressModal] = useState(false);
   const [doNotAskAgain, setDoNotAskAgain] = useState(false);
-  const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(false);
+  const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(initialOpenSettingsModal);
   const [showAddPickupModal, setShowAddPickupModal] = useState(false);
-  const [modalTab, setModalTab] = useState<"attendance" | "stay_together" | "synergies" | "court_config">("attendance");
+  const [modalTab, setModalTab] = useState<SessionSettingsTab>(
+    initialSettingsModalTab === "stay_together"
+      ? "partners"
+      : (initialSettingsModalTab ?? "attendance")
+  );
   const [courtConfigCourts, setCourtConfigCourts] = useState<number>(session.courtCount);
   const [courtConfigPlayerCounts, setCourtConfigPlayerCounts] = useState<(2 | 3 | 4)[]>(
     () =>
@@ -241,8 +278,8 @@ export function SessionManagerClient({
     router.refresh();
   };
 
-  const openSessionSettingsModal = (tab: "attendance" | "stay_together" | "synergies" | "court_config" = "attendance") => {
-    setModalTab(tab);
+  const openSessionSettingsModal = (tab: SessionSettingsTab = "attendance") => {
+    setModalTab(tab === "stay_together" ? "partners" : tab);
     setCourtConfigCourts(currentSession.courtCount);
     setCourtConfigPlayerCounts(
       currentSession.courtPlayerCounts && currentSession.courtPlayerCounts.length === currentSession.courtCount
@@ -312,7 +349,6 @@ export function SessionManagerClient({
           setRegeneratedProposal(null);
         }
         setCourtConfigMessage("Court configuration updated successfully.");
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -496,7 +532,7 @@ export function SessionManagerClient({
               version: prev.version + 1,
             }));
             setScoreDrafts({});
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -538,7 +574,7 @@ export function SessionManagerClient({
               currentRoundNumber: res.data.roundNumber,
               version: prev.version + 1,
             }));
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -726,9 +762,7 @@ export function SessionManagerClient({
         matchVersion: matchToCancel.version,
         idempotencyKey: createIdempotencyKey(`cancel_${matchId}`),
       });
-      if (res.ok) {
-        router.refresh();
-      } else {
+      if (!res.ok) {
         setLocalStartedRounds(previousRounds);
         setError(res.error);
       }
@@ -758,10 +792,8 @@ export function SessionManagerClient({
           idempotencyKey: createIdempotencyKey("next_rd"),
         });
         if (res.ok) {
-          startGeneratingRound(() => {
-            setRegeneratedProposal(null);
-            router.refresh();
-          });
+          // The action revalidates this route and returns its fresh server tree.
+          setRegeneratedProposal(null);
         } else {
           setError(res.error);
         }
@@ -796,7 +828,7 @@ export function SessionManagerClient({
               currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
               version: prev.version + 1,
             }));
-            router.refresh();
+            // The revalidating action already returns the fresh server tree.
           });
         } else {
           setError(res.error);
@@ -921,7 +953,6 @@ export function SessionManagerClient({
               : a,
           );
         });
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -961,7 +992,6 @@ export function SessionManagerClient({
           }))
         );
         setEditingHistoricalMatchId(null);
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -993,7 +1023,6 @@ export function SessionManagerClient({
           }))
         );
         setEditingHistoricalMatchId(null);
-        router.refresh();
       } else {
         setError(res.error);
       }
@@ -1777,91 +1806,96 @@ export function SessionManagerClient({
       {/* Session Settings Modal */}
       {showSessionSettingsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-[8px_8px_0px_0px_#000] max-h-[85vh] overflow-y-auto text-black">
-            <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">
-              <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">
-                <GearIcon className="h-6 w-6 text-black shrink-0" />
-                <span>Session Settings</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowSessionSettingsModal(false)}
-                className="inline-flex items-center gap-1 text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
-              >
-                <XIcon className="h-4 w-4" />
-                <span>Close</span>
-              </button>
-            </div>
+          <div className="bg-white border-[3px] border-black rounded-3xl max-w-lg w-full shadow-[8px_8px_0px_0px_#000] max-h-[85vh] flex flex-col overflow-hidden text-black">
+            {/* Modal Header & Tabs (Static to box) */}
+            <div className="p-6 pb-3 border-b-2 border-neutral-200 shrink-0 space-y-4 bg-white">
+              <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">
+                <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">
+                  <GearIcon className="h-6 w-6 text-black shrink-0" />
+                  <span>Session Settings</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowSessionSettingsModal(false)}
+                  className="inline-flex items-center gap-1 text-neutral-600 hover:text-black hover:bg-neutral-100 active:bg-neutral-200 font-black text-sm px-2.5 py-1 -mr-1.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  <XIcon className="h-4 w-4" />
+                  <span>Close</span>
+                </button>
+              </div>
 
-            {/* Modal Tabs */}
-            <div className="flex items-center gap-2" role="tablist" aria-label="Session settings modal tabs">
-              <button
-                type="button"
-                role="tab"
-                id="tab-attendance"
-                aria-controls="tabpanel-attendance"
-                aria-selected={modalTab === "attendance"}
-                onClick={() => setModalTab("attendance")}
-                className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                  modalTab === "attendance"
-                    ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
-                }`}
-              >
-                Attendance
-              </button>
-              <button
-                type="button"
-                role="tab"
-                id="tab-stay-together"
-                aria-controls="tabpanel-stay-together"
-                aria-selected={modalTab === "stay_together"}
-                onClick={() => setModalTab("stay_together")}
-                className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                  modalTab === "stay_together"
-                    ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
-                }`}
-              >
-                Stay Together
-              </button>
-              {canManage && (
+              {/* Modal Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Session settings modal tabs">
                 <button
                   type="button"
                   role="tab"
-                  id="tab-synergies"
-                  aria-controls="tabpanel-synergies"
-                  aria-selected={modalTab === "synergies"}
-                  onClick={() => setModalTab("synergies")}
-                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                    modalTab === "synergies"
+                  id="tab-attendance"
+                  aria-controls="tabpanel-attendance"
+                  aria-selected={modalTab === "attendance"}
+                  onClick={() => setModalTab("attendance")}
+                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                    modalTab === "attendance"
                       ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                       : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
                   }`}
                 >
-                  Partner Synergies
+                  Attendance
                 </button>
-              )}
-              {canManage && (
+                {canManage && (
+                  <button
+                    type="button"
+                    role="tab"
+                    id="tab-court-config"
+                    aria-controls="tabpanel-court-config"
+                    aria-selected={modalTab === "court_config"}
+                    onClick={() => setModalTab("court_config")}
+                    className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                      modalTab === "court_config"
+                        ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
+                        : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                    }`}
+                  >
+                    Court Configuration
+                  </button>
+                )}
                 <button
                   type="button"
                   role="tab"
-                  id="tab-court-config"
-                  aria-controls="tabpanel-court-config"
-                  aria-selected={modalTab === "court_config"}
-                  onClick={() => setModalTab("court_config")}
-                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                    modalTab === "court_config"
+                  id="tab-partners"
+                  aria-controls="tabpanel-partners"
+                  aria-selected={modalTab === "partners" || modalTab === "stay_together"}
+                  onClick={() => setModalTab("partners")}
+                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                    modalTab === "partners" || modalTab === "stay_together"
                       ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                       : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
                   }`}
                 >
-                  Court Configuration
+                  Partners
                 </button>
-              )}
+                {canManage && (
+                  <button
+                    type="button"
+                    role="tab"
+                    id="tab-synergies"
+                    aria-controls="tabpanel-synergies"
+                    aria-selected={modalTab === "synergies"}
+                    onClick={() => setModalTab("synergies")}
+                    className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                      modalTab === "synergies"
+                        ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
+                        : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                    }`}
+                  >
+                    Partner Synergies
+                  </button>
+                )}
+              </div>
             </div>
 
-            {modalTab === "attendance" && (
+            {/* Scrollable Tab Content */}
+            <div className="p-6 pt-4 flex-1 overflow-y-auto space-y-4">
+              {modalTab === "attendance" && (
               <div
                 role="tabpanel"
                 id="tabpanel-attendance"
@@ -1873,97 +1907,270 @@ export function SessionManagerClient({
                     ? "Manage player arrivals or early departures mid-session."
                     : "Session player attendance roster."}
                 </p>
-                <div className="space-y-2">
-                  {sortedPlayers.map((p) => {
-                    const rec = currentAttendance.find((a) => a.playerId === p.id);
-                    const isPresent = rec ? rec.leftRound === null : false;
-                    return (
-                      <div
-                        key={p.id}
-                        data-testid={`attendance-row-${p.name}`}
-                        className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+
+                {sortedPlayers.length > 5 && (
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                      <SearchIcon className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="text"
+                      value={attendanceSearchQuery}
+                      onChange={(e) => setAttendanceSearchQuery(e.target.value)}
+                      placeholder="Search attendance by name..."
+                      aria-label="Search attendance"
+                      data-testid="session-attendance-search"
+                      className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+                    />
+                    {attendanceSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceSearchQuery("")}
+                        aria-label="Clear attendance search"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
                       >
-                        <div>
-                          <span className="font-black text-black text-sm block">{p.name}</span>
-                          <span className="text-xs font-bold text-neutral-500">Rating: {formatDupr(p.rating)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={isPresent ? "success" : "muted"}>
-                            {isPresent ? "Present" : "Away"}
-                          </Badge>
-                          {canManage && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={isPresent ? "outline" : "primary"}
-                              onClick={() => handleToggleAttendance(p.id, isPresent)}
-                              disabled={isPending}
-                              className="font-display text-xs uppercase"
-                            >
-                              {isPresent ? "Mark Left" : "Mark Present"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {modalTab === "stay_together" && (
-              <div
-                role="tabpanel"
-                id="tabpanel-stay-together"
-                aria-labelledby="tab-stay-together"
-                className="space-y-4"
-              >
-                {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && (
-                  <StayTogetherEditor
-                    players={players}
-                    pairs={currentSession.stayTogetherPairs ?? []}
-                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
-                    onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
-                    disabled={isPending}
-                    pending={isActionPending}
-                  />
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 )}
-                <PartnerRequests
-                  groupId={groupId}
-                  session={currentSession}
-                  players={players}
-                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
-                  currentViewerPlayerId={currentViewerPlayerId}
-                  canManage={canManage}
-                  initialRequests={partnerRequests}
-                  disabled={isPending}
-                  onBusyChange={setRequestPending}
-                  onSessionUpdated={applyPartnerSession}
-                />
-              </div>
-            )}
 
-            {modalTab === "synergies" && canManage && (
-              <div
-                role="tabpanel"
-                id="tabpanel-synergies"
-                aria-labelledby="tab-synergies"
-                className="space-y-4"
-              >
-                <div>
-                  <h4 className="font-display text-sm font-black uppercase flex items-center gap-1.5 text-black">
-                    <ZapIcon className="h-4 w-4 text-black shrink-0" />
-                    <span>Court Synergy &amp; Chemistry</span>
-                  </h4>
-                  <p className="text-xs font-bold text-neutral-600">Historical doubles chemistry across active courts</p>
-                </div>
+                {displayedAttendancePlayers.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl border-2 border-dashed border-neutral-300">
+                    <p className="text-sm font-bold text-neutral-500">
+                      No players match &ldquo;{attendanceSearchQuery}&rdquo;
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setAttendanceSearchQuery("")}
+                      className="mt-2 text-xs font-black uppercase text-black underline cursor-pointer"
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Present Section */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between pb-1.5 border-b-2 border-black">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]" />
+                          <h4 className="font-display text-xs font-black uppercase tracking-wider text-black">
+                            Present ({presentAttendancePlayers.length})
+                          </h4>
+                        </div>
+                        <span className="text-[11px] font-bold text-neutral-500">
+                          Active in matchmaking
+                        </span>
+                      </div>
 
-                <SynergyPanel
-                  courts={activeCourtsForSynergy}
-                  courtSynergies={activeCourtSynergies}
-                  playerNames={playerNames}
-                  playerAccounts={playerAccounts}
-                />
+                      {presentAttendancePlayers.length === 0 ? (
+                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                          No players currently marked present.
+                        </p>
+                      ) : (
+                        <div className="space-y-2" data-testid="attendance-present-list">
+                          {presentAttendancePlayers.map((p) => {
+                            const rec = currentAttendance.find((a) => a.playerId === p.id);
+                            const isPresent = rec ? rec.leftRound === null : false;
+                            const isPinned = pinnedPlayerIds.has(p.id);
+                            return (
+                              <div
+                                key={p.id}
+                                data-testid={`attendance-row-${p.name}`}
+                                className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {canManage && (
+                                    <button
+                                      type="button"
+                                      onClick={() => togglePinnedPlayer(groupId, p.id)}
+                                      aria-label={isPinned ? `Unpin ${p.name}` : `Pin ${p.name} to top`}
+                                      title={isPinned ? "Unpin player" : "Pin player to top"}
+                                      data-testid={`pin-player-${p.name}`}
+                                      className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                                        isPinned
+                                          ? "bg-black text-[#ccff00] hover:bg-neutral-800"
+                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                      }`}
+                                    >
+                                      <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
+                                    </button>
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-black text-black text-sm block truncate">{p.name}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-neutral-500">Rating: {formatDupr(p.rating)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {canManage ? (
+                                    <div
+                                      role="group"
+                                      aria-label={`Attendance for ${p.name}`}
+                                      data-testid={`attendance-toggle-${p.name}`}
+                                      className="inline-flex items-center rounded-xl border-2 border-black bg-neutral-100 p-0.5 shadow-[2px_2px_0px_0px_#000]"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!isPresent) void handleToggleAttendance(p.id, false);
+                                        }}
+                                        disabled={isPending}
+                                        aria-pressed={isPresent}
+                                        title="Mark Present"
+                                        data-testid={`attendance-present-${p.name}`}
+                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                          isPresent
+                                            ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
+                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                      >
+                                        Present
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (isPresent) void handleToggleAttendance(p.id, true);
+                                        }}
+                                        disabled={isPending}
+                                        aria-pressed={!isPresent}
+                                        title="Mark Left"
+                                        data-testid={`attendance-left-${p.name}`}
+                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                          !isPresent
+                                            ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
+                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                      >
+                                        Left
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <Badge variant={isPresent ? "success" : "muted"}>
+                                      {isPresent ? "Present" : "Left"}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Not Present / Left Section */}
+                    <div className="space-y-2.5 pt-2">
+                      <div className="flex items-center justify-between pb-1.5 border-b-2 border-neutral-300">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-neutral-300 border border-black shadow-[1px_1px_0px_0px_#000]" />
+                          <h4 className="font-display text-xs font-black uppercase tracking-wider text-neutral-700">
+                            Not Present / Left ({notPresentAttendancePlayers.length})
+                          </h4>
+                        </div>
+                        <span className="text-[11px] font-bold text-neutral-500">
+                          Sitting out
+                        </span>
+                      </div>
+
+                      {notPresentAttendancePlayers.length === 0 ? (
+                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                          All players are currently present.
+                        </p>
+                      ) : (
+                        <div className="space-y-2" data-testid="attendance-not-present-list">
+                          {notPresentAttendancePlayers.map((p) => {
+                            const rec = currentAttendance.find((a) => a.playerId === p.id);
+                            const isPresent = rec ? rec.leftRound === null : false;
+                            const isPinned = pinnedPlayerIds.has(p.id);
+                            return (
+                              <div
+                                key={p.id}
+                                data-testid={`attendance-row-${p.name}`}
+                                className="flex items-center justify-between p-3 bg-neutral-50/80 rounded-xl border-2 border-neutral-300 hover:border-black transition-colors"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {canManage && (
+                                    <button
+                                      type="button"
+                                      onClick={() => togglePinnedPlayer(groupId, p.id)}
+                                      aria-label={isPinned ? `Unpin ${p.name}` : `Pin ${p.name} to top`}
+                                      title={isPinned ? "Unpin player" : "Pin player to top"}
+                                      data-testid={`pin-player-${p.name}`}
+                                      className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                                        isPinned
+                                          ? "bg-black text-[#ccff00] hover:bg-neutral-800"
+                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                      }`}
+                                    >
+                                      <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
+                                    </button>
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-black text-neutral-700 text-sm block truncate">{p.name}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-neutral-400">Rating: {formatDupr(p.rating)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {canManage ? (
+                                    <div
+                                      role="group"
+                                      aria-label={`Attendance for ${p.name}`}
+                                      data-testid={`attendance-toggle-${p.name}`}
+                                      className="inline-flex items-center rounded-xl border-2 border-black bg-neutral-100 p-0.5 shadow-[2px_2px_0px_0px_#000]"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!isPresent) void handleToggleAttendance(p.id, false);
+                                        }}
+                                        disabled={isPending}
+                                        aria-pressed={isPresent}
+                                        title="Mark Present"
+                                        data-testid={`attendance-present-${p.name}`}
+                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                          isPresent
+                                            ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
+                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                      >
+                                        Present
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (isPresent) void handleToggleAttendance(p.id, true);
+                                        }}
+                                        disabled={isPending}
+                                        aria-pressed={!isPresent}
+                                        title="Mark Left"
+                                        data-testid={`attendance-left-${p.name}`}
+                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                          !isPresent
+                                            ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
+                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                      >
+                                        Left
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <Badge variant={isPresent ? "success" : "muted"}>
+                                      {isPresent ? "Present" : "Left"}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2016,10 +2223,10 @@ export function SessionManagerClient({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {courtConfigPlayerCounts.slice(0, courtConfigCourts).map((size, index) => (
-                    <label key={index} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black p-3 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
-                      <span>Court {index + 1}</span>
+                    <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                      <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
                       <select
                         aria-label={`Players on court ${index + 1}`}
                         value={size}
@@ -2027,10 +2234,10 @@ export function SessionManagerClient({
                           handleCourtSizeChange(index, Number(event.target.value) as 2 | 3 | 4)
                         }
                         disabled={isPending}
-                        className="rounded-lg border-2 border-black px-2 py-1 bg-white"
+                        className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
                       >
                         {[4, 3, 2].map((playersOnCourt) => (
-                          <option key={playersOnCourt} value={playersOnCourt}>
+                          <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">
                             {playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}
                           </option>
                         ))}
@@ -2107,6 +2314,64 @@ export function SessionManagerClient({
                 </Button>
               </div>
             )}
+
+            {(modalTab === "partners" || modalTab === "stay_together") && (
+              <div
+                role="tabpanel"
+                id="tabpanel-partners"
+                aria-labelledby="tab-partners"
+                className="space-y-4"
+              >
+                {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && (
+                  <StayTogetherEditor
+                    players={players}
+                    pairs={currentSession.stayTogetherPairs ?? []}
+                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                    onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
+                    disabled={isPending}
+                    pending={isActionPending}
+                  />
+                )}
+                <PartnerRequests
+                  groupId={groupId}
+                  session={currentSession}
+                  players={players}
+                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                  currentViewerPlayerId={currentViewerPlayerId}
+                  canManage={canManage}
+                  initialRequests={partnerRequests}
+                  disabled={isPending}
+                  onBusyChange={setRequestPending}
+                  onSessionUpdated={applyPartnerSession}
+                />
+              </div>
+            )}
+
+            {modalTab === "synergies" && canManage && (
+              <div
+                role="tabpanel"
+                id="tabpanel-synergies"
+                aria-labelledby="tab-synergies"
+                className="space-y-4"
+              >
+                <div>
+                  <h4 className="font-display text-sm font-black uppercase flex items-center gap-1.5 text-black">
+                    <ZapIcon className="h-4 w-4 text-black shrink-0" />
+                    <span>Court Synergy &amp; Chemistry</span>
+                  </h4>
+                  <p className="text-xs font-bold text-neutral-600">Historical doubles chemistry across active courts</p>
+                </div>
+
+                <SynergyPanel
+                  courts={activeCourtsForSynergy}
+                  courtSynergies={activeCourtSynergies}
+                  playerNames={playerNames}
+                  playerAccounts={playerAccounts}
+                  sessionId={session.id}
+                />
+              </div>
+            )}
+            </div>
           </div>
         </div>
       )}

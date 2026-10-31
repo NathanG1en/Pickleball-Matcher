@@ -3,7 +3,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { DomainError } from "@/lib/domain/errors";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
-import { replaySynergies } from "@/lib/domain/synergy-replay";
+import { replayRatingsAndSynergies, replaySynergies } from "@/lib/domain/synergy-replay";
 import type {
   AttendanceRecord,
   ChangeAttendanceInput,
@@ -11,7 +11,9 @@ import type {
   MatchRecord,
   PlayerRecord,
   RecordResultInput,
+  BatchRecordResultInput,
   RoundProposal,
+  RoundProposalSnapshot,
   RoundRecord,
   SessionRecord,
   SessionServiceDependencies,
@@ -317,11 +319,29 @@ export class SessionService {
     temperature = 0,
   ): Promise<RoundProposal> {
     const session = await requiredSession(this.repository, sessionId);
+    return this.proposeRoundForSession(session, seed, temperature);
+  }
+
+  /** Reuse an authorized session record while loading the remaining read inputs. */
+  async proposeRoundForSession(
+    session: SessionRecord,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): Promise<RoundProposal> {
     const [players, attendance, rounds] = await Promise.all([
       this.repository.listPlayers(session.groupId),
-      this.repository.listAttendance(sessionId),
-      this.repository.listStartedRounds(sessionId),
+      this.repository.listAttendance(session.id),
+      this.repository.listStartedRounds(session.id),
     ]);
+    return this.proposeRoundFromSnapshot({ session, players, attendance, rounds }, seed, temperature);
+  }
+
+  /** No reads or caching: callers supply data loaded for this read-only request. */
+  proposeRoundFromSnapshot(
+    { session, players, attendance, rounds }: RoundProposalSnapshot,
+    seed = this.dependencies.nextSeed(),
+    temperature = 0,
+  ): RoundProposal {
     const result = generateRound({
       players: matchmakingPlayers(players, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)),
       courts: session.courtCount,
@@ -439,16 +459,23 @@ export class SessionService {
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
-      await replayRatings(session.groupId, repository);
       if (round.status === "completed" || session.status === "completed") {
-        await replaySynergies(repository);
+        await replayRatingsAndSynergies(session.groupId, repository);
+      } else {
+        await replayRatings(session.groupId, repository);
       }
       return updated;
     });
   }
 
-  async recordMultipleResults(inputs: readonly RecordResultInput[]): Promise<MatchRecord[]> {
+  async recordMultipleResults(
+    inputs: readonly BatchRecordResultInput[],
+    scope?: { readonly groupId: string; readonly sessionId?: string },
+  ): Promise<MatchRecord[]> {
     if (inputs.length === 0) return [];
+    if (new Set(inputs.map(input => input.matchId)).size !== inputs.length) {
+      throw new DomainError("INVALID_RESULT", "A match can only appear once in a score batch.");
+    }
     for (const input of inputs) {
       if (
         !Number.isSafeInteger(input.team1Score) ||
@@ -462,20 +489,24 @@ export class SessionService {
     }
     return this.repository.transaction(async (repository) => {
       await repository.lockSynergyState();
-      const updatedMatches: MatchRecord[] = [];
-      let groupId: string | null = null;
-      let shouldReplaySynergies = false;
+      const contexts = await repository.getMatchResultContexts(inputs.map(input => input.matchId));
+      const byId = new Map(contexts.map(context => [context.match.id, context]));
+      const first = byId.get(inputs[0].matchId);
+      if (!first) throw new DomainError("NOT_FOUND", "Match not found.");
       for (const input of inputs) {
-        const match = await requiredMatch(repository, input.matchId);
-        const round = await requiredRound(repository, match.roundId);
-        const session = await requiredSession(repository, round.sessionId);
-        if (!groupId) {
-          groupId = session.groupId;
+        const context = byId.get(input.matchId);
+        if (!context) throw new DomainError("NOT_FOUND", "Match not found.");
+        if (context.groupId !== (scope?.groupId ?? first.groupId) ||
+            context.sessionId !== (scope?.sessionId ?? first.sessionId)) {
+          throw new DomainError("INVALID_STATE", "Every match must belong to the selected group and session.");
         }
-        if (round.status === "completed" || session.status === "completed") {
-          shouldReplaySynergies = true;
+        if (input.matchVersion !== undefined && input.matchVersion !== context.match.version) {
+          throw new DomainError("INVALID_STATE", "A match changed. Refresh the session before saving these scores.");
         }
-        const updated: MatchRecord = {
+      }
+      const updatedMatches = inputs.map((input): MatchRecord => {
+        const match = byId.get(input.matchId)!.match;
+        return {
           ...match,
           status: "completed",
           team1Score: input.team1Score,
@@ -483,14 +514,12 @@ export class SessionService {
           completedAt: match.completedAt ?? this.dependencies.now(),
           version: match.version + 1,
         };
-        await repository.updateMatch(updated);
-        updatedMatches.push(updated);
-      }
-      if (groupId) {
-        await replayRatings(groupId, repository);
-      }
-      if (shouldReplaySynergies) {
-        await replaySynergies(repository);
+      });
+      await repository.updateMatches(updatedMatches);
+      if (contexts.some(context => context.roundStatus === "completed" || context.sessionStatus === "completed")) {
+        await replayRatingsAndSynergies(first.groupId, repository);
+      } else {
+        await replayRatings(first.groupId, repository);
       }
       return updatedMatches;
     });
@@ -518,8 +547,7 @@ export class SessionService {
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
       return updated;
     });
   }
@@ -532,30 +560,25 @@ export class SessionService {
       const round = await requiredRound(repository, match.roundId);
       const session = await requiredSession(repository, round.sessionId);
       await repository.deleteMatch(matchId);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
     });
   }
 
   async completeRound(roundId: string): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
       await repository.lockSynergyState();
-      const round = await requiredRound(repository, roundId);
-      const records = await repository.listStartedRounds(round.sessionId);
-      const record = records.find((item) => item.round.id === roundId)!;
-      for (const match of record.matches) {
-        if (match.status === "pending") {
-          const playersForMatch = record.matchPlayers.filter((item) => item.matchId === match.id);
-          const isSingles = playersForMatch.length === 2;
-          if (isSingles) {
-            await repository.updateMatch({
-              ...match,
-              status: "cancelled",
-              version: match.version + 1,
-            });
-          } else {
-            throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
-          }
+      const context = await repository.getRoundCompletionContext(roundId);
+      if (!context) throw new DomainError("NOT_FOUND", "Round not found.");
+      const { round } = context;
+      for (const { match, playerCount } of context.pendingMatches) {
+        if (playerCount === 2) {
+          await repository.updateMatch({
+            ...match,
+            status: "cancelled",
+            version: match.version + 1,
+          });
+        } else {
+          throw new DomainError("UNRESOLVED_MATCHES", "Resolve every court before continuing.");
         }
       }
       const updated = {
@@ -585,8 +608,7 @@ export class SessionService {
         currentRoundNumber: Math.max(0, session.currentRoundNumber - 1),
         version: session.version + 1,
       });
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
       return latest.round;
     });
   }
@@ -609,8 +631,7 @@ export class SessionService {
         version: session.version + 1,
       };
       await repository.updateSession(updatedSession);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
 
       const [players, attendance, remainingRounds] = await Promise.all([
         repository.listPlayers(session.groupId),
@@ -671,9 +692,10 @@ export class SessionService {
       };
       await repository.updateSession(updated);
       if (hadUnfinishedMatches) {
-        await replayRatings(session.groupId, repository);
+        await replayRatingsAndSynergies(session.groupId, repository);
+      } else {
+        await replaySynergies(repository);
       }
-      await replaySynergies(repository);
       return updated;
     });
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import type { RoundCourtData } from "@/components/rounds/current-round";
 import { ZapIcon, AlertTriangleIcon, InfoIcon, XIcon } from "@/components/ui/icons";
 
@@ -14,6 +14,7 @@ export interface SynergyRevealModalProps {
   readonly courtSynergies: CourtSynergiesMap;
   readonly playerNames: Record<string, string>;
   readonly playerAccounts?: Record<string, string | null>;
+  readonly sessionId?: string;
 }
 
 function resolveTeamSynergy(
@@ -92,6 +93,8 @@ export interface SynergyPanelProps {
   readonly courtSynergies: CourtSynergiesMap;
   readonly playerNames: Record<string, string>;
   readonly playerAccounts?: Record<string, string | null>;
+  readonly sessionId?: string;
+  readonly initialDismissed?: boolean;
 }
 
 export function SynergyPanel({
@@ -99,9 +102,39 @@ export function SynergyPanel({
   courtSynergies,
   playerNames,
   playerAccounts,
+  sessionId,
+  initialDismissed = false,
 }: SynergyPanelProps) {
   const nameFor = (id: string) => playerNames[id] ?? id;
   const validCourts = courts.filter((c) => c.team1.length > 0 && c.team2.length > 0);
+
+  const [dismissedSessionId, setDismissedSessionId] = useState<string | null>(null);
+  const [localDismissed, setLocalDismissed] = useState(initialDismissed);
+
+  // Check if dismissed for the current session
+  const isDismissedForSession = useMemo(() => {
+    if (initialDismissed) return true;
+    if (localDismissed && dismissedSessionId === (sessionId ?? "")) return true;
+    if (!sessionId) return localDismissed;
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        return localStorage.getItem(`pickleball_dismiss_synergy_notice_${sessionId}`) === "true";
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, [sessionId, localDismissed, dismissedSessionId, initialDismissed]);
+
+  const handleDismiss = () => {
+    setLocalDismissed(true);
+    setDismissedSessionId(sessionId ?? "");
+    if (sessionId && typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem(`pickleball_dismiss_synergy_notice_${sessionId}`, "true");
+      } catch {}
+    }
+  };
 
   const hasUncalculated = validCourts.some((c) => {
     const t1 = resolveTeamSynergy(c.team1, courtSynergies[c.courtNumber]?.team1, playerAccounts, playerNames);
@@ -119,9 +152,12 @@ export function SynergyPanel({
 
   return (
     <div className="space-y-4">
-      {hasUncalculated && (
-        <div className="rounded-2xl border-2 border-black bg-amber-50 p-4 shadow-[3px_3px_0px_0px_#000] text-black">
-          <div className="flex items-start gap-2.5">
+      {hasUncalculated && !isDismissedForSession && (
+        <div
+          data-testid="synergy-ineligibility-notice"
+          className="relative rounded-2xl border-2 border-black bg-amber-50 p-4 shadow-[3px_3px_0px_0px_#000] text-black"
+        >
+          <div className="flex items-start gap-2.5 pr-8">
             <AlertTriangleIcon className="h-5 w-5 text-amber-900 shrink-0 select-none mt-0.5" />
             <div className="space-y-1 text-xs">
               <h4 className="font-display font-black uppercase tracking-wider text-amber-950">
@@ -137,6 +173,15 @@ export function SynergyPanel({
               </ul>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dismiss synergy notice"
+            data-testid="dismiss-synergy-notice-button"
+            className="absolute top-3 right-3 p-1 rounded-lg text-neutral-600 hover:text-black hover:bg-amber-100 active:scale-95 transition-all cursor-pointer"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -217,6 +262,7 @@ export function SynergyRevealModal({
   courtSynergies,
   playerNames,
   playerAccounts,
+  sessionId,
 }: SynergyRevealModalProps) {
   if (!isOpen) return null;
 
@@ -246,6 +292,7 @@ export function SynergyRevealModal({
           courtSynergies={courtSynergies}
           playerNames={playerNames}
           playerAccounts={playerAccounts}
+          sessionId={sessionId}
         />
 
         <button

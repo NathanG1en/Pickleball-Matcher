@@ -2,8 +2,26 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { SessionService } from "@/lib/domain/session-service";
 import { SqliteDomainRepository } from "./sqlite-repositories";
+import { seedBatchScores, batchNow } from "../fixtures/batch-scores";
+import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 
 describe("SqliteDomainRepository", () => {
+  it("saves a batch with correct ratings and rolls back a partial optimistic conflict", async () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      const repository = new SqliteDomainRepository(db);
+      const { inputs, matches } = await seedBatchScores(repository, 2);
+      const updates = matches.map(match => ({ ...match, status: "completed" as const, team1Score: 11, team2Score: 7, completedAt: batchNow, version: 2 }));
+      await expect(repository.updateMatches([updates[0], { ...updates[1], version: 3 }])).rejects.toBeInstanceOf(RepositoryConflictError);
+      expect((await repository.getMatch(matches[0].id))?.version).toBe(1);
+      const service = new SessionService(repository, { now: () => batchNow, nextId: kind => kind, nextSeed: () => 1 });
+      await service.recordMultipleResults(inputs);
+      expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
+      expect(await repository.getPlayerAccount("batch-account-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
+      expect((await repository.listStartedRounds("batch-session"))[0].matches.every(match => match.status === "completed" && match.version === 2)).toBe(true);
+    } finally { db.close(); }
+  });
+
   it("supports player accounts joining public groups and recording their session history", async () => {
     const db = new DatabaseSync(":memory:");
     const repository = new SqliteDomainRepository(db);

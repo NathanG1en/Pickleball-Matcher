@@ -6,6 +6,7 @@ import type {
   PublicGroupRecord,
   MatchPlayerRecord,
   MatchRecord,
+  MatchResultContext,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -15,6 +16,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   SessionRecord,
   StartedRoundRecord,
   TournamentRecord,
@@ -79,13 +81,17 @@ export interface DomainRepository {
   listAttendance(sessionId: string): Promise<readonly AttendanceRecord[]>;
   listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]>;
   getRound(roundId: string): Promise<RoundRecord | null>;
+  getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null>;
   getMatch(matchId: string): Promise<MatchRecord | null>;
+  getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]>;
   insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]): Promise<void>;
   updateSession(session: SessionRecord): Promise<void>;
   saveAttendance(attendance: AttendanceRecord): Promise<void>;
   insertStartedRound(record: StartedRoundRecord): Promise<void>;
   insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void>;
   updateMatch(match: MatchRecord): Promise<void>;
+  /** Update all matches in a transaction; any conflict must abort that transaction. */
+  updateMatches(matches: readonly MatchRecord[]): Promise<void>;
   updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void>;
   deleteMatch(matchId: string): Promise<void>;
   updateRound(round: RoundRecord): Promise<void>;

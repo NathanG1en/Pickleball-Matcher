@@ -19,8 +19,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
-import { replayRatings } from "@/lib/domain/rating-replay";
-import { replaySynergies } from "@/lib/domain/synergy-replay";
+import { replayRatingsAndSynergies, replaySynergies } from "@/lib/domain/synergy-replay";
 import {
   changeAttendanceSchema,
   completeRoundSchema,
@@ -168,10 +167,10 @@ export async function proposeRoundAction(
   }
 
   try {
-    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
+    const session = await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
-    const proposal = await service.proposeRound(
-      parsed.data.sessionId,
+    const proposal = await service.proposeRoundForSession(
+      session,
       parsed.data.seed,
       parsed.data.temperature,
     );
@@ -197,9 +196,7 @@ export async function startRoundAction(
   }
 
   try {
-    const session = await getActionRepository().getSession(parsed.data.sessionId);
-    if (!session || session.groupId !== parsed.data.groupId) return { ok: false, error: "Session not found." };
-    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
+    const session = await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
     const service = getActionSessionService();
     let proposal: RoundProposal;
     if (parsed.data.manualCourts && parsed.data.manualSitting) {
@@ -225,8 +222,8 @@ export async function startRoundAction(
       };
     } else {
       // Re-generate deterministic proposal using seed
-      proposal = await service.proposeRound(
-        parsed.data.sessionId,
+      proposal = await service.proposeRoundForSession(
+        session,
         parsed.data.seed,
       );
     }
@@ -433,8 +430,7 @@ export async function deleteSessionAction(
     await repository.transaction(async transaction => {
       await transaction.lockSynergyState();
       await transaction.deleteSession(session.id, session.groupId);
-      await replayRatings(session.groupId, transaction);
-      await replaySynergies(transaction);
+      await replayRatingsAndSynergies(session.groupId, transaction);
     });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
@@ -745,9 +741,10 @@ export async function submitSessionPickupGameAction(
       await repo.insertMatch(match, matchPlayers);
 
       if (parsed.data.rated) {
-        await replayRatings(session.groupId, repo);
+        await replayRatingsAndSynergies(session.groupId, repo);
+      } else {
+        await replaySynergies(repo);
       }
-      await replaySynergies(repo);
 
       return { match, matchPlayers };
     });

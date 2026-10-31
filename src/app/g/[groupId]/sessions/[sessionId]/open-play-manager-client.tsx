@@ -12,6 +12,10 @@ import { FilterablePlayerSelect } from "@/components/groups/filterable-player-se
 import { formatDupr } from "@/lib/domain/rating-display";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
 import {
+  sortPlayersWithPinned,
+  usePinnedPlayerIds,
+} from "@/lib/storage/pinned-players";
+import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
   deleteOpenPlayGameAction,
@@ -102,13 +106,16 @@ export function OpenPlayManagerClient({
     [localPlayers, presentPlayerIds],
   );
 
+  const pinnedPlayerIds = usePinnedPlayerIds(groupId);
+
   // Group players not yet checked in
   const availableRosterPlayers = useMemo(
     () =>
-      localPlayers
-        .filter((p) => !presentPlayerIds.has(p.id) && p.active)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-    [localPlayers, presentPlayerIds],
+      sortPlayersWithPinned(
+        localPlayers.filter((p) => !presentPlayerIds.has(p.id) && p.active),
+        pinnedPlayerIds,
+      ),
+    [localPlayers, presentPlayerIds, pinnedPlayerIds],
   );
 
   const isViewerCheckedIn = Boolean(
@@ -409,9 +416,9 @@ export function OpenPlayManagerClient({
     () =>
       availableRosterPlayers.map((p) => ({
         id: p.id,
-        name: `${p.name} (${formatDupr(p.rating)})`,
+        name: `${p.name} (${formatDupr(p.rating)})${pinnedPlayerIds.has(p.id) ? " 📌" : ""}`,
       })),
-    [availableRosterPlayers],
+    [availableRosterPlayers, pinnedPlayerIds],
   );
 
   // Loading & feedback states

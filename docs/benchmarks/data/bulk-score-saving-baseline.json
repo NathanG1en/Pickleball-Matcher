@@ -1,0 +1,37 @@
+{
+  "source": "/Users/nathanglen/AntigravityProjects/Pickleball Matcher",
+  "database": "Neon test branch; temporary tables only",
+  "courts": 4,
+  "players": 16,
+  "warmupSamples": 1,
+  "samples": [
+    {
+      "iteration": 0,
+      "ms": 2027.5935,
+      "queries": 26
+    },
+    {
+      "iteration": 1,
+      "ms": 1995.5072090000012,
+      "queries": 26
+    },
+    {
+      "iteration": 2,
+      "ms": 2055.208042,
+      "queries": 26
+    },
+    {
+      "iteration": 3,
+      "ms": 1924.539084,
+      "queries": 26
+    },
+    {
+      "iteration": 4,
+      "ms": 1851.5212919999994,
+      "queries": 26
+    }
+  ],
+  "medianMs": 1995.5072090000012,
+  "minMs": 1851.5212919999994,
+  "maxMs": 2055.208042
+}

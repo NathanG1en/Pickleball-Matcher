@@ -1,0 +1,108 @@
+{
+  "sessionId": "session_27858bcf-401",
+  "baselineCheckout": "/Users/nathanglen/AntigravityProjects/Pickleball Matcher",
+  "poolSize": 10,
+  "database": "Neon test branch; SELECTs only",
+  "rounds": 3,
+  "matches": 18,
+  "samples": [
+    {
+      "variant": "baseline",
+      "iteration": 0,
+      "ms": 356.267333,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 0,
+      "ms": 147.79387500000007,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 1,
+      "ms": 226.84850000000006,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 1,
+      "ms": 305.77649999999994,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 2,
+      "ms": 368.5937090000002,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 2,
+      "ms": 154.0262090000001,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 3,
+      "ms": 217.43391699999984,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 3,
+      "ms": 297.6128329999997,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 4,
+      "ms": 372.0921250000001,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 4,
+      "ms": 154.29391699999996,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 5,
+      "ms": 222.49595799999952,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 5,
+      "ms": 296.18474999999944,
+      "queries": 4
+    },
+    {
+      "variant": "baseline",
+      "iteration": 6,
+      "ms": 378.02116599999954,
+      "queries": 4
+    },
+    {
+      "variant": "optimized",
+      "iteration": 6,
+      "ms": 193.0791250000002,
+      "queries": 4
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "n": 7,
+      "medianMs": 356.267333,
+      "minMs": 296.18474999999944,
+      "maxMs": 378.02116599999954
+    },
+    "optimized": {
+      "n": 7,
+      "medianMs": 193.0791250000002,
+      "minMs": 147.79387500000007,
+      "maxMs": 226.84850000000006
+    }
+  }
+}

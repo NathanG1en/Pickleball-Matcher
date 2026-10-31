@@ -8,6 +8,7 @@ import type {
   GroupOrganizerRecord,
   MatchPlayerRecord,
   MatchRecord,
+  MatchResultContext,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -18,6 +19,7 @@ import type {
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   RoundSitRecord,
   SessionRecord,
   SessionType,
@@ -1365,24 +1367,26 @@ export class PostgresRepositories implements DomainRepository {
     `;
     if (roundRows.length === 0) return [];
     const roundIds = roundRows.map((row) => row.id);
-    const matchRows = await this.query<MatchRow[]>`
-      select id, round_id, court_number, status, team1_score, team2_score,
-             completed_at, version, rated
-      from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
-    `;
-    const matchIds = matchRows.map((row) => row.id);
-    const memberRows =
-      matchIds.length === 0
-        ? []
-        : await this.query<MatchPlayerRow[]>`
-            select match_id, player_id, team, rating_before, rating_after
-            from match_players where match_id in ${this.query(matchIds)}
-            order by match_id, team, player_id
-          `;
-    const sitRows = await this.query<SitRow[]>`
-      select round_id, player_id from round_sits
-      where round_id in ${this.query(roundIds)} order by round_id, player_id
-    `;
+    // Anchor children to the rounds above, while removing the dependency on a
+    // separate match-ID read. Keep this.query so transactional callers stay on
+    // their pinned connection; pooled callers can run these reads concurrently.
+    const [matchRows, memberRows, sitRows] = await Promise.all([
+      this.query<MatchRow[]>`
+        select id, round_id, court_number, status, team1_score, team2_score,
+               completed_at, version, rated
+        from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
+      `,
+      this.query<MatchPlayerRow[]>`
+        select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
+        from match_players mp join matches m on m.id = mp.match_id
+        where m.round_id in ${this.query(roundIds)}
+        order by mp.match_id, mp.team, mp.player_id
+      `,
+      this.query<SitRow[]>`
+        select round_id, player_id from round_sits
+        where round_id in ${this.query(roundIds)} order by round_id, player_id
+      `,
+    ]);
 
     return roundRows.map((roundRow) => {
       const matches = matchRows.filter((row) => row.round_id === roundRow.id);
@@ -1405,6 +1409,35 @@ export class PostgresRepositories implements DomainRepository {
     return rows[0] ? mapRound(rows[0]) : null;
   }
 
+  async getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null> {
+    type CompletionRow = RoundRow & {
+      pending_id: string | null; court_number: number; pending_status: MatchRow["status"];
+      team1_score: number | null; team2_score: number | null; pending_completed_at: Date | null;
+      pending_version: number; rated: boolean; player_count: number;
+    };
+    // Keep the round even when it has no pending matches. Use this.query so a
+    // completion transaction reads its own writes on its pinned connection.
+    const rows = await this.query<CompletionRow[]>`
+      select r.id, r.session_id, r.round_number, r.status, r.seed, r.score_breakdown,
+             r.created_at, r.started_at, r.completed_at, r.version,
+             m.id as pending_id, m.court_number, m.status as pending_status,
+             m.team1_score, m.team2_score, m.completed_at as pending_completed_at,
+             m.version as pending_version, m.rated,
+             (select count(*)::int from match_players mp where mp.match_id = m.id) as player_count
+      from rounds r
+      left join matches m on m.round_id = r.id and m.status = 'pending'
+      where r.id = ${roundId}
+      order by m.court_number
+    `;
+    if (!rows[0]) return null;
+    return { round: mapRound(rows[0]), pendingMatches: rows.flatMap(row => row.pending_id === null ? [] : [{
+      match: mapMatch({ id: row.pending_id, round_id: row.id, court_number: row.court_number,
+        status: row.pending_status, team1_score: row.team1_score, team2_score: row.team2_score,
+        completed_at: row.pending_completed_at, version: row.pending_version, rated: row.rated }),
+      playerCount: row.player_count,
+    }]) };
+  }
+
   async getMatch(matchId: string): Promise<MatchRecord | null> {
     const rows = await this.query<MatchRow[]>`
       select id, round_id, court_number, status, team1_score, team2_score,
@@ -1412,6 +1445,25 @@ export class PostgresRepositories implements DomainRepository {
       from matches where id = ${matchId}
     `;
     return rows[0] ? mapMatch(rows[0]) : null;
+  }
+
+  async getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]> {
+    if (matchIds.length === 0) return [];
+    const rows = await this.query<(MatchRow & {
+      group_id: string; session_id: string;
+      round_status: MatchResultContext["roundStatus"];
+      session_status: MatchResultContext["sessionStatus"];
+    })[]>`
+      select m.id, m.round_id, m.court_number, m.status, m.team1_score, m.team2_score,
+             m.completed_at, m.version, m.rated, s.group_id, s.id as session_id,
+             r.status as round_status, s.status as session_status
+      from matches m
+      join rounds r on r.id = m.round_id
+      join sessions s on s.id = r.session_id
+      where m.id = any(${[...matchIds]}::text[])
+    `;
+    return rows.map(row => ({ match: mapMatch(row), groupId: row.group_id,
+      sessionId: row.session_id, roundStatus: row.round_status, sessionStatus: row.session_status }));
   }
 
   async insertSession(session: SessionRecord, attendance: readonly AttendanceRecord[]) {
@@ -1586,6 +1638,34 @@ export class PostgresRepositories implements DomainRepository {
       returning id
     `;
     if (rows.length === 0) throw new RepositoryConflictError();
+  }
+
+  async updateMatches(matches: readonly MatchRecord[]): Promise<void> {
+    if (matches.length === 0) return;
+    if (new Set(matches.map(match => match.id)).size !== matches.length) throw new RepositoryConflictError();
+    // A partial version conflict must roll back the rows that did match too.
+    // Transactional callers must let the conflict escape their callback.
+    if (!this.inTransaction) {
+      await this.transaction(repository => repository.updateMatches(matches));
+      return;
+    }
+    const rows = await this.query<{ id: string }[]>`
+      update matches as m
+      set status = v.status, team1_score = v.team1_score, team2_score = v.team2_score,
+          completed_at = v.completed_at, version = v.version, rated = v.rated
+      from unnest(
+        ${matches.map(match => match.id)}::text[],
+        ${matches.map(match => match.status)}::text[],
+        ${matches.map(match => match.team1Score)}::int[],
+        ${matches.map(match => match.team2Score)}::int[],
+        ${matches.map(match => match.completedAt?.toISOString() ?? null)}::timestamptz[],
+        ${matches.map(match => match.version)}::int[],
+        ${this.query.array(matches.map(match => match.rated ?? true), 16)}::boolean[]
+      ) as v(id, status, team1_score, team2_score, completed_at, version, rated)
+      where m.id = v.id and m.version = v.version - 1
+      returning m.id
+    `;
+    if (rows.length !== matches.length) throw new RepositoryConflictError();
   }
 
   async updateMatchPlayers(matchId: string, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {

@@ -1,8 +1,28 @@
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SessionManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/session-manager-client";
 import type { AttendanceRecord, PlayerRecord, RoundProposal, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
+
+const mockStorage: Record<string, string> = {};
+const storageMock: Storage = {
+  getItem: (key: string) => mockStorage[key] || null,
+  setItem: (key: string, val: string) => {
+    mockStorage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete mockStorage[key];
+  },
+  clear: () => {
+    for (const key of Object.keys(mockStorage)) {
+      delete mockStorage[key];
+    }
+  },
+  key: (index: number) => Object.keys(mockStorage)[index] || null,
+  get length() {
+    return Object.keys(mockStorage).length;
+  },
+};
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -13,6 +33,24 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("SessionManagerClient Component", () => {
+  beforeEach(() => {
+    storageMock.clear();
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => true,
+        localStorage: storageMock,
+      },
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, "localStorage", {
+      value: storageMock,
+      writable: true,
+      configurable: true,
+    });
+  });
   const groupId = "grp_100";
   const sessionId = "ses_200";
 
@@ -489,4 +527,213 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain('data-testid="end-session-button"');
     expect(html).toContain("End Session");
   });
+
+  it("renders unified attendance toggle for managers and badges for non-managers", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+
+    // p1 is present, p2 has left
+    const mixedAttendance: AttendanceRecord[] = [
+      { sessionId, playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p2", joinedRound: 1, leftRound: 1 },
+      { sessionId, playerId: "p3", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p4", joinedRound: 1, leftRound: null },
+    ];
+
+    const managerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={mixedAttendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+      />
+    );
+
+    // Manager sees unified toggle with Present and Left options in one control
+    expect(managerHtml).toContain('data-testid="attendance-toggle-Alice"');
+    expect(managerHtml).toContain('data-testid="attendance-present-Alice"');
+    expect(managerHtml).toContain('data-testid="attendance-left-Alice"');
+    // Alice is present -> Present has aria-pressed="true", Left has aria-pressed="false"
+    expect(managerHtml).toMatch(/<button[^>]*aria-pressed="true"[^>]*data-testid="attendance-present-Alice"/);
+    expect(managerHtml).toMatch(/<button[^>]*aria-pressed="false"[^>]*data-testid="attendance-left-Alice"/);
+
+    // Bob has left -> Left has aria-pressed="true", Present has aria-pressed="false"
+    expect(managerHtml).toContain('data-testid="attendance-toggle-Bob"');
+    expect(managerHtml).toMatch(/<button[^>]*aria-pressed="false"[^>]*data-testid="attendance-present-Bob"/);
+    expect(managerHtml).toMatch(/<button[^>]*aria-pressed="true"[^>]*data-testid="attendance-left-Bob"/);
+
+    // Manager can pin players in attendance list
+    expect(managerHtml).toContain('data-testid="pin-player-Alice"');
+    expect(managerHtml).toContain('data-testid="pin-player-Bob"');
+
+    // Present and Not Present sections are separated with counts
+    expect(managerHtml).toContain("Present (3)");
+    expect(managerHtml).toContain("Not Present / Left (1)");
+    expect(managerHtml).toContain('data-testid="attendance-present-list"');
+    expect(managerHtml).toContain('data-testid="attendance-not-present-list"');
+
+    const nonManagerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={mixedAttendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={false}
+        isOrganizer={false}
+        initialOpenSettingsModal={true}
+      />
+    );
+
+    // Non-manager cannot toggle attendance or pin players; sees read-only status
+    expect(nonManagerHtml).not.toContain('data-testid="attendance-toggle-Alice"');
+    expect(nonManagerHtml).not.toContain('data-testid="pin-player-Alice"');
+    expect(nonManagerHtml).toContain("Present");
+    expect(nonManagerHtml).toContain("Left");
+  });
+
+  it("turns the pin button black when pinned without displaying a little pin or text label next to the player name in session settings", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+
+    localStorage.setItem(`pickleball_pinned_players_${groupId}`, JSON.stringify([players[0].id]));
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+      />
+    );
+
+    // Pin button is styled black when pinned
+    expect(html).toMatch(/<button[^>]*data-testid="pin-player-Alice"[^>]*class="[^"]*bg-black/);
+
+    // No little pin icon or text label next to Alice's name
+    expect(html).not.toContain('data-testid="pinned-indicator-Alice"');
+    expect(html).not.toMatch(/Alice<\/span>\s*<span[^>]*>[^<]*Pinned<\/span>/);
+
+    localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
+  });
+
+  it("renders session settings tabs in correct order: Attendance, Court Configuration, Partners, Partner Synergies", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+
+    const managerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+      />
+    );
+
+    // Verify tabs exist and labels match
+    expect(managerHtml).toContain('id="tab-attendance"');
+    expect(managerHtml).toContain('id="tab-court-config"');
+    expect(managerHtml).toContain('id="tab-partners"');
+    expect(managerHtml).toContain('id="tab-synergies"');
+
+    // Verify modal header & tabs container is static (shrink-0) and tab content container is scrollable (overflow-y-auto flex-1)
+    expect(managerHtml).toContain("shrink-0 space-y-4 bg-white");
+    expect(managerHtml).toContain("flex-1 overflow-y-auto space-y-4");
+
+    // Verify exact ordering in HTML: attendance -> court_config -> partners -> synergies
+    const attendanceIndex = managerHtml.indexOf('id="tab-attendance"');
+    const courtConfigIndex = managerHtml.indexOf('id="tab-court-config"');
+    const partnersIndex = managerHtml.indexOf('id="tab-partners"');
+    const synergiesIndex = managerHtml.indexOf('id="tab-synergies"');
+
+    expect(attendanceIndex).toBeGreaterThan(-1);
+    expect(courtConfigIndex).toBeGreaterThan(attendanceIndex);
+    expect(partnersIndex).toBeGreaterThan(courtConfigIndex);
+    expect(synergiesIndex).toBeGreaterThan(partnersIndex);
+
+    // Verify non-manager only sees Attendance and Partners tabs
+    const nonManagerHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={false}
+        isOrganizer={false}
+        initialOpenSettingsModal={true}
+      />
+    );
+
+    expect(nonManagerHtml).toContain('id="tab-attendance"');
+    expect(nonManagerHtml).toContain('id="tab-partners"');
+    expect(nonManagerHtml).not.toContain('id="tab-court-config"');
+    expect(nonManagerHtml).not.toContain('id="tab-synergies"');
+
+    // Verify panels render for different tabs
+    const courtConfigPanelHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+        initialSettingsModalTab="court_config"
+      />
+    );
+    expect(courtConfigPanelHtml).toContain('id="tabpanel-court-config"');
+    expect(courtConfigPanelHtml).toContain("Save Court Configuration");
+    expect(courtConfigPanelHtml).toContain('aria-label="Players on court 1"');
+    expect(courtConfigPanelHtml).toContain("text-xs font-bold text-black");
+
+    const partnersPanelHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+        initialSettingsModalTab="partners"
+      />
+    );
+    expect(partnersPanelHtml).toContain('id="tabpanel-partners"');
+  });
 });
+

@@ -11,10 +11,12 @@ import type {
   PairMatchSynergyResult,
   MatchPlayerRecord,
   MatchRecord,
+  MatchResultContext,
   PlayerRecord,
   RatingSnapshot,
   ReplayMatch,
   RoundRecord,
+  RoundCompletionContext,
   RoundSitRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -22,6 +24,7 @@ import type {
 } from "@/lib/domain/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 
 interface InMemoryState {
   groups: GroupRecord[];
@@ -751,6 +754,15 @@ export class InMemoryRepositories implements DomainRepository {
     return this.state.rounds.find((round) => round.id === roundId) ?? null;
   }
 
+  async getRoundCompletionContext(roundId: string): Promise<RoundCompletionContext | null> {
+    const round = this.state.rounds.find(item => item.id === roundId);
+    if (!round) return null;
+    return { round, pendingMatches: this.state.matches
+      .filter(match => match.roundId === roundId && match.status === "pending")
+      .sort((a, b) => a.courtNumber - b.courtNumber)
+      .map(match => ({ match, playerCount: this.state.matchPlayers.filter(player => player.matchId === match.id).length })) };
+  }
+
   async getMatch(matchId: string) {
     return this.state.matches.find((match) => match.id === matchId) ?? null;
   }
@@ -821,6 +833,26 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.matches = this.state.matches.map((item) =>
       item.id === match.id ? structuredClone(match) : item,
     );
+    this.writeCount += 1;
+  }
+
+  async getMatchResultContexts(matchIds: readonly string[]): Promise<readonly MatchResultContext[]> {
+    const ids = new Set(matchIds);
+    return this.state.matches.filter(match => ids.has(match.id)).flatMap(match => {
+      const round = this.state.rounds.find(item => item.id === match.roundId);
+      const session = round && this.state.sessions.find(item => item.id === round.sessionId);
+      return round && session ? [{ match: structuredClone(match), groupId: session.groupId,
+        sessionId: session.id, roundStatus: round.status, sessionStatus: session.status }] : [];
+    });
+  }
+
+  async updateMatches(matches: readonly MatchRecord[]): Promise<void> {
+    if (matches.length === 0) return;
+    if (new Set(matches.map(match => match.id)).size !== matches.length || matches.some(match => !this.state.matches.some(item => item.id === match.id && item.version === match.version - 1))) {
+      throw new RepositoryConflictError();
+    }
+    const updates = new Map(matches.map(match => [match.id, match]));
+    this.state.matches = this.state.matches.map(match => structuredClone(updates.get(match.id) ?? match));
     this.writeCount += 1;
   }
 

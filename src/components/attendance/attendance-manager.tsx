@@ -5,7 +5,13 @@ import React, { useMemo, useState } from "react";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
 import { RatingSlider } from "@/components/ui/rating-slider";
+import { PinIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDupr } from "@/lib/domain/rating-display";
+import {
+  sortPlayersWithPinned,
+  togglePinnedPlayer,
+  usePinnedPlayerIds,
+} from "@/lib/storage/pinned-players";
 
 export interface AttendancePlayer {
   readonly id: string;
@@ -28,6 +34,7 @@ export interface AttendanceManagerProps {
 }
 
 export function AttendanceManager({
+  groupId,
   players,
   selectedPlayerIds: initialSelected = [],
   courtCount: initialCourts = 2,
@@ -38,18 +45,29 @@ export function AttendanceManager({
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
-  const sortedPlayers = useMemo(
-    () =>
-      [...players].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      ),
-    [players],
-  );
-  const initialSelectedCount = initialSelected.length || players.length;
-  const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
+  const pinnedPlayerIds = usePinnedPlayerIds(groupId);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(initialSelected.length > 0 ? initialSelected : players.map((p) => p.id)),
   );
+
+  const sortedPlayers = useMemo(
+    () => sortPlayersWithPinned(players, pinnedPlayerIds, selectedIds),
+    [players, pinnedPlayerIds, selectedIds],
+  );
+
+  const displayedPlayers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return sortedPlayers;
+    return sortedPlayers.filter((p) => p.name.toLowerCase().includes(q));
+  }, [sortedPlayers, searchQuery]);
+
+  const pinnedCount = useMemo(
+    () => players.filter((p) => pinnedPlayerIds.has(p.id)).length,
+    [players, pinnedPlayerIds],
+  );
+  const initialSelectedCount = initialSelected.length || players.length;
+  const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
   const [courts, setCourts] = useState<number>(defaultCourtCount);
   const [courtPlayerCounts, setCourtPlayerCounts] = useState<(2 | 3 | 4)[]>(() => {
     let remaining = initialSelectedCount;
@@ -166,17 +184,17 @@ export function AttendanceManager({
           </button>
 
         </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {courtPlayerCounts.slice(0, courts).map((size, index) => (
-            <label key={index} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black p-3 font-bold">
-              <span>Court {index + 1}</span>
+            <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+              <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
               <select
                 aria-label={`Players on court ${index + 1}`}
                 value={size}
                 onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
-                className="rounded-lg border-2 border-black px-2 py-1"
+                className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
               >
-                {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt}>{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
+                {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
               </select>
             </label>
           ))}
@@ -257,33 +275,111 @@ export function AttendanceManager({
           </div>
         </div>
 
-        {/* Player Roster Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {sortedPlayers.map((player) => {
-            const isSelected = selectedIds.has(player.id);
-            return (
-              <label
-                key={player.id}
-                htmlFor={`player-check-${player.id}`}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
-                  isSelected
-                    ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
-                }`}
+        {/* Search & Filter Bar */}
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="relative flex-1">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+              <SearchIcon className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search players by name..."
+              aria-label="Search players"
+              data-testid="attendance-player-search"
+              className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear player search"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
               >
-                <input
-                  id={`player-check-${player.id}`}
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => togglePlayer(player.id)}
-                  className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer"
-                />
-                <span className="font-black text-base flex-1">{player.name}</span>
-                <span className="text-xs font-bold text-neutral-600">{formatDupr(player.rating)}</span>
-              </label>
-            );
-          })}
+                ✕
+              </button>
+            )}
+          </div>
+          {pinnedCount > 0 && (
+            <div
+              data-testid="attendance-pinned-badge"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black bg-neutral-100 text-xs font-black text-black shrink-0 shadow-[1px_1px_0px_0px_#000]"
+            >
+              <PinIcon className="w-3.5 h-3.5" filled />
+              <span>{pinnedCount} Pinned</span>
+            </div>
+          )}
         </div>
+
+        {/* Player Roster Grid */}
+        {displayedPlayers.length === 0 ? (
+          <div className="p-6 text-center rounded-xl border-2 border-dashed border-neutral-300">
+            <p className="text-sm font-bold text-neutral-500">
+              No players match &ldquo;{searchQuery}&rdquo;
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="mt-2 text-xs font-black uppercase text-black underline cursor-pointer"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {displayedPlayers.map((player) => {
+              const isSelected = selectedIds.has(player.id);
+              const isPinned = pinnedPlayerIds.has(player.id);
+              return (
+                <label
+                  key={player.id}
+                  htmlFor={`player-check-${player.id}`}
+                  data-testid={`player-card-${player.name}`}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                    isSelected
+                      ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
+                      : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                  }`}
+                >
+                  <input
+                    id={`player-check-${player.id}`}
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => togglePlayer(player.id)}
+                    className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-black text-base truncate">{player.name}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-neutral-600 shrink-0">
+                    {formatDupr(player.rating)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      togglePinnedPlayer(groupId, player.id);
+                    }}
+                    aria-label={isPinned ? `Unpin ${player.name}` : `Pin ${player.name} to top`}
+                    title={isPinned ? "Unpin player" : "Pin player to top"}
+                    data-testid={`pin-player-${player.name}`}
+                    className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                      isPinned
+                        ? "bg-black text-[#ccff00] hover:bg-neutral-800"
+                        : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                    }`}
+                  >
+                    <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
+                  </button>
+                </label>
+              );
+            })}
+          </div>
+        )}
 
         {/* Add Guest / Quick Player Form */}
         <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-2">

@@ -1,0 +1,37 @@
+{
+  "source": "/Users/nathanglen/.codex/worktrees/stay-together-partners/Pickleball Matcher",
+  "database": "Neon test branch; temporary tables only",
+  "courts": 4,
+  "players": 16,
+  "warmupSamples": 1,
+  "samples": [
+    {
+      "iteration": 0,
+      "ms": 863.1739580000003,
+      "queries": 12
+    },
+    {
+      "iteration": 1,
+      "ms": 870.8563340000001,
+      "queries": 12
+    },
+    {
+      "iteration": 2,
+      "ms": 852.1600000000008,
+      "queries": 12
+    },
+    {
+      "iteration": 3,
+      "ms": 863.2214590000003,
+      "queries": 12
+    },
+    {
+      "iteration": 4,
+      "ms": 870.9978750000009,
+      "queries": 12
+    }
+  ],
+  "medianMs": 863.2214590000003,
+  "minMs": 852.1600000000008,
+  "maxMs": 870.9978750000009
+}

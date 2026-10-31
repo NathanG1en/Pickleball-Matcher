@@ -1,0 +1,108 @@
+{
+  "sessionId": "session_27858bcf-401",
+  "poolSize": 10,
+  "database": "Neon test branch; SELECTs only",
+  "scope": "Proposal preparation read sequence; not full page render",
+  "rounds": 3,
+  "matches": 18,
+  "samples": [
+    {
+      "variant": "duplicate",
+      "iteration": 0,
+      "ms": 564.1792500000001,
+      "queries": 15
+    },
+    {
+      "variant": "reused",
+      "iteration": 0,
+      "ms": 294.79020900000023,
+      "queries": 8
+    },
+    {
+      "variant": "reused",
+      "iteration": 1,
+      "ms": 376.49762499999997,
+      "queries": 8
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 1,
+      "ms": 625.2491249999998,
+      "queries": 15
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 2,
+      "ms": 587.7327080000005,
+      "queries": 15
+    },
+    {
+      "variant": "reused",
+      "iteration": 2,
+      "ms": 456.16020800000024,
+      "queries": 8
+    },
+    {
+      "variant": "reused",
+      "iteration": 3,
+      "ms": 307.9974999999995,
+      "queries": 8
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 3,
+      "ms": 517.2499159999998,
+      "queries": 15
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 4,
+      "ms": 525.876209,
+      "queries": 15
+    },
+    {
+      "variant": "reused",
+      "iteration": 4,
+      "ms": 414.15508299999965,
+      "queries": 8
+    },
+    {
+      "variant": "reused",
+      "iteration": 5,
+      "ms": 249.13125000000036,
+      "queries": 8
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 5,
+      "ms": 530.8789999999999,
+      "queries": 15
+    },
+    {
+      "variant": "duplicate",
+      "iteration": 6,
+      "ms": 520.8687499999996,
+      "queries": 15
+    },
+    {
+      "variant": "reused",
+      "iteration": 6,
+      "ms": 236.71037500000057,
+      "queries": 8
+    }
+  ],
+  "summary": {
+    "duplicate": {
+      "n": 7,
+      "medianMs": 530.8789999999999,
+      "minMs": 517.2499159999998,
+      "maxMs": 625.2491249999998
+    },
+    "reused": {
+      "n": 7,
+      "medianMs": 307.9974999999995,
+      "minMs": 236.71037500000057,
+      "maxMs": 456.16020800000024
+    }
+  }
+}

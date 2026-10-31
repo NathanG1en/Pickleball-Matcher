@@ -145,6 +145,12 @@ export interface RoundRecord {
   version: number;
 }
 
+/** Fresh completion input; resolved matches and unrelated round history are omitted. */
+export interface RoundCompletionContext {
+  readonly round: RoundRecord;
+  readonly pendingMatches: readonly { readonly match: MatchRecord; readonly playerCount: number }[];
+}
+
 export interface MatchRecord {
   readonly id: string;
   readonly roundId: string;
@@ -165,6 +171,15 @@ export interface MatchPlayerRecord {
   ratingAfter: number | null;
 }
 
+/** Context needed to validate and save a batch without per-match parent reads. */
+export interface MatchResultContext {
+  readonly match: MatchRecord;
+  readonly groupId: string;
+  readonly sessionId: string;
+  readonly roundStatus: RoundRecord["status"];
+  readonly sessionStatus: SessionRecord["status"];
+}
+
 export interface RoundSitRecord {
   readonly roundId: string;
   readonly playerId: string;
@@ -178,6 +193,14 @@ export interface StartedRoundRecord {
 }
 
 export type RoundProposal = GeneratedRound;
+
+/** Server-loaded inputs for read-only proposal calculation within one request. */
+export interface RoundProposalSnapshot {
+  readonly session: SessionRecord;
+  readonly players: readonly PlayerRecord[];
+  readonly attendance: readonly AttendanceRecord[];
+  readonly rounds: readonly StartedRoundRecord[];
+}
 
 export interface ReplayMatch {
   readonly id: string;
@@ -233,6 +256,10 @@ export interface RecordResultInput {
   readonly matchId: string;
   readonly team1Score: number;
   readonly team2Score: number;
+}
+
+export interface BatchRecordResultInput extends RecordResultInput {
+  readonly matchVersion?: number;
 }
 
 export type TournamentDivision =
