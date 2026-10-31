@@ -20,12 +20,12 @@ test("organizer saves and refreshes session partners before starting a paired ro
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page).toHaveURL(/\/sessions\/session_/);
   await page.getByRole("button", { name: "Session Settings", exact: true }).click();
-  await page.getByRole("tab", { name: "Stay Together", exact: true }).click();
+  await page.getByRole("tab", { name: "Partners", exact: true }).click();
   await expect(page.getByTestId("stay-together-settings")).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.reload();
   await page.getByRole("button", { name: "Session Settings", exact: true }).click();
-  await page.getByRole("tab", { name: "Stay Together", exact: true }).click();
+  await page.getByRole("tab", { name: "Partners", exact: true }).click();
   await expect(page.getByTestId("stay-together-settings").getByRole("listitem").filter({ hasText: "Alex Friend" }).filter({ hasText: "Sam Friend" })).toBeVisible();
   await page.getByRole("combobox", { name: "First friend", exact: true }).selectOption({ label: "Casey Friend" });
   await page.getByRole("combobox", { name: "Second friend", exact: true }).selectOption({ label: "Drew Friend" });
@@ -34,7 +34,7 @@ test("organizer saves and refreshes session partners before starting a paired ro
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.reload();
   await page.getByRole("button", { name: "Session Settings", exact: true }).click();
-  await page.getByRole("tab", { name: "Stay Together", exact: true }).click();
+  await page.getByRole("tab", { name: "Partners", exact: true }).click();
   await expect(page.getByTestId("stay-together-settings").getByRole("listitem").filter({ hasText: "Casey Friend" }).filter({ hasText: "Drew Friend" })).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   const soloNotice = page.getByRole("status").filter({ hasText: "is sitting this round to rotate playing time" });
