@@ -1366,24 +1366,26 @@ export class PostgresRepositories implements DomainRepository {
     `;
     if (roundRows.length === 0) return [];
     const roundIds = roundRows.map((row) => row.id);
-    const matchRows = await this.query<MatchRow[]>`
-      select id, round_id, court_number, status, team1_score, team2_score,
-             completed_at, version, rated
-      from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
-    `;
-    const matchIds = matchRows.map((row) => row.id);
-    const memberRows =
-      matchIds.length === 0
-        ? []
-        : await this.query<MatchPlayerRow[]>`
-            select match_id, player_id, team, rating_before, rating_after
-            from match_players where match_id in ${this.query(matchIds)}
-            order by match_id, team, player_id
-          `;
-    const sitRows = await this.query<SitRow[]>`
-      select round_id, player_id from round_sits
-      where round_id in ${this.query(roundIds)} order by round_id, player_id
-    `;
+    // Anchor children to the rounds above, while removing the dependency on a
+    // separate match-ID read. Keep this.query so transactional callers stay on
+    // their pinned connection; pooled callers can run these reads concurrently.
+    const [matchRows, memberRows, sitRows] = await Promise.all([
+      this.query<MatchRow[]>`
+        select id, round_id, court_number, status, team1_score, team2_score,
+               completed_at, version, rated
+        from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
+      `,
+      this.query<MatchPlayerRow[]>`
+        select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
+        from match_players mp join matches m on m.id = mp.match_id
+        where m.round_id in ${this.query(roundIds)}
+        order by mp.match_id, mp.team, mp.player_id
+      `,
+      this.query<SitRow[]>`
+        select round_id, player_id from round_sits
+        where round_id in ${this.query(roundIds)} order by round_id, player_id
+      `,
+    ]);
 
     return roundRows.map((roundRow) => {
       const matches = matchRows.filter((row) => row.round_id === roundRow.id);
