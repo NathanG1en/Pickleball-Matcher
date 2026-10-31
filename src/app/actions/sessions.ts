@@ -19,8 +19,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
-import { replayRatings } from "@/lib/domain/rating-replay";
-import { replaySynergies } from "@/lib/domain/synergy-replay";
+import { replayRatingsAndSynergies, replaySynergies } from "@/lib/domain/synergy-replay";
 import {
   changeAttendanceSchema,
   completeRoundSchema,
@@ -431,8 +430,7 @@ export async function deleteSessionAction(
     await repository.transaction(async transaction => {
       await transaction.lockSynergyState();
       await transaction.deleteSession(session.id, session.groupId);
-      await replayRatings(session.groupId, transaction);
-      await replaySynergies(transaction);
+      await replayRatingsAndSynergies(session.groupId, transaction);
     });
 
     revalidatePath(`/g/${parsed.data.groupId}`);
@@ -743,9 +741,10 @@ export async function submitSessionPickupGameAction(
       await repo.insertMatch(match, matchPlayers);
 
       if (parsed.data.rated) {
-        await replayRatings(session.groupId, repo);
+        await replayRatingsAndSynergies(session.groupId, repo);
+      } else {
+        await replaySynergies(repo);
       }
-      await replaySynergies(repo);
 
       return { match, matchPlayers };
     });

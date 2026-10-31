@@ -1,0 +1,421 @@
+{
+  "scope": "Warm replay transaction only, identical writes; not full browser/action latency",
+  "database": "Allowlisted Neon test branch, connection-local temporary tables",
+  "poolSize": 1,
+  "players": 16,
+  "rounds": 30,
+  "sourceMatches": 120,
+  "replayMatches": 119,
+  "warmupSamplesPerVariant": 1,
+  "phaseNote": "Method elapsed times include network and mapping; lock-call time includes round trips, not isolated lock waiting. Total also includes calculation, transaction control and other overhead.",
+  "samples": [
+    {
+      "iteration": 0,
+      "variant": "legacy",
+      "ms": 1454.3267919999998,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.82837499999732
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 75.28204199999891
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 83.25887499999953
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 453.29854200000045
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 695.1530830000011
+        }
+      }
+    },
+    {
+      "iteration": 0,
+      "variant": "shared",
+      "ms": 1013.2714999999989,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 72.68066600000384
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 113.92212499999732
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 42.69104100000186
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 591.044084000001
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 113.1136669999978
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "variant": "shared",
+      "ms": 894.9388330000002,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 72.52850000000035
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 36.149208999999246
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 42.35695900000064
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 558.2225419999995
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 108.30158300000039
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "variant": "legacy",
+      "ms": 1002.2078750000001,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.51491699999679
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 73.60804199999984
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 87.06187399999544
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 512.2568339999998
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 183.8896249999998
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "variant": "legacy",
+      "ms": 977.3092499999984,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 73.36275100000057
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 150.96595899999738
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 84.92779200000223
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 487.68295800000124
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 107.03083400000105
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "variant": "shared",
+      "ms": 985.5633339999986,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 148.30966600000102
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 36.73687499999869
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 40.797583999999915
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 578.2361669999991
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 107.67050000000017
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "variant": "shared",
+      "ms": 1044.5150839999988,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 70.80725000000166
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 36.56937499999913
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 41.622707999998966
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 599.0407919999998
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 222.74762499999997
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "variant": "legacy",
+      "ms": 1044.247625,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 156.52291700000205
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 72.54216599999927
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 81.79770800000188
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 552.5369580000006
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 106.83941600000253
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "variant": "legacy",
+      "ms": 981.1416250000002,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.72704199999498
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 71.99425100000008
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 83.89333400000032
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 491.2271249999976
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 107.3368339999979
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "variant": "shared",
+      "ms": 852.4923750000016,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.30845899999986
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 36.02899999999863
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 48.39220800000112
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 516.5578330000026
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 106.68112499999916
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "variant": "shared",
+      "ms": 882.1833750000005,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.43899999999849
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 36.10729199999696
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 40.92891700000109
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 472.73320800000147
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 109.67716600000131
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "variant": "legacy",
+      "ms": 971.530625000003,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 71.68324999999822
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 73.23937500000102
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 88.22520799999984
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 487.6266660000001
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 175.1805830000012
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "variant": "legacy",
+      "ms": 1063.1585840000007,
+      "queries": 15,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 125.76383400000486
+        },
+        "listPlayers": {
+          "calls": 2,
+          "ms": 73.54604099999779
+        },
+        "listReplayMatches": {
+          "calls": 2,
+          "ms": 163.20462600000246
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 518.6990409999999
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 108.84308400000009
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "variant": "shared",
+      "ms": 1010.6122499999983,
+      "queries": 13,
+      "phasesMs": {
+        "lockSynergyState": {
+          "calls": 2,
+          "ms": 73.7779589999991
+        },
+        "listPlayers": {
+          "calls": 1,
+          "ms": 98.27108300000691
+        },
+        "listReplayMatches": {
+          "calls": 1,
+          "ms": 44.6518750000032
+        },
+        "replaceRatingState": {
+          "calls": 1,
+          "ms": 548.1108749999985
+        },
+        "replaceSynergyState": {
+          "calls": 1,
+          "ms": 108.62337500000285
+        }
+      }
+    }
+  ],
+  "summary": {
+    "legacy": {
+      "n": 7,
+      "queries": 15,
+      "medianMs": 1002.2078750000001,
+      "minMs": 971.530625000003,
+      "maxMs": 1454.3267919999998
+    },
+    "shared": {
+      "n": 7,
+      "queries": 13,
+      "medianMs": 985.5633339999986,
+      "minMs": 852.4923750000016,
+      "maxMs": 1044.5150839999988
+    }
+  }
+}

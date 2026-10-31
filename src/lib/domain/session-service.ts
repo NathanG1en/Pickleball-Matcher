@@ -3,7 +3,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { DomainError } from "@/lib/domain/errors";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
-import { replaySynergies } from "@/lib/domain/synergy-replay";
+import { replayRatingsAndSynergies, replaySynergies } from "@/lib/domain/synergy-replay";
 import type {
   AttendanceRecord,
   ChangeAttendanceInput,
@@ -459,9 +459,10 @@ export class SessionService {
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
-      await replayRatings(session.groupId, repository);
       if (round.status === "completed" || session.status === "completed") {
-        await replaySynergies(repository);
+        await replayRatingsAndSynergies(session.groupId, repository);
+      } else {
+        await replayRatings(session.groupId, repository);
       }
       return updated;
     });
@@ -515,9 +516,10 @@ export class SessionService {
         };
       });
       await repository.updateMatches(updatedMatches);
-      await replayRatings(first.groupId, repository);
       if (contexts.some(context => context.roundStatus === "completed" || context.sessionStatus === "completed")) {
-        await replaySynergies(repository);
+        await replayRatingsAndSynergies(first.groupId, repository);
+      } else {
+        await replayRatings(first.groupId, repository);
       }
       return updatedMatches;
     });
@@ -545,8 +547,7 @@ export class SessionService {
         version: match.version + 1,
       };
       await repository.updateMatch(updated);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
       return updated;
     });
   }
@@ -559,8 +560,7 @@ export class SessionService {
       const round = await requiredRound(repository, match.roundId);
       const session = await requiredSession(repository, round.sessionId);
       await repository.deleteMatch(matchId);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
     });
   }
 
@@ -612,8 +612,7 @@ export class SessionService {
         currentRoundNumber: Math.max(0, session.currentRoundNumber - 1),
         version: session.version + 1,
       });
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
       return latest.round;
     });
   }
@@ -636,8 +635,7 @@ export class SessionService {
         version: session.version + 1,
       };
       await repository.updateSession(updatedSession);
-      await replayRatings(session.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(session.groupId, repository);
 
       const [players, attendance, remainingRounds] = await Promise.all([
         repository.listPlayers(session.groupId),
@@ -698,9 +696,10 @@ export class SessionService {
       };
       await repository.updateSession(updated);
       if (hadUnfinishedMatches) {
-        await replayRatings(session.groupId, repository);
+        await replayRatingsAndSynergies(session.groupId, repository);
+      } else {
+        await replaySynergies(repository);
       }
-      await replaySynergies(repository);
       return updated;
     });
   }

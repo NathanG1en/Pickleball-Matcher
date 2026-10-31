@@ -21,8 +21,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
-import { replayRatings } from "@/lib/domain/rating-replay";
-import { replaySynergies } from "@/lib/domain/synergy-replay";
+import { replayRatingsAndSynergies } from "@/lib/domain/synergy-replay";
 import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const startOpenPlaySessionSchema = z.object({
@@ -483,8 +482,7 @@ export async function submitOpenPlayGameAction(
 
       await repository.insertMatch(match, matchPlayers);
 
-      await replayRatings(parsed.data.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(parsed.data.groupId, repository);
       return match;
     });
 
@@ -628,8 +626,7 @@ export async function updateOpenPlayGameAction(
       ];
       await repository.updateMatchPlayers(match.id, matchPlayers);
 
-      await replayRatings(parsed.data.groupId, repository);
-      await replaySynergies(repository);
+      await replayRatingsAndSynergies(parsed.data.groupId, repository);
       return updatedMatch;
     });
 
@@ -689,8 +686,7 @@ export async function endOpenPlaySessionAction(
       };
       await transaction.updateSession(updatedSession);
 
-      await replayRatings(parsed.data.groupId, transaction);
-      await replaySynergies(transaction);
+      await replayRatingsAndSynergies(parsed.data.groupId, transaction);
 
       return updatedSession;
     });
