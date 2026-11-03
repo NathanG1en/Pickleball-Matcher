@@ -388,6 +388,17 @@ export function SessionManagerClient({
     if (!showSessionSettingsModal && modalTab !== "synergies") {
       // Still compute if needed, but condition explicitly references state
     }
+    if (isRoundInProgress && latestStarted) {
+      return latestStarted.matches.map((m) => ({
+        courtNumber: m.courtNumber,
+        team1: (latestStarted.matchPlayers ?? [])
+          .filter((mp) => mp.matchId === m.id && mp.team === 1)
+          .map((mp) => mp.playerId),
+        team2: (latestStarted.matchPlayers ?? [])
+          .filter((mp) => mp.matchId === m.id && mp.team === 2)
+          .map((mp) => mp.playerId),
+      }));
+    }
     if (activeProposal) {
       if (typeof window !== "undefined") {
         const draftKey = lineupDraftKey(session.id);
@@ -408,17 +419,6 @@ export function SessionManagerClient({
         courtNumber: c.courtNumber,
         team1: c.team1,
         team2: c.team2,
-      }));
-    }
-    if (isRoundInProgress && latestStarted) {
-      return latestStarted.matches.map((m) => ({
-        courtNumber: m.courtNumber,
-        team1: (latestStarted.matchPlayers ?? [])
-          .filter((mp) => mp.matchId === m.id && mp.team === 1)
-          .map((mp) => mp.playerId),
-        team2: (latestStarted.matchPlayers ?? [])
-          .filter((mp) => mp.matchId === m.id && mp.team === 2)
-          .map((mp) => mp.playerId),
       }));
     }
     return [];

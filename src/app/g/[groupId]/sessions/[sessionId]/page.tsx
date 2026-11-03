@@ -111,7 +111,7 @@ export default async function ActiveSessionPage({
   }
 
   const accountIds = [...new Set(players.flatMap((player) => player.accountId ? [player.accountId] : []))];
-  const pairSynergies = initialProposal
+  const pairSynergies = accountIds.length >= 2
     ? buildPairSynergies(await repository.listPairSynergies(accountIds))
     : {};
 
