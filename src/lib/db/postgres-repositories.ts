@@ -1756,56 +1756,54 @@ export class PostgresRepositories implements DomainRepository {
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ) {
     if (players.length > 0) {
-      const ids = players.map((p) => p.id);
-      const ratings = players.map((p) => p.rating);
-      const games = players.map((p) => p.ratedGamesPlayed);
-      await this.query`
-        update players as p
-        set rating = v.rating,
-            rated_games_played = v.games
-        from unnest(${ids}::text[], ${ratings}::float8[], ${games}::int[]) as v(id, rating, games)
-        where p.id = v.id
-      `;
-
+      // Preserve the existing last-input-wins rule for account aliases. Roster
+      // propagation must also run when the account itself is already current.
       const accountMap = new Map<string, { rating: number; ratedGamesPlayed: number }>();
-      for (const p of players) {
-        if (p.accountId) {
-          accountMap.set(p.accountId, { rating: p.rating, ratedGamesPlayed: p.ratedGamesPlayed });
-        }
+      for (const player of players) {
+        if (player.accountId) accountMap.set(player.accountId, player);
       }
-      if (accountMap.size > 0) {
-        const accountIds = [...accountMap.keys()];
-        const accRatings = accountIds.map((id) => accountMap.get(id)!.rating);
-        const accGames = accountIds.map((id) => accountMap.get(id)!.ratedGamesPlayed);
-        await this.query`
+      const accountIds = [...accountMap.keys()];
+      await this.query`
+        with desired_players as (
+          select * from unnest(
+            ${players.map(player => player.id)}::text[],
+            ${players.map(player => player.rating)}::float8[],
+            ${players.map(player => player.ratedGamesPlayed)}::int[]
+          ) as v(id, rating, games)
+        ), desired_accounts as (
+          select * from unnest(
+            ${accountIds}::text[],
+            ${accountIds.map(id => accountMap.get(id)!.rating)}::float8[],
+            ${accountIds.map(id => accountMap.get(id)!.ratedGamesPlayed)}::int[]
+          ) as v(account_id, rating, games)
+        ), updated_accounts as (
           update player_accounts as a
-          set rating = v.rating,
-              rated_games_played = v.games
-          from unnest(${accountIds}::text[], ${accRatings}::float8[], ${accGames}::int[]) as v(account_id, rating, games)
+          set rating = v.rating, rated_games_played = v.games
+          from desired_accounts v
           where a.id = v.account_id
-        `;
-        await this.query`
-          update players as p
-          set rating = v.rating,
-              rated_games_played = v.games
-          from unnest(${accountIds}::text[], ${accRatings}::float8[], ${accGames}::int[]) as v(account_id, rating, games)
-          where p.account_id = v.account_id
-        `;
-      }
+            and (a.rating, a.rated_games_played) is distinct from (v.rating, v.games)
+          returning a.id
+        ), desired_rosters as (
+          select p.id,
+                 case when a.account_id is not null then a.rating else d.rating end as rating,
+                 case when a.account_id is not null then a.games else d.games end as games
+          from players p
+          left join desired_players d on d.id = p.id
+          left join desired_accounts a on a.account_id = p.account_id
+          where d.id is not null or a.account_id is not null
+        )
+        update players as p
+        set rating = v.rating, rated_games_played = v.games
+        from desired_rosters v
+        where p.id = v.id
+          and (p.rating, p.rated_games_played) is distinct from (v.rating, v.games)
+      `;
     }
-
-    await this.query`
-      update match_players mp set rating_before = null, rating_after = null
-      from matches m, rounds r, sessions s
-      where mp.match_id = m.id and m.round_id = r.id and r.session_id = s.id
-        and ${groupId ? this.query`s.group_id = ${groupId}` : this.query`1=1`}
-    `;
 
     const snapshotMatchIds: string[] = [];
     const snapshotPlayerIds: string[] = [];
     const snapshotRatingBefores: (number | null)[] = [];
     const snapshotRatingAfters: (number | null)[] = [];
-
     for (const [matchId, entries] of snapshots) {
       for (const entry of entries) {
         snapshotMatchIds.push(matchId);
@@ -1815,20 +1813,33 @@ export class PostgresRepositories implements DomainRepository {
       }
     }
 
-    if (snapshotMatchIds.length > 0) {
-      await this.query`
-        update match_players as mp
-        set rating_before = v.rating_before,
-            rating_after = v.rating_after
-        from unnest(
+    // Reconcile once: scoped rows absent from the replay become null; supplied
+    // snapshots apply across groups, matching the global replay contract.
+    await this.query`
+      with desired_snapshots as (
+        select * from unnest(
           ${snapshotMatchIds}::text[],
           ${snapshotPlayerIds}::text[],
           ${snapshotRatingBefores}::float8[],
           ${snapshotRatingAfters}::float8[]
         ) as v(match_id, player_id, rating_before, rating_after)
-        where mp.match_id = v.match_id and mp.player_id = v.player_id
-      `;
-    }
+      ), targets as (
+        select mp.match_id, mp.player_id
+        from match_players mp
+        join matches m on m.id = mp.match_id
+        join rounds r on r.id = m.round_id
+        join sessions s on s.id = r.session_id
+        where ${groupId ? this.query`s.group_id = ${groupId}` : this.query`1=1`}
+        union
+        select match_id, player_id from desired_snapshots
+      )
+      update match_players as mp
+      set rating_before = v.rating_before, rating_after = v.rating_after
+      from targets t
+      left join desired_snapshots v on v.match_id = t.match_id and v.player_id = t.player_id
+      where mp.match_id = t.match_id and mp.player_id = t.player_id
+        and (mp.rating_before, mp.rating_after) is distinct from (v.rating_before, v.rating_after)
+    `;
   }
 
   async getTournament(tournamentId: string): Promise<TournamentRecord | null> {

@@ -2,7 +2,7 @@
 
 Scope: one organizer actively editing a normal club session. The goal is immediate feedback and short waits for confirmed results. Multi-session load/capacity testing is deferred. Future changes must retain concurrency safety. This pass measures the app; it does not change production behavior, matchmaking rules, or the 1,200-iteration setting.
 
-Follow-up: recommendation 1's round-completion read has now been implemented and measured separately in [Focused Next Round completion read](2026-10-31-focused-round-completion.md). The baseline measurements below remain unchanged.
+Follow-up: recommendation 1's round-completion read has now been implemented and measured separately in [Focused Next Round completion read](2026-10-31-focused-round-completion.md). Recommendation 2's rating persistence changes are documented in [Save All rating persistence optimization](2026-11-03-rating-persistence.md). The baseline measurements below remain unchanged.
 
 ## Findings
 

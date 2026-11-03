@@ -1,0 +1,209 @@
+{
+  "scope": "Backend Save All only; not deployed/browser latency",
+  "database": "Direct test endpoint; connection-local temporary tables",
+  "players": 12,
+  "courts": 3,
+  "historicalRounds": 9,
+  "targetRound": 10,
+  "warmupsPerVariant": 1,
+  "order": "alternating",
+  "equality": "Returned scores and full persisted players, accounts, matches, snapshots and chemistry after every observation",
+  "observations": [
+    {
+      "variant": "legacy",
+      "iteration": 0,
+      "ms": 830.9483749999999,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 0,
+      "ms": 626.9184999999998,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 1,
+      "ms": 563.9414579999993,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 1,
+      "ms": 787.5799170000028,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 2,
+      "ms": 869.3433750000004,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 2,
+      "ms": 672.5561659999985,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 3,
+      "ms": 628.2884589999994,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 3,
+      "ms": 902.2553750000006,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 4,
+      "ms": 855.7807090000024,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 4,
+      "ms": 647.1971669999984,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 5,
+      "ms": 699.333333999999,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 5,
+      "ms": 897.0818330000002,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 6,
+      "ms": 980.6757080000025,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 6,
+      "ms": 776.7572080000027,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 7,
+      "ms": 721.1877920000006,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 7,
+      "ms": 894.7156670000004,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 8,
+      "ms": 932.3923749999958,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 8,
+      "ms": 588.7389579999945,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 9,
+      "ms": 600.7948749999996,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 9,
+      "ms": 995.5330000000031,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 10,
+      "ms": 967.1509579999984,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 10,
+      "ms": 587.1603329999998,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 11,
+      "ms": 571.7662090000013,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 11,
+      "ms": 862.1936249999999,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 12,
+      "ms": 867.6589999999997,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 12,
+      "ms": 557.2312089999978,
+      "queries": 9
+    },
+    {
+      "variant": "optimized",
+      "iteration": 13,
+      "ms": 671.575208000002,
+      "queries": 9
+    },
+    {
+      "variant": "legacy",
+      "iteration": 13,
+      "ms": 995.6102079999982,
+      "queries": 12
+    },
+    {
+      "variant": "legacy",
+      "iteration": 14,
+      "ms": 826.2115419999973,
+      "queries": 12
+    },
+    {
+      "variant": "optimized",
+      "iteration": 14,
+      "ms": 596.6982500000013,
+      "queries": 9
+    }
+  ],
+  "summary": {
+    "legacy": {
+      "samples": 15,
+      "queries": 12,
+      "medianMs": 894.7156670000004,
+      "minMs": 787.5799170000028,
+      "maxMs": 995.6102079999982
+    },
+    "optimized": {
+      "samples": 15,
+      "queries": 9,
+      "medianMs": 626.9184999999998,
+      "minMs": 557.2312089999978,
+      "maxMs": 776.7572080000027
+    }
+  }
+}

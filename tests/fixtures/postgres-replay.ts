@@ -13,8 +13,8 @@ export async function createReplayTables(sql: postgres.Sql) {
   if (namespaces.length !== tables.length || namespaces.some(row => !row.isolated)) throw new Error("Temporary replay table isolation failed; refusing fixture writes");
 }
 
-export async function seedReplayHistory(repository: DomainRepository, roundCount = 3) {
-  const { matches, round } = await seedBatchScores(repository, 4);
+export async function seedReplayHistory(repository: DomainRepository, roundCount = 3, courts = 4) {
+  const { matches, round } = await seedBatchScores(repository, courts);
   const first = await repository.listStartedRounds("batch-session");
   for (let index = 0; index < roundCount; index++) {
     const time = new Date(batchNow.getTime() + index * 60_000);
