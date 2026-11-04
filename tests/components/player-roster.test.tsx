@@ -78,4 +78,26 @@ describe("PlayerRoster Component", () => {
     expect(html).toContain("underline");
     expect(html).toContain("View profile");
   });
+
+  it("renders search, filter, sort controls and pin buttons on the roster", () => {
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={samplePlayers}
+        canManage={true}
+      />
+    );
+
+    // Search input
+    expect(html).toContain('id="player-roster-search"');
+    expect(html).toContain('placeholder="Search roster by name or @username..."');
+
+    // Filter and Sort selects
+    expect(html).toContain('id="player-roster-filter"');
+    expect(html).toContain('id="player-roster-sort"');
+
+    // Pin buttons for players
+    expect(html).toContain('data-testid="pin-player-Jordan Smith"');
+    expect(html).toContain('data-testid="pin-player-Taylor Swift"');
+  });
 });

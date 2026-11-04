@@ -89,5 +89,39 @@ describe("FilterablePlayerSelect component", () => {
     expect(smHtml).toContain("p-1.5 text-sm");
     expect(smHtml).not.toContain("p-1.5 text-xs");
   });
+
+  it("renders black pin icon when selected player is pinned and when dropdown is open", () => {
+    const pinnedOptions = [
+      { id: "p1", name: "Alice Adams", isPinned: true },
+      { id: "p2", name: "Bob Brown", isPinned: false },
+    ];
+
+    // Trigger button when pinned player is selected
+    const selectedHtml = renderToStaticMarkup(
+      <FilterablePlayerSelect
+        ariaLabel="Pinned Select"
+        placeholder="Select..."
+        value="p1"
+        onChange={vi.fn()}
+        options={pinnedOptions}
+      />
+    );
+    expect(selectedHtml).toContain('data-testid="black-pin-icon"');
+    expect(selectedHtml).toContain("bg-black text-[#ccff00]");
+
+    // Dropdown list when open
+    const openHtml = renderToStaticMarkup(
+      <FilterablePlayerSelect
+        ariaLabel="Pinned Select"
+        placeholder="Select..."
+        value=""
+        onChange={vi.fn()}
+        options={pinnedOptions}
+        initialOpen={true}
+      />
+    );
+    expect(openHtml).toContain('data-testid="black-pin-icon"');
+    expect(openHtml).toContain("bg-black text-[#ccff00]");
+  });
 });
 

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import { ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, SearchIcon, PinIcon } from "@/components/ui/icons";
 
 export interface FilterablePlayerOption {
   readonly id: string;
   readonly name: string;
   readonly disabled?: boolean;
   readonly selectedElsewhere?: boolean;
+  readonly isPinned?: boolean;
 }
 
 export interface FilterablePlayerSelectProps {
@@ -20,6 +21,7 @@ export interface FilterablePlayerSelectProps {
   readonly sizeVariant?: "sm" | "md";
   readonly className?: string;
   readonly dataTestId?: string;
+  readonly initialOpen?: boolean;
 }
 
 export function FilterablePlayerSelect({
@@ -32,12 +34,13 @@ export function FilterablePlayerSelect({
   sizeVariant = "md",
   className = "",
   dataTestId,
+  initialOpen = false,
 }: FilterablePlayerSelectProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [searchQuery, setSearchQuery] = useState("");
 
   const uniqueOptions = useMemo(() => {
@@ -110,7 +113,13 @@ export function FilterablePlayerSelect({
   };
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative ${className}`}
+      data-options={JSON.stringify(
+        uniqueOptions.map((o) => ({ id: o.id, name: o.name, isPinned: Boolean(o.isPinned) })),
+      )}
+    >
       {/* Styled Combobox Trigger Button */}
       <button
         type="button"
@@ -141,11 +150,21 @@ export function FilterablePlayerSelect({
         }`}
       >
         <span
-          className={`truncate ${
+          className={`truncate flex items-center gap-1.5 ${
             selectedOption ? "text-black font-black" : "text-neutral-500 font-semibold"
           }`}
         >
-          {selectedOption ? selectedOption.name : placeholder}
+          <span>{selectedOption ? selectedOption.name : placeholder}</span>
+          {selectedOption?.isPinned && (
+            <span
+              data-testid="black-pin-icon"
+              className="inline-flex items-center justify-center p-0.5 rounded bg-black text-[#ccff00] shrink-0"
+              title="Pinned player"
+              aria-label="Pinned"
+            >
+              <PinIcon className="w-2.5 h-2.5" filled={true} />
+            </span>
+          )}
         </span>
         <ChevronDownIcon
           className={`h-4 w-4 shrink-0 ml-1.5 text-neutral-600 transition-transform ${
@@ -240,7 +259,19 @@ export function FilterablePlayerSelect({
                         : "hover:bg-neutral-100 cursor-pointer text-black"
                     }`}
                   >
-                    <span className="truncate">{opt.name}</span>
+                    <span className="truncate flex items-center gap-1.5">
+                      <span>{opt.name}</span>
+                      {opt.isPinned && (
+                        <span
+                          data-testid="black-pin-icon"
+                          className="inline-flex items-center justify-center p-0.5 rounded bg-black text-[#ccff00] shrink-0"
+                          title="Pinned player"
+                          aria-label="Pinned"
+                        >
+                          <PinIcon className="w-2.5 h-2.5" filled={true} />
+                        </span>
+                      )}
+                    </span>
                     <span className="text-[10px] font-semibold shrink-0 ml-2">
                       {opt.selectedElsewhere || opt.disabled ? "(Selected)" : isSelected ? "✓" : ""}
                     </span>
