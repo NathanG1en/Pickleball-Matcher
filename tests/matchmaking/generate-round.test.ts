@@ -239,4 +239,36 @@ describe("generateRound", () => {
     expect(new Set(zeroAssigned).size).toBe(8);
     expect(new Set(highAssigned).size).toBe(8);
   });
+
+  it.each(["automatic", "configured", "stay together"])("rotates previous singles players into doubles with %s courts", (mode) => {
+    const participants = makePlayers(6).map((p, i) => ({ ...p, gamesPlayed: 1, eligibleRounds: 1, timesPlayedSingles: i < 2 ? 1 : 0 }));
+    for (const seed of [1, 4, 17, 99]) {
+      const result = generateRound({
+        players: participants, courts: 2, pairHistory: [], config: TEST_CONFIG, seed,
+        courtPlayerCounts: mode === "automatic" ? undefined : [4, 2],
+        stayTogetherPairs: mode === "stay together" ? [["player-3", "player-4"]] : undefined,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.error.message);
+      const singles = result.value.courts.find(court => court.team1.length === 1 && court.team2.length === 1);
+      expect(singles).toBeDefined();
+      expect([...singles!.team1, ...singles!.team2]).not.toContain("player-1");
+      expect([...singles!.team1, ...singles!.team2]).not.toContain("player-2");
+      if (mode === "stay together") expect(result.value.courts.some(court => [court.team1, court.team2].some(team => team.includes("player-3") && team.includes("player-4")))).toBe(true);
+    }
+  });
+
+
+  it("derives a reproducible default seed from singles participation history", () => {
+    const input = { players: makePlayers(6), courts: 2, pairHistory: [], config: TEST_CONFIG };
+    const original = generateRound(input);
+    const historyInput = { ...input, players: input.players.map((p, i) => ({ ...p, timesPlayedSingles: i === 0 ? 1 : 0 })) };
+    const withHistory = generateRound(historyInput);
+    expect(original.ok).toBe(true);
+    expect(withHistory.ok).toBe(true);
+    if (!original.ok || !withHistory.ok) throw new Error("Expected valid rounds");
+    expect(withHistory.value.seed).not.toBe(original.value.seed);
+    expect(generateRound(historyInput)).toEqual(withHistory);
+  });
+
 });

@@ -62,6 +62,8 @@ describe("scoreRound", () => {
         score.partnerRepeat +
         score.skillBalance +
         score.opponentRepeat +
+        (score.twoVsOneRepeat ?? 0) +
+        (score.singlesRepeat ?? 0) +
         score.tieBreak,
     );
   });
@@ -143,5 +145,44 @@ describe("scoreRound", () => {
     expect(repeatedScore.twoVsOneRepeat).toBe(100);
     expect(repeatedScore.total).toBeGreaterThan(freshScore.total);
   });
+
+  it.each([
+    { count: 0, weight: undefined, expected: 0 },
+    { count: 1, weight: undefined, expected: 100 },
+    { count: 2, weight: undefined, expected: 400 },
+    { count: 2, weight: 25, expected: 100 },
+    { count: 2, weight: 0, expected: 0 },
+  ])("penalizes singles repetitions independently of 2v1 history: $count previous, weight $weight", ({ count, weight, expected }) => {
+    const participants = [
+      { ...player("a", 1000), timesPlayedSingles: count, timesPlayed2v1: 9 },
+      { ...player("b", 1000), timesPlayedSingles: 0 },
+    ];
+    const score = scoreRound({ courts: [{ courtNumber: 1, team1: ["a"], team2: ["b"] }], sitting: [] }, {
+      players: participants, pairHistory: [],
+      config: { ...DEFAULT_MATCHMAKING_CONFIG, weights: { ...DEFAULT_MATCHMAKING_CONFIG.weights, singlesRepeat: weight } },
+      sittingPenalty: { playingTime: 0, consecutiveSit: 0 }, tieBreak: 0,
+    });
+    expect(score.singlesRepeat ?? 0).toBe(expected);
+    expect(score.twoVsOneRepeat).toBe(0);
+    expect(score.total).toBe(expected);
+  });
+
+  it("charges both singles participants but does not charge their doubles or 2v1 appearances", () => {
+    const participants = [
+      { ...player("a", 1000), timesPlayedSingles: 2 },
+      { ...player("b", 1000), timesPlayedSingles: 1 },
+      player("c", 1000), player("d", 1000),
+    ];
+    const context = { players: participants, pairHistory: [], config: DEFAULT_MATCHMAKING_CONFIG,
+      sittingPenalty: { playingTime: 0, consecutiveSit: 0 }, tieBreak: 0 };
+    const singles = scoreRound({ courts: [{ courtNumber: 1, team1: ["a"], team2: ["b"], matchType: "singles" }], sitting: ["c", "d"] }, context);
+    expect(singles.singlesRepeat).toBe(500);
+    expect(singles.total).toBe(500);
+    for (const court of [
+      { courtNumber: 1, team1: ["a", "b"] as const, team2: ["c", "d"] as const },
+      { courtNumber: 1, team1: ["a", "b"] as const, team2: ["c"] as const },
+    ]) expect(scoreRound({ courts: [court], sitting: [] }, context).total).toBe(0);
+  });
+
 });
 

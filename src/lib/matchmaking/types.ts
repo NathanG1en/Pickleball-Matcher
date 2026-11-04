@@ -11,6 +11,7 @@ export interface MatchmakingPlayer {
   readonly eligibleRounds: number;
   readonly satPreviousRound: boolean;
   readonly timesPlayed2v1?: number;
+  readonly timesPlayedSingles?: number;
 }
 
 export interface PairHistory {
@@ -43,6 +44,7 @@ export interface ScoreBreakdown {
   readonly skillBalance: number;
   readonly opponentRepeat: number;
   readonly twoVsOneRepeat?: number;
+  readonly singlesRepeat?: number;
   readonly tieBreak: number;
   readonly total: number;
 }
@@ -94,6 +96,7 @@ export interface MatchmakingWeights {
   readonly skillBalance: number;
   readonly opponentRepeat: number;
   readonly twoVsOneRepeat?: number;
+  readonly singlesRepeat?: number;
 }
 
 export interface MatchmakingConfig {

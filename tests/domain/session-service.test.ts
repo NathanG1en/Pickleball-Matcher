@@ -351,6 +351,38 @@ describe("SessionService", () => {
       );
     });
 
+    it.each([false, true])("counts singles history from played matches, skips cancellations (%s), and resets each session", async (cancelled) => {
+      const ids = players.slice(0, 2).map(p => p.id);
+      const session = await service.startSession({ groupId: "group-1", courtCount: 1, courtPlayerCounts: [2], playerIds: ids });
+      const round = await service.startRound(session.id, await service.proposeRound(session.id, 101));
+      const match = repository.state.matches.find(m => m.roundId === round.id)!;
+      if (cancelled) await service.cancelMatch(match.id);
+      else await service.recordResult({ matchId: match.id, team1Score: 11, team2Score: 9 });
+      await service.completeRound(round.id);
+      const next = await service.proposeRound(session.id, 102);
+      expect(next.scoreBreakdown.singlesRepeat ?? 0).toBe(cancelled ? 0 : 200);
+      expect(next.courts).toHaveLength(1);
+      const fresh = await service.startSession({ groupId: "group-1", courtCount: 1, courtPlayerCounts: [2], playerIds: ids });
+      expect((await service.proposeRound(fresh.id, 103)).scoreBreakdown.singlesRepeat ?? 0).toBe(0);
+    });
+
+    it("rotates singles players out of the 1v1 court after a completed mixed-format round", async () => {
+      const session = await service.startSession({ groupId: "group-1", courtCount: 2, courtPlayerCounts: [4, 2], playerIds: players.slice(0, 6).map(p => p.id) });
+      const proposal = await service.proposeRound(session.id, 101);
+      const singles = proposal.courts.find(c => c.team1.length === 1 && c.team2.length === 1)!;
+      const previousSingles = [...singles.team1, ...singles.team2];
+      const round = await service.startRound(session.id, proposal);
+      for (const match of repository.state.matches.filter(m => m.roundId === round.id)) {
+        await service.recordResult({ matchId: match.id, team1Score: 11, team2Score: 9 });
+      }
+      await service.completeRound(round.id);
+      for (const seed of [102, 103, 104]) {
+        const next = await service.proposeRound(session.id, seed);
+        const nextSingles = next.courts.find(c => c.team1.length === 1 && c.team2.length === 1)!;
+        for (const id of previousSingles) expect([...nextSingles.team1, ...nextSingles.team2]).not.toContain(id);
+      }
+    });
+
     it("tracks timesPlayed2v1 and rotates 2v1 court assignments across rounds", async () => {
       // 7 players on 2 courts: [4, 3] -> 1 doubles court, 1 2v1 court
       const session = await service.startSession({

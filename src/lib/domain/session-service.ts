@@ -103,6 +103,7 @@ function matchmakingPlayers(
   const games = new Map<string, number>();
   const historicalEligibility = new Map<string, number>();
   const timesPlayed2v1 = new Map<string, number>();
+  const timesPlayedSingles = new Map<string, number>();
   for (const record of rounds) {
     const presentInRound = new Set([...record.matchPlayers.map(member => member.playerId), ...record.sits.map(sit => sit.playerId)]);
     for (const id of presentInRound) historicalEligibility.set(id, (historicalEligibility.get(id) ?? 0) + 1);
@@ -112,6 +113,11 @@ function matchmakingPlayers(
     for (const match of record.matches) {
       if (match.status === "cancelled") continue;
       const matchMembers = record.matchPlayers.filter((mp) => mp.matchId === match.id);
+      if (matchMembers.length === 2 && matchMembers.some(member => member.team === 1) && matchMembers.some(member => member.team === 2)) {
+        for (const member of matchMembers) {
+          timesPlayedSingles.set(member.playerId, (timesPlayedSingles.get(member.playerId) ?? 0) + 1);
+        }
+      }
       if (matchMembers.length === 3) {
         for (const member of matchMembers) {
           timesPlayed2v1.set(member.playerId, (timesPlayed2v1.get(member.playerId) ?? 0) + 1);
@@ -134,6 +140,7 @@ function matchmakingPlayers(
         eligibleRounds: Math.max(0, currentRoundNumber - item.joinedRound + 1, preserveParticipationHistory ? historicalEligibility.get(player.id) ?? 0 : 0),
         satPreviousRound: previousSits.has(player.id),
         timesPlayed2v1: timesPlayed2v1.get(player.id) ?? 0,
+        timesPlayedSingles: timesPlayedSingles.get(player.id) ?? 0,
       },
     ];
   });
