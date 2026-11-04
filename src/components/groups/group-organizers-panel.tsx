@@ -176,6 +176,16 @@ export function GroupOrganizersPanel({
   const [addMessage, setAddMessage] = useState<string | null>(null);
   const [rosterMessage, setRosterMessage] = useState<string | null>(null);
 
+  const setAddStatus = (msg: string | null) => {
+    setAddMessage(msg);
+    if (msg) setRosterMessage(null);
+  };
+
+  const setRosterStatus = (msg: string | null) => {
+    setRosterMessage(msg);
+    if (msg) setAddMessage(null);
+  };
+
   // Live search for public users as user types
   useEffect(() => {
     const trimmed = username.replace(/^@/, "").trim();
@@ -247,19 +257,19 @@ export function GroupOrganizersPanel({
 
   const handleAddSearchedPlayer = async (accountId: string) => {
     setAddingAccountId(accountId);
-    setAddMessage(null);
+    setAddStatus(null);
     try {
       const res = await addPlayerByAccountIdAction({ groupId, accountId });
       if (res.ok) {
-        setAddMessage("Player added to the roster.");
+        setAddStatus("Player added to the roster.");
         setUsername("");
         setSearchResults([]);
         router.refresh();
       } else {
-        setAddMessage(res.error ?? "Failed to add player.");
+        setAddStatus(res.error ?? "Failed to add player.");
       }
     } catch {
-      setAddMessage("Failed to add player.");
+      setAddStatus("Failed to add player.");
     } finally {
       setAddingAccountId(null);
     }
@@ -270,7 +280,7 @@ export function GroupOrganizersPanel({
     const trimmed = guestName.trim();
     if (!trimmed || guestSaving) return;
     setGuestSaving(true);
-    setAddMessage(null);
+    setAddStatus(null);
     const ratingToAdd = guestRating;
     setGuestRating(3.5);
     try {
@@ -282,15 +292,15 @@ export function GroupOrganizersPanel({
         idempotencyKey: createIdempotencyKey("guest_add"),
       });
       if (res.ok) {
-        setAddMessage(`Guest player "${trimmed}" added to the roster.`);
+        setAddStatus(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
         setGuestGender("male");
         router.refresh();
       } else {
-        setAddMessage(res.error ?? "Failed to add guest player.");
+        setAddStatus(res.error ?? "Failed to add guest player.");
       }
     } catch {
-      setAddMessage("Failed to add guest player.");
+      setAddStatus("Failed to add guest player.");
     } finally {
       setGuestSaving(false);
     }
@@ -302,14 +312,14 @@ export function GroupOrganizersPanel({
     if (!clean) return;
 
     setLookupPending(true);
-    setAddMessage(null);
+    setAddStatus(null);
 
     const matching = searchResults.find(
       (r) => r.username.toLowerCase() === clean.toLowerCase()
     );
     if (matching) {
       if (matching.alreadyInGroup) {
-        setAddMessage("Player is already on the roster.");
+        setAddStatus("Player is already on the roster.");
         setLookupPending(false);
         return;
       }
@@ -319,7 +329,7 @@ export function GroupOrganizersPanel({
     }
 
     const result = await addGroupPlayerByUsernameAction({ groupId, username: clean });
-    setAddMessage(result.ok ? "Player added to the roster." : result.error ?? "Unable to find that player.");
+    setAddStatus(result.ok ? "Player added to the roster." : result.error ?? "Unable to find that player.");
     if (result.ok) {
       setUsername("");
       setSearchResults([]);
@@ -331,9 +341,9 @@ export function GroupOrganizersPanel({
   const makeOrganizer = async (playerId: string) => {
     closeAllMenus();
     setPendingPlayerId(playerId);
-    setRosterMessage(null);
+    setRosterStatus(null);
     const result = await addGroupOrganizerAction({ groupId, playerId });
-    setRosterMessage(result.ok ? "Player is now a group organizer." : result.error ?? "Unable to add organizer.");
+    setRosterStatus(result.ok ? "Player is now a group organizer." : result.error ?? "Unable to add organizer.");
     if (result.ok) router.refresh();
     setPendingPlayerId(null);
   };
@@ -341,9 +351,9 @@ export function GroupOrganizersPanel({
   const removeOrganizer = async (playerId: string) => {
     closeAllMenus();
     setPendingPlayerId(playerId);
-    setRosterMessage(null);
+    setRosterStatus(null);
     const result = await removeGroupOrganizerAction({ groupId, playerId });
-    setRosterMessage(result.ok ? "Player is no longer a group organizer." : result.error ?? "Unable to remove organizer.");
+    setRosterStatus(result.ok ? "Player is no longer a group organizer." : result.error ?? "Unable to remove organizer.");
     if (result.ok) router.refresh();
     setPendingPlayerId(null);
   };
@@ -351,9 +361,9 @@ export function GroupOrganizersPanel({
   const removePlayer = async (playerId: string) => {
     closeAllMenus();
     setPendingPlayerId(playerId);
-    setRosterMessage(null);
+    setRosterStatus(null);
     const result = await removeGroupPlayerAction({ groupId, playerId });
-    setRosterMessage(result.ok ? "Player removed from the group." : result.error ?? "Unable to remove player.");
+    setRosterStatus(result.ok ? "Player removed from the group." : result.error ?? "Unable to remove player.");
     if (result.ok) router.refresh();
     setPendingPlayerId(null);
   };
@@ -369,7 +379,7 @@ export function GroupOrganizersPanel({
         confirmationName,
       });
       if (res.ok) {
-        setRosterMessage(`Host privileges transferred to ${transferTarget.name}.`);
+        setRosterStatus(`Host privileges transferred to ${transferTarget.name}.`);
         setTransferTarget(null);
         router.refresh();
       } else {
@@ -387,7 +397,7 @@ export function GroupOrganizersPanel({
       {/* Add Player / Guest Section */}
       {(isHost || isOrganizer) && (
         <section
-          aria-label="Add to roster"
+          aria-label="Add player or guest"
           className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]"
         >
           <div className="flex items-center justify-between gap-2">
@@ -396,7 +406,7 @@ export function GroupOrganizersPanel({
                 <UserPlusIcon className="h-4 w-4 text-black" />
               </div>
               <div>
-                <h2 className="font-display text-lg font-black uppercase text-black">Add to Roster</h2>
+                <h2 className="font-display text-lg font-black uppercase text-black">Add Player or Guest</h2>
                 <p className="text-xs font-semibold text-neutral-600">
                   Find players by username or add guest players.
                 </p>
@@ -406,7 +416,7 @@ export function GroupOrganizersPanel({
               type="button"
               onClick={() => setIsAddOpen((prev) => !prev)}
               aria-expanded={isAddOpen}
-              aria-label={isAddOpen ? "Collapse add to roster" : "Expand add to roster"}
+              aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
               className="rounded-lg border-2 border-black bg-neutral-100 px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shrink-0"
             >
               {isAddOpen ? "Collapse" : "Expand"}
@@ -991,7 +1001,7 @@ export function GroupOrganizersPanel({
           guestPlayer={linkingPlayer}
           groupId={groupId}
           onLinked={(linkedAccountName) => {
-            setRosterMessage(`Successfully linked ${linkingPlayer.name} to ${linkedAccountName}.`);
+            setRosterStatus(`Successfully linked ${linkingPlayer.name} to ${linkedAccountName}.`);
             setLinkingPlayer(null);
             router.refresh();
           }}
@@ -1005,7 +1015,7 @@ export function GroupOrganizersPanel({
           guestPlayer={editingGuest}
           groupId={groupId}
           onGuestUpdated={(updatedName, updatedGender) => {
-            setRosterMessage(`Guest "${updatedName}" updated${updatedGender ? ` (${updatedGender})` : ""}.`);
+            setRosterStatus(`Guest "${updatedName}" updated${updatedGender ? ` (${updatedGender})` : ""}.`);
             setEditingGuest(null);
             router.refresh();
           }}
@@ -1020,7 +1030,7 @@ export function GroupOrganizersPanel({
           allPlayers={players}
           groupId={groupId}
           onMerged={(mergedPlayer) => {
-            setRosterMessage(`Merged guest players into "${mergedPlayer.name}".`);
+            setRosterStatus(`Merged guest players into "${mergedPlayer.name}".`);
             setMergingGuest(null);
             router.refresh();
           }}

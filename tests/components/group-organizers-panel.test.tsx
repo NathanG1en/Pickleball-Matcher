@@ -210,9 +210,9 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Link to public player");
       expect(html).toContain("Edit guest");
 
-      // Verify Find Player, Add Guest, and separate Add to Roster section exist for host
-      expect(html).toContain("Add to Roster");
-      expect(html).toContain('aria-label="Add to roster"');
+      // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for host
+      expect(html).toContain("Add Player or Guest");
+      expect(html).toContain('aria-label="Add player or guest"');
       expect(html).toContain('aria-label="Group roster"');
       expect(html).toContain("Find Player");
       expect(html).toContain("Add Guest");
@@ -241,9 +241,9 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Transfer host");
 
-      // Verify Find Player, Add Guest, and separate Add to Roster section exist for organizers
-      expect(html).toContain("Add to Roster");
-      expect(html).toContain('aria-label="Add to roster"');
+      // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for organizers
+      expect(html).toContain("Add Player or Guest");
+      expect(html).toContain('aria-label="Add player or guest"');
       expect(html).toContain('aria-label="Group roster"');
       expect(html).toContain("Find Player");
       expect(html).toContain("Add Guest");
@@ -344,8 +344,8 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("···");
       expect(html).not.toContain("Find Player");
       expect(html).not.toContain("Add Guest");
-      expect(html).not.toContain("Add to Roster");
-      expect(html).not.toContain('aria-label="Add to roster"');
+      expect(html).not.toContain("Add Player or Guest");
+      expect(html).not.toContain('aria-label="Add player or guest"');
       expect(html).toContain('aria-label="Group roster"');
     });
 
@@ -434,11 +434,11 @@ describe("GroupOrganizersPanel and Actions", () => {
         />
       );
 
-      // Verify Add to Roster section header and description
-      expect(html).toContain("Add to Roster");
+      // Verify Add Player or Guest section header and description
+      expect(html).toContain("Add Player or Guest");
       expect(html).toContain("Find players by username or add guest players.");
-      expect(html).toContain('aria-label="Add to roster"');
-      expect(html).toContain('aria-label="Collapse add to roster"');
+      expect(html).toContain('aria-label="Add player or guest"');
+      expect(html).toContain('aria-label="Collapse add player or guest form"');
 
       // Verify Roster Directory section header and description
       expect(html).toContain("Roster (4)");
@@ -446,7 +446,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain('aria-label="Group roster"');
 
       // Verify Add section appears before Roster section
-      const addSectionIdx = html.indexOf('aria-label="Add to roster"');
+      const addSectionIdx = html.indexOf('aria-label="Add player or guest"');
       const rosterSectionIdx = html.indexOf('aria-label="Group roster"');
       expect(addSectionIdx).toBeGreaterThan(-1);
       expect(rosterSectionIdx).toBeGreaterThan(addSectionIdx);
