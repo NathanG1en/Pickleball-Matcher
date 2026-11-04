@@ -1,0 +1,4 @@
+# Keep generated benchmark evidence available without dominating PR review.
+/docs/benchmarks/data/session-actions/** linguist-generated=true
+# Unified-diff context markers on blank lines are significant patch syntax.
+/docs/benchmarks/data/session-actions/changes/*.patch linguist-generated=false whitespace=-blank-at-eol,-blank-at-eof

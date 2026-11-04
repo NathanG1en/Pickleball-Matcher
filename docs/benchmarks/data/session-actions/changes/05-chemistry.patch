@@ -1,0 +1,23 @@
+--- a/src/lib/db/postgres-repositories.ts
++++ b/src/lib/db/postgres-repositories.ts
+@@ -564,9 +564,10 @@
+ 
+   async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
+     if (!this.inTransaction) throw new Error("Chemistry replacement requires a transaction.");
+-    await this.query`delete from player_synergy`;
+-    if (records.length === 0) return;
++    // Consume the DELETE output before inserting replacement rows. Empty input
++    // still clears the table; the caller keeps the same lock and transaction.
+     await this.query`
++      with cleared as (delete from player_synergy returning 1)
+       insert into player_synergy (account_id_1, account_id_2, matches_played, wins, synergy_score,
+         weight_sum, contribution_sum, weight_sq_sum, updated_at)
+       select * from unnest(
+@@ -575,6 +576,7 @@
+         ${records.map(r => r.synergyScore)}::float8[], ${records.map(r => r.weightSum ?? 0)}::float8[],
+         ${records.map(r => r.contributionSum ?? 0)}::float8[], ${records.map(r => r.weightSqSum ?? 0)}::float8[],
+         ${records.map(r => r.updatedAt.toISOString())}::timestamptz[])
++      where (select count(*) from cleared) >= 0
+     `;
+   }
+ 

@@ -1,0 +1,66 @@
+--- a/src/lib/db/postgres-repositories.ts
++++ b/src/lib/db/postgres-repositories.ts
+@@ -1711,11 +1711,16 @@
+   }
+ 
+   async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
+-    type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2; synergy_eligible: boolean };
++    type ReplayRow = Pick<MatchRow, "id" | "status" | "team1_score" | "team2_score" | "completed_at"> & {
++      group_id: string; team1: string[]; team2: string[]; synergy_eligible: boolean;
++    };
++    // Return one row per doubles match instead of repeating its metadata for
++    // every participant. Explicit aggregate ordering preserves replay inputs.
+     const rows = await this.query<ReplayRow[]>`
+-      select m.id, m.round_id, m.court_number, m.status, m.team1_score,
+-             m.team2_score, m.completed_at, m.version, m.rated, s.group_id,
+-             mp.player_id, mp.team, (r.status = 'completed' or s.type = 'open_play') as synergy_eligible
++      select m.id, m.status, m.team1_score, m.team2_score, m.completed_at,
++             s.group_id, (r.status = 'completed' or s.type = 'open_play') as synergy_eligible,
++             array_agg(mp.player_id order by mp.player_id) filter (where mp.team = 1) as team1,
++             array_agg(mp.player_id order by mp.player_id) filter (where mp.team = 2) as team2
+       from matches m
+       join rounds r on r.id = m.round_id
+       join sessions s on s.id = r.session_id
+@@ -1724,29 +1729,20 @@
+         and m.status in ('completed', 'cancelled')
+         and m.rated = true
+         and m.completed_at is not null
+-      order by m.completed_at, m.id, mp.team, mp.player_id
++      group by m.id, s.group_id, r.status, s.type
++      having count(*) filter (where mp.team = 1) = 2
++         and count(*) filter (where mp.team = 2) = 2
++      order by m.completed_at, m.id
+     `;
+-    const grouped = new Map<string, ReplayRow[]>();
+-    for (const row of rows) grouped.set(row.id, [...(grouped.get(row.id) ?? []), row]);
+-
+-    return [...grouped.values()].flatMap((matchRows): ReplayMatch[] => {
+-      const first = matchRows[0];
+-      const team1 = matchRows.filter((row) => row.team === 1).map((row) => row.player_id);
+-      const team2 = matchRows.filter((row) => row.team === 2).map((row) => row.player_id);
+-      if (team1.length !== 2 || team2.length !== 2 || !first.completed_at) return [];
+-      return [
+-        {
+-          id: first.id,
+-          groupId: first.group_id,
+-          synergyEligible: first.synergy_eligible,
+-          status: first.status === "cancelled" ? "cancelled" : "completed",
+-          completedAt: first.completed_at,
+-          team1: [team1[0], team1[1]],
+-          team2: [team2[0], team2[1]],
+-          team1Score: first.team1_score ?? 0,
+-          team2Score: first.team2_score ?? 0,
+-        },
+-      ];
++    return rows.flatMap((row): ReplayMatch[] => {
++      if (!row.completed_at) return [];
++      return [{
++        id: row.id, groupId: row.group_id, synergyEligible: row.synergy_eligible,
++        status: row.status === "cancelled" ? "cancelled" : "completed",
++        completedAt: row.completed_at,
++        team1: [row.team1[0], row.team1[1]], team2: [row.team2[0], row.team2[1]],
++        team1Score: row.team1_score ?? 0, team2Score: row.team2_score ?? 0,
++      }];
+     });
+   }
+ 

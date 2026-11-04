@@ -1,0 +1,6 @@
+{
+  "scope": "Separate sampled server CPU trace covering the three diagnostic actions; not per-request wall time",
+  "samplingIntervalMicros": 1000,
+  "inclusiveProposalSampleMs": 56.10600000000001,
+  "caveat": "Inclusive sampled method time is approximate; it must not be added to parent/child CPU totals or primary network/query spans."
+}
