@@ -1,0 +1,149 @@
+{
+  "scope": "One separate diagnostic round per viewport; these six observations are not among the primary60 and have no target/stopping role",
+  "observations": [
+    {
+      "viewport": "desktop",
+      "action": "start",
+      "diagnosticRound": 11,
+      "clickToDomMs": 940.896,
+      "firstPaintAfterDomMs": 6.756,
+      "followingFrameAfterDomMs": 11.889,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 6.756,
+          "durationMs": 0.736
+        },
+        {
+          "offsetAfterDomMs": 7.46,
+          "durationMs": 0.027
+        }
+      ],
+      "layoutMs": 1.914,
+      "styleMs": 17.229000000000003,
+      "scriptMs": 18.776,
+      "taskMs": 137.994,
+      "layoutCount": 3,
+      "styleCount": 117
+    },
+    {
+      "viewport": "desktop",
+      "action": "save-all",
+      "diagnosticRound": 11,
+      "clickToDomMs": 1004.673,
+      "firstPaintAfterDomMs": 4.604,
+      "followingFrameAfterDomMs": 8.795,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 4.604,
+          "durationMs": 0.624
+        },
+        {
+          "offsetAfterDomMs": 5.192,
+          "durationMs": 0.033
+        }
+      ],
+      "layoutMs": 1.3610000000000002,
+      "styleMs": 4.419000000000003,
+      "scriptMs": 20.462,
+      "taskMs": 90.16699999999997,
+      "layoutCount": 4,
+      "styleCount": 29
+    },
+    {
+      "viewport": "desktop",
+      "action": "next",
+      "diagnosticRound": 11,
+      "clickToDomMs": 1171.07,
+      "firstPaintAfterDomMs": 4.242,
+      "followingFrameAfterDomMs": 9.275,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 4.242,
+          "durationMs": 0.387
+        },
+        {
+          "offsetAfterDomMs": 4.604,
+          "durationMs": 0.021
+        }
+      ],
+      "layoutMs": 1.0940000000000003,
+      "styleMs": 12.100000000000003,
+      "scriptMs": 7.603999999999999,
+      "taskMs": 94.23200000000004,
+      "layoutCount": 2,
+      "styleCount": 152
+    },
+    {
+      "viewport": "narrow",
+      "action": "start",
+      "diagnosticRound": 11,
+      "clickToDomMs": 858.902,
+      "firstPaintAfterDomMs": 6.594,
+      "followingFrameAfterDomMs": 13.604,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 6.594,
+          "durationMs": 0.81
+        },
+        {
+          "offsetAfterDomMs": 7.365,
+          "durationMs": 0.031
+        }
+      ],
+      "layoutMs": 1.689,
+      "styleMs": 14.154000000000002,
+      "scriptMs": 13.802999999999999,
+      "taskMs": 106.108,
+      "layoutCount": 3,
+      "styleCount": 108
+    },
+    {
+      "viewport": "narrow",
+      "action": "save-all",
+      "diagnosticRound": 11,
+      "clickToDomMs": 1599.17,
+      "firstPaintAfterDomMs": 11.5,
+      "followingFrameAfterDomMs": 15.56,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 11.5,
+          "durationMs": 0.938
+        },
+        {
+          "offsetAfterDomMs": 12.41,
+          "durationMs": 0.026
+        }
+      ],
+      "layoutMs": 4.007,
+      "styleMs": 8.344999999999999,
+      "scriptMs": 31.293999999999997,
+      "taskMs": 147.688,
+      "layoutCount": 4,
+      "styleCount": 33
+    },
+    {
+      "viewport": "narrow",
+      "action": "next",
+      "diagnosticRound": 11,
+      "clickToDomMs": 1410.705,
+      "firstPaintAfterDomMs": 6.925,
+      "followingFrameAfterDomMs": 11.221,
+      "paintEvents": [
+        {
+          "offsetAfterDomMs": 6.925,
+          "durationMs": 0.346
+        },
+        {
+          "offsetAfterDomMs": 7.247,
+          "durationMs": 0.022
+        }
+      ],
+      "layoutMs": 2.452000000000001,
+      "styleMs": 24.106,
+      "scriptMs": 8.468000000000004,
+      "taskMs": 175.57499999999993,
+      "layoutCount": 2,
+      "styleCount": 184
+    }
+  ]
+}

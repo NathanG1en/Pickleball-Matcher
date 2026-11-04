@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { requireReplayTestUrl } from "../fixtures/replay-database";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import type { RatingSnapshot } from "@/lib/domain/types";
@@ -11,8 +12,7 @@ let repository: PostgresRepositories;
 let capturing = false;
 let queries = 0;
 beforeEach(async () => {
-  const uri = process.env.TEST_DATABASE_URL!;
-  if (!/^ep-cold-band-b491lrgj\./.test(new URL(uri).hostname) && !process.env.CI) throw new Error("Expected isolated direct test endpoint");
+  const uri = requireReplayTestUrl(process.env.TEST_DATABASE_URL, process.env.DISPOSABLE_POSTGRES_TESTS === "1");
   sql = postgres(uri, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capturing) queries++; } });
   await createReplayTables(sql);
   repository = new PostgresRepositories(sql);
@@ -31,13 +31,13 @@ async function versions() {
   };
 }
 
-it("persists shared accounts, guests, and snapshots in at most two statements without rewriting unchanged rows", async () => {
+it("persists shared accounts, guests, and snapshots in one statement without rewriting unchanged rows", async () => {
   const players = [{ id: "batch-player-0", accountId: "batch-account-0", rating: 1020, ratedGamesPlayed: 1 }];
   const snapshots = new Map([["batch-match-0", [snapshot("batch-player-0", 1000, 1020)]]]);
   queries = 0; capturing = true;
   await repository.replaceRatingState("batch-group", players, snapshots);
   capturing = false;
-  expect(queries).toBeLessThanOrEqual(2);
+  expect(queries).toBe(1);
   expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
   const before = await versions();
   await repository.replaceRatingState("batch-group", players, snapshots);

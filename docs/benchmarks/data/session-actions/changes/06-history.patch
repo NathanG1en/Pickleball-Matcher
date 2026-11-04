@@ -1,0 +1,93 @@
+--- a/src/lib/db/postgres-repositories.ts
++++ b/src/lib/db/postgres-repositories.ts
+@@ -1362,44 +1362,52 @@
+   }
+ 
+   async listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]> {
+-    const roundRows = await this.query<RoundRow[]>`
+-      select id, session_id, round_number, status, seed, score_breakdown,
+-             created_at, started_at, completed_at, version
+-      from rounds where session_id = ${sessionId} order by round_number
+-    `;
+-    if (roundRows.length === 0) return [];
+-    const roundIds = roundRows.map((row) => row.id);
+-    // Anchor children to the rounds above, while removing the dependency on a
+-    // separate match-ID read. Keep this.query so transactional callers stay on
+-    // their pinned connection; pooled callers can run these reads concurrently.
+-    const [matchRows, memberRows, sitRows] = await Promise.all([
+-      this.query<MatchRow[]>`
+-        select id, round_id, court_number, status, team1_score, team2_score,
+-               completed_at, version, rated
+-        from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
+-      `,
+-      this.query<MatchPlayerRow[]>`
+-        select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
+-        from match_players mp join matches m on m.id = mp.match_id
+-        where m.round_id in ${this.query(roundIds)}
+-        order by mp.match_id, mp.team, mp.player_id
+-      `,
+-      this.query<SitRow[]>`
+-        select round_id, player_id from round_sits
+-        where round_id in ${this.query(roundIds)} order by round_id, player_id
+-      `,
+-    ]);
+-
+-    return roundRows.map((roundRow) => {
+-      const matches = matchRows.filter((row) => row.round_id === roundRow.id);
+-      const ids = new Set(matches.map((row) => row.id));
+-      return {
+-        round: mapRound(roundRow),
+-        matches: matches.map(mapMatch),
+-        matchPlayers: memberRows.filter((row) => ids.has(row.match_id)).map(mapMatchPlayer),
+-        sits: sitRows.filter((row) => row.round_id === roundRow.id).map(mapSit),
+-      };
+-    });
++    type JsonMatch = Omit<MatchRow, "completed_at"> & { completed_at: string | null };
++    type JsonMember = Omit<MatchPlayerRow, "rating_before" | "rating_after"> & {
++      rating_before: number | string | null; rating_after: number | string | null;
++    };
++    type HistoryRow = RoundRow & { match_rows: JsonMatch[]; member_rows: JsonMember[]; sit_rows: SitRow[] };
++    // One command keeps the whole history on the caller's connection/snapshot.
++    // Explicit projections and aggregate ordering retain the public row contract.
++    const rows = await this.query<HistoryRow[]>`
++      select r.id, r.session_id, r.round_number, r.status, r.seed, r.score_breakdown,
++             r.created_at, r.started_at, r.completed_at, r.version,
++        coalesce((
++          select jsonb_agg(to_jsonb(child) order by child.court_number)
++          from (
++            select m.id, m.round_id, m.court_number, m.status, m.team1_score,
++                   m.team2_score, m.completed_at, m.version, m.rated
++            from matches m where m.round_id = r.id
++          ) child
++        ), '[]'::jsonb) as match_rows,
++        coalesce((
++          select jsonb_agg(to_jsonb(child) order by child.match_id, child.team, child.player_id)
++          from (
++            select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
++            from match_players mp join matches m on m.id = mp.match_id
++            where m.round_id = r.id
++          ) child
++        ), '[]'::jsonb) as member_rows,
++        coalesce((
++          select jsonb_agg(to_jsonb(child) order by child.player_id)
++          from (
++            select rs.round_id, rs.player_id from round_sits rs where rs.round_id = r.id
++          ) child
++        ), '[]'::jsonb) as sit_rows
++      from rounds r where r.session_id = ${sessionId} order by r.round_number
++    `;
++    return rows.map(row => ({
++      round: mapRound(row),
++      matches: row.match_rows.map(match => mapMatch({ ...match,
++        completed_at: match.completed_at === null ? null : new Date(match.completed_at),
++      })),
++      // PostgreSQL JSON represents non-finite float8 values as strings.
++      matchPlayers: row.member_rows.map(member => mapMatchPlayer({ ...member,
++        rating_before: member.rating_before === null ? null : Number(member.rating_before),
++        rating_after: member.rating_after === null ? null : Number(member.rating_after),
++      })),
++      sits: row.sit_rows.map(mapSit),
++    }));
+   }
+ 
+   async getRound(roundId: string): Promise<RoundRecord | null> {

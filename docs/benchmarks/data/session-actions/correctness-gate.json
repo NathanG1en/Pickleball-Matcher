@@ -1,0 +1,261 @@
+{
+  "runtimeSourceSha256": {
+    "src/lib/db/postgres-repositories.ts": "7a01e1f66277c30ce2721459e1bcde49cb762d788bbce413c6432ea6a4bcbb91",
+    "src/lib/db/server-database.ts": "09171c7ba8ff70862d8b40ca5673d932bc1f082412c0fb7aa50d56a987d9b0d7"
+  },
+  "variants": [
+    {
+      "variant": "prepared",
+      "checks": {
+        "unit": {
+          "passed": 690,
+          "logFile": "attempt1-unit.log",
+          "sha256": "340aa0ebfe95d4f2c02e380ecc22f263e8a8cd385f8002193154fb139ab3423b"
+        },
+        "integration": {
+          "passed": 54,
+          "logFile": "attempt1-integration.log",
+          "sha256": "01d11c9d9c2e4bba701d375d1e67ecfec400f27c6e25b924037e3b7bec2da8ff"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt1-maintenance.log",
+          "sha256": "9e77a34a7a47582327a12074338ea8e644d91e060accb902e2ebd6227c0dc9cc"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt1-simulation.log",
+          "sha256": "9aadffeb82ddc1a05c97d9a2d78bdb344327dcedddc4b05c4955a9ce89d9c8da"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt1-e2e.log",
+          "sha256": "285593c1c6381c68525e941c000ccb8d0137aa2de938675c3665afc2a329f31f"
+        }
+      }
+    },
+    {
+      "variant": "replay",
+      "checks": {
+        "unit": {
+          "passed": 690,
+          "logFile": "attempt2-unit.log",
+          "sha256": "3563af794552c802a109e3cbdc6ed32bfd8dd6ccbc88a892ade893ad9392468b"
+        },
+        "integration": {
+          "passed": 55,
+          "logFile": "attempt2-integration.log",
+          "sha256": "fdc9358ffd24bd72943caa5d7f4b8923469b912b30cfef16722b7f267385a64f"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt2-maintenance.log",
+          "sha256": "86f125f94d2470b9936ef82d728a243f5fb81fa8c773d415ba05fd2b5613a0ca"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt2-simulation.log",
+          "sha256": "778fa1bf6fcc69c8a02611b54eb554fa6f42f8c67e6dd054a5369efe5bcfafd9"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt2-e2e.log",
+          "sha256": "5ff00c7266510934d9430667df82e3b24e3e14c4b1000b498e98ea3a4e3a0988"
+        }
+      }
+    },
+    {
+      "variant": "round",
+      "checks": {
+        "unit": {
+          "passed": 690,
+          "logFile": "attempt3-unit.log",
+          "sha256": "aca748e0c9aa2a644cc64be76611e58be123fd3bbb91edc21ca08906576c1e62"
+        },
+        "integration": {
+          "passed": 57,
+          "logFile": "attempt3-integration.log",
+          "sha256": "7f9ad333f00c75afd639821dcf23b62d85e2094ec62ab8fd3db284bc02f72d2a"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt3-maintenance.log",
+          "sha256": "4be910030c6700ba35912199850207b75c02cff2163e7442aab5c762d8e99f24"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt3-simulation.log",
+          "sha256": "9c69728b2f038db5b6eb4dddcd6f9f47ea28c459aea5f768fe155e298f53b234"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt3-e2e.log",
+          "sha256": "8355cdd1c8d668e2d9a218d66b91342b94bde2003ff44bd6ef0737fd381b60c1"
+        }
+      }
+    },
+    {
+      "variant": "rating",
+      "checks": {
+        "unit": {
+          "passed": 690,
+          "logFile": "attempt4-unit.log",
+          "sha256": "b2a937bb5ee621f6da75b4e1d972730dd6d70fd1446717d7474c3fa06a72ed71"
+        },
+        "integration": {
+          "passed": 57,
+          "logFile": "attempt4-integration.log",
+          "sha256": "cb1560f793f71163a33c2d31379a86ed21c9b4d7e23c58fbe7ec5aa55a6a1d5f"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt4-maintenance.log",
+          "sha256": "2a7d5fce5aa009687e6f422e25f53f452f57882a64281075b4dbe2c0862423ff"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt4-simulation.log",
+          "sha256": "add2b9793cfa245350c4218afd7b9554aee32ffcdf45518634a7f3bd5fc818ab"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt4-e2e.log",
+          "sha256": "07907bb69db5e55fff0ed23b35ab1b792abc985075765dce311a0f916f33567c"
+        }
+      }
+    },
+    {
+      "variant": "chemistry",
+      "checks": {
+        "unit": {
+          "passed": 690,
+          "logFile": "attempt5-unit.log",
+          "sha256": "8ee27bbc4d0264bc4600597f2dfcd49f200570d59a3c2a084b40181a96acb22c"
+        },
+        "integration": {
+          "passed": 61,
+          "logFile": "attempt5-integration.log",
+          "sha256": "24a68e93ee106ee97076d53db2392a44f9d0d488d70b2ad7535c931ead6c67dd"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt5-maintenance.log",
+          "sha256": "f8203d7b6e54811e14033d14724dac31181237afa264a3f0e63631b5436a7a30"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt5-simulation.log",
+          "sha256": "33c4a907f53c32f4d90d6fe95d38943a810539012cd0e9fd3c4008f41fd97584"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt5-e2e-retry.log",
+          "sha256": "1920278cf4e1a4a1ee863864eb84b10dc3d6ad01647688fb71606af8c22e0c32"
+        }
+      }
+    },
+    {
+      "variant": "history",
+      "checks": {
+        "unit": {
+          "passed": 692,
+          "logFile": "attempt6-unit-retry.log",
+          "sha256": "56da75c993e07ba6b7fda08408fb4689a994557cf30af5adae6f983de15a9b96"
+        },
+        "integration": {
+          "passed": 62,
+          "logFile": "attempt6-integration-retry.log",
+          "sha256": "b5486012b9d044a75c8a2528034e20df41b8cb08f78d28c56c39117503b0842b"
+        },
+        "maintenance": {
+          "passed": 12,
+          "logFile": "attempt6-maintenance-retry.log",
+          "sha256": "50d498a37add6b536e97a0e16f7dda0c892b54daf8198141bde6c815bbbadc56"
+        },
+        "simulation": {
+          "passed": 12,
+          "logFile": "attempt6-simulation-retry.log",
+          "sha256": "9832d4b90991ae9ba896890495d0e4723fbd1682081a254bc44e4feae0746da4"
+        },
+        "e2e": {
+          "passed": 152,
+          "logFile": "attempt6-e2e-confirm.log",
+          "sha256": "388957f0b2fcfd346a3cd4dcfdd2f38ce7479a256bfd85cd1fca7e81cec1a343"
+        }
+      }
+    }
+  ],
+  "final": {
+    "unit": {
+      "logFile": "final-unit.log",
+      "sha256": "b336f265ba175ada56d5f83d05fc9a491e324c33ed0ba4b4a5a9d6fcd9fad0cb"
+    },
+    "integration": {
+      "logFile": "final-integration.log",
+      "sha256": "b3afd49a3b39e2bd7b5aead5597c41636f5d564d347e1f2d04c5a3a5794cb800"
+    },
+    "lint": {
+      "logFile": "final-lint.log",
+      "sha256": "a82cd71e3b661aeb02a8f56097404a10703c4cf2ef78f00ce2199902af4c8ada"
+    },
+    "typecheck": {
+      "logFile": "final-typecheck.log",
+      "sha256": "bcffbe9be1cc7da5fe6db2a4fe7cd7283eb251cba47f82beae3861eb7e5a17c5"
+    },
+    "e2e": {
+      "logFile": "attempt6-e2e-confirm.log",
+      "sha256": "388957f0b2fcfd346a3cd4dcfdd2f38ce7479a256bfd85cd1fca7e81cec1a343"
+    },
+    "maintenance": {
+      "logFile": "attempt6-maintenance-retry.log",
+      "sha256": "50d498a37add6b536e97a0e16f7dda0c892b54daf8198141bde6c815bbbadc56"
+    },
+    "simulation": {
+      "logFile": "attempt6-simulation-retry.log",
+      "sha256": "9832d4b90991ae9ba896890495d0e4723fbd1682081a254bc44e4feae0746da4"
+    },
+    "build": {
+      "logFile": "attempt6-build.log",
+      "sha256": "25a8789e4abff7a31208e4921aefa1398a484a611b61a0bb0f34b67e64c8b747"
+    }
+  },
+  "controlArchive": {
+    "commit": "50adab88bb10cff8d482e3bfc791da61b1557f44",
+    "sha256": "f9217fe4f69a7c6e85fa159fd12e51c2a91c33b9fa8daab3e892b6ae307bd019",
+    "paths": [
+      "src",
+      "tsconfig.json",
+      "package.json"
+    ],
+    "purpose": "Immutable control source for complete service/repository behavioral equivalence. Contains tracked source only; no environment files, credentials, dependencies or database rows."
+  },
+  "review": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "frozenFilesIndependentlyCompared": 164,
+    "declinedToJudge": [
+      "Other database poolers/custom SQL-role configurations; no compatibility claim outside Neon protocol pooling/direct PostgreSQL."
+    ]
+  },
+  "earlierFailures": [
+    {
+      "gate": "candidate5 production builds",
+      "cause": "ENOSPC under parallel builds; removed own compile caches and rebuilt sequentially; final builds/E2E green"
+    },
+    {
+      "gate": "candidate6 initial fast suites",
+      "cause": "3 missed legacy query-structure expectations; updated necessary tests preserving state/scope/rollback, final692unit/62integration green"
+    },
+    {
+      "gate": "candidate6 first E2E",
+      "result": "151/152",
+      "cause": "mobile confirmation detached before action dispatch; root cause unproven",
+      "followup": "same case3/3 sequential traced; complete152/152 traced run retries0; no product code/assertion weakening"
+    },
+    {
+      "gate": "diagnostic repeat-each with2workers",
+      "cause": "Date.now generated duplicate group names; expected validation alert; sequential repeats passed"
+    }
+  ]
+}

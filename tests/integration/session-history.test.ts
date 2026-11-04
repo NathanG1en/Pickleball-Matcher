@@ -22,7 +22,7 @@ it("returns fully mapped, ordered history without leaking another session's chil
   const history = await repository.listStartedRounds("history-main");
   capture = false;
   expect(history).toEqual(expectedSessionHistory);
-  expect(count).toBe(4);
+  expect(count).toBe(1);
 });
 
 it.each(["history-empty", "missing"])("returns no rounds for %s with one query", async sessionId => {
@@ -40,7 +40,7 @@ it("retains a round without matches, participants, or sitters", async () => {
   expect(history).toEqual([{ ...expectedSessionHistory[2], round: {
     ...expectedSessionHistory[2].round, id: "only-empty-round", sessionId: "history-only-empty", roundNumber: 1,
   } }]);
-  expect(count).toBeLessThanOrEqual(4);
+  expect(count).toBe(1);
 });
 
 it("reads uncommitted history through the transaction connection and preserves rollback", async () => {

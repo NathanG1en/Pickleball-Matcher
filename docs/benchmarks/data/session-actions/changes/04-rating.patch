@@ -1,0 +1,58 @@
+--- a/src/lib/db/postgres-repositories.ts
++++ b/src/lib/db/postgres-repositories.ts
+@@ -1731,6 +1731,7 @@
+     players: readonly (Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed"> & { accountId?: string | null })[],
+     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
+   ) {
++    let ratingWrites = this.query``;
+     if (players.length > 0) {
+       // Preserve the existing last-input-wins rule for account aliases. Roster
+       // propagation must also run when the account itself is already current.
+@@ -1739,8 +1740,8 @@
+         if (player.accountId) accountMap.set(player.accountId, player);
+       }
+       const accountIds = [...accountMap.keys()];
+-      await this.query`
+-        with desired_players as (
++      ratingWrites = this.query`
++        desired_players as (
+           select * from unnest(
+             ${players.map(player => player.id)}::text[],
+             ${players.map(player => player.rating)}::float8[],
+@@ -1767,12 +1768,14 @@
+           left join desired_players d on d.id = p.id
+           left join desired_accounts a on a.account_id = p.account_id
+           where d.id is not null or a.account_id is not null
+-        )
+-        update players as p
+-        set rating = v.rating, rated_games_played = v.games
+-        from desired_rosters v
+-        where p.id = v.id
+-          and (p.rating, p.rated_games_played) is distinct from (v.rating, v.games)
++        ), updated_rosters as (
++          update players as p
++          set rating = v.rating, rated_games_played = v.games
++          from desired_rosters v
++          where p.id = v.id
++            and (p.rating, p.rated_games_played) is distinct from (v.rating, v.games)
++          returning p.id
++        ),
+       `;
+     }
+ 
+@@ -1789,10 +1792,12 @@
+       }
+     }
+ 
+-    // Reconcile once: scoped rows absent from the replay become null; supplied
+-    // snapshots apply across groups, matching the global replay contract.
++    // One command reconciles ratings and snapshots from the same replay values.
++    // They modify separate tables and do not read each other's writes. An empty
++    // player list still requires only snapshot-table write permissions.
++    // Scoped rows absent from replay become null; supplied snapshots apply globally.
+     await this.query`
+-      with desired_snapshots as (
++      with ${ratingWrites} desired_snapshots as (
+         select * from unnest(
+           ${snapshotMatchIds}::text[],
+           ${snapshotPlayerIds}::text[],

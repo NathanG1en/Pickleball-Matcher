@@ -1,0 +1,76 @@
+async page => {
+  if(new URL(page.url()).origin!=='http://127.0.0.1:3125')throw Error('Only the isolated profiling server is allowed');
+  const config=JSON.parse(await page.evaluate(()=>localStorage.getItem('club-profile-config')??'{"tag":"desktop-1","rounds":10,"setupReady":true}'));
+  const samples=JSON.parse(await page.evaluate(()=>localStorage.getItem('club-profile-results')??'[]'));
+  const measure=async(action,round,button,ready)=>{
+    const step=`${config.tag}-${action}-${round}`;
+    await page.setExtraHTTPHeaders({'x-club-profile-step':step});
+    await button.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.evaluate(({action,round})=>{
+      document.addEventListener('click',event=>{
+        const target=event.target.closest('button');if(!target)return;
+        const start=Date.now();sessionStorage.setItem('club-click',String(start));sessionStorage.removeItem('club-feedback');sessionStorage.removeItem('club-ready');
+        const original=target.textContent;
+        let pendingSeen=false;
+        const heading=text=>[...document.querySelectorAll('h1,h2')].some(h=>h.textContent.trim()===text);
+        const ready=()=>{
+          if(action==='start')return heading(`Round ${round} Results`);
+          if(action==='next')return heading(`Round ${round+1}`);
+          if(action==='create-session')return heading('Round 1');
+          if(action==='save-all')return document.querySelectorAll('[data-testid^="court-match-"]').length===3&&[...document.querySelectorAll('[data-testid^="court-match-"]')].every(e=>e.textContent.includes('Final'));
+          if(action==='shuffle')return pendingSeen&&!document.querySelector('[data-testid="reshuffle-matchups-button"]')?.disabled;
+          if(action==='attendance-away'||action==='attendance-present')return [...(document.querySelector('[data-testid="attendance-row-Profile Player 11"]')?.querySelectorAll('*')??[])].some(e=>e.children.length===0&&e.textContent.trim()===(action==='attendance-away'?'Away':'Present'));
+          if(action==='correct-history')return !document.querySelector('input[placeholder="T2"]');
+          if(action==='end')return heading('Current Club Profiling');
+          return false;
+        };
+        const observer=new MutationObserver(()=>{
+          if(target.disabled || target.getAttribute('aria-busy')==='true' || !target.isConnected || target.textContent!==original){pendingSeen=true;if(sessionStorage.getItem('club-feedback')===null)sessionStorage.setItem('club-feedback',String(Date.now()-start));}
+          if(ready()){sessionStorage.setItem('club-ready',String(Date.now()-start));observer.disconnect();}
+        });
+        observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+        setTimeout(()=>observer.disconnect(),15000);
+      },{once:true,capture:true});
+    },{action,round});
+    const requests=[];
+    const onRequest=request=>{
+      if(new URL(request.url()).origin!=='http://127.0.0.1:3125' || !['fetch','xhr','document'].includes(request.resourceType()))return;
+      requests.push(request);
+    };
+    page.on('request',onRequest);
+    try {
+      const responsePromise=page.waitForResponse(response=>response.request().method()==='POST'&&response.request().headers()['x-club-profile-step']===step,{timeout:30000});
+      await button.click();const response=await responsePromise;
+      if(!response.ok())throw Error(`Action ${step}: HTTP ${response.status()}`);
+      await ready();
+      const timing=await page.evaluate(()=>({clickEpochMs:Number(sessionStorage.getItem('club-click')),ms:Date.now()-Number(sessionStorage.getItem('club-click')),feedbackMs:sessionStorage.getItem('club-feedback')===null?null:Number(sessionStorage.getItem('club-feedback')),domReadyMs:sessionStorage.getItem('club-ready')===null?null:Number(sessionStorage.getItem('club-ready'))}));
+      const end=response.request().timing().responseEnd;
+      const network=requests.map(request=>({method:request.method(),path:new URL(request.url()).pathname,type:request.resourceType(),prefetch:request.headers()['next-router-prefetch']==='1',requestBytes:request.postDataBuffer()?.byteLength??0,timing:request.timing()}));
+      const secondary=await page.evaluate(()=>{const start=Number(sessionStorage.getItem('club-click'))-performance.timeOrigin;const end=start+Number(sessionStorage.getItem('club-ready'));return {timeOrigin:performance.timeOrigin,longTasks:(window.__clubPerf?.longtask??[]).filter(e=>e.startTime<end&&e.startTime+e.duration>start),layoutShifts:(window.__clubPerf?.['layout-shift']??[]).filter(e=>e.startTime>=start&&e.startTime<=end),paints:(window.__clubPerf?.paint??[]).filter(e=>e.startTime>=start&&e.startTime<=end)};});
+      const sample={network,secondary,tag:config.tag,action,round,...timing,responseMs:end<0?null:end,responseTtfbMs:response.request().timing().responseStart,posts:requests.filter(r=>r.method()==='POST').length,gets:requests.filter(r=>r.method()==='GET'&&r.headers()['next-router-prefetch']!=='1').length};
+      samples.push(sample);await page.evaluate(value=>localStorage.setItem('club-profile-results',JSON.stringify(value)),samples);
+      console.log(JSON.stringify(sample));
+    }finally{page.off('request',onRequest);}
+  };
+  if(!config.setupReady){
+    await page.goto('http://127.0.0.1:3125/g/grp_current_club_profile_20261031/sessions/new?type=normal');
+    await page.getByRole('button',{name:'Increase courts',exact:true}).click();
+    await page.getByRole('button',{name:'Continue to Pairings →',exact:true}).click();
+  }
+  if(!config.resume)await measure('create-session',0,page.getByRole('button',{name:'Start Session',exact:true}),()=>page.getByRole('heading',{name:'Round 1',exact:true}).waitFor());
+  for(let round=1;round<=config.rounds;round++){
+    if(round<=3)await measure('shuffle',round,page.getByTestId('reshuffle-matchups-button'),()=>page.waitForFunction(()=>!document.querySelector('[data-testid="reshuffle-matchups-button"]').disabled));
+    await page.getByRole('button',{name:'Start Round',exact:true}).click();
+    await measure('start',round,page.getByRole('button',{name:'Confirm & Start',exact:true}),()=>page.getByRole('heading',{name:`Round ${round} Results`,exact:true}).waitFor());
+    for(let court=1;court<=3;court++){
+      await page.getByRole('spinbutton',{name:`Court ${court} Team 1 score`,exact:true}).fill(round%2?'11':'7');
+      await page.getByRole('spinbutton',{name:`Court ${court} Team 2 score`,exact:true}).fill(round%2?'6':'11');
+    }
+    await measure('save-all',round,page.getByTestId('save-all-scores-button'),()=>page.waitForFunction(()=>document.querySelectorAll('[data-testid^="court-match-"]').length===3&&[...document.querySelectorAll('[data-testid^="court-match-"]')].every(e=>e.textContent.includes('Final'))));
+    await measure('next',round,page.getByRole('button',{name:'Next Round',exact:true}),()=>page.getByRole('heading',{name:`Round ${round+1}`,exact:true}).waitFor());
+  }
+  await page.screenshot({path:`output/playwright/session-action-goal-20261103/${config.tag}-session.png`,fullPage:true});
+  await page.setExtraHTTPHeaders({});
+  return {tag:config.tag,sampleCount:samples.length,url:page.url()};
+}

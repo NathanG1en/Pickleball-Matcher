@@ -1,0 +1,10 @@
+import {writeFileSync,existsSync} from 'node:fs';
+const tag=process.argv[2];if(!/^render-(desktop|narrow)$/.test(tag))throw Error('Invalid diagnostic tag');
+const targets=await(await fetch('http://127.0.0.1:9235/json/list')).json();const socket=new WebSocket(targets[0].webSocketDebuggerUrl);let sequence=0;const pending=new Map();
+socket.addEventListener('message',event=>{const message=JSON.parse(event.data);if(message.id){const call=pending.get(message.id);pending.delete(message.id);if(message.error)call.reject(Error(message.error.message));else call.resolve(message.result);}});
+await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
+const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++sequence;pending.set(id,{resolve,reject});socket.send(JSON.stringify({id,method,params}));});
+const calibration=await call('Runtime.evaluate',{expression:'JSON.stringify({epochMs:Date.now(),performanceNow:performance.now(),timeOrigin:performance.timeOrigin,hrMicros:Number(process.hrtime.bigint()/1000n)})',returnByValue:true});
+await call('Profiler.enable');await call('Profiler.setSamplingInterval',{interval:1000});await call('Profiler.start');writeFileSync(`${tag}.profile-ready.json`,JSON.stringify(calibration));
+const deadline=Date.now()+180000;while(!existsSync(`${tag}.stop-profile`)&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,250));
+const stopSentEpochMs=Date.now();const {profile}=await call('Profiler.stop');const stopReceivedEpochMs=Date.now();writeFileSync(`${tag}.clock.json`,JSON.stringify({stopSentEpochMs,stopReceivedEpochMs,profileEndMicros:profile.endTime}));writeFileSync(`${tag}.cpuprofile`,JSON.stringify(profile));socket.close();console.log('Saved',tag,'CPU samples',profile.samples.length);

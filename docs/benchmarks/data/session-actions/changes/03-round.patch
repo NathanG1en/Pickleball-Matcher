@@ -1,0 +1,128 @@
+--- a/src/lib/db/postgres-repositories.ts
++++ b/src/lib/db/postgres-repositories.ts
+@@ -1524,77 +1524,57 @@
+     `;
+     if (existing.length > 0) return;
+ 
++    const { round, matches, matchPlayers, sits } = record;
++    // RETURNING dependencies preserve parent-before-child writes in a single
++    // command; the caller's transaction and session version check stay intact.
+     await this.query`
+-      insert into rounds (
+-        id, session_id, round_number, status, seed, score_breakdown,
+-        created_at, started_at, completed_at, version
+-      ) values (
+-        ${record.round.id}, ${record.round.sessionId}, ${record.round.roundNumber},
+-        ${record.round.status}, ${record.round.seed}, ${this.query.json(
+-          record.round.scoreBreakdown as unknown as postgres.JSONValue,
+-        )},
+-        ${record.round.createdAt}, ${record.round.startedAt}, ${record.round.completedAt},
+-        ${record.round.version}
++      with inserted_round as (
++        insert into rounds (
++          id, session_id, round_number, status, seed, score_breakdown,
++          created_at, started_at, completed_at, version
++        ) values (
++          ${round.id}, ${round.sessionId}, ${round.roundNumber}, ${round.status},
++          ${round.seed}, ${this.query.json(round.scoreBreakdown as unknown as postgres.JSONValue)},
++          ${round.createdAt}, ${round.startedAt}, ${round.completedAt}, ${round.version}
++        ) returning id
++      ), inserted_matches as (
++        insert into matches (
++          id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
++        )
++        select v.* from unnest(
++          ${matches.map(match => match.id)}::text[],
++          ${matches.map(match => match.roundId)}::text[],
++          ${matches.map(match => match.courtNumber)}::int[],
++          ${matches.map(match => match.status)}::text[],
++          ${matches.map(match => match.team1Score)}::int[],
++          ${matches.map(match => match.team2Score)}::int[],
++          ${matches.map(match => match.completedAt?.toISOString() ?? null)}::timestamptz[],
++          ${matches.map(match => match.version)}::int[],
++          ${this.query.array(matches.map(match => match.rated ?? true), 16)}::boolean[]
++        ) as v(id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated)
++        where exists (select 1 from inserted_round)
++        returning id
++      ), inserted_members as (
++        insert into match_players (match_id, player_id, team, rating_before, rating_after)
++        select v.* from unnest(
++          ${matchPlayers.map(member => member.matchId)}::text[],
++          ${matchPlayers.map(member => member.playerId)}::text[],
++          ${matchPlayers.map(member => member.team)}::smallint[],
++          ${matchPlayers.map(member => member.ratingBefore)}::float8[],
++          ${matchPlayers.map(member => member.ratingAfter)}::float8[]
++        ) as v(match_id, player_id, team, rating_before, rating_after)
++        where exists (select 1 from inserted_round)
++          and (select count(*) from inserted_matches) >= 0
++        returning match_id
+       )
++      insert into round_sits (round_id, player_id)
++      select v.* from unnest(
++        ${sits.map(sit => sit.roundId)}::text[],
++        ${sits.map(sit => sit.playerId)}::text[]
++      ) as v(round_id, player_id)
++      where exists (select 1 from inserted_round)
++        and (select count(*) from inserted_members) >= 0
+     `;
+-
+-    if (record.matches.length > 0) {
+-      const matchRows = record.matches.map((m) => ({
+-        id: m.id,
+-        round_id: m.roundId,
+-        court_number: m.courtNumber,
+-        status: m.status,
+-        team1_score: m.team1Score,
+-        team2_score: m.team2Score,
+-        completed_at: m.completedAt,
+-        version: m.version,
+-        rated: m.rated ?? true,
+-      }));
+-      await this.query`
+-        insert into matches ${this.query(
+-          matchRows,
+-          "id",
+-          "round_id",
+-          "court_number",
+-          "status",
+-          "team1_score",
+-          "team2_score",
+-          "completed_at",
+-          "version",
+-          "rated",
+-        )}
+-      `;
+-    }
+-
+-    if (record.matchPlayers.length > 0) {
+-      const mpRows = record.matchPlayers.map((mp) => ({
+-        match_id: mp.matchId,
+-        player_id: mp.playerId,
+-        team: mp.team,
+-        rating_before: mp.ratingBefore,
+-        rating_after: mp.ratingAfter,
+-      }));
+-      await this.query`
+-        insert into match_players ${this.query(
+-          mpRows,
+-          "match_id",
+-          "player_id",
+-          "team",
+-          "rating_before",
+-          "rating_after",
+-        )}
+-      `;
+-    }
+-
+-    if (record.sits.length > 0) {
+-      const sitRows = record.sits.map((s) => ({
+-        round_id: s.roundId,
+-        player_id: s.playerId,
+-      }));
+-      await this.query`
+-        insert into round_sits ${this.query(sitRows, "round_id", "player_id")}
+-      `;
+-    }
+   }
+ 
+   async insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {

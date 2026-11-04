@@ -1,0 +1,2944 @@
+{
+  "conditionA": false,
+  "conditionB": true,
+  "selectedCondition": "B",
+  "rule": "Differences below5percent OR overlapping ranges are INCONCLUSIVE; best prior is lowest observed median per action/viewport among completely verified prior builds. Untargeted attempts never count.",
+  "pairs": [
+    {
+      "viewport": "desktop",
+      "action": "start",
+      "targetMs": 300,
+      "final": {
+        "count": 10,
+        "medianMs": 636,
+        "minMs": 544,
+        "maxMs": 1043,
+        "maxToMedian": 1.639937106918239,
+        "observations": [
+          1043,
+          753,
+          847,
+          615,
+          620,
+          601,
+          652,
+          613,
+          544,
+          664
+        ],
+        "queries": [
+          16
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 3.5,
+          "minMs": 1,
+          "maxMs": 5,
+          "maxToMedian": 1.4285714285714286
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 607.7316045000334,
+          "minMs": 520.3486680001952,
+          "maxMs": 1005.0523730000714,
+          "maxToMedian": 1.6537767092545803
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 624.7091249999357,
+          "minMs": 534.8154580000555,
+          "maxMs": 1032.0448750000214,
+          "maxToMedian": 1.6520406597232393
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 574,
+          "minMs": 573,
+          "maxMs": 575,
+          "maxToMedian": 1.0017421602787457
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5639.5,
+          "minMs": 3912,
+          "maxMs": 7231,
+          "maxToMedian": 1.2822058693146556
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.0001401850382486979,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 5,
+        "representativeTimeline": {
+          "requestOffsetMs": 6.170166015625,
+          "serverOffsetMs": 6,
+          "firstServerWriteOffsetMs": 463.3787499999162,
+          "firstResponseByteOffsetMs": 463.652166015625,
+          "serverFinishOffsetMs": 615.0889579999493,
+          "domReadyOffsetMs": 620,
+          "queryUnionBeforeDomMs": 594.5845840001712,
+          "queryUnionBeforeFirstByteMs": 445.40533300011884,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 14.504373999778181,
+          "browserAfterFirstResponseByteMs": 156.34783398437497,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 9.481041999999434,
+              "endMs": 48.34583299991209,
+              "ms": 38.86479099991266
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 49.136124999960884,
+              "endMs": 84.29154200002085,
+              "ms": 35.15541700005997
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 84.61270800000057,
+              "endMs": 123.1835420000134,
+              "ms": 38.57083400001284
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 123.71808299992699,
+              "endMs": 162.1354580000043,
+              "ms": 38.4173750000773
+            },
+            {
+              "kind": "read",
+              "shape": "b3bac8925be4",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 162.43016699992586,
+              "endMs": 203.08424999995623,
+              "ms": 40.65408300003037
+            },
+            {
+              "kind": "snapshot-write",
+              "shape": "577dc75ac792",
+              "tables": [
+                "inserted_matches",
+                "inserted_members",
+                "inserted_round",
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds",
+                "unnest"
+              ],
+              "startMs": 203.6414999999106,
+              "endMs": 327.4359580000164,
+              "ms": 123.7944580001058
+            },
+            {
+              "kind": "source-write",
+              "shape": "0bee01821d52",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 327.81629200000316,
+              "endMs": 365.953332999954,
+              "ms": 38.13704099995084
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 366.4162500000093,
+              "endMs": 457.81554199999664,
+              "ms": 91.39929199998733
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 462.96670799993444,
+              "endMs": 503.11049999995157,
+              "ms": 40.14379200001713
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 462.99883299996145,
+              "endMs": 503.78891699993983,
+              "ms": 40.79008399997838
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 463.0289580000099,
+              "endMs": 503.4560829999391,
+              "ms": 40.42712499992922
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 463.06400000001304,
+              "endMs": 537.3757919999771,
+              "ms": 74.31179199996404
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 463.0798749999376,
+              "endMs": 499.87408300000243,
+              "ms": 36.79420800006483
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 537.9898329999996,
+              "endMs": 574.0909579999279,
+              "ms": 36.10112499992829
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 574.6157079999102,
+              "endMs": 611.9307499999413,
+              "ms": 37.3150420000311
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 574.6489580000052,
+              "endMs": 613.6967919999734,
+              "ms": 39.047833999968134
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "prepared",
+          "prior": "control",
+          "savedMs": 296,
+          "improvementPercent": 24.554126918291168,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "round",
+          "prior": "prepared",
+          "savedMs": 97,
+          "improvementPercent": 10.665200659703133,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "history",
+          "prior": "chemistry",
+          "savedMs": 117.5,
+          "improvementPercent": 15.593895155938952,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    },
+    {
+      "viewport": "desktop",
+      "action": "save-all",
+      "targetMs": 300,
+      "final": {
+        "count": 10,
+        "medianMs": 637,
+        "minMs": 514,
+        "maxMs": 1183,
+        "maxToMedian": 1.8571428571428572,
+        "observations": [
+          905,
+          908,
+          606,
+          613,
+          786,
+          514,
+          1183,
+          609,
+          648,
+          626
+        ],
+        "queries": [
+          17
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 3,
+          "minMs": 1,
+          "maxMs": 4,
+          "maxToMedian": 1.3333333333333333
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 617.743582999974,
+          "minMs": 493.9500439999392,
+          "maxMs": 1160.630497999955,
+          "maxToMedian": 1.878822427201164
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 860.4224790000007,
+          "minMs": 732.1687500000698,
+          "maxMs": 1326.6512499999953,
+          "maxToMedian": 1.541860286520936
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 388,
+          "minMs": 388,
+          "maxMs": 388,
+          "maxToMedian": 1
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5763.5,
+          "minMs": 4088,
+          "maxMs": 7337,
+          "maxToMedian": 1.273011191116509
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501,
+          0.0007629211849636501
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 9,
+        "representativeTimeline": {
+          "requestOffsetMs": 1.80908203125,
+          "serverOffsetMs": 2,
+          "firstServerWriteOffsetMs": 639.469000000041,
+          "firstResponseByteOffsetMs": 639.24908203125,
+          "serverFinishOffsetMs": 931.4136250000447,
+          "domReadyOffsetMs": 648,
+          "queryUnionBeforeDomMs": 631.950208999915,
+          "queryUnionBeforeFirstByteMs": 623.419208999956,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 14.049791000084952,
+          "browserAfterFirstResponseByteMs": 8.750917968749945,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 4.428874999983236,
+              "endMs": 112.62904200004414,
+              "ms": 108.2001670000609
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 112.98699999996461,
+              "endMs": 147.4629169999389,
+              "ms": 34.47591699997429
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 147.88483300001826,
+              "endMs": 182.1836670000339,
+              "ms": 34.29883400001563
+            },
+            {
+              "kind": "read",
+              "shape": "f89559b3a3ad",
+              "tables": [
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 182.41904199996497,
+              "endMs": 219.7089579999447,
+              "ms": 37.28991599997971
+            },
+            {
+              "kind": "source-write",
+              "shape": "670e3cb549a5",
+              "tables": [
+                "matches",
+                "unnest"
+              ],
+              "startMs": 220.4899999999907,
+              "endMs": 328.07379199995194,
+              "ms": 107.58379199996125
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 328.6791669999948,
+              "endMs": 364.7052080000285,
+              "ms": 36.02604100003373
+            },
+            {
+              "kind": "read",
+              "shape": "1fafeac65ced",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 365.0607079999754,
+              "endMs": 549.845457999967,
+              "ms": 184.78474999999162
+            },
+            {
+              "kind": "snapshot-write",
+              "shape": "a7823c94cb4f",
+              "tables": [
+                "desired_snapshots",
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions",
+                "targets",
+                "unnest"
+              ],
+              "startMs": 552.8121670000255,
+              "endMs": 598.7751670000143,
+              "ms": 45.962999999988824
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 599.7278330000117,
+              "endMs": 634.2103329999372,
+              "ms": 34.482499999925494
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 639.1547080000164,
+              "endMs": 748.7644579999615,
+              "ms": 109.60974999994505
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 639.1827500000363,
+              "endMs": 748.1526249999879,
+              "ms": 108.96987499995157
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 639.2104169999948,
+              "endMs": 748.6954169999808,
+              "ms": 109.48499999998603
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 639.2415419999743,
+              "endMs": 852.8195419999538,
+              "ms": 213.5779999999795
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 639.2550000000047,
+              "endMs": 748.5308749999385,
+              "ms": 109.27587499993388
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 853.9273749999702,
+              "endMs": 889.6646249999758,
+              "ms": 35.73725000000559
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 890.1200830000453,
+              "endMs": 928.468041999964,
+              "ms": 38.347958999918774
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 890.1562080000294,
+              "endMs": 928.265458000009,
+              "ms": 38.10924999997951
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "prepared",
+          "prior": "control",
+          "savedMs": 263,
+          "improvementPercent": 24.22846614463381,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "replay",
+          "prior": "prepared",
+          "savedMs": 47.5,
+          "improvementPercent": 5.775075987841945,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "rating",
+          "prior": "replay",
+          "savedMs": 75.5,
+          "improvementPercent": 9.741935483870968,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    },
+    {
+      "viewport": "desktop",
+      "action": "next",
+      "targetMs": 500,
+      "final": {
+        "count": 10,
+        "medianMs": 1057,
+        "minMs": 884,
+        "maxMs": 1721,
+        "maxToMedian": 1.6281929990539261,
+        "observations": [
+          1721,
+          1039,
+          1208,
+          1076,
+          959,
+          1075,
+          961,
+          884,
+          1084,
+          1000
+        ],
+        "queries": [
+          20
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 2,
+          "minMs": 1,
+          "maxMs": 3,
+          "maxToMedian": 1.5
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 947.8992080000462,
+          "minMs": 808.7616679996718,
+          "maxMs": 1485.6540829997975,
+          "maxToMedian": 1.567312294873998
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 1051.6203124999884,
+          "minMs": 876.8013750000391,
+          "maxMs": 1714.8112499999115,
+          "maxToMedian": 1.6306372457977132
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 199,
+          "minMs": 199,
+          "maxMs": 200,
+          "maxToMedian": 1.0050251256281406
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5967.5,
+          "minMs": 4326,
+          "maxMs": 7573,
+          "maxToMedian": 1.2690406367825722
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888,
+          0.00015225558810763888
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 2,
+        "representativeTimeline": {
+          "requestOffsetMs": 2.428955078125,
+          "serverOffsetMs": 2,
+          "firstServerWriteOffsetMs": 734.9112090000417,
+          "firstResponseByteOffsetMs": 735.725955078125,
+          "serverFinishOffsetMs": 1036.1652920000488,
+          "domReadyOffsetMs": 1039,
+          "queryUnionBeforeDomMs": 962.8818750000792,
+          "queryUnionBeforeFirstByteMs": 721.6670840000734,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 71.28341699996963,
+          "browserAfterFirstResponseByteMs": 303.274044921875,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 4.994834000011906,
+              "endMs": 43.2487919999985,
+              "ms": 38.253957999986596
+            },
+            {
+              "kind": "read",
+              "shape": "1aa10dae3759",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 43.53062500001397,
+              "endMs": 161.72829200001433,
+              "ms": 118.19766700000037
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 162.74766700004693,
+              "endMs": 197.58712499996182,
+              "ms": 34.839457999914885
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 198.06687500001863,
+              "endMs": 236.9445419999538,
+              "ms": 38.87766699993517
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 237.24558400001843,
+              "endMs": 277.0767090000445,
+              "ms": 39.83112500002608
+            },
+            {
+              "kind": "read",
+              "shape": "2876ce1cac39",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds"
+              ],
+              "startMs": 277.2699169999687,
+              "endMs": 317.48937500000466,
+              "ms": 40.21945800003596
+            },
+            {
+              "kind": "source-write",
+              "shape": "ec8881a2aac7",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 317.8179170000367,
+              "endMs": 412.0482090000296,
+              "ms": 94.23029199999291
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 412.37716699996963,
+              "endMs": 450.5109170000069,
+              "ms": 38.13375000003725
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 450.79174999997485,
+              "endMs": 491.4107500000391,
+              "ms": 40.61900000006426
+            },
+            {
+              "kind": "read",
+              "shape": "1fafeac65ced",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 491.69129200000316,
+              "endMs": 574.075916999951,
+              "ms": 82.38462499994785
+            },
+            {
+              "kind": "chemistry-write",
+              "shape": "712757f5a989",
+              "tables": [
+                "cleared",
+                "player_synergy",
+                "unnest"
+              ],
+              "startMs": 576.8220420000143,
+              "endMs": 693.0814170000376,
+              "ms": 116.25937500002328
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 693.2726669999538,
+              "endMs": 732.9392920000246,
+              "ms": 39.66662500007078
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 734.7571250000037,
+              "endMs": 773.7266250000102,
+              "ms": 38.96950000000652
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 734.7701250000391,
+              "endMs": 811.4401670000516,
+              "ms": 76.67004200001247
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 734.7893339999719,
+              "endMs": 771.1565420000115,
+              "ms": 36.36720800003968
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 734.8081249999814,
+              "endMs": 773.8388750000158,
+              "ms": 39.03075000003446
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 734.8164589999942,
+              "endMs": 807.7552089999663,
+              "ms": 72.93874999997206
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 811.6767499999842,
+              "endMs": 936.6762919999892,
+              "ms": 124.99954200000502
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 936.9037089999765,
+              "endMs": 973.5291669999715,
+              "ms": 36.62545799999498
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 936.9247090000426,
+              "endMs": 976.5899999999674,
+              "ms": 39.665290999924764
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "replay",
+          "prior": "prepared",
+          "savedMs": -143,
+          "improvementPercent": -11.941544885177453,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "chemistry",
+          "prior": "prepared",
+          "savedMs": 14,
+          "improvementPercent": 1.1691022964509394,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "history",
+          "prior": "chemistry",
+          "savedMs": 126.5,
+          "improvementPercent": 10.688635403464302,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    },
+    {
+      "viewport": "narrow",
+      "action": "start",
+      "targetMs": 300,
+      "final": {
+        "count": 10,
+        "medianMs": 638.5,
+        "minMs": 543,
+        "maxMs": 1155,
+        "maxToMedian": 1.8089271730618637,
+        "observations": [
+          1092,
+          771,
+          591,
+          593,
+          637,
+          1155,
+          977,
+          586,
+          543,
+          640
+        ],
+        "queries": [
+          16
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 4,
+          "minMs": 3,
+          "maxMs": 5,
+          "maxToMedian": 1.25
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 604.5749380000125,
+          "minMs": 516.4269159999676,
+          "maxMs": 1127.9347919999927,
+          "maxToMedian": 1.8656658109767188
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 621.2319795000003,
+          "minMs": 532.9006669999944,
+          "maxMs": 1143.3634590000001,
+          "maxToMedian": 1.8404774653105243
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 574,
+          "minMs": 573,
+          "maxMs": 575,
+          "maxToMedian": 1.0017421602787457
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5660.5,
+          "minMs": 3907,
+          "maxMs": 7267,
+          "maxToMedian": 1.2838088508082326
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.007046998648568826,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809,
+          0.005028736748321809
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 5,
+        "representativeTimeline": {
+          "requestOffsetMs": 5.73193359375,
+          "serverOffsetMs": 21,
+          "firstServerWriteOffsetMs": 443.0857920000053,
+          "firstResponseByteOffsetMs": 442.71193359375,
+          "serverFinishOffsetMs": 633.4906670000055,
+          "domReadyOffsetMs": 637,
+          "queryUnionBeforeDomMs": 594.8858360000158,
+          "queryUnionBeforeFirstByteMs": 407.4067510000168,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 17.604830999989645,
+          "browserAfterFirstResponseByteMs": 194.28806640624998,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 27.95049999999901,
+              "endMs": 63.78729200000089,
+              "ms": 35.83679200000188
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 64.72400000000198,
+              "endMs": 100.44750000000204,
+              "ms": 35.72350000000006
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 100.76950000000215,
+              "endMs": 136.97575000000506,
+              "ms": 36.20625000000291
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 137.17862500000047,
+              "endMs": 173.55379200000607,
+              "ms": 36.375167000005604
+            },
+            {
+              "kind": "read",
+              "shape": "b3bac8925be4",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 173.84612500000367,
+              "endMs": 299.59233400000085,
+              "ms": 125.74620899999718
+            },
+            {
+              "kind": "snapshot-write",
+              "shape": "577dc75ac792",
+              "tables": [
+                "inserted_matches",
+                "inserted_members",
+                "inserted_round",
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds",
+                "unnest"
+              ],
+              "startMs": 300.0387919999994,
+              "endMs": 349.67575000000215,
+              "ms": 49.63695800000278
+            },
+            {
+              "kind": "source-write",
+              "shape": "0bee01821d52",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 350.0188750000016,
+              "endMs": 394.42891700000473,
+              "ms": 44.41004200000316
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 394.74070900000515,
+              "endMs": 437.8377920000057,
+              "ms": 43.097083000000566
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 442.71104200000264,
+              "endMs": 516.109375,
+              "ms": 73.39833299999736
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 442.7389170000024,
+              "endMs": 512.0249170000025,
+              "ms": 69.28600000000006
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 442.76583400000527,
+              "endMs": 517.4125840000052,
+              "ms": 74.64674999999988
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 442.8003749999989,
+              "endMs": 482.7911250000034,
+              "ms": 39.99075000000448
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 442.8138749999998,
+              "endMs": 480.66441699999996,
+              "ms": 37.85054200000013
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 517.653750000005,
+              "endMs": 554.0782089999993,
+              "ms": 36.424458999994386
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 554.5434999999998,
+              "endMs": 591.257792000004,
+              "ms": 36.71429200000421
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 554.5844590000052,
+              "endMs": 631.2713340000046,
+              "ms": 76.68687499999942
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "prepared",
+          "prior": "control",
+          "savedMs": 249,
+          "improvementPercent": 21.437795953508395,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "round",
+          "prior": "replay",
+          "savedMs": 51.5,
+          "improvementPercent": 6.518987341772152,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "history",
+          "prior": "rating",
+          "savedMs": 87,
+          "improvementPercent": 11.991729841488628,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    },
+    {
+      "viewport": "narrow",
+      "action": "save-all",
+      "targetMs": 300,
+      "final": {
+        "count": 10,
+        "medianMs": 664,
+        "minMs": 521,
+        "maxMs": 1404,
+        "maxToMedian": 2.1144578313253013,
+        "observations": [
+          868,
+          768,
+          664,
+          664,
+          595,
+          521,
+          1404,
+          664,
+          744,
+          659
+        ],
+        "queries": [
+          17
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 3,
+          "minMs": 2,
+          "maxMs": 4,
+          "maxToMedian": 1.3333333333333333
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 646.0761874999989,
+          "minMs": 496.4340830000001,
+          "maxMs": 1385.5480420000022,
+          "maxToMedian": 2.144558287098307
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 939.5736045000012,
+          "minMs": 751.7848329999979,
+          "maxMs": 1622.8303749999977,
+          "maxToMedian": 1.7271987710463568
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 388,
+          "minMs": 388,
+          "maxMs": 388,
+          "maxToMedian": 1
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5785.5,
+          "minMs": 4083,
+          "maxMs": 7391,
+          "maxToMedian": 1.277504105090312
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698,
+          0.0027025546134253698
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 3,
+        "representativeTimeline": {
+          "requestOffsetMs": 3.194091796875,
+          "serverOffsetMs": 4,
+          "firstServerWriteOffsetMs": 659.5727499999994,
+          "firstResponseByteOffsetMs": 658.071091796875,
+          "serverFinishOffsetMs": 1036.707875,
+          "domReadyOffsetMs": 664,
+          "queryUnionBeforeDomMs": 644.3241670000061,
+          "queryUnionBeforeFirstByteMs": 639.8969170000055,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 15.675832999993872,
+          "browserAfterFirstResponseByteMs": 5.928908203125047,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 8.266916999993555,
+              "endMs": 44.67149999999674,
+              "ms": 36.404583000003186
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 45.021624999993946,
+              "endMs": 81.00758399999904,
+              "ms": 35.985959000005096
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 81.59720899999957,
+              "endMs": 118.95566699999472,
+              "ms": 37.35845799999515
+            },
+            {
+              "kind": "read",
+              "shape": "f89559b3a3ad",
+              "tables": [
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 119.28520899999421,
+              "endMs": 158.1608339999948,
+              "ms": 38.87562500000058
+            },
+            {
+              "kind": "source-write",
+              "shape": "670e3cb549a5",
+              "tables": [
+                "matches",
+                "unnest"
+              ],
+              "startMs": 158.52412499999627,
+              "endMs": 195.67820899999788,
+              "ms": 37.1540840000016
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 196.36129199999414,
+              "endMs": 249.21287499999744,
+              "ms": 52.8515830000033
+            },
+            {
+              "kind": "read",
+              "shape": "1fafeac65ced",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 249.95674999999756,
+              "endMs": 491.7407499999972,
+              "ms": 241.78399999999965
+            },
+            {
+              "kind": "snapshot-write",
+              "shape": "a7823c94cb4f",
+              "tables": [
+                "desired_snapshots",
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions",
+                "targets",
+                "unnest"
+              ],
+              "startMs": 494.21687499999825,
+              "endMs": 615.6139169999951,
+              "ms": 121.39704199999687
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 616.512999999999,
+              "endMs": 653.1564999999973,
+              "ms": 36.64349999999831
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 658.1306669999976,
+              "endMs": 705.9442920000001,
+              "ms": 47.8136250000025
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 658.1740419999987,
+              "endMs": 754.6452499999941,
+              "ms": 96.47120799999539
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 658.257583999999,
+              "endMs": 712.2676670000001,
+              "ms": 54.01008300000103
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 658.3287499999933,
+              "endMs": 787.5504999999976,
+              "ms": 129.22175000000425
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 658.367624999999,
+              "endMs": 706.5912089999983,
+              "ms": 48.22358399999939
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 787.9273749999993,
+              "endMs": 864.9937919999938,
+              "ms": 77.06641699999454
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 865.5385419999948,
+              "endMs": 1034.387791999994,
+              "ms": 168.8492499999993
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 865.5799999999945,
+              "endMs": 1034.1814169999998,
+              "ms": 168.6014170000053
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "prepared",
+          "prior": "control",
+          "savedMs": 17.5,
+          "improvementPercent": 1.956400223588597,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "replay",
+          "prior": "prepared",
+          "savedMs": 174.5,
+          "improvementPercent": 19.897377423033067,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "rating",
+          "prior": "replay",
+          "savedMs": 151,
+          "improvementPercent": 21.494661921708186,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    },
+    {
+      "viewport": "narrow",
+      "action": "next",
+      "targetMs": 500,
+      "final": {
+        "count": 10,
+        "medianMs": 989.5,
+        "minMs": 876,
+        "maxMs": 1289,
+        "maxToMedian": 1.3026781202627589,
+        "observations": [
+          1289,
+          1018,
+          936,
+          927,
+          1213,
+          1182,
+          961,
+          904,
+          1132,
+          876
+        ],
+        "queries": [
+          20
+        ],
+        "feedback": {
+          "count": 10,
+          "medianMs": 3,
+          "minMs": 1,
+          "maxMs": 4,
+          "maxToMedian": 1.3333333333333333
+        },
+        "queryUnionBeforeDom": {
+          "count": 10,
+          "medianMs": 909.8284790000034,
+          "minMs": 738.4659590000083,
+          "maxMs": 1167.3866649999836,
+          "maxToMedian": 1.2830843306675381
+        },
+        "serverDuration": {
+          "count": 10,
+          "medianMs": 983.035229000001,
+          "minMs": 869.4044170000125,
+          "maxMs": 1281.1798750000016,
+          "maxToMedian": 1.3032898895223626
+        },
+        "requestBytes": {
+          "count": 10,
+          "medianMs": 199,
+          "minMs": 199,
+          "maxMs": 200,
+          "maxToMedian": 1.0050251256281406
+        },
+        "responseBytes": {
+          "count": 10,
+          "medianMs": 5995.5,
+          "minMs": 4328,
+          "maxMs": 7593,
+          "maxToMedian": 1.2664498373780335
+        },
+        "longTaskCount": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "longTaskMs": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutShiftAll": [
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442,
+          0.005472312504661442
+        ],
+        "layoutShiftWithoutRecentInput": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "representativeRound": 2,
+        "representativeTimeline": {
+          "requestOffsetMs": 3.741943359375,
+          "serverOffsetMs": 4,
+          "firstServerWriteOffsetMs": 801.6325829999987,
+          "firstResponseByteOffsetMs": 801.439943359375,
+          "serverFinishOffsetMs": 1014.380167000003,
+          "domReadyOffsetMs": 1018,
+          "queryUnionBeforeDomMs": 937.8226240000004,
+          "queryUnionBeforeFirstByteMs": 782.8665409999958,
+          "serverWallWithoutOutstandingQueryBeforeDomMs": 72.55754300000262,
+          "browserAfterFirstResponseByteMs": 216.56005664062502,
+          "queryIntervalsFromClick": [
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 7.030832999997074,
+              "endMs": 42.80566700000054,
+              "ms": 35.774834000003466
+            },
+            {
+              "kind": "read",
+              "shape": "1aa10dae3759",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 43.002417000003334,
+              "endMs": 190.1995420000021,
+              "ms": 147.19712499999878
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 191.80416700000205,
+              "endMs": 230.35408299999835,
+              "ms": 38.5499159999963
+            },
+            {
+              "kind": "transaction",
+              "shape": "e6f07d43b5c2",
+              "tables": [],
+              "startMs": 230.80774999999994,
+              "endMs": 266.3340420000022,
+              "ms": 35.526292000002286
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 266.534249999997,
+              "endMs": 302.76524999999674,
+              "ms": 36.23099999999977
+            },
+            {
+              "kind": "read",
+              "shape": "2876ce1cac39",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds"
+              ],
+              "startMs": 303.0760420000006,
+              "endMs": 375.9116670000003,
+              "ms": 72.83562499999971
+            },
+            {
+              "kind": "source-write",
+              "shape": "ec8881a2aac7",
+              "tables": [
+                "rounds"
+              ],
+              "startMs": 376.3119999999981,
+              "endMs": 449.94058300000324,
+              "ms": 73.62858300000516
+            },
+            {
+              "kind": "lock-call",
+              "shape": "cabc7fb8f7ac",
+              "tables": [],
+              "startMs": 450.3313750000016,
+              "endMs": 487.57433299999684,
+              "ms": 37.24295799999527
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 487.92295800000284,
+              "endMs": 526.4025420000035,
+              "ms": 38.479584000000614
+            },
+            {
+              "kind": "read",
+              "shape": "1fafeac65ced",
+              "tables": [
+                "match_players",
+                "matches",
+                "rounds",
+                "sessions"
+              ],
+              "startMs": 526.7621250000011,
+              "endMs": 617.0094580000004,
+              "ms": 90.24733299999934
+            },
+            {
+              "kind": "chemistry-write",
+              "shape": "712757f5a989",
+              "tables": [
+                "cleared",
+                "player_synergy",
+                "unnest"
+              ],
+              "startMs": 621.0202920000011,
+              "endMs": 755.5245829999985,
+              "ms": 134.50429099999747
+            },
+            {
+              "kind": "transaction",
+              "shape": "9505cacb7c71",
+              "tables": [],
+              "startMs": 755.7492080000011,
+              "endMs": 797.8743329999998,
+              "ms": 42.12512499999866
+            },
+            {
+              "kind": "read",
+              "shape": "226e59f9cbd2",
+              "tables": [
+                "groups"
+              ],
+              "startMs": 801.1087079999998,
+              "endMs": 840.9294169999994,
+              "ms": 39.820708999999624
+            },
+            {
+              "kind": "read",
+              "shape": "133e918d5213",
+              "tables": [
+                "sessions"
+              ],
+              "startMs": 801.1423750000031,
+              "endMs": 840.8462500000023,
+              "ms": 39.70387499999924
+            },
+            {
+              "kind": "read",
+              "shape": "60ea12d21ed2",
+              "tables": [
+                "player_accounts",
+                "players"
+              ],
+              "startMs": 801.1766669999997,
+              "endMs": 839.3230419999963,
+              "ms": 38.146374999996624
+            },
+            {
+              "kind": "read",
+              "shape": "cf41a4dbd16b",
+              "tables": [
+                "match_players",
+                "matches",
+                "round_sits",
+                "rounds"
+              ],
+              "startMs": 801.2198750000025,
+              "endMs": 880.7702500000014,
+              "ms": 79.5503749999989
+            },
+            {
+              "kind": "read",
+              "shape": "f9b3a0e40693",
+              "tables": [
+                "session_attendance"
+              ],
+              "startMs": 801.2367499999964,
+              "endMs": 838.2038329999996,
+              "ms": 36.967083000003186
+            },
+            {
+              "kind": "read",
+              "shape": "9d8ee50cff77",
+              "tables": [
+                "group_organizers",
+                "groups"
+              ],
+              "startMs": 881.1065420000014,
+              "endMs": 918.6649580000012,
+              "ms": 37.55841599999985
+            },
+            {
+              "kind": "read",
+              "shape": "f1146116e6d4",
+              "tables": [
+                "session_partner_requests"
+              ],
+              "startMs": 919.119458000001,
+              "endMs": 957.3794580000031,
+              "ms": 38.26000000000204
+            },
+            {
+              "kind": "read",
+              "shape": "476644b9d158",
+              "tables": [
+                "player_synergy"
+              ],
+              "startMs": 919.1664170000004,
+              "endMs": 957.2147919999989,
+              "ms": 38.04837499999849
+            }
+          ]
+        }
+      },
+      "metA": false,
+      "last3": [
+        {
+          "variant": "replay",
+          "prior": "control",
+          "savedMs": 166,
+          "improvementPercent": 11.963963963963964,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "chemistry",
+          "prior": "rating",
+          "savedMs": -68.5,
+          "improvementPercent": -6.342592592592593,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        },
+        {
+          "variant": "history",
+          "prior": "rating",
+          "savedMs": 90.5,
+          "improvementPercent": 8.37962962962963,
+          "overlap": true,
+          "conclusion": "INCONCLUSIVE"
+        }
+      ],
+      "metB": true
+    }
+  ],
+  "comparisons": [
+    {
+      "variant": "prepared",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1205.5,
+        "minMs": 1138,
+        "maxMs": 1597,
+        "maxToMedian": 1.324761509746993
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 909.5,
+        "minMs": 657,
+        "maxMs": 1249,
+        "maxToMedian": 1.3732820230896097
+      },
+      "savedMs": 296,
+      "improvementPercent": 24.554126918291168,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "prepared",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1085.5,
+        "minMs": 861,
+        "maxMs": 2301,
+        "maxToMedian": 2.1197604790419162
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 822.5,
+        "minMs": 718,
+        "maxMs": 1315,
+        "maxToMedian": 1.5987841945288754
+      },
+      "savedMs": 263,
+      "improvementPercent": 24.22846614463381,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "prepared",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1524,
+        "minMs": 1374,
+        "maxMs": 1817,
+        "maxToMedian": 1.192257217847769
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1197.5,
+        "minMs": 1034,
+        "maxMs": 1625,
+        "maxToMedian": 1.3569937369519833
+      },
+      "savedMs": 326.5,
+      "improvementPercent": 21.423884514435695,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "prepared",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1161.5,
+        "minMs": 1100,
+        "maxMs": 1361,
+        "maxToMedian": 1.1717606543263022
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 912.5,
+        "minMs": 677,
+        "maxMs": 1872,
+        "maxToMedian": 2.0515068493150683
+      },
+      "savedMs": 249,
+      "improvementPercent": 21.437795953508395,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "prepared",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 894.5,
+        "minMs": 803,
+        "maxMs": 1034,
+        "maxToMedian": 1.155953046394634
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 877,
+        "minMs": 611,
+        "maxMs": 1778,
+        "maxToMedian": 2.027366020524515
+      },
+      "savedMs": 17.5,
+      "improvementPercent": 1.956400223588597,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "prepared",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1387.5,
+        "minMs": 1350,
+        "maxMs": 1614,
+        "maxToMedian": 1.1632432432432434
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1498.5,
+        "minMs": 1175,
+        "maxMs": 1835,
+        "maxToMedian": 1.2245578912245578
+      },
+      "savedMs": -111,
+      "improvementPercent": -8,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "prepared",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 909.5,
+        "minMs": 657,
+        "maxMs": 1249,
+        "maxToMedian": 1.3732820230896097
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 943.5,
+        "minMs": 643,
+        "maxMs": 1748,
+        "maxToMedian": 1.852676205617382
+      },
+      "savedMs": -34,
+      "improvementPercent": -3.7383177570093453,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "prepared",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 822.5,
+        "minMs": 718,
+        "maxMs": 1315,
+        "maxToMedian": 1.5987841945288754
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 775,
+        "minMs": 569,
+        "maxMs": 1356,
+        "maxToMedian": 1.7496774193548388
+      },
+      "savedMs": 47.5,
+      "improvementPercent": 5.775075987841945,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "prepared",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1197.5,
+        "minMs": 1034,
+        "maxMs": 1625,
+        "maxToMedian": 1.3569937369519833
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1340.5,
+        "minMs": 1024,
+        "maxMs": 5172,
+        "maxToMedian": 3.8582618425960464
+      },
+      "savedMs": -143,
+      "improvementPercent": -11.941544885177453,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "prepared",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 912.5,
+        "minMs": 677,
+        "maxMs": 1872,
+        "maxToMedian": 2.0515068493150683
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 790,
+        "minMs": 650,
+        "maxMs": 1317,
+        "maxToMedian": 1.6670886075949367
+      },
+      "savedMs": 122.5,
+      "improvementPercent": 13.424657534246576,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "prepared",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 877,
+        "minMs": 611,
+        "maxMs": 1778,
+        "maxToMedian": 2.027366020524515
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 702.5,
+        "minMs": 539,
+        "maxMs": 908,
+        "maxToMedian": 1.2925266903914592
+      },
+      "savedMs": 174.5,
+      "improvementPercent": 19.897377423033067,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "replay",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "control",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1387.5,
+        "minMs": 1350,
+        "maxMs": 1614,
+        "maxToMedian": 1.1632432432432434
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1221.5,
+        "minMs": 1017,
+        "maxMs": 1549,
+        "maxToMedian": 1.2681129758493654
+      },
+      "savedMs": 166,
+      "improvementPercent": 11.963963963963964,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "prepared",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 909.5,
+        "minMs": 657,
+        "maxMs": 1249,
+        "maxToMedian": 1.3732820230896097
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 812.5,
+        "minMs": 621,
+        "maxMs": 1021,
+        "maxToMedian": 1.2566153846153847
+      },
+      "savedMs": 97,
+      "improvementPercent": 10.665200659703133,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "replay",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 775,
+        "minMs": 569,
+        "maxMs": 1356,
+        "maxToMedian": 1.7496774193548388
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 864,
+        "minMs": 569,
+        "maxMs": 1276,
+        "maxToMedian": 1.4768518518518519
+      },
+      "savedMs": -89,
+      "improvementPercent": -11.483870967741936,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "prepared",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 1197.5,
+        "minMs": 1034,
+        "maxMs": 1625,
+        "maxToMedian": 1.3569937369519833
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1287,
+        "minMs": 1129,
+        "maxMs": 1596,
+        "maxToMedian": 1.24009324009324
+      },
+      "savedMs": -89.5,
+      "improvementPercent": -7.473903966597077,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "replay",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 790,
+        "minMs": 650,
+        "maxMs": 1317,
+        "maxToMedian": 1.6670886075949367
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 738.5,
+        "minMs": 591,
+        "maxMs": 1213,
+        "maxToMedian": 1.6425186188219363
+      },
+      "savedMs": 51.5,
+      "improvementPercent": 6.518987341772152,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "replay",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 702.5,
+        "minMs": 539,
+        "maxMs": 908,
+        "maxToMedian": 1.2925266903914592
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 717,
+        "minMs": 653,
+        "maxMs": 1041,
+        "maxToMedian": 1.4518828451882846
+      },
+      "savedMs": -14.5,
+      "improvementPercent": -2.0640569395017794,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "round",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "replay",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 1221.5,
+        "minMs": 1017,
+        "maxMs": 1549,
+        "maxToMedian": 1.2681129758493654
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1177.5,
+        "minMs": 943,
+        "maxMs": 1989,
+        "maxToMedian": 1.689171974522293
+      },
+      "savedMs": 44,
+      "improvementPercent": 3.6021285304952926,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "round",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 812.5,
+        "minMs": 621,
+        "maxMs": 1021,
+        "maxToMedian": 1.2566153846153847
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 757.5,
+        "minMs": 566,
+        "maxMs": 975,
+        "maxToMedian": 1.2871287128712872
+      },
+      "savedMs": 55,
+      "improvementPercent": 6.769230769230769,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "replay",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 775,
+        "minMs": 569,
+        "maxMs": 1356,
+        "maxToMedian": 1.7496774193548388
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 699.5,
+        "minMs": 538,
+        "maxMs": 2117,
+        "maxToMedian": 3.026447462473195
+      },
+      "savedMs": 75.5,
+      "improvementPercent": 9.741935483870968,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "prepared",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 1197.5,
+        "minMs": 1034,
+        "maxMs": 1625,
+        "maxToMedian": 1.3569937369519833
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1236.5,
+        "minMs": 1000,
+        "maxMs": 1354,
+        "maxToMedian": 1.09502628386575
+      },
+      "savedMs": -39,
+      "improvementPercent": -3.25678496868476,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "round",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 738.5,
+        "minMs": 591,
+        "maxMs": 1213,
+        "maxToMedian": 1.6425186188219363
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 725.5,
+        "minMs": 641,
+        "maxMs": 1037,
+        "maxToMedian": 1.4293590627153687
+      },
+      "savedMs": 13,
+      "improvementPercent": 1.7603249830737984,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "replay",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 702.5,
+        "minMs": 539,
+        "maxMs": 908,
+        "maxToMedian": 1.2925266903914592
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 551.5,
+        "minMs": 428,
+        "maxMs": 1155,
+        "maxToMedian": 2.0942883046237535
+      },
+      "savedMs": 151,
+      "improvementPercent": 21.494661921708186,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "rating",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "round",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 1177.5,
+        "minMs": 943,
+        "maxMs": 1989,
+        "maxToMedian": 1.689171974522293
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1080,
+        "minMs": 919,
+        "maxMs": 1621,
+        "maxToMedian": 1.500925925925926
+      },
+      "savedMs": 97.5,
+      "improvementPercent": 8.280254777070063,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 757.5,
+        "minMs": 566,
+        "maxMs": 975,
+        "maxToMedian": 1.2871287128712872
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 753.5,
+        "minMs": 607,
+        "maxMs": 971,
+        "maxToMedian": 1.2886529528865296
+      },
+      "savedMs": 4,
+      "improvementPercent": 0.528052805280528,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 699.5,
+        "minMs": 538,
+        "maxMs": 2117,
+        "maxToMedian": 3.026447462473195
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 907,
+        "minMs": 523,
+        "maxMs": 1379,
+        "maxToMedian": 1.5203969128996693
+      },
+      "savedMs": -207.5,
+      "improvementPercent": -29.664045746962113,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "prepared",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1197.5,
+        "minMs": 1034,
+        "maxMs": 1625,
+        "maxToMedian": 1.3569937369519833
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1183.5,
+        "minMs": 902,
+        "maxMs": 1322,
+        "maxToMedian": 1.1170257710181664
+      },
+      "savedMs": 14,
+      "improvementPercent": 1.1691022964509394,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 725.5,
+        "minMs": 641,
+        "maxMs": 1037,
+        "maxToMedian": 1.4293590627153687
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 842,
+        "minMs": 573,
+        "maxMs": 1075,
+        "maxToMedian": 1.2767220902612826
+      },
+      "savedMs": -116.5,
+      "improvementPercent": -16.0578911095796,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 551.5,
+        "minMs": 428,
+        "maxMs": 1155,
+        "maxToMedian": 2.0942883046237535
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 793,
+        "minMs": 562,
+        "maxMs": 949,
+        "maxToMedian": 1.1967213114754098
+      },
+      "savedMs": -241.5,
+      "improvementPercent": -43.789664551223936,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "chemistry",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "rating",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1080,
+        "minMs": 919,
+        "maxMs": 1621,
+        "maxToMedian": 1.500925925925926
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1148.5,
+        "minMs": 876,
+        "maxMs": 1664,
+        "maxToMedian": 1.4488463212886373
+      },
+      "savedMs": -68.5,
+      "improvementPercent": -6.342592592592593,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "desktop",
+      "action": "start",
+      "prior": "chemistry",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 753.5,
+        "minMs": 607,
+        "maxMs": 971,
+        "maxToMedian": 1.2886529528865296
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 636,
+        "minMs": 544,
+        "maxMs": 1043,
+        "maxToMedian": 1.639937106918239
+      },
+      "savedMs": 117.5,
+      "improvementPercent": 15.593895155938952,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "desktop",
+      "action": "save-all",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 699.5,
+        "minMs": 538,
+        "maxMs": 2117,
+        "maxToMedian": 3.026447462473195
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 637,
+        "minMs": 514,
+        "maxMs": 1183,
+        "maxToMedian": 1.8571428571428572
+      },
+      "savedMs": 62.5,
+      "improvementPercent": 8.9349535382416,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "desktop",
+      "action": "next",
+      "prior": "chemistry",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1183.5,
+        "minMs": 902,
+        "maxMs": 1322,
+        "maxToMedian": 1.1170257710181664
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 1057,
+        "minMs": 884,
+        "maxMs": 1721,
+        "maxToMedian": 1.6281929990539261
+      },
+      "savedMs": 126.5,
+      "improvementPercent": 10.688635403464302,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "narrow",
+      "action": "start",
+      "prior": "rating",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 725.5,
+        "minMs": 641,
+        "maxMs": 1037,
+        "maxToMedian": 1.4293590627153687
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 638.5,
+        "minMs": 543,
+        "maxMs": 1155,
+        "maxToMedian": 1.8089271730618637
+      },
+      "savedMs": 87,
+      "improvementPercent": 11.991729841488628,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "narrow",
+      "action": "save-all",
+      "prior": "rating",
+      "targeted": false,
+      "before": {
+        "count": 10,
+        "medianMs": 551.5,
+        "minMs": 428,
+        "maxMs": 1155,
+        "maxToMedian": 2.0942883046237535
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 664,
+        "minMs": 521,
+        "maxMs": 1404,
+        "maxToMedian": 2.1144578313253013
+      },
+      "savedMs": -112.5,
+      "improvementPercent": -20.398912058023573,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    },
+    {
+      "variant": "history",
+      "viewport": "narrow",
+      "action": "next",
+      "prior": "rating",
+      "targeted": true,
+      "before": {
+        "count": 10,
+        "medianMs": 1080,
+        "minMs": 919,
+        "maxMs": 1621,
+        "maxToMedian": 1.500925925925926
+      },
+      "after": {
+        "count": 10,
+        "medianMs": 989.5,
+        "minMs": 876,
+        "maxMs": 1289,
+        "maxToMedian": 1.3026781202627589
+      },
+      "savedMs": 90.5,
+      "improvementPercent": 8.37962962962963,
+      "overlap": true,
+      "conclusion": "INCONCLUSIVE"
+    }
+  ]
+}

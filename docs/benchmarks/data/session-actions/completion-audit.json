@@ -1,0 +1,23 @@
+{
+  "acceptedPrimaryObservations": 420,
+  "viewports": [
+    "desktop",
+    "narrow"
+  ],
+  "tenPerActionPerViewportPerBuild": true,
+  "allPostCountsOneGetCountsZero": true,
+  "zeroFailedQueries": true,
+  "finalRuntimeMatchesBuiltAndTestedExport": true,
+  "trackedFrozenFilesVerified": 795,
+  "sequentialPatchesRecreateFinalRuntime": true,
+  "historicalBaselineVerbatim": true,
+  "localReportLinksResolve": true,
+  "secondaryObservationsPerBuild": 6,
+  "conditionA": false,
+  "conditionB": true,
+  "ownProfilingPortStopped": true,
+  "limitations": [
+    "Initial final mobile confirmation detachment remained unexplained; subsequent3isolated and full152test runs passed without retries; recorded in report.",
+    "Other poolers/custom SQL-role configurations were not reviewed."
+  ]
+}
