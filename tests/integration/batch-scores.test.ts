@@ -52,7 +52,7 @@ it.each([4, 6])("saves %i courts with a constant SQL budget and correct rating s
   expect(players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
   const rounds = await repository.listStartedRounds("batch-session");
   expect(rounds[0].matchPlayers.find(member => member.playerId === "batch-player-0")).toMatchObject({ ratingBefore: 1000, ratingAfter: 1020 });
-  expect(queries).toBeLessThanOrEqual(9);
+  expect(queries).toBeLessThanOrEqual(8);
 });
 
 it("rolls scores, account ratings, and match snapshots back if replay fails after writing", async () => {

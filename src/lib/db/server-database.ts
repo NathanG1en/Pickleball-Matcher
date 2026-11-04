@@ -6,7 +6,9 @@ let database: postgres.Sql | undefined;
 
 export function createDatabase(connectionString: string): postgres.Sql {
   return postgres(connectionString, {
-    prepare: false,
+    // Neon supports protocol-level prepared statements through its pooler.
+    // Reusing them avoids describing the same parameterized SQL on every call.
+    prepare: true,
     max: 10,
     idle_timeout: 20,
     connect_timeout: 15,

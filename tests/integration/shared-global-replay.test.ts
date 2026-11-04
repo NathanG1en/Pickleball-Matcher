@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { requireReplayTestUrl } from "../fixtures/replay-database";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
@@ -9,14 +10,10 @@ import { createReplayTables, persistedReplayState, seedReplayHistory } from "../
 
 let queries = 0;
 let capture = false;
-const testUrl = process.env.TEST_DATABASE_URL;
-const allowlistedReplayEndpoint = !!testUrl && /^ep-cold-band-b491lrgj\./.test(new URL(testUrl).hostname);
-if (!allowlistedReplayEndpoint && !process.env.CI) throw new Error("Temporary replay tests require the allowlisted direct test endpoint");
-const replayIt = allowlistedReplayEndpoint || !process.env.CI ? it : it.skip;
+const testUrl = requireReplayTestUrl(process.env.TEST_DATABASE_URL, process.env.DISPOSABLE_POSTGRES_TESTS === "1");
 let sql: postgres.Sql;
 let repository: PostgresRepositories;
 beforeAll(async () => {
-  if (!allowlistedReplayEndpoint) return;
   sql = postgres(testUrl!, { max: 1, max_lifetime: 0, idle_timeout: 0, prepare: false, onnotice: () => {}, debug: () => { if (capture) queries++; } });
   repository = new PostgresRepositories(sql);
   await createReplayTables(sql);
@@ -28,7 +25,7 @@ beforeAll(async () => {
 }, 30_000);
 afterAll(async () => { await sql?.end(); });
 
-replayIt("matches the legacy persisted outputs while removing exactly two global reads", async () => {
+it("matches the legacy persisted outputs while removing exactly two global reads", async () => {
   async function run(shared: boolean) {
     queries = 0; capture = true;
     try {
@@ -49,7 +46,7 @@ replayIt("matches the legacy persisted outputs while removing exactly two global
   expect(roster.find(player => player.id === "shared-roster-player")?.rating).toEqual(roster.find(player => player.id === "batch-player-0")?.rating);
 });
 
-replayIt("rolls back source, rating, snapshot and chemistry writes when the final write fails", async () => {
+it("rolls back source, rating, snapshot and chemistry writes when the final write fails", async () => {
   const before = await persistedReplayState(sql);
   const original = PostgresRepositories.prototype.replaceSynergyState;
   const fault = vi.spyOn(PostgresRepositories.prototype, "replaceSynergyState").mockImplementationOnce(async function (this: PostgresRepositories, records) {
@@ -63,7 +60,7 @@ replayIt("rolls back source, rating, snapshot and chemistry writes when the fina
   expect(await persistedReplayState(sql)).toEqual(before);
 });
 
-replayIt("holds the same chemistry lock until the transaction finishes", async () => {
+it("holds the same chemistry lock until the transaction finishes", async () => {
   const contender = postgres(testUrl!, { max: 1, prepare: false, onnotice: () => {} });
   try {
     await repository.transaction(async transaction => {

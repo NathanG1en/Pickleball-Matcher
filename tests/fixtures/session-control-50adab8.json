@@ -1,0 +1,10 @@
+{
+  "commit": "50adab88bb10cff8d482e3bfc791da61b1557f44",
+  "sha256": "f9217fe4f69a7c6e85fa159fd12e51c2a91c33b9fa8daab3e892b6ae307bd019",
+  "paths": [
+    "src",
+    "tsconfig.json",
+    "package.json"
+  ],
+  "purpose": "Immutable control source for complete service/repository behavioral equivalence. Contains tracked source only; no environment files, credentials, dependencies or database rows."
+}

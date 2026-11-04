@@ -70,6 +70,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
       TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:54322/test_db
+      DISPOSABLE_POSTGRES_TESTS: "1"
       ORGANIZER_SESSION_SECRET: ci-secret-that-is-at-least-thirty-two-bytes-long-now
       ORGANIZER_FINGERPRINT_SECRET: ci-fingerprint-secret-at-least-thirty-two-bytes
       SESSION_COOKIE_SECURE: "false"
@@ -129,6 +130,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres@127.0.0.1:54322/postgres
       TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:54322/test_db
+      DISPOSABLE_POSTGRES_TESTS: "1"
       ORGANIZER_SESSION_SECRET: ci-secret-that-is-at-least-thirty-two-bytes-long-now
       ORGANIZER_FINGERPRINT_SECRET: ci-fingerprint-secret-at-least-thirty-two-bytes
       SESSION_COOKIE_SECURE: "false"

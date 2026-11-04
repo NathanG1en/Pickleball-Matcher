@@ -564,9 +564,10 @@ export class PostgresRepositories implements DomainRepository {
 
   async replaceSynergyState(records: readonly PlayerSynergyRecord[]): Promise<void> {
     if (!this.inTransaction) throw new Error("Chemistry replacement requires a transaction.");
-    await this.query`delete from player_synergy`;
-    if (records.length === 0) return;
+    // Consume the DELETE output before inserting replacement rows. Empty input
+    // still clears the table; the caller keeps the same lock and transaction.
     await this.query`
+      with cleared as (delete from player_synergy returning 1)
       insert into player_synergy (account_id_1, account_id_2, matches_played, wins, synergy_score,
         weight_sum, contribution_sum, weight_sq_sum, updated_at)
       select * from unnest(
@@ -575,6 +576,7 @@ export class PostgresRepositories implements DomainRepository {
         ${records.map(r => r.synergyScore)}::float8[], ${records.map(r => r.weightSum ?? 0)}::float8[],
         ${records.map(r => r.contributionSum ?? 0)}::float8[], ${records.map(r => r.weightSqSum ?? 0)}::float8[],
         ${records.map(r => r.updatedAt.toISOString())}::timestamptz[])
+      where (select count(*) from cleared) >= 0
     `;
   }
 
@@ -1360,44 +1362,52 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async listStartedRounds(sessionId: string): Promise<readonly StartedRoundRecord[]> {
-    const roundRows = await this.query<RoundRow[]>`
-      select id, session_id, round_number, status, seed, score_breakdown,
-             created_at, started_at, completed_at, version
-      from rounds where session_id = ${sessionId} order by round_number
+    type JsonMatch = Omit<MatchRow, "completed_at"> & { completed_at: string | null };
+    type JsonMember = Omit<MatchPlayerRow, "rating_before" | "rating_after"> & {
+      rating_before: number | string | null; rating_after: number | string | null;
+    };
+    type HistoryRow = RoundRow & { match_rows: JsonMatch[]; member_rows: JsonMember[]; sit_rows: SitRow[] };
+    // One command keeps the whole history on the caller's connection/snapshot.
+    // Explicit projections and aggregate ordering retain the public row contract.
+    const rows = await this.query<HistoryRow[]>`
+      select r.id, r.session_id, r.round_number, r.status, r.seed, r.score_breakdown,
+             r.created_at, r.started_at, r.completed_at, r.version,
+        coalesce((
+          select jsonb_agg(to_jsonb(child) order by child.court_number)
+          from (
+            select m.id, m.round_id, m.court_number, m.status, m.team1_score,
+                   m.team2_score, m.completed_at, m.version, m.rated
+            from matches m where m.round_id = r.id
+          ) child
+        ), '[]'::jsonb) as match_rows,
+        coalesce((
+          select jsonb_agg(to_jsonb(child) order by child.match_id, child.team, child.player_id)
+          from (
+            select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
+            from match_players mp join matches m on m.id = mp.match_id
+            where m.round_id = r.id
+          ) child
+        ), '[]'::jsonb) as member_rows,
+        coalesce((
+          select jsonb_agg(to_jsonb(child) order by child.player_id)
+          from (
+            select rs.round_id, rs.player_id from round_sits rs where rs.round_id = r.id
+          ) child
+        ), '[]'::jsonb) as sit_rows
+      from rounds r where r.session_id = ${sessionId} order by r.round_number
     `;
-    if (roundRows.length === 0) return [];
-    const roundIds = roundRows.map((row) => row.id);
-    // Anchor children to the rounds above, while removing the dependency on a
-    // separate match-ID read. Keep this.query so transactional callers stay on
-    // their pinned connection; pooled callers can run these reads concurrently.
-    const [matchRows, memberRows, sitRows] = await Promise.all([
-      this.query<MatchRow[]>`
-        select id, round_id, court_number, status, team1_score, team2_score,
-               completed_at, version, rated
-        from matches where round_id in ${this.query(roundIds)} order by round_id, court_number
-      `,
-      this.query<MatchPlayerRow[]>`
-        select mp.match_id, mp.player_id, mp.team, mp.rating_before, mp.rating_after
-        from match_players mp join matches m on m.id = mp.match_id
-        where m.round_id in ${this.query(roundIds)}
-        order by mp.match_id, mp.team, mp.player_id
-      `,
-      this.query<SitRow[]>`
-        select round_id, player_id from round_sits
-        where round_id in ${this.query(roundIds)} order by round_id, player_id
-      `,
-    ]);
-
-    return roundRows.map((roundRow) => {
-      const matches = matchRows.filter((row) => row.round_id === roundRow.id);
-      const ids = new Set(matches.map((row) => row.id));
-      return {
-        round: mapRound(roundRow),
-        matches: matches.map(mapMatch),
-        matchPlayers: memberRows.filter((row) => ids.has(row.match_id)).map(mapMatchPlayer),
-        sits: sitRows.filter((row) => row.round_id === roundRow.id).map(mapSit),
-      };
-    });
+    return rows.map(row => ({
+      round: mapRound(row),
+      matches: row.match_rows.map(match => mapMatch({ ...match,
+        completed_at: match.completed_at === null ? null : new Date(match.completed_at),
+      })),
+      // PostgreSQL JSON represents non-finite float8 values as strings.
+      matchPlayers: row.member_rows.map(member => mapMatchPlayer({ ...member,
+        rating_before: member.rating_before === null ? null : Number(member.rating_before),
+        rating_after: member.rating_after === null ? null : Number(member.rating_after),
+      })),
+      sits: row.sit_rows.map(mapSit),
+    }));
   }
 
   async getRound(roundId: string): Promise<RoundRecord | null> {
@@ -1524,77 +1534,57 @@ export class PostgresRepositories implements DomainRepository {
     `;
     if (existing.length > 0) return;
 
+    const { round, matches, matchPlayers, sits } = record;
+    // RETURNING dependencies preserve parent-before-child writes in a single
+    // command; the caller's transaction and session version check stay intact.
     await this.query`
-      insert into rounds (
-        id, session_id, round_number, status, seed, score_breakdown,
-        created_at, started_at, completed_at, version
-      ) values (
-        ${record.round.id}, ${record.round.sessionId}, ${record.round.roundNumber},
-        ${record.round.status}, ${record.round.seed}, ${this.query.json(
-          record.round.scoreBreakdown as unknown as postgres.JSONValue,
-        )},
-        ${record.round.createdAt}, ${record.round.startedAt}, ${record.round.completedAt},
-        ${record.round.version}
+      with inserted_round as (
+        insert into rounds (
+          id, session_id, round_number, status, seed, score_breakdown,
+          created_at, started_at, completed_at, version
+        ) values (
+          ${round.id}, ${round.sessionId}, ${round.roundNumber}, ${round.status},
+          ${round.seed}, ${this.query.json(round.scoreBreakdown as unknown as postgres.JSONValue)},
+          ${round.createdAt}, ${round.startedAt}, ${round.completedAt}, ${round.version}
+        ) returning id
+      ), inserted_matches as (
+        insert into matches (
+          id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated
+        )
+        select v.* from unnest(
+          ${matches.map(match => match.id)}::text[],
+          ${matches.map(match => match.roundId)}::text[],
+          ${matches.map(match => match.courtNumber)}::int[],
+          ${matches.map(match => match.status)}::text[],
+          ${matches.map(match => match.team1Score)}::int[],
+          ${matches.map(match => match.team2Score)}::int[],
+          ${matches.map(match => match.completedAt?.toISOString() ?? null)}::timestamptz[],
+          ${matches.map(match => match.version)}::int[],
+          ${this.query.array(matches.map(match => match.rated ?? true), 16)}::boolean[]
+        ) as v(id, round_id, court_number, status, team1_score, team2_score, completed_at, version, rated)
+        where exists (select 1 from inserted_round)
+        returning id
+      ), inserted_members as (
+        insert into match_players (match_id, player_id, team, rating_before, rating_after)
+        select v.* from unnest(
+          ${matchPlayers.map(member => member.matchId)}::text[],
+          ${matchPlayers.map(member => member.playerId)}::text[],
+          ${matchPlayers.map(member => member.team)}::smallint[],
+          ${matchPlayers.map(member => member.ratingBefore)}::float8[],
+          ${matchPlayers.map(member => member.ratingAfter)}::float8[]
+        ) as v(match_id, player_id, team, rating_before, rating_after)
+        where exists (select 1 from inserted_round)
+          and (select count(*) from inserted_matches) >= 0
+        returning match_id
       )
+      insert into round_sits (round_id, player_id)
+      select v.* from unnest(
+        ${sits.map(sit => sit.roundId)}::text[],
+        ${sits.map(sit => sit.playerId)}::text[]
+      ) as v(round_id, player_id)
+      where exists (select 1 from inserted_round)
+        and (select count(*) from inserted_members) >= 0
     `;
-
-    if (record.matches.length > 0) {
-      const matchRows = record.matches.map((m) => ({
-        id: m.id,
-        round_id: m.roundId,
-        court_number: m.courtNumber,
-        status: m.status,
-        team1_score: m.team1Score,
-        team2_score: m.team2Score,
-        completed_at: m.completedAt,
-        version: m.version,
-        rated: m.rated ?? true,
-      }));
-      await this.query`
-        insert into matches ${this.query(
-          matchRows,
-          "id",
-          "round_id",
-          "court_number",
-          "status",
-          "team1_score",
-          "team2_score",
-          "completed_at",
-          "version",
-          "rated",
-        )}
-      `;
-    }
-
-    if (record.matchPlayers.length > 0) {
-      const mpRows = record.matchPlayers.map((mp) => ({
-        match_id: mp.matchId,
-        player_id: mp.playerId,
-        team: mp.team,
-        rating_before: mp.ratingBefore,
-        rating_after: mp.ratingAfter,
-      }));
-      await this.query`
-        insert into match_players ${this.query(
-          mpRows,
-          "match_id",
-          "player_id",
-          "team",
-          "rating_before",
-          "rating_after",
-        )}
-      `;
-    }
-
-    if (record.sits.length > 0) {
-      const sitRows = record.sits.map((s) => ({
-        round_id: s.roundId,
-        player_id: s.playerId,
-      }));
-      await this.query`
-        insert into round_sits ${this.query(sitRows, "round_id", "player_id")}
-      `;
-    }
   }
 
   async insertMatch(match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]): Promise<void> {
@@ -1711,11 +1701,16 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async listReplayMatches(groupId?: string): Promise<readonly ReplayMatch[]> {
-    type ReplayRow = MatchRow & { group_id: string; player_id: string; team: 1 | 2; synergy_eligible: boolean };
+    type ReplayRow = Pick<MatchRow, "id" | "status" | "team1_score" | "team2_score" | "completed_at"> & {
+      group_id: string; team1: string[]; team2: string[]; synergy_eligible: boolean;
+    };
+    // Return one row per doubles match instead of repeating its metadata for
+    // every participant. Explicit aggregate ordering preserves replay inputs.
     const rows = await this.query<ReplayRow[]>`
-      select m.id, m.round_id, m.court_number, m.status, m.team1_score,
-             m.team2_score, m.completed_at, m.version, m.rated, s.group_id,
-             mp.player_id, mp.team, (r.status = 'completed' or s.type = 'open_play') as synergy_eligible
+      select m.id, m.status, m.team1_score, m.team2_score, m.completed_at,
+             s.group_id, (r.status = 'completed' or s.type = 'open_play') as synergy_eligible,
+             array_agg(mp.player_id order by mp.player_id) filter (where mp.team = 1) as team1,
+             array_agg(mp.player_id order by mp.player_id) filter (where mp.team = 2) as team2
       from matches m
       join rounds r on r.id = m.round_id
       join sessions s on s.id = r.session_id
@@ -1724,29 +1719,20 @@ export class PostgresRepositories implements DomainRepository {
         and m.status in ('completed', 'cancelled')
         and m.rated = true
         and m.completed_at is not null
-      order by m.completed_at, m.id, mp.team, mp.player_id
+      group by m.id, s.group_id, r.status, s.type
+      having count(*) filter (where mp.team = 1) = 2
+         and count(*) filter (where mp.team = 2) = 2
+      order by m.completed_at, m.id
     `;
-    const grouped = new Map<string, ReplayRow[]>();
-    for (const row of rows) grouped.set(row.id, [...(grouped.get(row.id) ?? []), row]);
-
-    return [...grouped.values()].flatMap((matchRows): ReplayMatch[] => {
-      const first = matchRows[0];
-      const team1 = matchRows.filter((row) => row.team === 1).map((row) => row.player_id);
-      const team2 = matchRows.filter((row) => row.team === 2).map((row) => row.player_id);
-      if (team1.length !== 2 || team2.length !== 2 || !first.completed_at) return [];
-      return [
-        {
-          id: first.id,
-          groupId: first.group_id,
-          synergyEligible: first.synergy_eligible,
-          status: first.status === "cancelled" ? "cancelled" : "completed",
-          completedAt: first.completed_at,
-          team1: [team1[0], team1[1]],
-          team2: [team2[0], team2[1]],
-          team1Score: first.team1_score ?? 0,
-          team2Score: first.team2_score ?? 0,
-        },
-      ];
+    return rows.flatMap((row): ReplayMatch[] => {
+      if (!row.completed_at) return [];
+      return [{
+        id: row.id, groupId: row.group_id, synergyEligible: row.synergy_eligible,
+        status: row.status === "cancelled" ? "cancelled" : "completed",
+        completedAt: row.completed_at,
+        team1: [row.team1[0], row.team1[1]], team2: [row.team2[0], row.team2[1]],
+        team1Score: row.team1_score ?? 0, team2Score: row.team2_score ?? 0,
+      }];
     });
   }
 
@@ -1755,6 +1741,7 @@ export class PostgresRepositories implements DomainRepository {
     players: readonly (Pick<PlayerRecord, "id" | "rating" | "ratedGamesPlayed"> & { accountId?: string | null })[],
     snapshots: ReadonlyMap<string, readonly RatingSnapshot[]>,
   ) {
+    let ratingWrites = this.query``;
     if (players.length > 0) {
       // Preserve the existing last-input-wins rule for account aliases. Roster
       // propagation must also run when the account itself is already current.
@@ -1763,8 +1750,8 @@ export class PostgresRepositories implements DomainRepository {
         if (player.accountId) accountMap.set(player.accountId, player);
       }
       const accountIds = [...accountMap.keys()];
-      await this.query`
-        with desired_players as (
+      ratingWrites = this.query`
+        desired_players as (
           select * from unnest(
             ${players.map(player => player.id)}::text[],
             ${players.map(player => player.rating)}::float8[],
@@ -1791,12 +1778,14 @@ export class PostgresRepositories implements DomainRepository {
           left join desired_players d on d.id = p.id
           left join desired_accounts a on a.account_id = p.account_id
           where d.id is not null or a.account_id is not null
-        )
-        update players as p
-        set rating = v.rating, rated_games_played = v.games
-        from desired_rosters v
-        where p.id = v.id
-          and (p.rating, p.rated_games_played) is distinct from (v.rating, v.games)
+        ), updated_rosters as (
+          update players as p
+          set rating = v.rating, rated_games_played = v.games
+          from desired_rosters v
+          where p.id = v.id
+            and (p.rating, p.rated_games_played) is distinct from (v.rating, v.games)
+          returning p.id
+        ),
       `;
     }
 
@@ -1813,10 +1802,12 @@ export class PostgresRepositories implements DomainRepository {
       }
     }
 
-    // Reconcile once: scoped rows absent from the replay become null; supplied
-    // snapshots apply across groups, matching the global replay contract.
+    // One command reconciles ratings and snapshots from the same replay values.
+    // They modify separate tables and do not read each other's writes. An empty
+    // player list still requires only snapshot-table write permissions.
+    // Scoped rows absent from replay become null; supplied snapshots apply globally.
     await this.query`
-      with desired_snapshots as (
+      with ${ratingWrites} desired_snapshots as (
         select * from unnest(
           ${snapshotMatchIds}::text[],
           ${snapshotPlayerIds}::text[],
