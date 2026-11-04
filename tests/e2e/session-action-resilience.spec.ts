@@ -37,7 +37,7 @@ for (const action of actions) {
       await sql`delete from group_organizers where group_id = ${fixture.groupId} and account_id = ${fixture.secondaryId}`;
       const before = await scopedState(fixture);
       await button.click();
-      await expect(secondary.page.getByRole("alert")).toBeVisible();
+      await expect(secondary.page.getByRole("alert").filter({ hasText: "Not authorized" })).toBeVisible();
       expect(await scopedState(fixture)).toEqual(before);
       // The owner retains permission and can still complete the same operation.
       if (action === "start") await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
