@@ -89,8 +89,13 @@ export default async function ActiveSessionPage({
     );
   }
 
-  const allRequests = await repository.listPartnerRequests(sessionId);
+  const accountIds = [...new Set(players.flatMap((player) => player.accountId ? [player.accountId] : []))];
+  const [allRequests, rawPairSynergies] = await Promise.all([
+    repository.listPartnerRequests(sessionId),
+    accountIds.length >= 2 ? repository.listPairSynergies(accountIds) : Promise.resolve([]),
+  ]);
   const partnerRequests = isOrganizer ? allRequests : allRequests.filter(request => request.requesterPlayerId === viewerPlayer?.id || request.partnerPlayerId === viewerPlayer?.id);
+  const pairSynergies = buildPairSynergies(rawPairSynergies);
 
   let initialProposal: RoundProposal | null = null;
   let initialProposalError: string | null = null;
@@ -109,11 +114,6 @@ export default async function ActiveSessionPage({
       initialProposal = null;
     }
   }
-
-  const accountIds = [...new Set(players.flatMap((player) => player.accountId ? [player.accountId] : []))];
-  const pairSynergies = initialProposal
-    ? buildPairSynergies(await repository.listPairSynergies(accountIds))
-    : {};
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">

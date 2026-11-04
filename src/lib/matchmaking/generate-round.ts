@@ -23,7 +23,7 @@ function stableInputSeed(
 ): number {
   let hash = 0x811c9dc5;
   const value = `${courts}|${courtPlayerCounts?.join(",") ?? "default"}|${temperature}|${players
-    .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}:${player.timesPlayed2v1 ?? 0}`)
+    .map((player) => `${player.id}:${player.gamesPlayed}:${player.eligibleRounds}:${player.timesPlayed2v1 ?? 0}${player.timesPlayedSingles ? `:singles=${player.timesPlayedSingles}` : ""}`)
     .join("|")}`;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);

@@ -385,6 +385,34 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).not.toContain("Undo Round");
     });
 
+    it("loads pairSynergies for roster accounts when a round is in progress", async () => {
+      const [acc1, acc2] = hostAccountId < memberAccountId ? [hostAccountId, memberAccountId] : [memberAccountId, hostAccountId];
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      await repo.replaceSynergyState([
+        {
+          accountId1: acc1,
+          accountId2: acc2,
+          matchesPlayed: 7,
+          wins: 5,
+          synergyScore: 22,
+          weightSum: 5.0,
+          contributionSum: 2.0,
+          weightSqSum: 4.0,
+          updatedAt: new Date(),
+        },
+      ]);
+      setActionRepository(repo);
+
+      const pageJsx = await ActiveSessionPage({
+        params: Promise.resolve({ groupId, sessionId: activeSessionId }),
+      });
+      const clientProps = pageJsx.props.children.props;
+      expect(clientProps.initialProposal).toBeNull();
+      expect(clientProps.pairSynergies).toEqual({
+        [JSON.stringify([acc1, acc2])]: { score: 22, matchesPlayed: 7 },
+      });
+    });
+
     it("redirects unauthorized users", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
       const repo = createTestRepository({ activeSession: true });

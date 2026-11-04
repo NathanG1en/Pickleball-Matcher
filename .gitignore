@@ -2,6 +2,7 @@
 node_modules/
 .next/
 .next-test/
+.next-goal-gate/
 .open-next/
 .wrangler/
 out/

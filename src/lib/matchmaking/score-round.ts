@@ -119,6 +119,8 @@ export function scoreRound(
 
   const twoVsOneWeight = context.config.weights.twoVsOneRepeat ?? 100;
   let twoVsOneRepeat = 0;
+  const singlesWeight = context.config.weights.singlesRepeat ?? 100;
+  let singlesRepeat = 0;
   const indexedPlayers = playerIndex(context.players);
   for (const court of candidate.courts) {
     const isTwoVsOne =
@@ -134,6 +136,12 @@ export function scoreRound(
         }
       }
     }
+    if (court.team1.length === 1 && court.team2.length === 1) {
+      for (const playerId of [...court.team1, ...court.team2]) {
+        const count = indexedPlayers.get(playerId)?.timesPlayedSingles ?? 0;
+        if (count > 0) singlesRepeat += count * count * singlesWeight;
+      }
+    }
   }
 
   const tieBreak = context.tieBreak;
@@ -145,6 +153,8 @@ export function scoreRound(
     skillBalance,
     opponentRepeat,
     twoVsOneRepeat,
+    // Preserve existing zero-penalty breakdowns stored in older rounds.
+    ...(singlesRepeat > 0 ? { singlesRepeat } : {}),
     tieBreak,
     total:
       playingTime +
@@ -153,6 +163,7 @@ export function scoreRound(
       skillBalance +
       opponentRepeat +
       twoVsOneRepeat +
+      singlesRepeat +
       tieBreak,
   };
 }

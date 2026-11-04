@@ -1,0 +1,50 @@
+async page => {
+  if(new URL(page.url()).origin!=='http://127.0.0.1:3125')throw Error('Only isolated profiling is allowed');
+  const round=11;
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const events=[];
+  cdp.on('Tracing.dataCollected',data=>events.push(...data.value));
+  await cdp.send('Tracing.start',{categories:'devtools.timeline,blink.user_timing,disabled-by-default-devtools.timeline.frame',transferMode:'ReportEvents'});
+  const results=[];
+  const measure=async(action,button,ready)=>{
+    await button.scrollIntoViewIfNeeded();
+    await page.setExtraHTTPHeaders({'x-club-profile-step':`render-${action}`});
+    await page.evaluate(({action,round})=>{
+      document.addEventListener('click',()=>{
+        performance.mark(`goal-${action}-click`);
+        const heading=text=>[...document.querySelectorAll('h1,h2')].some(h=>h.textContent.trim()===text);
+        const ready=()=>action==='start'?heading(`Round ${round} Results`):action==='next'?heading(`Round ${round+1}`):document.querySelectorAll('[data-testid^="court-match-"]').length===3&&[...document.querySelectorAll('[data-testid^="court-match-"]')].every(e=>e.textContent.includes('Final'));
+        const observer=new MutationObserver(()=>{
+          if(ready()){
+            performance.mark(`goal-${action}-dom`);observer.disconnect();
+            requestAnimationFrame(()=>{performance.mark(`goal-${action}-frame-before-paint`);requestAnimationFrame(()=>performance.mark(`goal-${action}-frame-after-paint-opportunity`));});
+          }
+        });
+        observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+      },{once:true,capture:true});
+    },{action,round});
+    const before=(await cdp.send('Performance.getMetrics')).metrics;
+    await button.click();await ready();
+    await page.waitForFunction(name=>performance.getEntriesByName(`goal-${name}-frame-after-paint-opportunity`).length===1,action);
+    const after=(await cdp.send('Performance.getMetrics')).metrics;
+    const marks=await page.evaluate(name=>performance.getEntriesByType('mark').filter(e=>e.name.startsWith(`goal-${name}-`)).map(e=>({name:e.name,startTime:e.startTime})),action);
+    const metrics=Object.fromEntries(after.filter(m=>['LayoutCount','RecalcStyleCount','LayoutDuration','RecalcStyleDuration','ScriptDuration','TaskDuration'].includes(m.name)).map(m=>[m.name,m.value-(before.find(old=>old.name===m.name)?.value??0)]));
+    results.push({action,round,marks,metrics});
+  };
+  try{
+    await page.getByRole('heading',{name:'Round 11',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Start Round',exact:true}).click();
+    await measure('start',page.getByRole('button',{name:'Confirm & Start',exact:true}),()=>page.getByRole('heading',{name:'Round 11 Results',exact:true}).waitFor());
+    for(let court=1;court<=3;court++){
+      await page.getByRole('spinbutton',{name:`Court ${court} Team 1 score`,exact:true}).fill('11');
+      await page.getByRole('spinbutton',{name:`Court ${court} Team 2 score`,exact:true}).fill('6');
+    }
+    await measure('save-all',page.getByTestId('save-all-scores-button'),()=>page.waitForFunction(()=>document.querySelectorAll('[data-testid^="court-match-"]').length===3&&[...document.querySelectorAll('[data-testid^="court-match-"]')].every(e=>e.textContent.includes('Final'))));
+    await measure('next',page.getByRole('button',{name:'Next Round',exact:true}),()=>page.getByRole('heading',{name:'Round 12',exact:true}).waitFor());
+  }finally{
+    await new Promise(async resolve=>{cdp.once('Tracing.tracingComplete',resolve);await cdp.send('Tracing.end');});
+    await cdp.detach();await page.setExtraHTTPHeaders({});
+  }
+  return {scope:'Separate diagnostic only; excluded from primary latency observations',viewport:page.viewportSize(),results,traceEvents:events};
+}

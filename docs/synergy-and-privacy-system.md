@@ -44,14 +44,14 @@ Where:
 | **10** | 9 | 1 | 90% | **83.3%** | Gold Chemistry |
 | **20** | 18 | 2 | 90% | **86.4%** | Platinum Chemistry |
 
-Implementation resides in [`src/lib/synergy/calculator.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/synergy/calculator.ts).
+Implementation resides in [`src/lib/synergy/calculator.ts`](../src/lib/synergy/calculator.ts).
 
 ---
 
 ## 3. Decoupled Privacy Policy
 
 ### Decoupling Philosophy
-Visibility rules change over time as new features (e.g. clubs, friend lists, tournament spectators) are introduced. To prevent security bugs and leaking private data, privacy evaluation is strictly decoupled from database queries and UI components into a dedicated policy module: [`src/lib/privacy/profile-visibility.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/privacy/profile-visibility.ts).
+Visibility rules change over time as new features (e.g. clubs, friend lists, tournament spectators) are introduced. To prevent security bugs and leaking private data, privacy evaluation is strictly decoupled from database queries and UI components into a dedicated policy module: [`src/lib/privacy/profile-visibility.ts`](../src/lib/privacy/profile-visibility.ts).
 
 ### Resolution Logic (`resolveProfileVisibility`)
 
@@ -68,7 +68,7 @@ export function resolveProfileVisibility(
 - **Rule 4 (Private Profiles)**: If `targetProfile.isPublic === false` and the viewer is not a fellow group member, sensitive fields (`synergyScore`, `matchesPlayed`, rating details) are stripped and masked with `🔒 Private Profile`.
 
 ### Profile Privacy Switch
-Players have a toggle in their profile header ([`src/components/players/player-profile-controls.tsx`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/players/player-profile-controls.tsx)):
+Players have a toggle in their profile header ([`src/components/players/player-profile-controls.tsx`](../src/components/players/player-profile-controls.tsx)):
 - **🌐 Public**: Discoverable in username search; public chemistry card displayed.
 - **🔒 Private**: Chemistry and rating details hidden from non-group members.
 
@@ -82,9 +82,22 @@ To prevent anxiety or bias among opponents on the court, partner synergy badges 
   `⚡ 84% Synergy (12 matches)`
 - Opponents $C$ and $D$ on the other side of Court 1 do **not** see $A$ and $B$'s badge.
 
-### Organizer "Partner Synergies" Modal
-Session organizers may need to balance courts or review pair dynamics. Organizers have access to a discreet button:
-- **⚡ Partner Synergies**: Opens [`SynergyRevealModal`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/rounds/synergy-reveal-modal.tsx) showing chemistry for each doubles pair across all active courts.
+### Organizer "Partner Synergies" Modal & In-Progress Rounds
+Session organizers can inspect synergy across all active courts via the **Partner Synergies** view in Session Settings:
+- **⚡ Partner Synergies**: Shows chemistry badges (e.g. `+18% (4 games)`) or `"New Duo (0 games)"` for each doubles pair across active courts.
+- **Mid-Round Synergy Semantics**: When a round is currently in progress, matches have not yet concluded, so chemistry displays reflect all completed historical matches up to that point. Synergy updates are finalized when the round is completed.
+- **Live Court Priority**: When `isRoundInProgress` is true, `activeCourtsForSynergy` in [`src/app/g/[groupId]/sessions/[sessionId]/session-manager-client.tsx`](../src/app/g/[groupId]/sessions/[sessionId]/session-manager-client.tsx) reads active court pairings directly from `latestStarted.round.courts`, ensuring live pairings display their true historical chemistry rather than defaulting to `"New Duo (0 games)"`.
+- **Zero-Latency Parallel Data Fetching**:
+  In [`src/app/g/[groupId]/sessions/[sessionId]/page.tsx`](../src/app/g/[groupId]/sessions/[sessionId]/page.tsx), `repository.listPairSynergies(accountIds)` is decoupled from round proposal state and executed concurrently with `repository.listPartnerRequests(sessionId)` using `Promise.all`:
+  ```tsx
+  const accountIds = [...new Set(players.flatMap((player) => player.accountId ? [player.accountId] : []))];
+  const [allRequests, rawPairSynergies] = await Promise.all([
+    repository.listPartnerRequests(sessionId),
+    accountIds.length >= 2 ? repository.listPairSynergies(accountIds) : Promise.resolve([]),
+  ]);
+  const pairSynergies = buildPairSynergies(rawPairSynergies);
+  ```
+  This runs a single indexed SQL query concurrently across the connection pool, adding 0ms serial latency over the network. On the client, court synergy is resolved via instantaneous in-memory dictionary lookups (`pairSynergies[pairKey(acc1, acc2)]`) without client-side API requests.
 
 ---
 
@@ -137,7 +150,7 @@ The check constraint `account_id_1 < account_id_2` ensures:
 ## 7. Roster Integration & Temporary Players
 
 ### Real-Time Live Search (Typeahead)
-The Roster management card in [`src/components/groups/group-organizers-panel.tsx`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/components/groups/group-organizers-panel.tsx) features automatic live search:
+The Roster management card in [`src/components/groups/group-organizers-panel.tsx`](../src/components/groups/group-organizers-panel.tsx) features automatic live search:
 - As soon as an organizer types **2 or more characters**, a debounced live search queries registered accounts.
 - Matching public accounts display their `@username`, name, rating, and public chemistry preview.
 - Organizers can click **"Add"** to immediately add the player to the roster without needing to know or type their exact full username.
@@ -162,3 +175,6 @@ The feature is comprehensively verified by unit and integration tests:
 - `tests/components/player-search-drawer.test.tsx`: Standalone search drawer input, results rendering, and roster integration.
 - `tests/components/current-round-synergy.test.tsx`: Partner-only badge display and organizer modal.
 - `tests/components/player-profile-synergy.test.tsx`: Profile privacy toggle and "Best Partner" spotlight card.
+- `tests/components/player-group-view.test.tsx`: Server component loads `pairSynergies` during live rounds even when `initialProposal` is null.
+- `tests/components/session-manager-client.test.tsx`: Session settings modal displays active court partner chemistry badges and avoids false "New Duo (0 games)" during in-progress rounds.
+

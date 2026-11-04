@@ -134,6 +134,46 @@ describe("PostgresRepositories", () => {
     });
   });
 
+  it("writes round, matches, members and sits in two statements inside the caller transaction", async () => {
+    await repository.insertSession({
+      id: "session-1", groupId: "group-1", courtCount: 1, status: "active",
+      currentRoundNumber: 0, startedAt: new Date("2026-10-06T12:00:00Z"), endedAt: null, version: 1,
+    }, []);
+    await sql`insert into players (id, group_id, name) values ('sitting', 'group-1', 'Sitting')`;
+    let capture = false;
+    let statements = 0;
+    const client = postgres(testDbUrl!, { prepare: true, onnotice: () => {}, debug: () => { if (capture) statements++; } });
+    try {
+      const isolated = new PostgresRepositories(client);
+      const record = { ...roundRecord(), sits: [{ roundId: "round-1", playerId: "sitting" }] };
+      await isolated.transaction(async transaction => {
+        capture = true;
+        try { await transaction.insertStartedRound(record); } finally { capture = false; }
+      });
+      expect(statements).toBe(2);
+      const [persisted] = await isolated.listStartedRounds("session-1");
+      expect(persisted.round).toEqual(record.round);
+      expect(persisted.matches).toEqual(record.matches.map(match => ({ ...match, rated: true })));
+      expect(persisted.matchPlayers).toEqual(record.matchPlayers);
+      expect(persisted.sits).toEqual(record.sits);
+    } finally { await client.end(); }
+  });
+
+  it("persists rounds with no children and preserves idempotent early return for an ignored invalid payload", async () => {
+    await repository.insertSession({
+      id: "session-1", groupId: "group-1", courtCount: 1, status: "active",
+      currentRoundNumber: 0, startedAt: new Date("2026-10-06T12:00:00Z"), endedAt: null, version: 1,
+    }, []);
+    const record = { ...roundRecord(), matches: [], matchPlayers: [], sits: [] };
+    await repository.transaction(transaction => transaction.insertStartedRound(record));
+    // The existing-ID check must ignore the replacement payload entirely.
+    const ignored = { ...roundRecord(), round: { ...record.round, roundNumber: -1 },
+      matches: [{ ...roundRecord().matches[0], courtNumber: -1 }] };
+    await repository.transaction(transaction => transaction.insertStartedRound(ignored));
+    const [persisted] = await repository.listStartedRounds("session-1");
+    expect(persisted).toEqual({ round: record.round, matches: [], matchPlayers: [], sits: [] });
+  });
+
   it("treats a repeated round ID as an idempotent insert", async () => {
     await repository.insertSession(
       {
@@ -155,6 +195,49 @@ describe("PostgresRepositories", () => {
 
     expect(await sql`select id from rounds where id = 'round-1'`).toHaveLength(1);
     expect(await sql`select id from matches where id = 'match-1'`).toHaveLength(1);
+  });
+
+  it("loads ordered history in one command while preserving empty rounds, dates, nulls and numeric boundaries", async () => {
+    await repository.insertSession({
+      id: "session-1", groupId: "group-1", courtCount: 2, status: "active",
+      currentRoundNumber: 0, startedAt: new Date("2026-10-06T12:00:00Z"), endedAt: null, version: 1,
+    }, []);
+    await sql`insert into players (id, group_id, name) values ('sitting', 'group-1', 'Sitting')`;
+    const base = roundRecord();
+    const completedAt = new Date("2026-10-06T12:05:00.123Z");
+    const matches = [
+      { ...base.matches[0], id: "history-match-z", roundId: "history-round-z", rated: true,
+        status: "completed" as const, team1Score: 11, team2Score: 7, completedAt },
+      { ...base.matches[0], id: "history-match-a", roundId: "history-round-z", courtNumber: 2, rated: false },
+    ];
+    const members = matches.flatMap((match, court) => base.matchPlayers.map((member, index) => ({
+      ...member, matchId: match.id, ratingBefore: court === 0 && index === 0 ? Infinity : null,
+      ratingAfter: court === 0 && index === 0 ? NaN : null,
+    })));
+    const first: StartedRoundRecord = { round: { ...base.round, id: "history-round-z" },
+      matches, matchPlayers: [...members].reverse(), sits: [{ roundId: "history-round-z", playerId: "sitting" }] };
+    const second: StartedRoundRecord = { round: { ...base.round, id: "history-round-a", roundNumber: 2 }, matches: [], matchPlayers: [], sits: [] };
+    await repository.transaction(async transaction => {
+      await transaction.insertStartedRound(first);
+      await transaction.insertStartedRound(second);
+    });
+    let capture = false;
+    let statements = 0;
+    const client = postgres(testDbUrl!, { prepare: true, onnotice: () => {}, debug: () => { if (capture) statements++; } });
+    try {
+      const isolated = new PostgresRepositories(client);
+      const result = await isolated.transaction(async transaction => {
+        capture = true;
+        try { return await transaction.listStartedRounds("session-1"); } finally { capture = false; }
+      });
+      expect(statements).toBe(1);
+      expect(result).toEqual([{ ...first, matchPlayers: members.toSorted((a, b) => a.matchId.localeCompare(b.matchId) || a.team - b.team || a.playerId.localeCompare(b.playerId)) }, second]);
+      expect(result[0].matches[0].completedAt).toBeInstanceOf(Date);
+      expect(result[0].matches[0].completedAt?.getTime()).toBe(completedAt.getTime());
+      expect(result[0].matchPlayers.find(member => member.matchId === matches[0].id && member.playerId === "a")?.ratingBefore).toBe(Infinity);
+      expect(Number.isNaN(result[0].matchPlayers.find(member => member.matchId === matches[0].id && member.playerId === "a")?.ratingAfter)).toBe(true);
+      expect(await isolated.listStartedRounds("missing")).toEqual([]);
+    } finally { await client.end(); }
   });
 
   it("returns replay matches in completion-time then ID order", async () => {
@@ -198,6 +281,65 @@ describe("PostgresRepositories", () => {
     const matches = await repository.listReplayMatches("group-1");
 
     expect(matches.map((match) => match.id)).toEqual(["match-a", "match-b"]);
+  });
+
+  it("preserves replay filtering, complete doubles teams, ordering and chemistry eligibility", async () => {
+    const time = new Date("2026-10-06T12:05:00.000Z");
+    for (const id of ["normal", "open"]) {
+      await repository.insertSession({
+        id, groupId: "group-1", courtCount: 1, status: "active",
+        type: id === "open" ? "open_play" : "regular",
+        currentRoundNumber: 0, startedAt: time, endedAt: null, version: 1,
+      }, []);
+    }
+    let roundNumber = 0;
+    const insert = async (id: string, options: {
+      status?: "completed" | "cancelled" | "pending";
+      rated?: boolean; completedAt?: Date | null; sessionId?: string;
+      completedRound?: boolean; teams?: readonly (1 | 2)[];
+    } = {}) => {
+      const base = roundRecord();
+      const sessionId = options.sessionId ?? "normal";
+      const completedAt = options.completedAt === undefined ? time : options.completedAt;
+      const teams = options.teams ?? [1, 1, 2, 2];
+      await repository.transaction(transaction => transaction.insertStartedRound({
+        round: { ...base.round, id: `round-${id}`, sessionId, roundNumber: ++roundNumber,
+          status: options.completedRound ? "completed" : "started" },
+        matches: [{ ...base.matches[0], id, roundId: `round-${id}`,
+          status: options.status ?? "completed", rated: options.rated ?? true,
+          team1Score: options.status === "cancelled" ? null : 11,
+          team2Score: options.status === "cancelled" ? null : 7, completedAt }],
+        // Reverse insertion order deliberately; replay teams are sorted by ID.
+        matchPlayers: base.matchPlayers.slice(0, teams.length).map((member, index) => ({
+          ...member, matchId: id, team: teams[index],
+        })).reverse(), sits: [],
+      }));
+    };
+    await insert("z-completed", { completedRound: true });
+    await insert("a-started");
+    await insert("b-cancelled", { status: "cancelled", completedRound: true });
+    await insert("c-open", { sessionId: "open" });
+    await insert("early", { completedAt: new Date(time.getTime() - 60_000) });
+    await insert("skip-unrated", { rated: false });
+    await insert("skip-pending", { status: "pending" });
+    await insert("skip-no-time", { status: "cancelled", completedAt: null });
+    await insert("skip-singles", { teams: [1, 2] });
+    await insert("skip-uneven", { teams: [1, 2, 2, 2] });
+    await insert("skip-empty", { teams: [] });
+    const replay = await repository.listReplayMatches("group-1");
+    expect(replay).toEqual([
+      ["early", false, "completed"], ["a-started", false, "completed"],
+      ["b-cancelled", true, "cancelled"], ["c-open", true, "completed"],
+      ["z-completed", true, "completed"],
+    ].map(([id, synergyEligible, status]) => ({
+      id, groupId: "group-1", synergyEligible, status,
+      completedAt: id === "early" ? new Date(time.getTime() - 60_000) : time,
+      team1: ["a", "b"], team2: ["c", "d"],
+      team1Score: status === "cancelled" ? 0 : 11,
+      team2Score: status === "cancelled" ? 0 : 7,
+    })));
+    expect(await repository.listReplayMatches()).toEqual(replay);
+    expect(await repository.listReplayMatches("other-group")).toEqual([]);
   });
 
   it("creates, reads, and updates tournaments with JSON serialization", async () => {
