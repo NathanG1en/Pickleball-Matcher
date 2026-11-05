@@ -84,8 +84,13 @@ export function usePinnedPlayerIds(groupId: string): Set<string> {
 export function sortPlayersWithPinned<T extends { id: string; name: string }>(
   players: readonly T[],
   pinnedIds: ReadonlySet<string>,
-  selectedIds?: ReadonlySet<string>
+  selectedIds?: ReadonlySet<string>,
+  compareFn?: (a: T, b: T) => number
 ): T[] {
+  const defaultCompare = (a: T, b: T) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  const compare = compareFn ?? defaultCompare;
+
   return [...players].sort((a, b) => {
     const aPinned = pinnedIds.has(a.id);
     const bPinned = pinnedIds.has(b.id);
@@ -100,7 +105,7 @@ export function sortPlayersWithPinned<T extends { id: string; name: string }>(
     const bRank = bPinned ? (bSelected ? 0 : 1) : (bSelected ? 2 : 3);
 
     if (aRank !== bRank) return aRank - bRank;
-    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    return compare(a, b);
   });
 }
 

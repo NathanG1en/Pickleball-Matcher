@@ -54,7 +54,46 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   };
 });
 
+const mockStorage: Record<string, string> = {};
+const storageMock: Storage = {
+  getItem: (key: string) => mockStorage[key] || null,
+  setItem: (key: string, val: string) => {
+    mockStorage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete mockStorage[key];
+  },
+  clear: () => {
+    for (const key of Object.keys(mockStorage)) {
+      delete mockStorage[key];
+    }
+  },
+  key: (index: number) => Object.keys(mockStorage)[index] || null,
+  get length() {
+    return Object.keys(mockStorage).length;
+  },
+};
+
 describe("GroupOrganizersPanel and Actions", () => {
+  beforeEach(() => {
+    storageMock.clear();
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => true,
+        localStorage: storageMock,
+      },
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, "localStorage", {
+      value: storageMock,
+      writable: true,
+      configurable: true,
+    });
+  });
+
   const hostAccountId = "acc_host";
   const orgAccountId = "acc_org";
   const memberAccountId = "acc_member";
@@ -171,7 +210,10 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Link to public player");
       expect(html).toContain("Edit guest");
 
-      // Verify Find Player and Add Guest options exist for host
+      // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for host
+      expect(html).toContain("Add Player or Guest");
+      expect(html).toContain('aria-label="Add player or guest"');
+      expect(html).toContain('aria-label="Group roster"');
       expect(html).toContain("Find Player");
       expect(html).toContain("Add Guest");
       expect(html).toContain("Find player by username");
@@ -199,7 +241,10 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Remove group organizer");
       expect(html).not.toContain("Transfer host");
 
-      // Verify Find Player and Add Guest options exist for organizers
+      // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for organizers
+      expect(html).toContain("Add Player or Guest");
+      expect(html).toContain('aria-label="Add player or guest"');
+      expect(html).toContain('aria-label="Group roster"');
       expect(html).toContain("Find Player");
       expect(html).toContain("Add Guest");
       expect(html).toContain("Find player by username");
@@ -299,6 +344,116 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("···");
       expect(html).not.toContain("Find Player");
       expect(html).not.toContain("Add Guest");
+      expect(html).not.toContain("Add Player or Guest");
+      expect(html).not.toContain('aria-label="Add player or guest"');
+      expect(html).toContain('aria-label="Group roster"');
+    });
+
+    it("renders roster search, filter, and sort controls on the group page", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+        />
+      );
+
+      // Search input
+      expect(html).toContain('data-testid="roster-search-input"');
+      expect(html).toContain('placeholder="Search roster by name or @username..."');
+
+      // Filter select and options
+      expect(html).toContain('data-testid="roster-filter-select"');
+      expect(html).toContain("All (4)");
+      expect(html).toContain("Pinned (0)");
+      expect(html).toContain("Organizers (2)");
+      expect(html).toContain("Members (3)");
+      expect(html).toContain("Guests (1)");
+
+      // Sort select and options
+      expect(html).toContain('data-testid="roster-sort-select"');
+      expect(html).toContain("Name (A–Z)");
+      expect(html).toContain("Name (Z–A)");
+      expect(html).toContain("Rating (High–Low)");
+      expect(html).toContain("Rating (Low–High)");
+      expect(html).toContain("Most Games");
+      expect(html).toContain("Least Games");
+    });
+
+    it("renders pin buttons for organizers and host, and sorts pinned players to the top", () => {
+      // Pin Guest Player (p4) via localStorage
+      localStorage.setItem("pickleball_pinned_players_g1", JSON.stringify(["p4"]));
+
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+        />
+      );
+
+      // Pin buttons exist for host/organizer
+      expect(html).toContain('data-testid="pin-player-Guest Player"');
+      expect(html).toContain('data-testid="pin-player-Host Player"');
+
+      // Guest Player is pinned: button turns black with lime icon
+      expect(html).toContain('aria-label="Unpin Guest Player"');
+      expect(html).toContain('title="Unpin player"');
+      expect(html).toContain("bg-black text-[#ccff00]");
+
+      // Host Player is not pinned: button is white/neutral
+      expect(html).toContain('aria-label="Pin Host Player to top"');
+      expect(html).toContain('title="Pin player to top"');
+
+      // Pinned Guest Player appears before Host Player in the rendered list
+      const guestIdx = html.indexOf('data-testid="roster-player-row-Guest Player"');
+      const hostIdx = html.indexOf('data-testid="roster-player-row-Host Player"');
+      expect(guestIdx).toBeGreaterThan(-1);
+      expect(hostIdx).toBeGreaterThan(-1);
+      expect(guestIdx).toBeLessThan(hostIdx);
+
+      // Pinned count reflects pinned player
+      expect(html).toContain("Pinned (1)");
+
+      // Option in dropdown menu
+      expect(html).toContain("Unpin player");
+      expect(html).toContain("Pin player");
+
+      localStorage.removeItem("pickleball_pinned_players_g1");
+    });
+
+    it("clearly separates the adding player/guest section from the roster directory", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+        />
+      );
+
+      // Verify Add Player or Guest section header and description
+      expect(html).toContain("Add Player or Guest");
+      expect(html).toContain("Find players by username or add guest players.");
+      expect(html).toContain('aria-label="Add player or guest"');
+      expect(html).toContain('aria-label="Collapse add player or guest form"');
+
+      // Verify Roster Directory section header and description
+      expect(html).toContain("Roster (4)");
+      expect(html).toContain("Players and group organizers.");
+      expect(html).toContain('aria-label="Group roster"');
+
+      // Verify Add section appears before Roster section
+      const addSectionIdx = html.indexOf('aria-label="Add player or guest"');
+      const rosterSectionIdx = html.indexOf('aria-label="Group roster"');
+      expect(addSectionIdx).toBeGreaterThan(-1);
+      expect(rosterSectionIdx).toBeGreaterThan(addSectionIdx);
+
+      // Verify search input is inside the Roster section
+      const searchInputIdx = html.indexOf('data-testid="roster-search-input"');
+      expect(searchInputIdx).toBeGreaterThan(rosterSectionIdx);
     });
   });
 

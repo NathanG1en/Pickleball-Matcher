@@ -132,4 +132,32 @@ describe("pinned-players storage and sorting", () => {
       "Evan",
     ]);
   });
+
+  it("applies custom compareFn within pinned and unpinned tiers", () => {
+    const players = [
+      { id: "p1", name: "Alice", rating: 1200 },
+      { id: "p2", name: "Bob", rating: 1500 },
+      { id: "p3", name: "Charlie", rating: 1100 },
+      { id: "p4", name: "Dave", rating: 1600 },
+    ];
+
+    // Pin Alice (1200) and Dave (1600)
+    const pinnedIds = new Set(["p1", "p4"]);
+    // Sort rating descending within tiers
+    const sorted = sortPlayersWithPinned(
+      players,
+      pinnedIds,
+      undefined,
+      (a, b) => b.rating - a.rating
+    );
+
+    // Pinned tier: Dave (1600), Alice (1200)
+    // Unpinned tier: Bob (1500), Charlie (1100)
+    expect(sorted.map((p) => p.name)).toEqual([
+      "Dave",
+      "Alice",
+      "Bob",
+      "Charlie",
+    ]);
+  });
 });

@@ -14,7 +14,9 @@ import { SessionHighlights } from "@/components/sessions/session-highlights";
 import {
   sortPlayersWithPinned,
   usePinnedPlayerIds,
+  togglePinnedPlayer,
 } from "@/lib/storage/pinned-players";
+import { PinIcon } from "@/components/ui/icons";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
@@ -416,7 +418,8 @@ export function OpenPlayManagerClient({
     () =>
       availableRosterPlayers.map((p) => ({
         id: p.id,
-        name: `${p.name} (${formatDupr(p.rating)})${pinnedPlayerIds.has(p.id) ? " 📌" : ""}`,
+        name: `${p.name} (${formatDupr(p.rating)})`,
+        isPinned: pinnedPlayerIds.has(p.id),
       })),
     [availableRosterPlayers, pinnedPlayerIds],
   );
@@ -1190,6 +1193,22 @@ export function OpenPlayManagerClient({
                     <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
                       You
                     </span>
+                  )}
+                  {canManage && (
+                    <button
+                      type="button"
+                      onClick={() => togglePinnedPlayer(groupId, p.id)}
+                      aria-label={pinnedPlayerIds.has(p.id) ? `Unpin ${p.name}` : `Pin ${p.name} to top`}
+                      title={pinnedPlayerIds.has(p.id) ? "Unpin player" : "Pin player to top"}
+                      data-testid={`pin-player-${p.name}`}
+                      className={`p-1 rounded border border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                        pinnedPlayerIds.has(p.id)
+                          ? "bg-black text-[#ccff00] hover:bg-neutral-800"
+                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                      }`}
+                    >
+                      <PinIcon className="w-3 h-3" filled={pinnedPlayerIds.has(p.id)} />
+                    </button>
                   )}
                   {isSessionActive && (isOrganizer || isViewer) && (
                     <button

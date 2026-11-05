@@ -1,8 +1,28 @@
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OpenPlayManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/open-play-manager-client";
 import type { AttendanceRecord, PlayerRecord, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
+
+const mockStorage: Record<string, string> = {};
+const storageMock: Storage = {
+  getItem: (key: string) => mockStorage[key] || null,
+  setItem: (key: string, val: string) => {
+    mockStorage[key] = val;
+  },
+  removeItem: (key: string) => {
+    delete mockStorage[key];
+  },
+  clear: () => {
+    for (const key of Object.keys(mockStorage)) {
+      delete mockStorage[key];
+    }
+  },
+  key: (index: number) => Object.keys(mockStorage)[index] || null,
+  get length() {
+    return Object.keys(mockStorage).length;
+  },
+};
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -13,6 +33,24 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("OpenPlayManagerClient Component", () => {
+  beforeEach(() => {
+    storageMock.clear();
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => true,
+        localStorage: storageMock,
+      },
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, "localStorage", {
+      value: storageMock,
+      writable: true,
+      configurable: true,
+    });
+  });
   const groupId = "grp_100";
   const sessionId = "ses_open_play_1";
 
@@ -307,6 +345,58 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("0W – 1L");
     expect(html).toContain("Ended:");
     expect(html).toContain("Duration:");
+  });
+
+  it("pins players for check in (roster dropdown) but does not pin for in-game selection", () => {
+    // 5 players on roster: Alice (p1), Bob (p2), Charlie (p3), Dave (p4), Evan (p5)
+    const fivePlayers: PlayerRecord[] = [
+      ...players,
+      { id: "p5", groupId, name: "Evan", active: true, initialRating: 1200, rating: 1200, ratedGamesPlayed: 0 },
+    ];
+
+    // Only Alice, Bob, Charlie, Dave are checked in; Evan is not checked in
+    const attendanceWithoutEvan: AttendanceRecord[] = [
+      { sessionId, playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p2", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p3", joinedRound: 1, leftRound: null },
+      { sessionId, playerId: "p4", joinedRound: 1, leftRound: null },
+    ];
+
+    // Pin Evan (un-checked-in) and Dave (checked-in)
+    localStorage.setItem(`pickleball_pinned_players_${groupId}`, JSON.stringify(["p5", "p4"]));
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={fivePlayers}
+        attendance={attendanceWithoutEvan}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // 1. Check in: Evan is available on roster and is marked with isPinned: true (not emoji 📌)
+    expect(html).toContain("Evan (4)");
+    expect(html).not.toContain("📌");
+    expect(html).toContain('&quot;name&quot;:&quot;Evan (4)&quot;,&quot;isPinned&quot;:true');
+
+    // 2. In-game selection: Dave is pinned, but options in slot selection must NOT have pin icon
+    // and must remain alphabetical (Alice, Bob, Charlie, Dave)
+    expect(html).toContain('aria-label="Team 1 Player 1"');
+    const selectSection = html.slice(html.indexOf('aria-label="Team 1 Player 1"'), html.indexOf("Team 1 Points"));
+    expect(selectSection).not.toContain('data-testid="black-pin-icon"');
+
+    // Pinned button exists for Dave in attendee chips for organizer with black styling
+    expect(html).toContain('data-testid="pin-player-Dave"');
+    expect(html).toContain('aria-label="Unpin Dave"');
+    expect(html).toContain("bg-black text-[#ccff00]");
+
+    localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
 });
 
