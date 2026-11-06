@@ -77,11 +77,12 @@ describe("ResultsEntryView Component", () => {
         roundNumber={1}
         matches={sampleMatches}
         fieldErrors={{}}
+        onSaveAndStartNextRound={() => {}}
       />
     );
 
     expect(html).toContain("mobile-action-bar");
-    expect(html).toContain("Start Round 2");
+    expect(html).toContain("Save &amp; Start R2");
   });
 
   it("renders sitting players banner when sitting players exist", () => {
@@ -181,31 +182,7 @@ describe("ResultsEntryView Component", () => {
     expect(button).toMatch(/\sdisabled([=>\s])/);
   });
 
-  it("disables Save & Start button if Save is disabled (no new values)", () => {
-    const upcomingProposal = {
-      roundNumber: 2,
-      seed: 42,
-      score: 100,
-      courts: [
-        {
-          courtNumber: 1,
-          team1: ["p1", "p2"] as [string, string],
-          team2: ["p3", "p4"] as [string, string],
-          matchType: "doubles" as const,
-        },
-      ],
-      sitting: [],
-      scoreBreakdown: {
-        playingTime: 0,
-        consecutiveSit: 0,
-        partnerRepeat: 0,
-        skillBalance: 0,
-        opponentRepeat: 0,
-        tieBreak: 0,
-        total: 0,
-      },
-    };
-
+  it("enables Save & Start button when all matches are completed even if already saved", () => {
     // sampleMatches has completed m1 and cancelled m2, but hasUnsavedScores is false
     const html = renderToStaticMarkup(
       <ResultsEntryView
@@ -213,7 +190,6 @@ describe("ResultsEntryView Component", () => {
         roundNumber={1}
         matches={sampleMatches}
         fieldErrors={{}}
-        upcomingProposal={upcomingProposal}
         hasUnsavedScores={false}
         onSaveAndStartNextRound={() => {}}
       />
@@ -221,7 +197,7 @@ describe("ResultsEntryView Component", () => {
 
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
     const button = html.match(/<button[^>]*data-testid="save-and-start-next-round-button"[^>]*>/)?.[0] ?? "";
-    expect(button).toMatch(/\sdisabled([=>\s])/);
+    expect(button).not.toMatch(/\sdisabled([=>\s])/);
   });
 
   it("disables Save & Start button if Start is disabled (pending matches lack scores)", () => {
@@ -338,22 +314,21 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
   });
 
-  it("renders Start Round button with white background styling", () => {
+  it("renders only Save All and Save & Start Next Round action buttons without a separate Next Round button", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView
         roundId="r3"
         roundNumber={3}
         matches={sampleMatches}
         fieldErrors={{}}
-        hasUnsavedScores={false}
-        onNextRound={() => {}}
+        onSaveAllScores={() => {}}
+        onSaveAndStartNextRound={() => {}}
       />
     );
 
-    expect(html).toContain("Start Round 4");
-    const nextRoundButton = html.match(/<button[^>]*>[\s\S]*?Start Round 4[\s\S]*?<\/button>/)?.[0] ?? "";
-    expect(nextRoundButton).toContain("bg-white");
-    expect(nextRoundButton).not.toContain("bg-[#ccff00]");
+    expect(html).toContain('data-testid="save-all-scores-button"');
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).not.toContain("Start Round 4");
   });
 });
 

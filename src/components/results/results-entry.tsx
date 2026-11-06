@@ -88,8 +88,6 @@ export function ResultsEntryView({
     }
   };
 
-  const allResolved = matches.every((m) => m.status !== "pending");
-
   const allMatchesHaveScores = matches.length > 0 && matches.every((m) => {
     if (m.status !== "pending") return true;
     const s = getScores(m);
@@ -122,9 +120,7 @@ export function ResultsEntryView({
   const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]));
 
   const isSaveDisabled = !hasNewScores || isPending || isSaving;
-  const isStartRoundDisabled = !allResolved || hasNewScores || isPending || isGeneratingRound || isSaving;
-  const isStartEligibilityDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
-  const isSaveAndStartDisabled = isSaveDisabled || isStartEligibilityDisabled;
+  const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
@@ -409,37 +405,26 @@ export function ResultsEntryView({
                   {isSaving ? "Saving..." : "Save All"}
                 </Button>
               )}
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={isStartRoundDisabled}
-                aria-describedby={hasNewScores ? "unsaved-score-warning" : undefined}
-                onClick={onNextRound}
-                className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-white text-black"
-              >
-                {isGeneratingRound ? (
-                  <RoundGenerationIndicator />
-                ) : (
-                  <>
-                    <span className="sr-only">Next Round</span>
-                    <span aria-hidden="true" className="sm:hidden">Start R{roundNumber + 1}</span>
-                    <span aria-hidden="true" className="hidden sm:inline">Start Round {roundNumber + 1}</span>
-                  </>
-                )}
-              </Button>
-              {canManage && onSaveAndStartNextRound && (
+              {canManage && (onSaveAndStartNextRound || onNextRound) && (
                 <Button
                   type="button"
                   variant="primary"
                   size="sm"
                   disabled={isSaveAndStartDisabled}
-                  onClick={onSaveAndStartNextRound}
+                  onClick={onSaveAndStartNextRound ?? onNextRound}
                   data-testid="save-and-start-next-round-button"
                   title={`Save all scores and start Round ${roundNumber + 1}`}
-                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
+                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
-                  {isGeneratingRound ? <RoundGenerationIndicator /> : `Save & Start R${roundNumber + 1}`}
+                  {isGeneratingRound ? (
+                    <RoundGenerationIndicator />
+                  ) : (
+                    <>
+                      <span className="sr-only">Next Round</span>
+                      <span className="sm:hidden">Save &amp; Start R{roundNumber + 1}</span>
+                      <span className="hidden sm:inline">Save &amp; Start Next Round</span>
+                    </>
+                  )}
                 </Button>
               )}
             </div>
