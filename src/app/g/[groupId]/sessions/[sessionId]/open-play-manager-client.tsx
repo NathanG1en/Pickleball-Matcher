@@ -72,7 +72,6 @@ export function OpenPlayManagerClient({
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
   const isHydrated = useHydrated();
-  const [isLiveSyncing, setIsLiveSyncing] = useState(false);
 
   // Local state for instant UI updates without waiting for router.refresh()
   const [sessionName, setSessionName] = useState(session.name ?? null);
@@ -477,7 +476,6 @@ export function OpenPlayManagerClient({
     const performSync = async () => {
       if (typeof document !== "undefined" && document.hidden) return;
       try {
-        setIsLiveSyncing(true);
         const res = await syncOpenPlaySessionAction({ groupId, sessionId: session.id });
         if (res.ok && isSubscribed) {
           const { session: serverSession, players: serverPlayers, attendance: serverAttendance, startedRounds: serverStartedRounds } = res.data;
@@ -522,8 +520,6 @@ export function OpenPlayManagerClient({
         }
       } catch {
         // Silently catch background poll failures
-      } finally {
-        if (isSubscribed) setIsLiveSyncing(false);
       }
     };
 
@@ -1221,7 +1217,7 @@ export function OpenPlayManagerClient({
   };
 
   const handleEndSession = async () => {
-    if (!confirm("Are you sure you want to end this Open Play session?")) return;
+    if (!confirm("End this session? Match history and ratings will be finalized.")) return;
     setIsEnding(true);
     setError(null);
     try {
@@ -1284,20 +1280,6 @@ export function OpenPlayManagerClient({
             ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
           />
           <div className="flex items-center gap-2">
-            {isSessionActive && (
-              <span
-                data-testid="live-sync-indicator"
-                title="Real-time live sync across devices is active"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-black bg-white text-[11px] font-black text-neutral-700 shadow-[1px_1px_0px_0px_#000]"
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isLiveSyncing ? "bg-amber-500 animate-ping" : "bg-[#65a30d] animate-pulse"
-                  }`}
-                />
-                <span>Live</span>
-              </span>
-            )}
             <Badge variant={isSessionActive ? "warning" : "muted"}>
               {isSessionActive ? "In Progress" : "Completed"}
             </Badge>
@@ -1310,6 +1292,17 @@ export function OpenPlayManagerClient({
                 redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                 onRenamed={(newName) => setSessionName(newName)}
               />
+            )}
+            {isSessionActive && canManage && (
+              <button
+                type="button"
+                onClick={handleEndSession}
+                disabled={isEnding}
+                data-testid="end-session-button"
+                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+              >
+                {isEnding ? "Ending..." : "End Session"}
+              </button>
             )}
           </div>
         </div>
@@ -1335,85 +1328,76 @@ export function OpenPlayManagerClient({
               ) : null}
             </p>
           </div>
+        </div>
 
-          {isSessionActive && isOrganizer && (
-            <div className="shrink-0">
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isEnding}
-                data-testid="end-session-button"
-                className="py-2 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer self-start sm:self-auto"
+        {/* Quick Stats & Summary - only rendered when session has ended */}
+        {!isSessionActive && (
+          <>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
+                <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+                <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+                <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
+              </div>
+            </div>
+
+            {/* Personal Session View (when a player is signed in) */}
+            {viewerSessionStats && (
+              <div
+                data-testid="personal-session-summary"
+                className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
               >
-                {isEnding ? "Ending..." : "End Session"}
-              </button>
-            </div>
-          )}
-        </div>
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+                  Your Session
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-neutral-700">
+                  You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
+                </p>
+              </div>
+            )}
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
-            <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
-          </div>
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
-            <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
-          </div>
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
-            <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
-          </div>
-        </div>
-
-        {/* Personal Session View (when a player is signed in) */}
-        {viewerSessionStats && (
-          <div
-            data-testid="personal-session-summary"
-            className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
-          >
-            <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
-              Your Session
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
-              </div>
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
-              </div>
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
-              </div>
+            {/* Time / Duration info */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
+              <ClientTime
+                date={session.startedAt}
+                prefix={<strong className="text-black">Started: </strong>}
+              />
+              {session.endedAt && (
+                <ClientTime
+                  date={session.endedAt}
+                  prefix={<strong className="text-black">Ended: </strong>}
+                />
+              )}
+              {durationFormatted && (
+                <span>
+                  <strong className="text-black">Duration:</strong> {durationFormatted}
+                </span>
+              )}
             </div>
-            <p className="text-xs font-bold text-neutral-700">
-              You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
-            </p>
-          </div>
+          </>
         )}
-
-        {/* Time / Duration info */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
-          <ClientTime
-            date={session.startedAt}
-            prefix={<strong className="text-black">Started: </strong>}
-          />
-          {session.endedAt && (
-            <ClientTime
-              date={session.endedAt}
-              prefix={<strong className="text-black">Ended: </strong>}
-            />
-          )}
-          {durationFormatted && (
-            <span>
-              <strong className="text-black">Duration:</strong> {durationFormatted}
-            </span>
-          )}
-        </div>
 
         {error && (
           <div role="alert" className="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-700 text-xs font-bold">

@@ -139,6 +139,11 @@ describe("OpenPlayManagerClient Component", () => {
     // Three dots menu in the top bar appears before the session title and end session button
     expect(optionsIndex).toBeLessThan(sessionNameIndex);
     expect(optionsIndex).toBeLessThan(endSessionIndex);
+
+    // End session button matches normal session styling
+    expect(html).toContain("bg-[#ff6b6b]");
+    expect(html).toContain("border-2 border-black font-black uppercase text-xs text-black");
+    expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
   });
 
   it("renders Add Existing Group Member dropdown directly without a separate submit button", () => {
@@ -252,7 +257,7 @@ describe("OpenPlayManagerClient Component", () => {
       },
     ];
 
-    const html = renderToStaticMarkup(
+    const activeHtml = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
         groupName="Test Group"
@@ -267,19 +272,45 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    // General session info
-    expect(html).toContain("Courts");
-    expect(html).toContain("Total Games");
-    expect(html).toContain("Players");
-    expect(html).toContain("Started:");
+    // Session summary should NOT be present when session has not ended
+    expect(activeHtml).not.toContain('data-testid="personal-session-summary"');
+    expect(activeHtml).not.toContain("Total Games");
+    expect(activeHtml).not.toContain("Your Session");
 
-    // Personal session view
-    expect(html).toContain('data-testid="personal-session-summary"');
-    expect(html).toContain("Your Session");
-    expect(html).toContain("Games Won");
-    expect(html).toContain("Games Lost");
-    expect(html).toContain("Games Played");
-    expect(html).toContain("You won 1 game and lost 0 games.");
+    // Session summary SHOULD be present when session is completed
+    const completedSession: SessionRecord = {
+      ...session,
+      status: "completed",
+      endedAt: new Date("2026-10-10T15:30:00.000Z"),
+    };
+
+    const completedHtml = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // General session info on completed session
+    expect(completedHtml).toContain("Courts");
+    expect(completedHtml).toContain("Total Games");
+    expect(completedHtml).toContain("Players");
+
+    // Personal session view on completed session
+    expect(completedHtml).toContain('data-testid="personal-session-summary"');
+    expect(completedHtml).toContain("Your Session");
+    expect(completedHtml).toContain("Games Won");
+    expect(completedHtml).toContain("Games Lost");
+    expect(completedHtml).toContain("Games Played");
+    expect(completedHtml).toContain("You won 1 game and lost 0 games.");
   });
 
   it("renders Player Summary leaderboard when open play session is completed", () => {
@@ -472,7 +503,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("⇄ Swap");
   });
 
-  it("renders live sync badge when open play session is active", () => {
+  it("does not render live label badge in open play header", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -488,8 +519,8 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    expect(html).toContain('data-testid="live-sync-indicator"');
-    expect(html).toContain("Live");
+    expect(html).not.toContain('data-testid="live-sync-indicator"');
+    expect(html).not.toContain("Live");
   });
 });
 
