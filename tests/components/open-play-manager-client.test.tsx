@@ -474,7 +474,8 @@ describe("OpenPlayManagerClient Component", () => {
 
     expect(html).toContain('data-testid="team-1-winner-button"');
     expect(html).toContain('data-testid="team-2-winner-button"');
-    expect(html).toContain("Winner");
+    expect(html).toContain("Select Winner");
+    expect(html).toContain("whitespace-nowrap");
   });
 
   it("does not render quick score preset buttons in open play", () => {

@@ -1726,14 +1726,14 @@ export function OpenPlayManagerClient({
                       onClick={() => handleSelectWinner(1)}
                       data-testid="team-1-winner-button"
                       aria-label="Select Team 1 as Winner"
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT1Winner
                           ? "bg-black text-[#ccff00]"
                           : "bg-white hover:bg-neutral-100 text-black"
                       }`}
                     >
                       <span>👑</span>
-                      <span>{isT1Winner ? "Winner (11)" : "Winner"}</span>
+                      <span>{isT1Winner ? "Winner (11)" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -1783,14 +1783,14 @@ export function OpenPlayManagerClient({
                       onClick={() => handleSelectWinner(2)}
                       data-testid="team-2-winner-button"
                       aria-label="Select Team 2 as Winner"
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT2Winner
                           ? "bg-black text-[#ccff00]"
                           : "bg-white hover:bg-neutral-100 text-black"
                       }`}
                     >
                       <span>👑</span>
-                      <span>{isT2Winner ? "Winner (11)" : "Winner"}</span>
+                      <span>{isT2Winner ? "Winner (11)" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">
