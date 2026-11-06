@@ -398,5 +398,77 @@ describe("OpenPlayManagerClient Component", () => {
 
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
+
+  it("renders rematch, rotate partners, next waiting, and clear buttons in game submission card", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="rematch-button"');
+    expect(html).toContain("Rematch");
+    expect(html).toContain('data-testid="rotate-partners-button"');
+    expect(html).toContain("Rotate Partners");
+    expect(html).toContain('data-testid="next-waiting-button"');
+    expect(html).toContain("Next Waiting");
+    expect(html).toContain('data-testid="clear-slots-button"');
+    expect(html).toContain("Clear");
+  });
+
+  it("renders quick score preset buttons and score swap button", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain("Quick Scores:");
+    expect(html).toContain("11–9");
+    expect(html).toContain("11–7");
+    expect(html).toContain("11–5");
+    expect(html).toContain("11–3");
+    expect(html).toContain("11–0");
+    expect(html).toContain("15–13");
+    expect(html).toContain("⇄ Swap");
+  });
+
+  it("renders live sync badge when open play session is active", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="live-sync-indicator"');
+    expect(html).toContain("Live");
+  });
 });
 

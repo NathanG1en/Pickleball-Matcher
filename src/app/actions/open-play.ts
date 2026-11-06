@@ -488,8 +488,10 @@ export async function submitOpenPlayGameAction(
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
-    revalidatePath("/players");
-    revalidatePath("/players/groups");
+    if (isCompleted) {
+      revalidatePath("/players");
+      revalidatePath("/players/groups");
+    }
     return { ok: true, data: saved };
   } catch (err) {
     return {
@@ -632,8 +634,10 @@ export async function updateOpenPlayGameAction(
 
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
-    revalidatePath("/players");
-    revalidatePath("/players/groups");
+    if (isCompleted) {
+      revalidatePath("/players");
+      revalidatePath("/players/groups");
+    }
     return { ok: true, data: saved };
   } catch (err) {
     return {
@@ -867,6 +871,54 @@ export async function deleteOpenPlayGameAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to delete game",
+    };
+  }
+}
+
+const syncOpenPlaySessionSchema = z.object({
+  groupId: z.string().min(1),
+  sessionId: z.string().min(1),
+});
+
+export async function syncOpenPlaySessionAction(
+  input: unknown,
+): Promise<ActionResult<{
+  session: SessionRecord;
+  players: readonly PlayerRecord[];
+  attendance: readonly AttendanceRecord[];
+  startedRounds: readonly StartedRoundRecord[];
+}>> {
+  const parsed = syncOpenPlaySessionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid parameters" };
+  }
+
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Open play session not found." };
+    }
+
+    const [players, attendance, startedRounds] = await Promise.all([
+      repository.listPlayers(parsed.data.groupId, { includeInactive: false }),
+      repository.listAttendance(session.id),
+      repository.listStartedRounds(session.id),
+    ]);
+
+    return {
+      ok: true,
+      data: {
+        session,
+        players,
+        attendance,
+        startedRounds,
+      },
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to sync open play session",
     };
   }
 }

@@ -16,6 +16,7 @@ import {
   togglePinnedPlayer,
 } from "@/lib/storage/pinned-players";
 import { PinIcon } from "@/components/ui/icons";
+import { useRouter } from "next/navigation";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
@@ -24,11 +25,13 @@ import {
   joinOpenPlaySessionAction,
   removeOpenPlayPlayerAction,
   submitOpenPlayGameAction,
+  syncOpenPlaySessionAction,
   updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
 import type {
   AttendanceRecord,
   MatchPlayerRecord,
+  MatchRecord,
   PlayerRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -67,7 +70,9 @@ export function OpenPlayManagerClient({
   currentViewerPlayerId = null,
   isFromProfile = false,
 }: OpenPlayManagerClientProps) {
+  const router = useRouter();
   const isHydrated = useHydrated();
+  const [isLiveSyncing, setIsLiveSyncing] = useState(false);
 
   // Local state for instant UI updates without waiting for router.refresh()
   const [sessionName, setSessionName] = useState(session.name ?? null);
@@ -441,6 +446,96 @@ export function OpenPlayManagerClient({
     if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
   }, []);
 
+  // Live Sync polling effect to keep session state in sync across devices
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    let isSubscribed = true;
+
+    const performSync = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      try {
+        setIsLiveSyncing(true);
+        const res = await syncOpenPlaySessionAction({ groupId, sessionId: session.id });
+        if (res.ok && isSubscribed) {
+          const { session: serverSession, players: serverPlayers, attendance: serverAttendance, startedRounds: serverStartedRounds } = res.data;
+
+          setLocalPlayers((prev) => {
+            const serverIds = new Set(serverPlayers.map((p) => p.id));
+            const pendingLocal = prev.filter((p) => !serverIds.has(p.id));
+            return [...serverPlayers, ...pendingLocal];
+          });
+
+          setLocalAttendance((prev) => {
+            const serverPids = new Set(serverAttendance.map((a) => a.playerId));
+            const pendingLocal = prev.filter((a) => !serverPids.has(a.playerId));
+            return [...serverAttendance, ...pendingLocal];
+          });
+
+          setLocalStartedRounds((prev) => {
+            const serverMatchIds = new Set(serverStartedRounds.flatMap((sr) => sr.matches.map((m) => m.id)));
+            const pendingLocalMatches = prev.flatMap((sr) =>
+              sr.matches.filter((m) => !serverMatchIds.has(m.id) && m.id.startsWith("opt_"))
+            );
+            const pendingLocalMatchPlayers = prev.flatMap((sr) =>
+              sr.matchPlayers.filter((mp) => !serverMatchIds.has(mp.matchId) && mp.matchId.startsWith("opt_"))
+            );
+            if (serverStartedRounds.length > 0) {
+              return serverStartedRounds.map((sr, idx) =>
+                idx === 0
+                  ? {
+                      ...sr,
+                      matches: [...sr.matches, ...pendingLocalMatches],
+                      matchPlayers: [...sr.matchPlayers, ...pendingLocalMatchPlayers],
+                    }
+                  : sr
+              );
+            }
+            return serverStartedRounds;
+          });
+
+          if (serverSession.status === "completed" && session.status === "active") {
+            router.refresh();
+          }
+        }
+      } catch {
+        // Silently catch background poll failures
+      } finally {
+        if (isSubscribed) setIsLiveSyncing(false);
+      }
+    };
+
+    const intervalId = setInterval(performSync, 5000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        void performSync();
+      }
+    };
+
+    const handleOnline = () => {
+      void performSync();
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", handleOnline);
+    }
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(intervalId);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", handleOnline);
+      }
+    };
+  }, [groupId, session.id, isSessionActive, router, session.status]);
+
   const showToast = (msg: string) => {
     if (guestPopupTimeoutRef.current !== null) {
       clearTimeout(guestPopupTimeoutRef.current);
@@ -599,6 +694,169 @@ export function OpenPlayManagerClient({
     }
   };
 
+  // Quick Rematch handler
+  const canRematch = Boolean(
+    lastSessionGame || (t1p1 && t2p1 && (matchType === "singles" || (t1p2 && t2p2)))
+  );
+
+  const handleRematch = () => {
+    setError(null);
+    if (lastSessionGame) {
+      const slots = getAutopopulatedSlots(lastSessionGame);
+      setMatchType(slots.matchType);
+      setT1p1(slots.t1p1);
+      setT1p2(slots.t1p2);
+      setT2p1(slots.t2p1);
+      setT2p2(slots.t2p2);
+    }
+    setT1Score("");
+    setT2Score("");
+    showToast("Rematch ready — enter scores when done!");
+  };
+
+  // Rotate Partners (Split & Switch) handler
+  const canRotate = Boolean(
+    (t1p1 && t1p2 && t2p1 && t2p2) ||
+      (lastSessionGame &&
+        lastSessionGame.team1PlayerIds.length === 2 &&
+        lastSessionGame.team2PlayerIds.length === 2)
+  );
+
+  const handleRotatePartners = () => {
+    setError(null);
+    let p1 = t1p1;
+    let p2 = t1p2;
+    let p3 = t2p1;
+    let p4 = t2p2;
+
+    if (
+      (!p1 || !p2 || !p3 || !p4) &&
+      lastSessionGame &&
+      lastSessionGame.team1PlayerIds.length === 2 &&
+      lastSessionGame.team2PlayerIds.length === 2
+    ) {
+      p1 = lastSessionGame.team1PlayerIds[0];
+      p2 = lastSessionGame.team1PlayerIds[1];
+      p3 = lastSessionGame.team2PlayerIds[0];
+      p4 = lastSessionGame.team2PlayerIds[1];
+    }
+
+    if (!p1 || !p2 || !p3 || !p4) {
+      setError("Please select 4 players first to rotate partners.");
+      return;
+    }
+
+    // Keep viewer as first player if viewer is among the 4
+    if (currentViewerPlayerId) {
+      const pList = [p1, p2, p3, p4];
+      if (pList.includes(currentViewerPlayerId) && p1 !== currentViewerPlayerId) {
+        const idx = pList.indexOf(currentViewerPlayerId);
+        pList[idx] = p1;
+        pList[0] = currentViewerPlayerId;
+        [p1, p2, p3, p4] = pList;
+      }
+    }
+
+    // Formation 1: (p1, p2) vs (p3, p4)
+    // Formation 2: (p1, p3) vs (p2, p4)
+    // Formation 3: (p1, p4) vs (p2, p3)
+    const isFormation1 =
+      (t1p1 === p1 && t1p2 === p2 && t2p1 === p3 && t2p2 === p4) ||
+      (t1p1 === p2 && t1p2 === p1 && t2p1 === p4 && t2p2 === p3);
+    const isFormation2 =
+      (t1p1 === p1 && t1p2 === p3 && t2p1 === p2 && t2p2 === p4) ||
+      (t1p1 === p3 && t1p2 === p1 && t2p1 === p4 && t2p2 === p2);
+
+    if (isFormation1) {
+      setT1p1(p1);
+      setT1p2(p3);
+      setT2p1(p2);
+      setT2p2(p4);
+    } else if (isFormation2) {
+      setT1p1(p1);
+      setT1p2(p4);
+      setT2p1(p2);
+      setT2p2(p3);
+    } else {
+      setT1p1(p1);
+      setT1p2(p2);
+      setT2p1(p3);
+      setT2p2(p4);
+    }
+
+    setT1Score("");
+    setT2Score("");
+    showToast("Partners rotated!");
+  };
+
+  // Swap sides for singles
+  const handleSwapSides = () => {
+    setError(null);
+    const prevT1 = t1p1;
+    const prevT2 = t2p1;
+    setT1p1(prevT2);
+    setT2p1(prevT1);
+    setT1Score("");
+    setT2Score("");
+    showToast("Sides swapped!");
+  };
+
+  // Fill Next Waiting (Queue) handler
+  const handleFillNextWaiting = () => {
+    setError(null);
+    const needed = matchType === "doubles" ? 4 : 2;
+    if (checkedInPlayers.length < needed) {
+      setError(`Need at least ${needed} checked-in players.`);
+      return;
+    }
+
+    const sortedWaiting = [...checkedInPlayers].sort((a, b) => {
+      const aInLast = lastSessionGame
+        ? lastSessionGame.team1PlayerIds.includes(a.id) || lastSessionGame.team2PlayerIds.includes(a.id)
+        : false;
+      const bInLast = lastSessionGame
+        ? lastSessionGame.team1PlayerIds.includes(b.id) || lastSessionGame.team2PlayerIds.includes(b.id)
+        : false;
+      if (aInLast !== bInLast) return aInLast ? 1 : -1;
+      const aStats = openPlayPlayerStats.find((s) => s.id === a.id);
+      const bStats = openPlayPlayerStats.find((s) => s.id === b.id);
+      const aCount = aStats?.gamesPlayed ?? 0;
+      const bCount = bStats?.gamesPlayed ?? 0;
+      if (aCount !== bCount) return aCount - bCount;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+
+    let selected = sortedWaiting.slice(0, needed).map((p) => p.id);
+    if (currentViewerPlayerId && selected.includes(currentViewerPlayerId)) {
+      selected = [currentViewerPlayerId, ...selected.filter((id) => id !== currentViewerPlayerId)];
+    }
+
+    if (matchType === "doubles") {
+      setT1p1(selected[0] ?? "");
+      setT1p2(selected[1] ?? "");
+      setT2p1(selected[2] ?? "");
+      setT2p2(selected[3] ?? "");
+    } else {
+      setT1p1(selected[0] ?? "");
+      setT1p2("");
+      setT2p1(selected[1] ?? "");
+      setT2p2("");
+    }
+    setT1Score("");
+    setT2Score("");
+    showToast("Filled next waiting players!");
+  };
+
+  // Clear slots handler
+  const handleClearSlots = () => {
+    setT1p1(currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId) ? currentViewerPlayerId : "");
+    setT1p2("");
+    setT2p1("");
+    setT2p2("");
+    setT1Score("");
+    setT2Score("");
+  };
+
   const handleSubmitGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -634,6 +892,92 @@ export function OpenPlayManagerClient({
       return;
     }
 
+    // Optimistic match generation for instant feedback
+    const optimisticMatchId = `opt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const targetRoundId = localStartedRounds[0]?.round.id ?? `rnd_${session.id}`;
+    const existingMatches = localStartedRounds.flatMap((sr) => sr.matches);
+    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+    const courtNumber = maxCourtNumber + 1;
+
+    const optimisticMatch: MatchRecord = {
+      id: optimisticMatchId,
+      roundId: targetRoundId,
+      courtNumber,
+      status: "completed",
+      team1Score: s1,
+      team2Score: s2,
+      completedAt: new Date(),
+      version: 1,
+      rated: true,
+    };
+
+    const optimisticMatchPlayers: MatchPlayerRecord[] = [
+      ...team1Ids.map((p) => ({
+        matchId: optimisticMatchId,
+        playerId: p,
+        team: 1 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+      ...team2Ids.map((p) => ({
+        matchId: optimisticMatchId,
+        playerId: p,
+        team: 2 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+    ];
+
+    setLocalStartedRounds((prev) => {
+      if (prev.length === 0) {
+        const newSr: StartedRoundRecord = {
+          round: {
+            id: targetRoundId,
+            sessionId: session.id,
+            roundNumber: 1,
+            status: "started",
+            seed: 0,
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: new Date(),
+            startedAt: new Date(),
+            completedAt: null,
+            version: 1,
+          },
+          matches: [optimisticMatch],
+          matchPlayers: optimisticMatchPlayers,
+          sits: [],
+        };
+        return [newSr];
+      }
+      return prev.map((sr) =>
+        sr.round.id === targetRoundId || prev.length === 1
+          ? {
+              ...sr,
+              matches: [...sr.matches.filter((m) => m.id !== optimisticMatchId), optimisticMatch],
+              matchPlayers: [
+                ...sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+                ...optimisticMatchPlayers,
+              ],
+            }
+          : sr
+      );
+    });
+
+    if (isPickleScore(s1, s2)) {
+      setPickledGameId(optimisticMatchId);
+    }
+    setT1Score("");
+    setT2Score("");
+    showToast("Game submitted successfully!");
+
     setIsSubmittingGame(true);
     try {
       const res = await submitOpenPlayGameAction({
@@ -647,51 +991,41 @@ export function OpenPlayManagerClient({
 
       if (res.ok) {
         const newMatch = res.data;
-        const newMatchPlayers: MatchPlayerRecord[] = [
-          ...team1Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 1 as const, ratingBefore: null, ratingAfter: null })),
-          ...team2Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 2 as const, ratingBefore: null, ratingAfter: null })),
-        ];
-
-        setLocalStartedRounds((prev) => {
-          if (prev.length === 0) {
-            const newSr: StartedRoundRecord = {
-              round: {
-                id: newMatch.roundId,
-                sessionId: session.id,
-                roundNumber: 1,
-                status: "started",
-                seed: 0,
-                scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
-                createdAt: new Date(),
-                startedAt: new Date(),
-                completedAt: null,
-                version: 1,
-              },
-              matches: [newMatch],
-              matchPlayers: newMatchPlayers,
-              sits: [],
-            };
-            return [newSr];
-          }
-          return prev.map((sr) =>
-            sr.round.id === newMatch.roundId || prev.length === 1
-              ? {
-                  ...sr,
-                  matches: [...sr.matches.filter((m) => m.id !== newMatch.id), newMatch],
-                  matchPlayers: [...sr.matchPlayers.filter((mp) => mp.matchId !== newMatch.id), ...newMatchPlayers],
-                }
-              : sr
-          );
-        });
-
-        setPickledGameId(isPickleScore(s1, s2) ? res.data.id : null);
-        setT1Score("");
-        setT2Score("");
-        showToast("Game submitted successfully!");
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) => (m.id === optimisticMatchId ? newMatch : m)),
+            matchPlayers: sr.matchPlayers.map((mp) =>
+              mp.matchId === optimisticMatchId ? { ...mp, matchId: newMatch.id } : mp
+            ),
+          }))
+        );
+        setPickledGameId((current) => (current === optimisticMatchId ? newMatch.id : current));
       } else {
+        // Rollback optimistic update
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.filter((m) => m.id !== optimisticMatchId),
+            matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+          }))
+        );
+        setPickledGameId((current) => (current === optimisticMatchId ? null : current));
+        setT1Score(String(s1));
+        setT2Score(String(s2));
         setError(res.error ?? "Failed to submit game.");
       }
     } catch {
+      setLocalStartedRounds((prev) =>
+        prev.map((sr) => ({
+          ...sr,
+          matches: sr.matches.filter((m) => m.id !== optimisticMatchId),
+          matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+        }))
+      );
+      setPickledGameId((current) => (current === optimisticMatchId ? null : current));
+      setT1Score(String(s1));
+      setT2Score(String(s2));
       setError("An unexpected error occurred while submitting game.");
     } finally {
       setIsSubmittingGame(false);
@@ -962,6 +1296,20 @@ export function OpenPlayManagerClient({
             ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
           />
           <div className="flex items-center gap-2">
+            {isSessionActive && (
+              <span
+                data-testid="live-sync-indicator"
+                title="Real-time live sync across devices is active"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-black bg-white text-[11px] font-black text-neutral-700 shadow-[1px_1px_0px_0px_#000]"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isLiveSyncing ? "bg-amber-500 animate-ping" : "bg-[#65a30d] animate-pulse"
+                  }`}
+                />
+                <span>Live</span>
+              </span>
+            )}
             <Badge variant={isSessionActive ? "warning" : "muted"}>
               {isSessionActive ? "In Progress" : "Completed"}
             </Badge>
@@ -1347,6 +1695,67 @@ export function OpenPlayManagerClient({
             </p>
           ) : (
             <form onSubmit={handleSubmitGame} className="space-y-4">
+              {/* Quick Action Toolbar: Rematch, Rotate Partners, Next Waiting, Clear */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRematch}
+                  disabled={!canRematch}
+                  data-testid="rematch-button"
+                  title="Keep the same players and teams for a rematch"
+                  className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                >
+                  <span>⚔️</span>
+                  <span>Rematch</span>
+                </button>
+                {matchType === "doubles" ? (
+                  <button
+                    type="button"
+                    onClick={handleRotatePartners}
+                    disabled={!canRotate}
+                    data-testid="rotate-partners-button"
+                    title="Split and switch partners between the 4 players"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                  >
+                    <span>🔄</span>
+                    <span>Rotate Partners</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSwapSides}
+                    disabled={!t1p1 || !t2p1}
+                    data-testid="swap-sides-button"
+                    title="Swap sides between the 2 players"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                  >
+                    <span>🔄</span>
+                    <span>Swap Sides</span>
+                  </button>
+                )}
+                {checkedInPlayers.length >= (matchType === "doubles" ? 4 : 2) && (
+                  <button
+                    type="button"
+                    onClick={handleFillNextWaiting}
+                    data-testid="next-waiting-button"
+                    title="Select players who have played the fewest games or sat the longest"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all"
+                  >
+                    <span>👥</span>
+                    <span>Next Waiting</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClearSlots}
+                  data-testid="clear-slots-button"
+                  title="Clear all player selections and scores"
+                  className="inline-flex items-center gap-1 py-1.5 px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto"
+                >
+                  <span>Clear</span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Team 1 Card */}
                 <div className="p-4 bg-[#ccff00]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
@@ -1429,6 +1838,46 @@ export function OpenPlayManagerClient({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Quick Score Presets */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 mr-1">
+                  Quick Scores:
+                </span>
+                {[
+                  [11, 9],
+                  [11, 7],
+                  [11, 5],
+                  [11, 3],
+                  [11, 0],
+                  [15, 13],
+                ].map(([s1, s2]) => (
+                  <button
+                    key={`${s1}-${s2}`}
+                    type="button"
+                    onClick={() => {
+                      setT1Score(String(s1));
+                      setT2Score(String(s2));
+                    }}
+                    className="py-1 px-2.5 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-black font-mono text-xs font-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                  >
+                    {s1}–{s2}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setT1Score(t2Score);
+                    setT2Score(t1Score);
+                  }}
+                  disabled={!t1Score && !t2Score}
+                  title="Swap team scores"
+                  aria-label="Swap scores"
+                  className="py-1 px-2.5 rounded-lg border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-black font-mono text-xs font-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 cursor-pointer ml-auto"
+                >
+                  ⇄ Swap
+                </button>
               </div>
 
               <button
