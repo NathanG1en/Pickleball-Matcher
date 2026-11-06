@@ -142,8 +142,61 @@ describe("ResultsEntryView Component", () => {
       />
     );
 
-    expect(html).toContain("Save All Scores");
+    expect(html).toContain("Save Scores");
     expect(html).toContain('data-testid="save-all-scores-button"');
+  });
+
+  it("renders Up Next Lineup Preview and Save & Start Next Round button when upcomingProposal is provided", () => {
+    const upcomingProposal = {
+      roundNumber: 2,
+      seed: 42,
+      score: 100,
+      courts: [
+        {
+          courtNumber: 1,
+          team1: ["p1", "p2"] as [string, string],
+          team2: ["p3", "p4"] as [string, string],
+          matchType: "doubles" as const,
+        },
+      ],
+      sitting: ["p5"],
+      scoreBreakdown: {
+        playingTime: 0,
+        consecutiveSit: 0,
+        partnerRepeat: 0,
+        skillBalance: 0,
+        opponentRepeat: 0,
+        tieBreak: 0,
+        total: 0,
+      },
+    };
+    const playerNames = {
+      p1: "Alice",
+      p2: "Bob",
+      p3: "Charlie",
+      p4: "Diana",
+      p5: "Evan",
+    };
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        upcomingProposal={upcomingProposal}
+        playerNames={playerNames}
+        onSaveAndStartNextRound={() => {}}
+      />
+    );
+
+    expect(html).toContain("Up Next: Round 2 Lineup Preview");
+    expect(html).toContain('data-testid="upcoming-lineup-preview"');
+    expect(html).toContain("Alice &amp; Bob");
+    expect(html).toContain("Charlie &amp; Diana");
+    expect(html).toContain("Evan");
+    expect(html).toContain("Save &amp; Start Round 2");
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
   });
 });
 

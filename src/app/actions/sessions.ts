@@ -28,6 +28,7 @@ import {
   endSessionSchema,
   proposeRoundSchema,
   reshuffleRoundSchema,
+  saveAndStartNextRoundSchema,
   startRoundSchema,
   startSessionSchema,
   submitSessionPickupGameSchema,
@@ -260,6 +261,67 @@ export async function completeRoundAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to complete round",
+    };
+  }
+}
+
+export async function saveAndStartNextRoundAction(
+  input: unknown,
+): Promise<ActionResult<{ completedRound: RoundRecord; startedRound: StartedRoundRecord }>> {
+  const parsed = saveAndStartNextRoundSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Invalid save and start round parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId, parsed.data.roundId);
+    const service = getActionSessionService();
+    let nextProposal: RoundProposal | undefined;
+    if (parsed.data.manualCourts && parsed.data.manualSitting) {
+      nextProposal = {
+        courts: parsed.data.manualCourts.map((c) => ({
+          courtNumber: c.courtNumber,
+          team1: c.team1.length === 2 ? ([c.team1[0], c.team1[1]] as const) : ([c.team1[0]] as const),
+          team2: c.team2.length === 2 ? ([c.team2[0], c.team2[1]] as const) : ([c.team2[0]] as const),
+          matchType: c.team1.length + c.team2.length === 3 ? "team-vs-one" : c.team1.length === 2 ? "doubles" : "singles",
+        })),
+        sitting: parsed.data.manualSitting,
+        seed: parsed.data.seed ?? Math.floor(Math.random() * 0xffff_ffff),
+        score: 0,
+        scoreBreakdown: {
+          playingTime: 0,
+          consecutiveSit: 0,
+          partnerRepeat: 0,
+          skillBalance: 0,
+          opponentRepeat: 0,
+          tieBreak: 0,
+          total: 0,
+        },
+      };
+    }
+    const result = await service.saveAndStartNextRound({
+      sessionId: parsed.data.sessionId,
+      roundId: parsed.data.roundId,
+      results: parsed.data.results.map((r) => ({
+        matchId: r.matchId,
+        team1Score: r.team1Score,
+        team2Score: r.team2Score,
+        matchVersion: r.matchVersion,
+      })),
+      nextProposal,
+      seed: parsed.data.seed,
+      expectedSessionVersion: parsed.data.sessionVersion,
+    });
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    return { ok: true, data: result };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to advance to next round",
     };
   }
 }

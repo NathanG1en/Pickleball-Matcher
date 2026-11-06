@@ -13,11 +13,13 @@ import {
   endSessionAction,
   proposeRoundAction,
   reshuffleRoundAction,
+  saveAndStartNextRoundAction,
   startRoundAction,
   undoLatestRoundAction,
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
+import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
@@ -439,6 +441,24 @@ export function SessionManagerClient({
 
   const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
 
+  const preGeneratedProposal = useMemo(() => {
+    if (!latestStarted || latestStarted.round.status !== "started") return null;
+    try {
+      return proposeRoundFromSnapshot(
+        {
+          session: currentSession,
+          players,
+          attendance: currentAttendance,
+          rounds: localStartedRounds,
+        },
+        undefined,
+        matchmakingVariety,
+      );
+    } catch {
+      return null;
+    }
+  }, [currentSession, players, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
+
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
     clearLineupDraft(lineupDraftKey(updated.id));
@@ -657,6 +677,151 @@ export function SessionManagerClient({
         return next;
       });
     }
+  };
+
+  const handleSaveAndStartNextRound = async () => {
+    if (!latestStarted || isPending) return;
+    const entriesToSave: { matchId: string; team1Score: number; team2Score: number; version: number }[] = [];
+    for (const match of scoreEntries) {
+      const draft = scoreDrafts[match.id];
+      if (draft && draft.team1 !== "" && draft.team2 !== "") {
+        const t1 = parseInt(draft.team1, 10);
+        const t2 = parseInt(draft.team2, 10);
+        if (!isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0) {
+          entriesToSave.push({ matchId: match.id, team1Score: t1, team2Score: t2, version: match.version });
+        }
+      }
+    }
+    setError(null);
+    const proposalToUse = preGeneratedProposal;
+    const previousRounds = localStartedRounds;
+    const previousSession = currentSession;
+    const previousDrafts = scoreDrafts;
+
+    // Optimistically advance UI immediately on click
+    if (proposalToUse) {
+      const nextRoundNumber = latestStarted.round.roundNumber + 1;
+      const roundSeed = proposalToUse.seed;
+      const tempRoundId = `temp_round_${currentSession.id}_${nextRoundNumber}_${roundSeed}`;
+      const optimisticMatches: MatchRecord[] = proposalToUse.courts.map((court, i) => ({
+        id: `temp_match_${currentSession.id}_${nextRoundNumber}_${i}`,
+        roundId: tempRoundId,
+        courtNumber: court.courtNumber,
+        rated: court.team1.length === 2 && court.team2.length === 2,
+        status: "pending",
+        team1Score: null,
+        team2Score: null,
+        completedAt: null,
+        version: 1,
+      }));
+      const optimisticMatchPlayers: MatchPlayerRecord[] = proposalToUse.courts.flatMap((court, i) => {
+        const matchId = `temp_match_${currentSession.id}_${nextRoundNumber}_${i}`;
+        return [
+          ...court.team1.map((pId) => ({ matchId, playerId: pId, team: 1 as const, ratingBefore: null, ratingAfter: null })),
+          ...court.team2.map((pId) => ({ matchId, playerId: pId, team: 2 as const, ratingBefore: null, ratingAfter: null })),
+        ];
+      });
+      const optimisticStartedRound: StartedRoundRecord = {
+        round: {
+          id: tempRoundId,
+          sessionId: currentSession.id,
+          roundNumber: nextRoundNumber,
+          status: "started",
+          seed: proposalToUse.seed,
+          scoreBreakdown: proposalToUse.scoreBreakdown,
+          createdAt: latestStarted.round.createdAt,
+          startedAt: latestStarted.round.createdAt,
+          completedAt: null,
+          version: 1,
+        },
+        matches: optimisticMatches,
+        matchPlayers: optimisticMatchPlayers,
+        sits: proposalToUse.sitting.map((pId) => ({ roundId: tempRoundId, playerId: pId })),
+      };
+
+      setLocalStartedRounds((prev) => [
+        ...prev.map((sr) =>
+          sr.round.id === latestStarted.round.id
+            ? {
+                ...sr,
+                round: { ...sr.round, status: "completed" as const, completedAt: latestStarted.round.startedAt, version: sr.round.version + 1 },
+                matches: sr.matches.map((m) => {
+                  const saved = entriesToSave.find((e) => e.matchId === m.id);
+                  return saved
+                    ? { ...m, status: "completed" as const, team1Score: saved.team1Score, team2Score: saved.team2Score, version: m.version + 1 }
+                    : m;
+                }),
+              }
+            : sr
+        ),
+        optimisticStartedRound,
+      ]);
+      setCurrentSession((prev) => ({
+        ...prev,
+        currentRoundNumber: nextRoundNumber,
+        version: prev.version + 1,
+      }));
+      setScoreDrafts({});
+    }
+
+    startGeneratingRound(async () => {
+      try {
+        const res = await saveAndStartNextRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          results: entriesToSave.map((e) => ({
+            matchId: e.matchId,
+            team1Score: e.team1Score,
+            team2Score: e.team2Score,
+            matchVersion: e.version,
+          })),
+          idempotencyKey: createIdempotencyKey("save_and_start"),
+          manualCourts: proposalToUse?.courts.map((c) => ({
+            courtNumber: c.courtNumber,
+            team1: [...c.team1],
+            team2: [...c.team2],
+          })),
+          manualSitting: proposalToUse?.sitting ? [...proposalToUse.sitting] : undefined,
+          seed: proposalToUse?.seed,
+        });
+
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          setLocalStartedRounds((prev) => [
+            ...prev.filter((sr) => sr.round.id !== latestStarted.round.id && !sr.round.id.startsWith("temp_")),
+            {
+              ...latestStarted,
+              round: res.data.completedRound,
+              matches: latestStarted.matches.map((m) => {
+                const saved = entriesToSave.find((e) => e.matchId === m.id);
+                return saved
+                  ? { ...m, status: "completed" as const, team1Score: saved.team1Score, team2Score: saved.team2Score, version: m.version + 1 }
+                  : m;
+              }),
+            },
+            res.data.startedRound,
+          ]);
+          setCurrentSession((prev) => ({
+            ...prev,
+            currentRoundNumber: res.data.startedRound.round.roundNumber,
+            version: prev.version + 1,
+          }));
+        } else {
+          setLocalStartedRounds(previousRounds);
+          setCurrentSession(previousSession);
+          setScoreDrafts(previousDrafts);
+          setError(res.error);
+        }
+      } catch {
+        setLocalStartedRounds(previousRounds);
+        setCurrentSession(previousSession);
+        setScoreDrafts(previousDrafts);
+        setError("Failed to advance to next round.");
+      }
+    });
   };
 
 
@@ -1613,6 +1778,9 @@ export function SessionManagerClient({
                 hasUnsavedScores={hasUnsavedScores}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
                 onSaveAllScores={canManage ? handleSaveAllScores : undefined}
+                onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
+                upcomingProposal={canManage ? preGeneratedProposal : null}
+                playerNames={playerNames}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">

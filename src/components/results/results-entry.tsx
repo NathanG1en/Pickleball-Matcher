@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShuffleIcon } from "@/components/ui/icons";
 
+import type { RoundProposal } from "@/lib/domain/types";
+
 export interface MatchScoreEntry {
   readonly id: string;
   readonly courtNumber: number;
@@ -41,6 +43,9 @@ export interface ResultsEntryViewProps {
   readonly sittingNames?: readonly string[];
   readonly onAddGame?: () => void;
   readonly onSaveAllScores?: () => void;
+  readonly onSaveAndStartNextRound?: () => void;
+  readonly upcomingProposal?: RoundProposal | null;
+  readonly playerNames?: Readonly<Record<string, string>>;
 }
 
 export function ResultsEntryView({
@@ -63,6 +68,9 @@ export function ResultsEntryView({
   sittingNames = [],
   onAddGame,
   onSaveAllScores,
+  onSaveAndStartNextRound,
+  upcomingProposal,
+  playerNames = {},
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -81,6 +89,15 @@ export function ResultsEntryView({
   };
 
   const allResolved = matches.every((m) => m.status !== "pending");
+
+  const allMatchesHaveScores = matches.length > 0 && matches.every((m) => {
+    if (m.status !== "pending") return true;
+    const s = getScores(m);
+    if (!s.team1 || !s.team2) return false;
+    const t1 = parseInt(s.team1, 10);
+    const t2 = parseInt(s.team2, 10);
+    return !isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0;
+  });
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
@@ -133,6 +150,40 @@ export function ResultsEntryView({
         <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
           <span className="text-xs font-black text-black">{sittingNames.join(", ")}</span>
+        </div>
+      )}
+
+      {/* Up Next Preview (Optimistic Pre-Generation) */}
+      {upcomingProposal && (
+        <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+          <details data-testid="upcoming-lineup-preview" className="group cursor-pointer">
+            <summary className="flex items-center justify-between font-black uppercase text-xs text-neutral-800 select-none">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block animate-pulse" />
+                <span>Up Next: Round {roundNumber + 1} Lineup Preview</span>
+              </span>
+              <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {upcomingProposal.courts.map((c) => (
+                  <div key={c.courtNumber} className="p-2.5 rounded-xl bg-white border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
+                    <span className="font-black text-black">Court {c.courtNumber}: </span>
+                    <span className="font-bold text-neutral-800">
+                      {c.team1.map((id) => playerNames[id] ?? id).join(" & ")} vs{" "}
+                      {c.team2.map((id) => playerNames[id] ?? id).join(" & ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {upcomingProposal.sitting.length > 0 && (
+                <p className="text-xs font-bold text-neutral-600">
+                  <span className="font-black uppercase text-neutral-500">Sitting Next: </span>
+                  {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
+                </p>
+              )}
+            </div>
+          </details>
         </div>
       )}
 
@@ -310,18 +361,31 @@ export function ResultsEntryView({
                 {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-1 justify-end">
+            <div className="flex items-center gap-2 flex-1 justify-end flex-wrap">
               {hasUnsavedScores && onSaveAllScores && (
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="outline"
                   size="lg"
                   disabled={isPending || Boolean(savingMatchIds && savingMatchIds.size > 0)}
                   onClick={onSaveAllScores}
                   data-testid="save-all-scores-button"
-                  className="font-display text-base tracking-wide uppercase bg-[#ccff00] text-black"
+                  className="font-display text-sm sm:text-base tracking-wide uppercase"
                 >
-                  {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save All Scores"}
+                  {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save Scores"}
+                </Button>
+              )}
+              {canManage && onSaveAndStartNextRound && allMatchesHaveScores && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  disabled={isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
+                  onClick={onSaveAndStartNextRound}
+                  data-testid="save-and-start-next-round-button"
+                  className="flex-1 max-w-xs font-display text-base sm:text-lg tracking-wide uppercase bg-[#ccff00] text-black shadow-[4px_4px_0px_0px_#000]"
+                >
+                  {isGeneratingRound ? <RoundGenerationIndicator /> : `Save & Start Round ${roundNumber + 1}`}
                 </Button>
               )}
               <Button

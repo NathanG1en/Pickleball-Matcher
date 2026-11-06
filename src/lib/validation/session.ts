@@ -103,6 +103,24 @@ export const completeRoundSchema = existingSessionMutation.extend({
   roundVersion: aggregateVersionSchema,
 });
 
+export const saveAndStartNextRoundSchema = existingSessionMutation.extend({
+  roundId: entityIdSchema,
+  roundVersion: aggregateVersionSchema.optional(),
+  results: z
+    .array(
+      z.object({
+        matchId: entityIdSchema,
+        team1Score: z.number().int().min(0, "Score cannot be negative"),
+        team2Score: z.number().int().min(0, "Score cannot be negative"),
+        matchVersion: aggregateVersionSchema.optional(),
+      })
+    )
+    .default([]),
+  seed: z.coerce.number().int().min(0).max(0xffff_ffff).optional(),
+  manualCourts: z.array(manualCourtSchema).optional(),
+  manualSitting: z.array(entityIdSchema).optional(),
+});
+
 export const undoLatestRoundSchema = existingSessionMutation.extend({
   roundId: entityIdSchema,
   roundVersion: aggregateVersionSchema,
