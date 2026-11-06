@@ -4,6 +4,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { SessionManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/session-manager-client";
 import type { AttendanceRecord, PlayerRecord, RoundProposal, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
 
+const transitionMock = vi.hoisted(() => vi.fn());
+vi.mock("react", async importOriginal => {
+  const actual = await importOriginal<typeof import("react")>();
+  return { ...actual, useTransition: transitionMock };
+});
+
 const mockStorage: Record<string, string> = {};
 const storageMock: Storage = {
   getItem: (key: string) => mockStorage[key] || null,
@@ -34,6 +40,7 @@ vi.mock("next/navigation", () => ({
 
 describe("SessionManagerClient Component", () => {
   beforeEach(() => {
+    transitionMock.mockReset().mockImplementation(React.useTransition);
     storageMock.clear();
     Object.defineProperty(globalThis, "window", {
       value: {
@@ -295,6 +302,18 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(html).not.toContain("Deleted Player");
+  });
+
+  it("blocks starting while a court configuration RSC transition is still committing", () => {
+    transitionMock.mockReturnValueOnce([false, () => {}]).mockReturnValueOnce([true, () => {}]);
+    const html = renderToStaticMarkup(<SessionManagerClient
+      groupId={groupId} session={{ ...completedSession, status: "active", endedAt: null, currentRoundNumber: 0 }}
+      players={players} attendance={attendance} startedRounds={[]} canManage={true} isOrganizer={true}
+      initialProposal={{ seed: 42, score: 0, scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 }, courts: [{ courtNumber: 1, team1: ["p1", "p2"], team2: ["p3", "p4"] }], sitting: [] }}
+    />);
+    const start = html.match(/<button[^>]*>Start Round<\/button>/)?.[0];
+    expect(start).toBeDefined();
+    expect(start).toContain('disabled=""');
   });
 
   it("renders reshuffle matchups controls for organizer in proposed round state", () => {

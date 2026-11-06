@@ -189,8 +189,9 @@ export function SessionManagerClient({
   const [pickledMatchId, setPickledMatchId] = useState<string | null>(null);
   const [isActionPending, setIsPending] = useState(false);
   const [isGeneratingRound, startGeneratingRound] = useTransition();
+  const [isCourtConfigPending, startCourtConfigTransition] = useTransition();
   const [isRequestPending, setRequestPending] = useState(false);
-  const isPending = isActionPending || isGeneratingRound || isRequestPending;
+  const isPending = isActionPending || isGeneratingRound || isCourtConfigPending || isRequestPending;
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -328,36 +329,41 @@ export function SessionManagerClient({
   const configSitting = Math.max(0, presentCount - configCapacity);
   const isOverCapacity = configCapacity > presentCount;
 
-  const handleSaveCourtConfig = async () => {
-    setIsPending(true);
-    setError(null);
-    setCourtConfigMessage(null);
-    try {
-      const res = await updateCourtConfigAction({
-        groupId,
-        sessionId: currentSession.id,
-        sessionVersion: currentSession.version,
-        courtCount: courtConfigCourts,
-        courtPlayerCounts: courtConfigPlayerCounts.slice(0, courtConfigCourts),
-        idempotencyKey: createIdempotencyKey("court_cfg"),
-      });
-      if (res.ok) {
-        setCurrentSession(res.data.session);
-        clearLineupDraft(lineupDraftKey(currentSession.id));
-        if (res.data.proposal) {
-          setRegeneratedProposal(res.data.proposal);
+  const handleSaveCourtConfig = () => {
+    // The action result and its revalidated server tree can commit separately.
+    // Keep Start disabled until both have settled so the editor cannot remount
+    // underneath an already-open confirmation dialog.
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      setCourtConfigMessage(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: courtConfigCourts,
+          courtPlayerCounts: courtConfigPlayerCounts.slice(0, courtConfigCourts),
+          idempotencyKey: createIdempotencyKey("court_cfg"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          setCourtConfigMessage("Court configuration updated successfully.");
         } else {
-          setRegeneratedProposal(null);
+          setError(res.error);
         }
-        setCourtConfigMessage("Court configuration updated successfully.");
-      } else {
-        setError(res.error);
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
       }
-    } catch {
-      setError("Failed to update court configuration.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
 
