@@ -3,6 +3,7 @@ import {
   deleteSessionSchema,
   manualCourtSchema,
   startRoundSchema,
+  startSessionSchema,
   submitSessionPickupGameSchema,
   updateCourtConfigSchema,
 } from "@/lib/validation/session";
@@ -266,6 +267,53 @@ describe("submitSessionPickupGameSchema", () => {
       ...basePickupInput,
       team1Score: -1,
       team2Score: 11,
+    });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("startSessionSchema", () => {
+  const baseInput = {
+    groupId: "grp_123",
+    courtCount: 6,
+    courtPlayerCounts: [4, 4, 4, 4, 4, 4],
+    idempotencyKey: "key_123",
+  };
+
+  it("accepts sessions with more than 24 players (e.g. 32 players with sitters)", () => {
+    const playerIds = Array.from({ length: 32 }, (_, i) => `player_${i + 1}`);
+    const res = startSessionSchema.safeParse({
+      ...baseInput,
+      playerIds,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("accepts sessions with up to 64 players", () => {
+    const playerIds = Array.from({ length: 64 }, (_, i) => `player_${i + 1}`);
+    const res = startSessionSchema.safeParse({
+      ...baseInput,
+      playerIds,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects sessions with fewer than 2 players", () => {
+    const res = startSessionSchema.safeParse({
+      ...baseInput,
+      courtCount: 1,
+      courtPlayerCounts: [2],
+      playerIds: ["player_1"],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects sessions when court sizes exceed selected players", () => {
+    const res = startSessionSchema.safeParse({
+      ...baseInput,
+      courtCount: 6,
+      courtPlayerCounts: [4, 4, 4, 4, 4, 4], // 24 spots
+      playerIds: Array.from({ length: 20 }, (_, i) => `player_${i + 1}`), // only 20 players
     });
     expect(res.success).toBe(false);
   });

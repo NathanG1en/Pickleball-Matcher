@@ -57,7 +57,7 @@ export async function startSessionAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Please select between 2 and 24 players and choose court sizes that fit.",
+      error: "Please select at least 2 players and choose court sizes that fit.",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }

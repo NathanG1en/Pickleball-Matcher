@@ -42,7 +42,7 @@ export const saveTemporaryGroupSchema = z.object({
   name: z.string().trim().min(1).max(80),
   isPublic: z.boolean(),
   courtPlayerCounts: z.array(courtSizeSchema).min(1).max(6),
-  players: z.array(z.object({ id: z.string().min(1).max(128), name: z.string().trim().min(1).max(80), rating: z.number().finite().min(100).max(3_000) }).strict()).min(2).max(24),
+  players: z.array(z.object({ id: z.string().min(1).max(128), name: z.string().trim().min(1).max(80), rating: z.number().finite().min(100).max(3_000) }).strict()).min(2).max(128),
   rounds: z.array(tempRoundSchema).max(100),
   currentRound: tempRoundSchema.nullable().optional(),
   targetGroupId: z.string().min(1).max(128).optional(),

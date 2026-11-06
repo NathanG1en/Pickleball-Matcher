@@ -157,7 +157,7 @@ export function TemporaryGroupClient({
   const begin = (event: React.FormEvent) => {
     event.preventDefault();
     const players = parsedNames.map((name) => ({ id: crypto.randomUUID(), name, rating: 1_000 }));
-    if (players.length < 2 || players.length > 24 || courtCapacity > players.length) return;
+    if (players.length < 2 || players.length > 128 || courtCapacity > players.length) return;
     setAndPersist({
       name: (groupName || "Quick Session").trim(),
       isPublic: false,
@@ -717,7 +717,7 @@ export function TemporaryGroupClient({
               className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold normal-case shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#ccff00] transition-shadow placeholder:font-normal placeholder:text-neutral-400"
             />
             <p className="text-xs font-bold text-neutral-600 pt-0.5">
-              {parsedNames.length} names entered · 2 to 24 players
+              {parsedNames.length} names entered · at least 2 players
             </p>
           </div>
 
@@ -771,7 +771,7 @@ export function TemporaryGroupClient({
 
           <button
             type="submit"
-            disabled={parsedNames.length < 2 || parsedNames.length > 24 || courtCapacity > parsedNames.length}
+            disabled={parsedNames.length < 2 || parsedNames.length > 128 || courtCapacity > parsedNames.length}
             className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 font-display text-lg font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all disabled:opacity-40 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] cursor-pointer disabled:cursor-not-allowed"
           >
             Start Quick Session
