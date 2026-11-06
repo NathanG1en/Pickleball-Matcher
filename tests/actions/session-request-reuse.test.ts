@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { proposeRoundAction, startRoundAction } from "@/app/actions/sessions";
+import { proposeRoundAction, saveAndStartNextRoundAction, startRoundAction } from "@/app/actions/sessions";
 import { setActionRepository } from "@/app/actions/action-context";
 import { manualRequestCourts, seedSessionRequest, sessionStartInput, SessionRequestRepository } from "../fixtures/session-request";
 
@@ -44,4 +44,23 @@ it("rejects an incorrectly scoped proposal before computing a lineup", async () 
   expect(result.ok).toBe(false);
   expect(repository.reads.players).toBe(0);
   expect(repository.state.rounds).toHaveLength(0);
+});
+
+it("forwards the combined action's round version and rolls back a stale request", async () => {
+  const started = await startRoundAction({ ...sessionStartInput, manualCourts: manualRequestCourts, manualSitting: [] });
+  expect(started.ok).toBe(true);
+  const round = repository.state.rounds[0];
+  const before = structuredClone(repository.state);
+  const result = await saveAndStartNextRoundAction({
+    ...sessionStartInput,
+    sessionVersion: repository.state.sessions[0].version,
+    roundId: round.id,
+    roundVersion: round.version + 1,
+    idempotencyKey: "combined-stale-round",
+    results: repository.state.matches.map(match => ({ matchId: match.id, matchVersion: match.version, team1Score: 11, team2Score: 7 })),
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) return;
+  expect(result.error).toMatch(/round changed/i);
+  expect(repository.state).toEqual(before);
 });

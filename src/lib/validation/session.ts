@@ -5,7 +5,7 @@ import { entityIdSchema } from "@/lib/validation/group";
 const aggregateVersionSchema = z.coerce.number().int().positive();
 const idempotencyKeySchema = entityIdSchema;
 
-export const stayTogetherPairsSchema = z.array(z.tuple([entityIdSchema, entityIdSchema])).max(12);
+export const stayTogetherPairsSchema = z.array(z.tuple([entityIdSchema, entityIdSchema])).max(50);
 
 export const updateStayTogetherPairsSchema = z.object({
   groupId: entityIdSchema, sessionId: entityIdSchema, sessionVersion: aggregateVersionSchema, pairs: stayTogetherPairsSchema,
@@ -16,7 +16,7 @@ export const startSessionSchema = z
     groupId: entityIdSchema,
     courtCount: z.coerce.number().int().min(1).max(6),
     courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
-    playerIds: z.array(entityIdSchema).min(2).max(24),
+    playerIds: z.array(entityIdSchema).min(2).max(128),
     stayTogetherPairs: stayTogetherPairsSchema.optional(),
     idempotencyKey: idempotencyKeySchema,
   })
@@ -101,6 +101,24 @@ const existingSessionMutation = z
 export const completeRoundSchema = existingSessionMutation.extend({
   roundId: entityIdSchema,
   roundVersion: aggregateVersionSchema,
+});
+
+export const saveAndStartNextRoundSchema = existingSessionMutation.extend({
+  roundId: entityIdSchema,
+  roundVersion: aggregateVersionSchema.optional(),
+  results: z
+    .array(
+      z.object({
+        matchId: entityIdSchema,
+        team1Score: z.number().int().min(0, "Score cannot be negative"),
+        team2Score: z.number().int().min(0, "Score cannot be negative"),
+        matchVersion: aggregateVersionSchema.optional(),
+      })
+    )
+    .default([]),
+  seed: z.coerce.number().int().min(0).max(0xffff_ffff).optional(),
+  manualCourts: z.array(manualCourtSchema).optional(),
+  manualSitting: z.array(entityIdSchema).optional(),
 });
 
 export const undoLatestRoundSchema = existingSessionMutation.extend({

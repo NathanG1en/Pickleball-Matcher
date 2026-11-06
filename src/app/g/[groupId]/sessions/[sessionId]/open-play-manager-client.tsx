@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
@@ -68,7 +67,6 @@ export function OpenPlayManagerClient({
   currentViewerPlayerId = null,
   isFromProfile = false,
 }: OpenPlayManagerClientProps) {
-  const router = useRouter();
   const isHydrated = useHydrated();
 
   // Local state for instant UI updates without waiting for router.refresh()
@@ -479,7 +477,6 @@ export function OpenPlayManagerClient({
           });
         }
         showToast("You joined Open Play!");
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to join session.");
       }
@@ -532,7 +529,6 @@ export function OpenPlayManagerClient({
           setGuestAddedPopup(null);
           guestPopupTimeoutRef.current = null;
         }, 10000);
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to add guest.");
       }
@@ -568,7 +564,6 @@ export function OpenPlayManagerClient({
           ];
         });
         showToast(`Added ${addedName} to session!`);
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to add player.");
       }
@@ -596,7 +591,6 @@ export function OpenPlayManagerClient({
           prev.map((a) => (a.playerId === playerId ? { ...a, leftRound: 1 } : a)),
         );
         showToast("Player removed from session.");
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to remove player.");
       }
@@ -694,7 +688,6 @@ export function OpenPlayManagerClient({
         setT1Score("");
         setT2Score("");
         showToast("Game submitted successfully!");
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to submit game.");
       }
@@ -865,7 +858,6 @@ export function OpenPlayManagerClient({
         if (pickledGameId === editingMatchId) setPickledGameId(null);
         setEditingMatchId(null);
         showToast("Game updated successfully!");
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to update game.");
       }
@@ -888,7 +880,6 @@ export function OpenPlayManagerClient({
       if (res.ok) {
         if (pickledGameId === matchId) setPickledGameId(null);
         showToast("Game deleted.");
-        router.refresh();
       } else {
         setDeletedMatchIds((prev) => {
           const next = new Set(prev);
@@ -916,7 +907,6 @@ export function OpenPlayManagerClient({
       if (res.ok) {
         setPickledGameId(null);
         setJustEndedSession(true);
-        router.refresh();
       } else {
         setError(res.error ?? "Failed to end session.");
       }

@@ -13,24 +13,25 @@ import {
   endSessionAction,
   proposeRoundAction,
   reshuffleRoundAction,
+  saveAndStartNextRoundAction,
   startRoundAction,
   undoLatestRoundAction,
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
+import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
-import { SynergyPanel } from "@/components/rounds/synergy-reveal-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
-import { GearIcon, PinIcon, SearchIcon, XIcon, ZapIcon } from "@/components/ui/icons";
+import { GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import {
   sortPlayersWithPinned,
   togglePinnedPlayer,
@@ -51,13 +52,13 @@ import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { AddPickupGameModal } from "@/components/sessions/add-pickup-game-modal";
-import { clearLineupDraft, lineupDraftKey, readLineupDraft } from "@/lib/rounds/lineup-draft";
+import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
-import { buildCourtSynergies, type PairSynergiesMap } from "@/lib/synergy/lineup";
+import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
 
-export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "synergies" | "stay_together";
+export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together";
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -188,8 +189,9 @@ export function SessionManagerClient({
   const [pickledMatchId, setPickledMatchId] = useState<string | null>(null);
   const [isActionPending, setIsPending] = useState(false);
   const [isGeneratingRound, startGeneratingRound] = useTransition();
+  const [isCourtConfigPending, startCourtConfigTransition] = useTransition();
   const [isRequestPending, setRequestPending] = useState(false);
-  const isPending = isActionPending || isGeneratingRound || isRequestPending;
+  const isPending = isActionPending || isGeneratingRound || isCourtConfigPending || isRequestPending;
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -327,36 +329,41 @@ export function SessionManagerClient({
   const configSitting = Math.max(0, presentCount - configCapacity);
   const isOverCapacity = configCapacity > presentCount;
 
-  const handleSaveCourtConfig = async () => {
-    setIsPending(true);
-    setError(null);
-    setCourtConfigMessage(null);
-    try {
-      const res = await updateCourtConfigAction({
-        groupId,
-        sessionId: currentSession.id,
-        sessionVersion: currentSession.version,
-        courtCount: courtConfigCourts,
-        courtPlayerCounts: courtConfigPlayerCounts.slice(0, courtConfigCourts),
-        idempotencyKey: createIdempotencyKey("court_cfg"),
-      });
-      if (res.ok) {
-        setCurrentSession(res.data.session);
-        clearLineupDraft(lineupDraftKey(currentSession.id));
-        if (res.data.proposal) {
-          setRegeneratedProposal(res.data.proposal);
+  const handleSaveCourtConfig = () => {
+    // The action result and its revalidated server tree can commit separately.
+    // Keep Start disabled until both have settled so the editor cannot remount
+    // underneath an already-open confirmation dialog.
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      setCourtConfigMessage(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: courtConfigCourts,
+          courtPlayerCounts: courtConfigPlayerCounts.slice(0, courtConfigCourts),
+          idempotencyKey: createIdempotencyKey("court_cfg"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          setCourtConfigMessage("Court configuration updated successfully.");
         } else {
-          setRegeneratedProposal(null);
+          setError(res.error);
         }
-        setCourtConfigMessage("Court configuration updated successfully.");
-      } else {
-        setError(res.error);
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
       }
-    } catch {
-      setError("Failed to update court configuration.");
-    } finally {
-      setIsPending(false);
-    }
+    });
   };
 
 
@@ -383,61 +390,25 @@ export function SessionManagerClient({
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  const activeCourtsForSynergy = useMemo(() => {
-    // Re-evaluate whenever session settings modal opens or tab changes to pick up any manual edits
-    if (!showSessionSettingsModal && modalTab !== "synergies") {
-      // Still compute if needed, but condition explicitly references state
-    }
-    if (isRoundInProgress && latestStarted) {
-      return latestStarted.matches.map((m) => ({
-        courtNumber: m.courtNumber,
-        team1: (latestStarted.matchPlayers ?? [])
-          .filter((mp) => mp.matchId === m.id && mp.team === 1)
-          .map((mp) => mp.playerId),
-        team2: (latestStarted.matchPlayers ?? [])
-          .filter((mp) => mp.matchId === m.id && mp.team === 2)
-          .map((mp) => mp.playerId),
-      }));
-    }
-    if (activeProposal) {
-      if (typeof window !== "undefined") {
-        const draftKey = lineupDraftKey(session.id);
-        const draftContext = `${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`;
-        const draft = readLineupDraft(draftKey, draftContext, {
-          courts: activeProposal.courts,
-          sitting: activeProposal.sitting,
-        });
-        if (draft && draft.courts.length > 0) {
-          return draft.courts.map((c) => ({
-            courtNumber: c.courtNumber,
-            team1: c.team1,
-            team2: c.team2,
-          }));
-        }
-      }
-      return activeProposal.courts.map((c) => ({
-        courtNumber: c.courtNumber,
-        team1: c.team1,
-        team2: c.team2,
-      }));
-    }
-    return [];
-  }, [
-    activeProposal,
-    isRoundInProgress,
-    latestStarted,
-    session.id,
-    currentSession.version,
-    currentSession.stayTogetherPairs,
-    showSessionSettingsModal,
-    modalTab,
-  ]);
-
-  const activeCourtSynergies = useMemo(() => {
-    return buildCourtSynergies(activeCourtsForSynergy, playerAccounts, pairSynergies);
-  }, [activeCourtsForSynergy, playerAccounts, pairSynergies]);
-
   const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
+
+  const preGeneratedProposal = useMemo(() => {
+    if (!latestStarted || latestStarted.round.status !== "started") return null;
+    try {
+      return proposeRoundFromSnapshot(
+        {
+          session: currentSession,
+          players,
+          attendance: currentAttendance,
+          rounds: localStartedRounds,
+        },
+        undefined,
+        matchmakingVariety,
+      );
+    } catch {
+      return null;
+    }
+  }, [currentSession, players, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
 
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
@@ -657,6 +628,151 @@ export function SessionManagerClient({
         return next;
       });
     }
+  };
+
+  const handleSaveAndStartNextRound = async () => {
+    if (!latestStarted || isPending) return;
+    const entriesToSave: { matchId: string; team1Score: number; team2Score: number; version: number }[] = [];
+    for (const match of scoreEntries) {
+      const draft = scoreDrafts[match.id];
+      if (draft && draft.team1 !== "" && draft.team2 !== "") {
+        const t1 = parseInt(draft.team1, 10);
+        const t2 = parseInt(draft.team2, 10);
+        if (!isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0) {
+          entriesToSave.push({ matchId: match.id, team1Score: t1, team2Score: t2, version: match.version });
+        }
+      }
+    }
+    setError(null);
+    const proposalToUse = preGeneratedProposal;
+    const previousRounds = localStartedRounds;
+    const previousSession = currentSession;
+    const previousDrafts = scoreDrafts;
+
+    // Optimistically advance UI immediately on click
+    if (proposalToUse) {
+      const nextRoundNumber = latestStarted.round.roundNumber + 1;
+      const roundSeed = proposalToUse.seed;
+      const tempRoundId = `temp_round_${currentSession.id}_${nextRoundNumber}_${roundSeed}`;
+      const optimisticMatches: MatchRecord[] = proposalToUse.courts.map((court, i) => ({
+        id: `temp_match_${currentSession.id}_${nextRoundNumber}_${i}`,
+        roundId: tempRoundId,
+        courtNumber: court.courtNumber,
+        rated: court.team1.length === 2 && court.team2.length === 2,
+        status: "pending",
+        team1Score: null,
+        team2Score: null,
+        completedAt: null,
+        version: 1,
+      }));
+      const optimisticMatchPlayers: MatchPlayerRecord[] = proposalToUse.courts.flatMap((court, i) => {
+        const matchId = `temp_match_${currentSession.id}_${nextRoundNumber}_${i}`;
+        return [
+          ...court.team1.map((pId) => ({ matchId, playerId: pId, team: 1 as const, ratingBefore: null, ratingAfter: null })),
+          ...court.team2.map((pId) => ({ matchId, playerId: pId, team: 2 as const, ratingBefore: null, ratingAfter: null })),
+        ];
+      });
+      const optimisticStartedRound: StartedRoundRecord = {
+        round: {
+          id: tempRoundId,
+          sessionId: currentSession.id,
+          roundNumber: nextRoundNumber,
+          status: "started",
+          seed: proposalToUse.seed,
+          scoreBreakdown: proposalToUse.scoreBreakdown,
+          createdAt: latestStarted.round.createdAt,
+          startedAt: latestStarted.round.createdAt,
+          completedAt: null,
+          version: 1,
+        },
+        matches: optimisticMatches,
+        matchPlayers: optimisticMatchPlayers,
+        sits: proposalToUse.sitting.map((pId) => ({ roundId: tempRoundId, playerId: pId })),
+      };
+
+      setLocalStartedRounds((prev) => [
+        ...prev.map((sr) =>
+          sr.round.id === latestStarted.round.id
+            ? {
+                ...sr,
+                round: { ...sr.round, status: "completed" as const, completedAt: latestStarted.round.startedAt, version: sr.round.version + 1 },
+                matches: sr.matches.map((m) => {
+                  const saved = entriesToSave.find((e) => e.matchId === m.id);
+                  return saved
+                    ? { ...m, status: "completed" as const, team1Score: saved.team1Score, team2Score: saved.team2Score, version: m.version + 1 }
+                    : m;
+                }),
+              }
+            : sr
+        ),
+        optimisticStartedRound,
+      ]);
+      setCurrentSession((prev) => ({
+        ...prev,
+        currentRoundNumber: nextRoundNumber,
+        version: prev.version + 1,
+      }));
+      setScoreDrafts({});
+    }
+
+    startGeneratingRound(async () => {
+      try {
+        const res = await saveAndStartNextRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          results: entriesToSave.map((e) => ({
+            matchId: e.matchId,
+            team1Score: e.team1Score,
+            team2Score: e.team2Score,
+            matchVersion: e.version,
+          })),
+          idempotencyKey: createIdempotencyKey("save_and_start"),
+          manualCourts: proposalToUse?.courts.map((c) => ({
+            courtNumber: c.courtNumber,
+            team1: [...c.team1],
+            team2: [...c.team2],
+          })),
+          manualSitting: proposalToUse?.sitting ? [...proposalToUse.sitting] : undefined,
+          seed: proposalToUse?.seed,
+        });
+
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          setLocalStartedRounds((prev) => [
+            ...prev.filter((sr) => sr.round.id !== latestStarted.round.id && !sr.round.id.startsWith("temp_")),
+            {
+              ...latestStarted,
+              round: res.data.completedRound,
+              matches: latestStarted.matches.map((m) => {
+                const saved = entriesToSave.find((e) => e.matchId === m.id);
+                return saved
+                  ? { ...m, status: "completed" as const, team1Score: saved.team1Score, team2Score: saved.team2Score, version: m.version + 1 }
+                  : m;
+              }),
+            },
+            res.data.startedRound,
+          ]);
+          setCurrentSession((prev) => ({
+            ...prev,
+            currentRoundNumber: res.data.startedRound.round.roundNumber,
+            version: prev.version + 1,
+          }));
+        } else {
+          setLocalStartedRounds(previousRounds);
+          setCurrentSession(previousSession);
+          setScoreDrafts(previousDrafts);
+          setError(res.error);
+        }
+      } catch {
+        setLocalStartedRounds(previousRounds);
+        setCurrentSession(previousSession);
+        setScoreDrafts(previousDrafts);
+        setError("Failed to advance to next round.");
+      }
+    });
   };
 
 
@@ -1613,6 +1729,9 @@ export function SessionManagerClient({
                 hasUnsavedScores={hasUnsavedScores}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
                 onSaveAllScores={canManage ? handleSaveAllScores : undefined}
+                onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
+                upcomingProposal={canManage ? preGeneratedProposal : null}
+                playerNames={playerNames}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">
@@ -1873,23 +1992,6 @@ export function SessionManagerClient({
                 >
                   Partners
                 </button>
-                {canManage && (
-                  <button
-                    type="button"
-                    role="tab"
-                    id="tab-synergies"
-                    aria-controls="tabpanel-synergies"
-                    aria-selected={modalTab === "synergies"}
-                    onClick={() => setModalTab("synergies")}
-                    className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
-                      modalTab === "synergies"
-                        ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
-                        : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
-                    }`}
-                  >
-                    Partner Synergies
-                  </button>
-                )}
               </div>
             </div>
 
@@ -2343,31 +2445,6 @@ export function SessionManagerClient({
                   disabled={isPending}
                   onBusyChange={setRequestPending}
                   onSessionUpdated={applyPartnerSession}
-                />
-              </div>
-            )}
-
-            {modalTab === "synergies" && canManage && (
-              <div
-                role="tabpanel"
-                id="tabpanel-synergies"
-                aria-labelledby="tab-synergies"
-                className="space-y-4"
-              >
-                <div>
-                  <h4 className="font-display text-sm font-black uppercase flex items-center gap-1.5 text-black">
-                    <ZapIcon className="h-4 w-4 text-black shrink-0" />
-                    <span>Court Synergy &amp; Chemistry</span>
-                  </h4>
-                  <p className="text-xs font-bold text-neutral-600">Historical doubles chemistry across active courts</p>
-                </div>
-
-                <SynergyPanel
-                  courts={activeCourtsForSynergy}
-                  courtSynergies={activeCourtSynergies}
-                  playerNames={playerNames}
-                  playerAccounts={playerAccounts}
-                  sessionId={session.id}
                 />
               </div>
             )}

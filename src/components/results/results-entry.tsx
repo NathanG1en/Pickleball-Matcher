@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShuffleIcon } from "@/components/ui/icons";
 
+import type { RoundProposal } from "@/lib/domain/types";
+
 export interface MatchScoreEntry {
   readonly id: string;
   readonly courtNumber: number;
@@ -41,6 +43,9 @@ export interface ResultsEntryViewProps {
   readonly sittingNames?: readonly string[];
   readonly onAddGame?: () => void;
   readonly onSaveAllScores?: () => void;
+  readonly onSaveAndStartNextRound?: () => void;
+  readonly upcomingProposal?: RoundProposal | null;
+  readonly playerNames?: Readonly<Record<string, string>>;
 }
 
 export function ResultsEntryView({
@@ -63,6 +68,9 @@ export function ResultsEntryView({
   sittingNames = [],
   onAddGame,
   onSaveAllScores,
+  onSaveAndStartNextRound,
+  upcomingProposal,
+  playerNames = {},
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -80,7 +88,39 @@ export function ResultsEntryView({
     }
   };
 
-  const allResolved = matches.every((m) => m.status !== "pending");
+  const allMatchesHaveScores = matches.length > 0 && matches.every((m) => {
+    if (m.status === "cancelled") return true;
+    const s = getScores(m);
+    if (!s.team1 || !s.team2) return false;
+    const t1 = Number(s.team1);
+    const t2 = Number(s.team2);
+    return Number.isSafeInteger(t1) && Number.isSafeInteger(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0;
+  });
+
+  const hasDraftDiffs = matches.some((match) => {
+    const draft = scoreDrafts[match.id];
+    if (!draft || match.status === "cancelled") return false;
+    const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
+    const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
+    return team1 !== match.team1Score || team2 !== match.team2Score;
+  });
+
+  const hasValidSaveableScores = matches.some((match) => {
+    if (match.status === "cancelled") return false;
+    const s = getScores(match);
+    if (!s.team1 || !s.team2) return false;
+    const t1 = parseInt(s.team1, 10);
+    const t2 = parseInt(s.team2, 10);
+    if (isNaN(t1) || isNaN(t2) || t1 === t2 || t1 < 0 || t2 < 0) return false;
+    return t1 !== match.team1Score || t2 !== match.team2Score;
+  });
+
+  const hasNewScores = Boolean(hasUnsavedScores || hasValidSaveableScores || hasDraftDiffs);
+  const isSaving = Boolean(savingMatchIds && savingMatchIds.size > 0);
+  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]));
+
+  const isSaveDisabled = !hasNewScores || isPending || isSaving;
+  const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
@@ -133,6 +173,40 @@ export function ResultsEntryView({
         <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
           <span className="text-xs font-black text-black">{sittingNames.join(", ")}</span>
+        </div>
+      )}
+
+      {/* Up Next Preview (Optimistic Pre-Generation) */}
+      {upcomingProposal && (
+        <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+          <details data-testid="upcoming-lineup-preview" className="group cursor-pointer">
+            <summary className="flex items-center justify-between font-black uppercase text-xs text-neutral-800 select-none">
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block animate-pulse" />
+                <span>Up Next: Round {roundNumber + 1} Lineup Preview</span>
+              </span>
+              <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {upcomingProposal.courts.map((c) => (
+                  <div key={c.courtNumber} className="p-2.5 rounded-xl bg-white border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
+                    <span className="font-black text-black">Court {c.courtNumber}: </span>
+                    <span className="font-bold text-neutral-800">
+                      {c.team1.map((id) => playerNames[id] ?? id).join(" & ")} vs{" "}
+                      {c.team2.map((id) => playerNames[id] ?? id).join(" & ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {upcomingProposal.sitting.length > 0 && (
+                <p className="text-xs font-bold text-neutral-600">
+                  <span className="font-black uppercase text-neutral-500">Sitting Next: </span>
+                  {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
+                </p>
+              )}
+            </div>
+          </details>
         </div>
       )}
 
@@ -279,7 +353,14 @@ export function ResultsEntryView({
                       size="sm"
                       variant={isCompleted ? "secondary" : "primary"}
                       onClick={() => handleSaveMatch(match.id)}
-                      disabled={isMatchSaving || matchScores.team1 === "" || matchScores.team2 === ""}
+                      disabled={
+                        isMatchSaving ||
+                        matchScores.team1 === "" ||
+                        matchScores.team2 === "" ||
+                        (isCompleted &&
+                          Number(matchScores.team1) === match.team1Score &&
+                          Number(matchScores.team2) === match.team2Score)
+                      }
                       className="ml-auto font-display text-base uppercase tracking-wider"
                     >
                       {isMatchSaving ? "Saving..." : (isCompleted ? "Update Score" : "Save Result")}
@@ -297,44 +378,55 @@ export function ResultsEntryView({
 
       {/* Persistent Bottom Mobile Action Area */}
       {canManage && (
-        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-          {hasUnsavedScores && (
-            <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-3 text-sm font-bold text-black">
+        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+          {hasNewScores && (
+            <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-1.5 text-xs font-bold text-black">
               Save or revert your score changes before continuing.
             </p>
           )}
-          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-            <div className="text-left">
-              <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Round Progress</p>
-              <p className="font-display text-base font-black uppercase text-black tracking-tight">
-                {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
+            <div className="text-left shrink-0">
+              <p className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-neutral-500 leading-none mb-0.5">Round Progress</p>
+              <p className="font-display text-sm sm:text-base font-black uppercase text-black tracking-tight leading-tight">
+                {matches.filter((m) => m.status !== "pending").length} of {matches.length} done
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-1 justify-end">
-              {hasUnsavedScores && onSaveAllScores && (
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end min-w-0">
+              {onSaveAllScores && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSaveDisabled}
+                  onClick={onSaveAllScores}
+                  data-testid="save-all-scores-button"
+                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0"
+                >
+                  {isSaving ? "Saving..." : "Save All"}
+                </Button>
+              )}
+              {canManage && (onSaveAndStartNextRound || onNextRound) && (
                 <Button
                   type="button"
                   variant="primary"
-                  size="lg"
-                  disabled={isPending || Boolean(savingMatchIds && savingMatchIds.size > 0)}
-                  onClick={onSaveAllScores}
-                  data-testid="save-all-scores-button"
-                  className="font-display text-base tracking-wide uppercase bg-[#ccff00] text-black"
+                  size="sm"
+                  disabled={isSaveAndStartDisabled}
+                  onClick={onSaveAndStartNextRound ?? onNextRound}
+                  data-testid="save-and-start-next-round-button"
+                  title={`Save all scores and start Round ${roundNumber + 1}`}
+                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
-                  {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save All Scores"}
+                  {isGeneratingRound ? (
+                    <RoundGenerationIndicator />
+                  ) : (
+                    <>
+                      <span className="sr-only">Next Round</span>
+                      <span className="sm:hidden">Save &amp; Start R{roundNumber + 1}</span>
+                      <span className="hidden sm:inline">Save &amp; Start Next Round</span>
+                    </>
+                  )}
                 </Button>
               )}
-              <Button
-                type="button"
-                variant={hasUnsavedScores ? "secondary" : "primary"}
-                size="lg"
-                disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
-                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
-                onClick={onNextRound}
-                className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
-              >
-                {isGeneratingRound ? <RoundGenerationIndicator /> : "Next Round"}
-              </Button>
             </div>
           </div>
         </div>

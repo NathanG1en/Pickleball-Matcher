@@ -47,7 +47,7 @@ test("Save All persists every court and rejects a stale tab without replacing ne
     await expect(stale.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true })).toHaveValue("9");
     await stale.reload();
     for (let court = 1; court <= 2; court++) await expect(stale.getByRole("spinbutton", { name: `Court ${court} Team 2 score`, exact: true })).toHaveValue("7");
-    await page.getByRole("button", { name: "Next Round", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
+    await page.getByTestId("save-and-start-next-round-button").click();
+    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
   } finally { await stale.close(); }
 });

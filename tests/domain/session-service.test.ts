@@ -446,6 +446,82 @@ describe("SessionService", () => {
       expect(results[1].team2Score).toBe(11);
     });
 
+    it("saves scores and advances to the next round in a single atomic transaction", async () => {
+      const session = await service.startSession({
+        groupId: "group-1",
+        courtCount: 1,
+        playerIds: players.slice(0, 5).map((p) => p.id),
+      });
+      const round1 = await service.startRound(session.id, await service.proposeRound(session.id, 10));
+      const r1Match = repository.state.matches.find((m) => m.roundId === round1.id)!;
+
+      const txBefore = repository.committedTransactions;
+      const { completedRound, startedRound } = await service.saveAndStartNextRound({
+        sessionId: session.id,
+        roundId: round1.id,
+        results: [{ matchId: r1Match.id, team1Score: 11, team2Score: 9 }],
+      });
+
+      // Assert it executed atomically in 1 transaction
+      expect(repository.committedTransactions).toBe(txBefore + 1);
+      expect(completedRound.status).toBe("completed");
+      expect(completedRound.roundNumber).toBe(1);
+      expect(startedRound.round.status).toBe("started");
+      expect(startedRound.round.roundNumber).toBe(2);
+
+      // Verify the new round's matches and sits exist in repository
+      const r2Matches = repository.state.matches.filter((m) => m.roundId === startedRound.round.id);
+      expect(r2Matches).toHaveLength(1);
+      const r2Sits = repository.state.roundSits.filter((s) => s.roundId === startedRound.round.id);
+      expect(r2Sits).toHaveLength(1);
+
+      // Verify session version incremented
+      const updatedSession = await repository.getSession(session.id);
+      expect(updatedSession?.currentRoundNumber).toBe(2);
+      expect(updatedSession?.version).toBe(session.version + 2);
+    });
+
+    it("rejects scores from a different session without writing any state", async () => {
+      const first = await service.startSession({ groupId: "group-1", courtCount: 1, playerIds: players.slice(0, 4).map(p => p.id) });
+      const second = await service.startSession({ groupId: "group-1", courtCount: 1, playerIds: players.slice(4).map(p => p.id) });
+      const round = await service.startRound(first.id, await service.proposeRound(first.id, 1));
+      const foreignRound = await service.startRound(second.id, await service.proposeRound(second.id, 2));
+      const before = structuredClone(repository.state);
+      const results = repository.state.matches.filter(m => [round.id, foreignRound.id].includes(m.roundId)).map(m => ({ matchId: m.id, team1Score: 11, team2Score: 7 }));
+      await expect(service.saveAndStartNextRound({ sessionId: first.id, roundId: round.id, results })).rejects.toThrow();
+      expect(repository.state).toEqual(before);
+    });
+
+    it("rejects a supplied next lineup that splits an approved pair atomically", async () => {
+      const session = await service.startSession({ groupId: "group-1", courtCount: 1, playerIds: players.slice(0, 4).map(p => p.id), stayTogetherPairs: [["player-1", "player-2"]] });
+      const proposal = await service.proposeRound(session.id, 1);
+      const round = await service.startRound(session.id, proposal);
+      const before = structuredClone(repository.state);
+      await expect(service.saveAndStartNextRound({
+        sessionId: session.id, roundId: round.id,
+        results: repository.state.matches.map(m => ({ matchId: m.id, team1Score: 11, team2Score: 7 })),
+        nextProposal: { ...proposal, courts: [{ courtNumber: 1, team1: ["player-1", "player-3"], team2: ["player-2", "player-4"], matchType: "doubles" }], sitting: [] },
+      })).rejects.toThrow();
+      expect(repository.state).toEqual(before);
+    });
+
+    it("rejects a stale round version without saving scores", async () => {
+      const session = await service.startSession({ groupId: "group-1", courtCount: 1, playerIds: players.slice(0, 4).map(p => p.id) });
+      const round = await service.startRound(session.id, await service.proposeRound(session.id, 1));
+      const before = structuredClone(repository.state);
+      await expect(service.saveAndStartNextRound({ sessionId: session.id, roundId: round.id, expectedRoundVersion: round.version + 1, results: repository.state.matches.map(m => ({ matchId: m.id, team1Score: 11, team2Score: 7 })) })).rejects.toThrow("round changed");
+      expect(repository.state).toEqual(before);
+    });
+
+    it("rejects a duplicate-player next lineup even without approved pairs", async () => {
+      const session = await service.startSession({ groupId: "group-1", courtCount: 1, playerIds: players.slice(0, 4).map(p => p.id) });
+      const proposal = await service.proposeRound(session.id, 1);
+      const round = await service.startRound(session.id, proposal);
+      const before = structuredClone(repository.state);
+      await expect(service.saveAndStartNextRound({ sessionId: session.id, roundId: round.id, nextProposal: { ...proposal, courts: [{ courtNumber: 1, team1: ["player-1", "player-1"], team2: ["player-3", "player-4"], matchType: "doubles" }] }, results: repository.state.matches.map(m => ({ matchId: m.id, team1Score: 11, team2Score: 7 })) })).rejects.toThrow();
+      expect(repository.state).toEqual(before);
+    });
+
     it("recalculates synergies on demand via recalculateSynergies", async () => {
       await expect(service.recalculateSynergies()).resolves.toBeUndefined();
     });
