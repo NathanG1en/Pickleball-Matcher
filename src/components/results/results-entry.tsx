@@ -124,7 +124,7 @@ export function ResultsEntryView({
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
             {canManage ? "Score Entry" : "Live Games"}
@@ -133,8 +133,8 @@ export function ResultsEntryView({
             Round {roundNumber} {canManage ? "Results" : "Matchups"}
           </h1>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+          <div className="flex items-center gap-2 flex-nowrap shrink-0">
             {canManage && onAddGame && (
               <Button
                 type="button"
@@ -142,9 +142,9 @@ export function ResultsEntryView({
                 size="sm"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+                className="font-display uppercase text-xs inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
-                <span>+ Add Game</span>
+                <span className="whitespace-nowrap">+ Add Game</span>
               </Button>
             )}
             {canManage && onReshuffleRound && (
@@ -155,10 +155,10 @@ export function ResultsEntryView({
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+                className="font-display uppercase text-xs inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Reshuffle</span>
+                <span className="whitespace-nowrap">Reshuffle</span>
               </Button>
             )}
           </div>

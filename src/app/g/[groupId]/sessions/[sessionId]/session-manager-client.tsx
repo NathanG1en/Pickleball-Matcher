@@ -1797,7 +1797,7 @@ export function SessionManagerClient({
                   <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
                     {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
                     + Add Game
                   </Button>
                 </div>

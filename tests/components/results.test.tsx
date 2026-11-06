@@ -336,5 +336,23 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
     expect(html).not.toContain("Start Round 4");
   });
+
+  it("renders Add Game button with single-line whitespace-nowrap and shrink-0 classes to prevent squishing on mobile", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onAddGame={() => {}}
+      />
+    );
+
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("whitespace-nowrap shrink-0");
+    const addGameButton = html.match(/<button[^>]*>[^<]*<span[^>]*>\+ Add Game<\/span><\/button>/)?.[0] ?? "";
+    expect(addGameButton).toContain("whitespace-nowrap");
+  });
 });
 
