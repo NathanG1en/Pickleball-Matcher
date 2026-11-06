@@ -523,5 +523,33 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).not.toContain("Checked In");
     expect(html).not.toContain("In Progress");
   });
+
+  it("replaces emojis in open play toolbar and winner buttons with clean svg icons", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify emojis are not present
+    expect(html).not.toContain("⚔️");
+    expect(html).not.toContain("🔄");
+    expect(html).not.toContain("👑");
+
+    // Verify action buttons exist
+    expect(html).toContain('data-testid="rematch-button"');
+    expect(html).toContain('data-testid="rotate-partners-button"');
+    expect(html).toContain('data-testid="team-1-winner-button"');
+    expect(html).toContain('data-testid="team-2-winner-button"');
+  });
 });
 

@@ -40,6 +40,7 @@ import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rat
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
+import { ArrowLeftRightIcon, CheckIcon, CrownIcon, RotateCwIcon, SwordsIcon } from "@/components/ui/icons";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -1264,9 +1265,10 @@ export function OpenPlayManagerClient({
       {successToast && (
         <div
           role="status"
-          className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce"
+          className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce flex items-center gap-1.5"
         >
-          ✓ {successToast}
+          <CheckIcon className="h-4 w-4 shrink-0 stroke-[3]" />
+          <span>{successToast}</span>
         </div>
       )}
 
@@ -1663,7 +1665,7 @@ export function OpenPlayManagerClient({
                   title="Keep the same players and teams for a rematch"
                   className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                 >
-                  <span>⚔️</span>
+                  <SwordsIcon className="h-3.5 w-3.5 shrink-0" />
                   <span>Rematch</span>
                 </button>
                 {matchType === "doubles" ? (
@@ -1675,7 +1677,7 @@ export function OpenPlayManagerClient({
                     title="Split and switch partners between the 4 players"
                     className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                   >
-                    <span>🔄</span>
+                    <RotateCwIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Rotate Partners</span>
                   </button>
                 ) : (
@@ -1687,7 +1689,7 @@ export function OpenPlayManagerClient({
                     title="Swap sides between the 2 players"
                     className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                   >
-                    <span>🔄</span>
+                    <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Swap Sides</span>
                   </button>
                 )}
@@ -1718,7 +1720,7 @@ export function OpenPlayManagerClient({
                           : "bg-white hover:bg-neutral-100 text-black"
                       }`}
                     >
-                      <span>👑</span>
+                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
                       <span>{isT1Winner ? "Winner (11)" : "Select Winner"}</span>
                     </button>
                   </div>
@@ -1775,7 +1777,7 @@ export function OpenPlayManagerClient({
                           : "bg-white hover:bg-neutral-100 text-black"
                       }`}
                     >
-                      <span>👑</span>
+                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
                       <span>{isT2Winner ? "Winner (11)" : "Select Winner"}</span>
                     </button>
                   </div>
