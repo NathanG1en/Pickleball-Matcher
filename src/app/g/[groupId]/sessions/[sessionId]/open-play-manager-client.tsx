@@ -1832,46 +1832,6 @@ export function OpenPlayManagerClient({
                 </div>
               </div>
 
-              {/* Quick Score Presets */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 mr-1">
-                  Quick Scores:
-                </span>
-                {[
-                  [11, 9],
-                  [11, 7],
-                  [11, 5],
-                  [11, 3],
-                  [11, 0],
-                  [15, 13],
-                ].map(([s1, s2]) => (
-                  <button
-                    key={`${s1}-${s2}`}
-                    type="button"
-                    onClick={() => {
-                      setT1Score(String(s1));
-                      setT2Score(String(s2));
-                    }}
-                    className="py-1 px-2.5 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-black font-mono text-xs font-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-                  >
-                    {s1}–{s2}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setT1Score(t2Score);
-                    setT2Score(t1Score);
-                  }}
-                  disabled={!t1Score && !t2Score}
-                  title="Swap team scores"
-                  aria-label="Swap scores"
-                  className="py-1 px-2.5 rounded-lg border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-black font-mono text-xs font-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 cursor-pointer ml-auto"
-                >
-                  ⇄ Swap
-                </button>
-              </div>
-
               <button
                 type="submit"
                 disabled={isSubmittingGame}

@@ -477,7 +477,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("Winner");
   });
 
-  it("renders quick score preset buttons and score swap button", () => {
+  it("does not render quick score preset buttons in open play", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -493,14 +493,9 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    expect(html).toContain("Quick Scores:");
-    expect(html).toContain("11–9");
-    expect(html).toContain("11–7");
-    expect(html).toContain("11–5");
-    expect(html).toContain("11–3");
-    expect(html).toContain("11–0");
-    expect(html).toContain("15–13");
-    expect(html).toContain("⇄ Swap");
+    expect(html).not.toContain("Quick Scores:");
+    expect(html).not.toContain("11–9");
+    expect(html).not.toContain("15–13");
   });
 
   it("does not render live label badge in open play header", () => {
