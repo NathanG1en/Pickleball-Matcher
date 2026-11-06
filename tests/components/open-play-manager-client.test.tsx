@@ -399,7 +399,7 @@ describe("OpenPlayManagerClient Component", () => {
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
 
-  it("renders rematch, rotate partners, next waiting, and clear buttons in game submission card", () => {
+  it("renders rematch, rotate partners, and clear buttons in game submission card without next waiting option", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -419,10 +419,31 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("Rematch");
     expect(html).toContain('data-testid="rotate-partners-button"');
     expect(html).toContain("Rotate Partners");
-    expect(html).toContain('data-testid="next-waiting-button"');
-    expect(html).toContain("Next Waiting");
+    expect(html).not.toContain('data-testid="next-waiting-button"');
+    expect(html).not.toContain("Next Waiting");
     expect(html).toContain('data-testid="clear-slots-button"');
     expect(html).toContain("Clear");
+  });
+
+  it("renders Team 1 and Team 2 Winner selection buttons in game submission cards", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="team-1-winner-button"');
+    expect(html).toContain('data-testid="team-2-winner-button"');
+    expect(html).toContain("Winner");
   });
 
   it("renders quick score preset buttons and score swap button", () => {

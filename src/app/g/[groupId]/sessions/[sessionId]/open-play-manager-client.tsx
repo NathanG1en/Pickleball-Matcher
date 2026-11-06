@@ -351,6 +351,28 @@ export function OpenPlayManagerClient({
   const [t2p2, setT2p2] = useState(initialSlots.t2p2);
   const [t1Score, setT1Score] = useState("");
   const [t2Score, setT2Score] = useState("");
+  const [rotateBase, setRotateBase] = useState<[string, string, string, string] | null>(null);
+
+  const parsedT1 = parseInt(t1Score, 10);
+  const parsedT2 = parseInt(t2Score, 10);
+  const isT1Winner = !isNaN(parsedT1) && (isNaN(parsedT2) ? parsedT1 >= 11 : parsedT1 > parsedT2);
+  const isT2Winner = !isNaN(parsedT2) && (isNaN(parsedT1) ? parsedT2 >= 11 : parsedT2 > parsedT1);
+
+  const handleSelectWinner = (team: 1 | 2) => {
+    if (team === 1) {
+      setT1Score("11");
+      const curT2 = parseInt(t2Score, 10);
+      if (curT2 >= 11) {
+        setT2Score("");
+      }
+    } else {
+      setT2Score("11");
+      const curT1 = parseInt(t1Score, 10);
+      if (curT1 >= 11) {
+        setT1Score("");
+      }
+    }
+  };
 
   // Automatically update when a new lastSessionGame is recorded/available
   const [prevLastGameId, setPrevLastGameId] = useState(() => lastSessionGame?.id ?? null);
@@ -711,6 +733,7 @@ export function OpenPlayManagerClient({
     }
     setT1Score("");
     setT2Score("");
+    setRotateBase(null);
     showToast("Rematch ready — enter scores when done!");
   };
 
@@ -724,60 +747,70 @@ export function OpenPlayManagerClient({
 
   const handleRotatePartners = () => {
     setError(null);
-    let p1 = t1p1;
-    let p2 = t1p2;
-    let p3 = t2p1;
-    let p4 = t2p2;
-
-    if (
-      (!p1 || !p2 || !p3 || !p4) &&
+    let current4: [string, string, string, string] | null = null;
+    if (t1p1 && t1p2 && t2p1 && t2p2) {
+      current4 = [t1p1, t1p2, t2p1, t2p2];
+    } else if (
       lastSessionGame &&
       lastSessionGame.team1PlayerIds.length === 2 &&
       lastSessionGame.team2PlayerIds.length === 2
     ) {
-      p1 = lastSessionGame.team1PlayerIds[0];
-      p2 = lastSessionGame.team1PlayerIds[1];
-      p3 = lastSessionGame.team2PlayerIds[0];
-      p4 = lastSessionGame.team2PlayerIds[1];
+      current4 = [
+        lastSessionGame.team1PlayerIds[0],
+        lastSessionGame.team1PlayerIds[1],
+        lastSessionGame.team2PlayerIds[0],
+        lastSessionGame.team2PlayerIds[1],
+      ];
     }
 
-    if (!p1 || !p2 || !p3 || !p4) {
+    if (!current4) {
       setError("Please select 4 players first to rotate partners.");
       return;
     }
 
-    // Keep viewer as first player if viewer is among the 4
-    if (currentViewerPlayerId) {
-      const pList = [p1, p2, p3, p4];
-      if (pList.includes(currentViewerPlayerId) && p1 !== currentViewerPlayerId) {
-        const idx = pList.indexOf(currentViewerPlayerId);
-        pList[idx] = p1;
-        pList[0] = currentViewerPlayerId;
-        [p1, p2, p3, p4] = pList;
+    const currentSet = new Set(current4);
+    let base = rotateBase;
+    if (!base || base.length !== 4 || base.some((id) => !currentSet.has(id))) {
+      let p1 = current4[0];
+      let p2 = current4[1];
+      let p3 = current4[2];
+      let p4 = current4[3];
+      if (currentViewerPlayerId && current4.includes(currentViewerPlayerId) && p1 !== currentViewerPlayerId) {
+        const remaining = current4.filter((id) => id !== currentViewerPlayerId);
+        p1 = currentViewerPlayerId;
+        p2 = remaining[0];
+        p3 = remaining[1];
+        p4 = remaining[2];
       }
+      base = [p1, p2, p3, p4];
+      setRotateBase(base);
     }
 
-    // Formation 1: (p1, p2) vs (p3, p4)
-    // Formation 2: (p1, p3) vs (p2, p4)
-    // Formation 3: (p1, p4) vs (p2, p3)
-    const isFormation1 =
-      (t1p1 === p1 && t1p2 === p2 && t2p1 === p3 && t2p2 === p4) ||
-      (t1p1 === p2 && t1p2 === p1 && t2p1 === p4 && t2p2 === p3);
-    const isFormation2 =
-      (t1p1 === p1 && t1p2 === p3 && t2p1 === p2 && t2p2 === p4) ||
-      (t1p1 === p3 && t1p2 === p1 && t2p1 === p4 && t2p2 === p2);
+    const [p1, p2, p3, p4] = base;
 
-    if (isFormation1) {
+    // Determine who is currently partnered with p1
+    let currentPartner: string;
+    if (t1p1 === p1) currentPartner = t1p2;
+    else if (t1p2 === p1) currentPartner = t1p1;
+    else if (t2p1 === p1) currentPartner = t2p2;
+    else if (t2p2 === p1) currentPartner = t2p1;
+    else currentPartner = p2;
+
+    // Cycle combinations: (p1, p2) -> (p1, p3) -> (p1, p4) -> (p1, p2)
+    if (currentPartner === p2) {
+      // Rotation 1: p1 and p3 vs p2 and p4
       setT1p1(p1);
       setT1p2(p3);
       setT2p1(p2);
       setT2p2(p4);
-    } else if (isFormation2) {
+    } else if (currentPartner === p3) {
+      // Rotation 2: p1 and p4 vs p2 and p3
       setT1p1(p1);
       setT1p2(p4);
       setT2p1(p2);
       setT2p2(p3);
     } else {
+      // Rotation 3: p1 and p2 vs p3 and p4
       setT1p1(p1);
       setT1p2(p2);
       setT2p1(p3);
@@ -801,52 +834,6 @@ export function OpenPlayManagerClient({
     showToast("Sides swapped!");
   };
 
-  // Fill Next Waiting (Queue) handler
-  const handleFillNextWaiting = () => {
-    setError(null);
-    const needed = matchType === "doubles" ? 4 : 2;
-    if (checkedInPlayers.length < needed) {
-      setError(`Need at least ${needed} checked-in players.`);
-      return;
-    }
-
-    const sortedWaiting = [...checkedInPlayers].sort((a, b) => {
-      const aInLast = lastSessionGame
-        ? lastSessionGame.team1PlayerIds.includes(a.id) || lastSessionGame.team2PlayerIds.includes(a.id)
-        : false;
-      const bInLast = lastSessionGame
-        ? lastSessionGame.team1PlayerIds.includes(b.id) || lastSessionGame.team2PlayerIds.includes(b.id)
-        : false;
-      if (aInLast !== bInLast) return aInLast ? 1 : -1;
-      const aStats = openPlayPlayerStats.find((s) => s.id === a.id);
-      const bStats = openPlayPlayerStats.find((s) => s.id === b.id);
-      const aCount = aStats?.gamesPlayed ?? 0;
-      const bCount = bStats?.gamesPlayed ?? 0;
-      if (aCount !== bCount) return aCount - bCount;
-      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-    });
-
-    let selected = sortedWaiting.slice(0, needed).map((p) => p.id);
-    if (currentViewerPlayerId && selected.includes(currentViewerPlayerId)) {
-      selected = [currentViewerPlayerId, ...selected.filter((id) => id !== currentViewerPlayerId)];
-    }
-
-    if (matchType === "doubles") {
-      setT1p1(selected[0] ?? "");
-      setT1p2(selected[1] ?? "");
-      setT2p1(selected[2] ?? "");
-      setT2p2(selected[3] ?? "");
-    } else {
-      setT1p1(selected[0] ?? "");
-      setT1p2("");
-      setT2p1(selected[1] ?? "");
-      setT2p2("");
-    }
-    setT1Score("");
-    setT2Score("");
-    showToast("Filled next waiting players!");
-  };
-
   // Clear slots handler
   const handleClearSlots = () => {
     setT1p1(currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId) ? currentViewerPlayerId : "");
@@ -855,6 +842,7 @@ export function OpenPlayManagerClient({
     setT2p2("");
     setT1Score("");
     setT2Score("");
+    setRotateBase(null);
   };
 
   const handleSubmitGame = async (e: React.FormEvent) => {
@@ -1733,18 +1721,6 @@ export function OpenPlayManagerClient({
                     <span>Swap Sides</span>
                   </button>
                 )}
-                {checkedInPlayers.length >= (matchType === "doubles" ? 4 : 2) && (
-                  <button
-                    type="button"
-                    onClick={handleFillNextWaiting}
-                    data-testid="next-waiting-button"
-                    title="Select players who have played the fewest games or sat the longest"
-                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all"
-                  >
-                    <span>👥</span>
-                    <span>Next Waiting</span>
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={handleClearSlots}
@@ -1759,7 +1735,23 @@ export function OpenPlayManagerClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Team 1 Card */}
                 <div className="p-4 bg-[#ccff00]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
-                  <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWinner(1)}
+                      data-testid="team-1-winner-button"
+                      aria-label="Select Team 1 as Winner"
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 ${
+                        isT1Winner
+                          ? "bg-black text-[#ccff00]"
+                          : "bg-white hover:bg-neutral-100 text-black"
+                      }`}
+                    >
+                      <span>👑</span>
+                      <span>{isT1Winner ? "Winner (11)" : "Winner"}</span>
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
                       ariaLabel="Team 1 Player 1"
@@ -1800,7 +1792,23 @@ export function OpenPlayManagerClient({
 
                 {/* Team 2 Card */}
                 <div className="p-4 bg-[#fde047]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
-                  <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWinner(2)}
+                      data-testid="team-2-winner-button"
+                      aria-label="Select Team 2 as Winner"
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 ${
+                        isT2Winner
+                          ? "bg-black text-[#ccff00]"
+                          : "bg-white hover:bg-neutral-100 text-black"
+                      }`}
+                    >
+                      <span>👑</span>
+                      <span>{isT2Winner ? "Winner (11)" : "Winner"}</span>
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
                       ariaLabel="Team 2 Player 1"
