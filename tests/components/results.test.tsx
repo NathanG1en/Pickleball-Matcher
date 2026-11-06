@@ -378,7 +378,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("bg-white");
   });
 
-  it("does not render matchup confirmation modal when confirmMatchups is false", () => {
+  it("renders Save & Start Next Round when confirmMatchups is false", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView
         roundId="r1"
@@ -392,10 +392,11 @@ describe("ResultsEntryView Component", () => {
     );
 
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).toContain("Save &amp; Start Next Round");
     expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
   });
 
-  it("passes confirmMatchups prop cleanly and maintains save-and-start functionality", () => {
+  it("renders Next Round directly to advance to matchup confirmation screen when confirmMatchups is true", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView
         roundId="r1"
@@ -409,6 +410,8 @@ describe("ResultsEntryView Component", () => {
     );
 
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).toContain("Next Round");
+    expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
   });
 });
 
