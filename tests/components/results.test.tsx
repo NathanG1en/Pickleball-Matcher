@@ -337,5 +337,23 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Save &amp; Start R2");
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
   });
+
+  it("renders Start Round button with white background styling", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r3"
+        roundNumber={3}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={false}
+        onNextRound={() => {}}
+      />
+    );
+
+    expect(html).toContain("Start Round 4");
+    const nextRoundButton = html.match(/<button[^>]*>[\s\S]*?Start Round 4[\s\S]*?<\/button>/)?.[0] ?? "";
+    expect(nextRoundButton).toContain("bg-white");
+    expect(nextRoundButton).not.toContain("bg-[#ccff00]");
+  });
 });
 

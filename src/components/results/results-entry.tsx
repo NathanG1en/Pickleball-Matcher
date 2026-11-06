@@ -411,12 +411,12 @@ export function ResultsEntryView({
               )}
               <Button
                 type="button"
-                variant={hasNewScores ? "secondary" : "primary"}
+                variant="secondary"
                 size="sm"
                 disabled={isStartRoundDisabled}
                 aria-describedby={hasNewScores ? "unsaved-score-warning" : undefined}
                 onClick={onNextRound}
-                className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000]"
+                className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-white text-black"
               >
                 {isGeneratingRound ? (
                   <RoundGenerationIndicator />
