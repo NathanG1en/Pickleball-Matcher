@@ -137,32 +137,28 @@ export function ResultsEntryView({
           </h1>
         </div>
         <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
-          <div className="flex items-center gap-2 flex-nowrap shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
             {canManage && onAddGame && (
-              <Button
+              <button
                 type="button"
-                variant="primary"
-                size="sm"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <span className="whitespace-nowrap">+ Add Game</span>
-              </Button>
+              </button>
             )}
             {canManage && onReshuffleRound && (
-              <Button
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
                 <span className="whitespace-nowrap">Reshuffle</span>
-              </Button>
+              </button>
             )}
           </div>
           <p className="text-xs font-bold text-neutral-600 hidden sm:block">

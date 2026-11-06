@@ -355,6 +355,29 @@ describe("ResultsEntryView Component", () => {
     expect(addGameButton).toContain("whitespace-nowrap");
   });
 
+  it("renders Add Game and Reshuffle with matching matchup confirmation pill styling", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onAddGame={() => {}}
+        onReshuffleRound={() => {}}
+      />
+    );
+
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("Reshuffle");
+    expect(html).toContain('data-testid="reshuffle-matchups-button"');
+    // Both buttons use the matchup confirmation header button styling
+    expect(html).toContain("shadow-[3.5px_3.5px_0px_0px_#000]");
+    expect(html).toContain("text-[11px] sm:text-xs");
+    expect(html).toContain("bg-[#ccff00]");
+    expect(html).toContain("bg-white");
+  });
+
   it("does not render matchup confirmation modal when confirmMatchups is false", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView
