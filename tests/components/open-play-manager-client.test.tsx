@@ -516,6 +516,7 @@ describe("OpenPlayManagerClient Component", () => {
 
     expect(html).not.toContain('data-testid="live-sync-indicator"');
     expect(html).not.toContain("Live");
+    expect(html).not.toContain("Checked In");
   });
 });
 

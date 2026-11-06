@@ -1470,12 +1470,6 @@ export function OpenPlayManagerClient({
               {isJoining ? "Joining..." : "Join Open Play"}
             </button>
           )}
-
-          {isSessionActive && isViewerCheckedIn && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#ccff00]/40 border border-black rounded-full text-xs font-black text-black">
-              ✓ You&apos;re Checked In
-            </span>
-          )}
         </div>
 
         {/* Players Chips */}

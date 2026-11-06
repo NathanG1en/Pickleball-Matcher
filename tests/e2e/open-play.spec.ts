@@ -146,9 +146,8 @@ test.describe("Open Play Workflow", () => {
     const sessionUrl = page.url();
     await playerPage.goto(sessionUrl);
     const joinOpenPlayBtn = playerPage.locator("button[data-testid='join-open-play-button']");
-    await expect(joinOpenPlayBtn).toBeVisible();
     await joinOpenPlayBtn.click();
-    await expect(playerPage.locator("text=You're Checked In")).toBeVisible();
+    await expect(playerPage.locator("[data-testid='open-play-attendees']").getByText(secondPlayer.name)).toBeVisible();
 
     // Refresh host page to see all 4 players
     await page.reload();
