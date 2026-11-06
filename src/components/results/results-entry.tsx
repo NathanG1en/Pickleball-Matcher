@@ -99,6 +99,33 @@ export function ResultsEntryView({
     return !isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0;
   });
 
+  const hasDraftDiffs = matches.some((match) => {
+    const draft = scoreDrafts[match.id];
+    if (!draft || match.status === "cancelled") return false;
+    const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
+    const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
+    return team1 !== match.team1Score || team2 !== match.team2Score;
+  });
+
+  const hasValidSaveableScores = matches.some((match) => {
+    if (match.status === "cancelled") return false;
+    const s = getScores(match);
+    if (!s.team1 || !s.team2) return false;
+    const t1 = parseInt(s.team1, 10);
+    const t2 = parseInt(s.team2, 10);
+    if (isNaN(t1) || isNaN(t2) || t1 === t2 || t1 < 0 || t2 < 0) return false;
+    return t1 !== match.team1Score || t2 !== match.team2Score;
+  });
+
+  const hasNewScores = Boolean(hasUnsavedScores || hasValidSaveableScores || hasDraftDiffs);
+  const isSaving = Boolean(savingMatchIds && savingMatchIds.size > 0);
+  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]));
+
+  const isSaveDisabled = !hasNewScores || isPending || isSaving;
+  const isStartRoundDisabled = !allResolved || hasNewScores || isPending || isGeneratingRound || isSaving;
+  const isStartEligibilityDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
+  const isSaveAndStartDisabled = isSaveDisabled || isStartEligibilityDisabled;
+
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
       <div className="flex items-center justify-between gap-3">
@@ -330,7 +357,14 @@ export function ResultsEntryView({
                       size="sm"
                       variant={isCompleted ? "secondary" : "primary"}
                       onClick={() => handleSaveMatch(match.id)}
-                      disabled={isMatchSaving || matchScores.team1 === "" || matchScores.team2 === ""}
+                      disabled={
+                        isMatchSaving ||
+                        matchScores.team1 === "" ||
+                        matchScores.team2 === "" ||
+                        (isCompleted &&
+                          Number(matchScores.team1) === match.team1Score &&
+                          Number(matchScores.team2) === match.team2Score)
+                      }
                       className="ml-auto font-display text-base uppercase tracking-wider"
                     >
                       {isMatchSaving ? "Saving..." : (isCompleted ? "Update Score" : "Save Result")}
@@ -349,7 +383,7 @@ export function ResultsEntryView({
       {/* Persistent Bottom Mobile Action Area */}
       {canManage && (
         <div className="mobile-action-bar sticky bottom-0 left-0 right-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-          {hasUnsavedScores && (
+          {hasNewScores && (
             <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-1.5 text-xs font-bold text-black">
               Save or revert your score changes before continuing.
             </p>
@@ -362,25 +396,25 @@ export function ResultsEntryView({
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end min-w-0">
-              {hasUnsavedScores && onSaveAllScores && (
+              {onSaveAllScores && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={isPending || Boolean(savingMatchIds && savingMatchIds.size > 0)}
+                  disabled={isSaveDisabled}
                   onClick={onSaveAllScores}
                   data-testid="save-all-scores-button"
                   className="font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0"
                 >
-                  {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save All"}
+                  {isSaving ? "Saving..." : "Save All"}
                 </Button>
               )}
               <Button
                 type="button"
-                variant={hasUnsavedScores ? "secondary" : "primary"}
+                variant={hasNewScores ? "secondary" : "primary"}
                 size="sm"
-                disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
-                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
+                disabled={isStartRoundDisabled}
+                aria-describedby={hasNewScores ? "unsaved-score-warning" : undefined}
                 onClick={onNextRound}
                 className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000]"
               >
@@ -388,17 +422,18 @@ export function ResultsEntryView({
                   <RoundGenerationIndicator />
                 ) : (
                   <>
-                    <span className="sm:hidden">Start R{roundNumber + 1}</span>
-                    <span className="hidden sm:inline">Start Round {roundNumber + 1}</span>
+                    <span className="sr-only">Next Round</span>
+                    <span aria-hidden="true" className="sm:hidden">Start R{roundNumber + 1}</span>
+                    <span aria-hidden="true" className="hidden sm:inline">Start Round {roundNumber + 1}</span>
                   </>
                 )}
               </Button>
-              {canManage && onSaveAndStartNextRound && allMatchesHaveScores && (
+              {canManage && onSaveAndStartNextRound && (
                 <Button
                   type="button"
                   variant="primary"
                   size="sm"
-                  disabled={isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
+                  disabled={isSaveAndStartDisabled}
                   onClick={onSaveAndStartNextRound}
                   data-testid="save-and-start-next-round-button"
                   title={`Save all scores and start Round ${roundNumber + 1}`}

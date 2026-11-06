@@ -143,7 +143,146 @@ describe("ResultsEntryView Component", () => {
     );
 
     expect(html).toContain("Save All");
-    expect(html).toContain('data-testid="save-all-scores-button"');
+    const button = html.match(/<button[^>]*data-testid="save-all-scores-button"[^>]*>/)?.[0] ?? "";
+    expect(button).not.toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("disables Save All Scores button when there are no new scores", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={false}
+        onSaveAllScores={() => {}}
+      />
+    );
+
+    expect(html).toContain("Save All");
+    const button = html.match(/<button[^>]*data-testid="save-all-scores-button"[^>]*>/)?.[0] ?? "";
+    expect(button).toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("disables match card Update Score button when completed score is unchanged", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        onSubmitResult={() => {}}
+      />
+    );
+
+    // Court 1 (m1) is completed with 11-9 and unchanged, so Update Score is disabled
+    expect(html).toContain("Update Score");
+    const button = html.match(/<button[^>]*>Update Score<\/button>/)?.[0] ?? "";
+    expect(button).toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("disables Save & Start button if Save is disabled (no new values)", () => {
+    const upcomingProposal = {
+      roundNumber: 2,
+      seed: 42,
+      score: 100,
+      courts: [
+        {
+          courtNumber: 1,
+          team1: ["p1", "p2"] as [string, string],
+          team2: ["p3", "p4"] as [string, string],
+          matchType: "doubles" as const,
+        },
+      ],
+      sitting: [],
+      scoreBreakdown: {
+        playingTime: 0,
+        consecutiveSit: 0,
+        partnerRepeat: 0,
+        skillBalance: 0,
+        opponentRepeat: 0,
+        tieBreak: 0,
+        total: 0,
+      },
+    };
+
+    // sampleMatches has completed m1 and cancelled m2, but hasUnsavedScores is false
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        upcomingProposal={upcomingProposal}
+        hasUnsavedScores={false}
+        onSaveAndStartNextRound={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    const button = html.match(/<button[^>]*data-testid="save-and-start-next-round-button"[^>]*>/)?.[0] ?? "";
+    expect(button).toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("disables Save & Start button if Start is disabled (pending matches lack scores)", () => {
+    const pendingMatches = [
+      {
+        id: "m1",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"] as [string, string],
+        team2Names: ["Charlie", "Diana"] as [string, string],
+        team1Score: null,
+        team2Score: null,
+        status: "pending" as const,
+        version: 1,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={pendingMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={true}
+        onSaveAndStartNextRound={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    const button = html.match(/<button[^>]*data-testid="save-and-start-next-round-button"[^>]*>/)?.[0] ?? "";
+    expect(button).toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("enables Save & Start button when both Save (new scores exist) and Start (all matches scored) conditions are met", () => {
+    const pendingMatchesWithDrafts = [
+      {
+        id: "m1",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"] as [string, string],
+        team2Names: ["Charlie", "Diana"] as [string, string],
+        team1Score: null,
+        team2Score: null,
+        status: "pending" as const,
+        version: 1,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={pendingMatchesWithDrafts}
+        scoreDrafts={{ m1: { team1: "11", team2: "9" } }}
+        fieldErrors={{}}
+        hasUnsavedScores={true}
+        onSaveAndStartNextRound={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    const button = html.match(/<button[^>]*data-testid="save-and-start-next-round-button"[^>]*>/)?.[0] ?? "";
+    expect(button).not.toMatch(/\sdisabled([=>\s])/);
   });
 
   it("renders Up Next Lineup Preview and Save & Start Next Round button when upcomingProposal is provided", () => {
