@@ -54,35 +54,38 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // Now correct the score to 11-9
     await court1Team2.fill("9");
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await expect(page.getByTestId("end-session-button")).toBeDisabled();
     await expect(page.getByRole("status")).toContainText("Save or revert your score changes before continuing.");
 
     // Reverting to the stored score clears the guard without a save.
     await court1Team2.fill("7");
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await expect(page.getByTestId("end-session-button")).toBeEnabled();
 
     // Blank and rejected corrections must keep the guard and the draft.
     await court1Team2.fill("");
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
     await court1Team2.fill("11");
     await page.getByRole("button", { name: "Update Score", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
     await expect(court1Team2).toHaveValue("11");
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
     await expect(page.getByTestId("end-session-button")).toBeDisabled();
 
     await court1Team2.fill("9");
     await page.locator("[data-testid='court-match-1'] button:has-text('Update Score')").click();
     await expect(court1Team2).toHaveValue("9");
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await page.reload();
     await expect(court1Team2).toHaveValue("9");
 
     // 7. Advance to Round 2
-    await expect(page.locator("button:has-text('Next Round')")).toBeEnabled();
-    await page.click("button:has-text('Next Round')");
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
+    await page.getByTestId("save-and-start-next-round-button").click();
+    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByTestId("reshuffle-matchups-button").click();
     await expect(page.locator("h1")).toContainText("Round 2");
 
     // 8. Test reshuffling in-progress round matchups and round undo
@@ -277,8 +280,11 @@ test("host synergy follows current partners after manual swaps and new proposals
   await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
   await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("5");
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Next Round", exact: true }).click();
+  await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
+  await page.getByTestId("save-and-start-next-round-button").click();
+  await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByTestId("reshuffle-matchups-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
@@ -294,44 +300,20 @@ test("host synergy follows current partners after manual swaps and new proposals
       }
     }
   };
-  const reveal = async () => {
-    await page.getByRole("button", { name: "Session Settings", exact: true }).click();
-    await page.getByRole("tab", { name: "Partner Synergies", exact: true }).click();
-  };
-  const close = () => page.getByRole("button", { name: "Close", exact: true }).click();
-  const expectCurrentSynergy = async (team: number, badge: string) => {
-    const pairNames = (await teamNames(team)).join(" & ");
-    await expect(page.getByText(pairNames, { exact: true }).locator("..")).toContainText(badge);
-  };
-
+  const ownBadge = () => card.getByText(/^[+-]\d+% Synergy$/);
   await arrangeTeam1(winners);
-  await reveal();
-  await expectCurrentSynergy(1, "+4% (1 games)");
-  await expectCurrentSynergy(2, "-4% (1 games)");
-  await close();
+  await expect(ownBadge()).toHaveText(winners.includes(hostName) ? "+4% Synergy" : "-4% Synergy");
 
-  // Neither mixed partnership has ever played, so neither may inherit a saved score.
+  // A previously unseen partner must not inherit the former duo's chemistry.
   await card.getByText(winners[1], { exact: true }).click();
   await card.getByText(losers[0], { exact: true }).click();
-  await reveal();
-  await expect(page.getByText("New Duo (0 games)", { exact: true })).toHaveCount(2);
-  await close();
+  await expect(ownBadge()).toHaveCount(0);
+  await expect(card.getByText("New Duo", { exact: true })).toBeVisible();
 
-  // Moving a known partnership to the other team slot preserves its history.
   await arrangeTeam1(losers);
-  await reveal();
-  await expectCurrentSynergy(1, "-4% (1 games)");
-  await expectCurrentSynergy(2, "+4% (1 games)");
-  await close();
-
-  // A refreshed lineup must agree with the same account-pair history.
+  await expect(ownBadge()).toHaveText(winners.includes(hostName) ? "+4% Synergy" : "-4% Synergy");
   await page.reload();
-  const pairKey = (pair: string[]) => [...pair].sort().join("|");
-  const expected = new Map([[pairKey(winners), "+4% (1 games)"], [pairKey(losers), "-4% (1 games)"]]);
-  await reveal();
-  for (const team of [1, 2]) {
-    await expectCurrentSynergy(team, expected.get(pairKey(await teamNames(team))) ?? "New Duo (0 games)");
-  }
+  await expect(ownBadge()).toHaveText(winners.includes(hostName) ? "+4% Synergy" : "-4% Synergy");
 });
 
 
@@ -508,7 +490,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await score1.fill("21");
     await score2.fill("0");
     await court.getByRole("button", { name: "Update Score", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled({ timeout: 15000 });
     await expect(reaction).toHaveCount(0);
   });
 }
@@ -631,7 +613,10 @@ test("normal score corrections refresh chemistry without adding shared games", a
   await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
   await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("0");
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
-  await page.getByRole("button", { name: "Next Round", exact: true }).click();
+  await page.getByTestId("save-and-start-next-round-button").click();
+  await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByTestId("reshuffle-matchups-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   const profile = await page.context().newPage();
   await profile.goto("/players");

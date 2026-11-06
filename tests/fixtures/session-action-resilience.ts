@@ -113,7 +113,7 @@ export async function actionButton(page: Page, action: SessionAction): Promise<L
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
     return page.getByRole("button", { name: "Confirm & Start", exact: true });
   }
-  return action === "save" ? page.getByTestId("save-all-scores-button") : page.getByRole("button", { name: "Next Round", exact: true });
+  return action === "save" ? page.getByTestId("save-all-scores-button") : page.getByTestId("save-and-start-next-round-button");
 }
 
 export async function prepareAction(page: Page, action: SessionAction) {
@@ -121,17 +121,14 @@ export async function prepareAction(page: Page, action: SessionAction) {
     await (await actionButton(page, "start")).click();
     await waitForAction(page, "start");
     await fillThreeScores(page);
-    if (action === "next") {
-      await page.getByTestId("save-all-scores-button").click();
-      await waitForAction(page, "save");
-    }
   }
   return actionButton(page, action);
 }
 
 export async function waitForAction(page: Page, action: SessionAction) {
   if (action === "next") {
-    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
   } else {
     await expect(page.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-testid^="court-match-"]')).toHaveCount(3);
@@ -172,28 +169,38 @@ export async function scopedState(fixture: ResilienceFixture) {
 
 export async function assertCommitted(fixture: ResilienceFixture, action: SessionAction, before: Awaited<ReturnType<typeof scopedState>>) {
   const after = await scopedState(fixture);
-  expect(after.rounds).toHaveLength(1);
-  expect(after.matches).toHaveLength(3);
-  expect(after.snapshots).toHaveLength(12);
+  const completed = action === "next";
+  expect(after.rounds).toHaveLength(completed ? 2 : 1);
+  expect(after.matches).toHaveLength(completed ? 6 : 3);
+  expect(after.snapshots).toHaveLength(completed ? 24 : 12);
   expect(new Set(after.snapshots.map(snapshot => snapshot.player_id)).size).toBe(12);
   expect(after.sits).toEqual(before.sits);
   expect(after.attendance).toEqual(before.attendance);
   expect(after.permissions).toEqual(before.permissions);
-  expect(after.rounds[0].status).toBe(action === "next" ? "completed" : "started");
-  expect(after.sessions[0].current_round_number).toBe(1);
-  expect(after.sessions[0].version).toBe(Number(before.sessions[0].version) + (action === "start" ? 1 : 0));
+  const firstRound = after.rounds.find(round => round.round_number === 1)!;
+  expect(firstRound.status).toBe(completed ? "completed" : "started");
+  expect(after.sessions[0].current_round_number).toBe(completed ? 2 : 1);
+  expect(after.sessions[0].version).toBe(Number(before.sessions[0].version) + (action === "save" ? 0 : 1));
   if (action !== "start") {
-    const assignments = (snapshots: typeof after.snapshots) => snapshots.map(member => ({
+    const assignments = (snapshots: readonly (typeof after.snapshots)[number][]) => snapshots.map(member => ({
       match_id: member.match_id, player_id: member.player_id, team: member.team,
     }));
-    expect(assignments(after.snapshots)).toEqual(assignments(before.snapshots));
-    expect(after.rounds[0].seed).toBe(before.rounds[0].seed);
-    expect(after.rounds[0].score_breakdown).toEqual(before.rounds[0].score_breakdown);
+    expect(assignments(after.snapshots.filter(member => before.matches.some(match => match.id === member.match_id)))).toEqual(assignments(before.snapshots));
+    expect(firstRound.seed).toBe(before.rounds[0].seed);
+    expect(firstRound.score_breakdown).toEqual(before.rounds[0].score_breakdown);
   }
   for (const match of after.matches) {
-    expect(match.status).toBe(action === "start" ? "pending" : "completed");
-    expect(match.version).toBe(action === "start" ? 1 : 2);
-    expect([match.team1_score, match.team2_score]).toEqual(action === "start" ? [null, null] : [11, 5]);
+    const pending = action === "start" || match.round_id !== firstRound.id;
+    expect(match.status).toBe(pending ? "pending" : "completed");
+    expect(match.version).toBe(pending ? 1 : 2);
+    expect([match.team1_score, match.team2_score]).toEqual(pending ? [null, null] : [11, 5]);
+  }
+  if (completed) {
+    const nextRound = after.rounds.find(round => round.round_number === 2)!;
+    expect(nextRound.status).toBe("started");
+    expect(nextRound.version).toBe(1);
+    const members = after.snapshots.filter(member => after.matches.some(match => match.id === member.match_id && match.round_id === nextRound.id));
+    expect(new Set(members.map(member => member.player_id)).size).toBe(12);
   }
   for (const account of after.accounts) {
     expect(account.rated_games_played).toBe(action === "start" ? 0 : 1);
@@ -203,8 +210,9 @@ export async function assertCommitted(fixture: ResilienceFixture, action: Sessio
     }
   }
   for (const snapshot of after.snapshots) {
-    expect(snapshot.rating_before === null).toBe(action === "start");
-    expect(snapshot.rating_after === null).toBe(action === "start");
+    const pending = action === "start" || !after.matches.some(match => match.id === snapshot.match_id && match.status === "completed");
+    expect(snapshot.rating_before === null).toBe(pending);
+    expect(snapshot.rating_after === null).toBe(pending);
   }
   expect(after.chemistry).toHaveLength(action === "next" ? 6 : 0);
   for (const chemistry of after.chemistry) expect(chemistry.matches_played).toBe(1);

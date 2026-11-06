@@ -118,18 +118,18 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.locator("[data-testid='court-match-3'] >> text=Final")).toBeVisible();
 
     // 7. Advance to Round 2
-    await page.click("button:has-text('Next Round')");
+    await page.getByTestId("save-and-start-next-round-button").click();
 
-    // Verify Round 2 Proposal
+    // Verify the combined action started Round 2
     await expect(page.locator("h1")).toContainText("Round 2");
-    await expect(page.locator(".court-card:has-text('Court 1')")).toBeVisible();
-    await expect(page.locator(".court-card:has-text('Court 2')")).toBeVisible();
-    await expect(page.locator(".court-card:has-text('Court 3')")).toBeVisible();
+    await expect(page.getByTestId("court-match-1")).toBeVisible();
+    await expect(page.getByTestId("court-match-2")).toBeVisible();
+    await expect(page.getByTestId("court-match-3")).toBeVisible();
 
     // Prior sitters must NOT sit again in Round 2
-    const round2SitsSection = page.locator("section:has-text('Sitting this round')");
+    const round2SitsSection = page.getByText("Sitting Out:", { exact: true }).locator("..");
     await expect(async () => {
-      const round2Sitters = await round2SitsSection.locator("span").allTextContents();
+      const round2Sitters = (await round2SitsSection.locator("span").last().innerText()).split(", ");
       expect(round2Sitters.length).toBeGreaterThanOrEqual(2);
       for (const sitter of round1Sitters) {
         if (sitter.trim()) {
@@ -140,8 +140,9 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
     // 8. End the session and verify completed session summary remains visible without returning to group
     const sessionUrl = page.url();
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.click("button:has-text('End Session')");
+    await page.getByTestId("end-session-button").click();
+    await expect(page.getByTestId("in-progress-warning-modal")).toBeVisible();
+    await page.getByTestId("confirm-end-session-button").click();
 
     // After ending session, user is redirected to group dashboard
     await page.waitForURL(/\/g\/[^/]+$/);
@@ -424,12 +425,12 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(page.getByTestId("court-match-1").getByRole("button", { name: /Save Result|Saving\.\.\./ })).toBeDisabled();
     await expect(indicator).toHaveCount(0);
     save.release();
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled({ timeout: 15000 });
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled({ timeout: 15000 });
   } finally { await save.dispose(); }
 
   const failure = await pauseAction(true);
   try {
-    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await page.getByTestId("save-and-start-next-round-button").click();
     await expect(indicator).toBeVisible();
     await expect(indicator.locator(".round-generation-art")).toHaveCSS("opacity", "1");
     const position = await indicator.evaluate(element => {
@@ -448,17 +449,17 @@ test("round generation indicator follows pending requests and clears on success 
     failure.release();
     await expect(page.getByRole("alert").filter({ hasText: "Failed to advance to next round." })).toBeVisible();
     await expect(indicator).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Next Round", exact: true })).toBeEnabled();
+    await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
   } finally { await failure.dispose(); }
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   const success = await pauseAction();
   try {
-    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await page.getByTestId("save-and-start-next-round-button").click();
     await expect(indicator).toBeVisible();
     await expect(indicator.locator("svg")).toHaveCSS("animation-name", "none");
     success.release();
-    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
     await expect(indicator).toHaveCount(0);
   } finally { await success.dispose(); }
 });

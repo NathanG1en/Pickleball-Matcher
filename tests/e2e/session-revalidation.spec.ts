@@ -3,7 +3,7 @@ import { createTestGroup } from "./test-helpers";
 
 test("session mutations render fresh state in the action response without an extra session GET", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
-  await createTestGroup(page, `Action refresh ${Date.now()}`);
+  await createTestGroup(page, `Action refresh ${Date.now()}-${testInfo.workerIndex}-${testInfo.repeatEachIndex}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (let i = 1; i <= 7; i++) {
     await page.locator("#guest-player-name").fill(`Refresh Guest ${i}`);
@@ -29,7 +29,7 @@ test("session mutations render fresh state in the action response without an ext
     page.on("request", onRequest);
     const start = performance.now();
     try {
-      const posted = page.waitForResponse(response => new URL(response.url()).pathname === sessionPath && response.request().method() === (posts ? "POST" : "GET"));
+      const posted = page.waitForResponse(response => new URL(response.url()).pathname === sessionPath && response.request().method() === (posts ? "POST" : "GET"), { timeout: 15_000 });
       await operation();
       const response = await posted;
       expect(response.ok(), step).toBe(true);
@@ -52,7 +52,10 @@ test("session mutations render fresh state in the action response without an ext
     await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("7");
     await measure("save-score-control", () => court(1).getByRole("button", { name: "Save Result", exact: true }).click(),
       () => expect(court(1).getByText("Final", { exact: true })).toBeVisible(), 0);
-    await measure("advance", () => page.getByRole("button", { name: "Next Round", exact: true }).click(),
+    await measure("advance", () => page.getByTestId("save-and-start-next-round-button").click(),
+      () => expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible());
+    page.once("dialog", dialog => dialog.accept());
+    await measure("prepare-second", () => page.getByTestId("reshuffle-matchups-button").click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
 
     const history = page.getByRole("heading", { name: "Past Rounds History", exact: true }).locator("..");

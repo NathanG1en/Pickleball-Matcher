@@ -19,7 +19,7 @@ async function interceptAction(page: Page, operation: (route: Route) => Promise<
 async function recoverView(page: Page, fixture: ResilienceFixture, action: SessionAction) {
   await page.goto(fixture.sessionPath);
   if (action === "start") return actionButton(page, action);
-  if (action === "save") await fillThreeScores(page);
+  await fillThreeScores(page);
   return actionButton(page, action);
 }
 
@@ -32,7 +32,7 @@ for (const action of actions) {
       const fixture = await createResilienceFixture(page, sql);
       await prepareAction(page, action);
       secondary = await secondaryOrganizer(browser, fixture, baseURL!);
-      if (action === "save") await fillThreeScores(secondary.page);
+      if (action !== "start") await fillThreeScores(secondary.page);
       const button = await actionButton(secondary.page, action);
       await sql`delete from group_organizers where group_id = ${fixture.groupId} and account_id = ${fixture.secondaryId}`;
       const before = await scopedState(fixture);
@@ -62,7 +62,7 @@ for (const action of actions) {
       await button.click();
       await expect(page.getByRole("alert").filter({ hasText: "Injected scoped session action failure" })).toBeVisible();
       expect(await scopedState(fixture)).toEqual(before);
-      if (action === "save") for (let court = 1; court <= 3; court++) {
+      if (action !== "start") for (let court = 1; court <= 3; court++) {
         await expect(page.getByRole("spinbutton", { name: `Court ${court} Team 1 score`, exact: true })).toHaveValue("11");
         await expect(page.getByRole("spinbutton", { name: `Court ${court} Team 2 score`, exact: true })).toHaveValue("5");
       }
@@ -127,10 +127,7 @@ for (const action of actions) {
       await waitForAction(page, action);
       await page.reload();
       const after = await assertCommitted(fixture, action, before);
-      // Control accepts repeated completeRound calls, incrementing its round version.
-      // Other actions reject stale versions. Never require a stronger contract here.
-      if (action !== "next") expect(after.rounds[0].version).toBe(1);
-      else expect(after.rounds[0].version).toBeGreaterThanOrEqual(2);
+      expect(after.rounds.find(round => round.round_number === 1)!.version).toBe(action === "next" ? 2 : 1);
     } finally { await sql.end(); }
   });
 
@@ -203,20 +200,8 @@ for (const action of actions) {
       expect(replay.ok()).toBe(true);
       const responseBody = await replay.text();
       const afterRetry = await scopedState(fixture);
-      if (action === "next") {
-        // Baseline explicitly ignores stale roundVersion for completion. The accepted
-        // retry advances the VERSION, but must not duplicate rounds, rating or chemistry.
-        expect(afterRetry.rounds[0].version).toBe(Number(afterCommit.rounds[0].version) + 1);
-        const omitCompletion = (rounds: typeof afterRetry.rounds) => rounds.map(round => ({
-          id: round.id, session_id: round.session_id, round_number: round.round_number,
-          status: round.status, seed: round.seed, score_breakdown: round.score_breakdown,
-        }));
-        expect(omitCompletion(afterRetry.rounds)).toEqual(omitCompletion(afterCommit.rounds));
-        expect({ ...afterRetry, rounds: [] }).toEqual({ ...afterCommit, rounds: [] });
-      } else {
-        expect(responseBody).toContain(action === "start" ? "session changed" : "match changed");
-        expect(afterRetry).toEqual(afterCommit);
-      }
+      expect(responseBody).toContain(action === "save" ? "match changed" : "session changed");
+      expect(afterRetry).toEqual(afterCommit);
     } finally {
       committed.resolve();
       await page.unrouteAll({ behavior: "wait" });
@@ -238,7 +223,7 @@ for (const action of actions) {
       const fixture = await createResilienceFixture(page, sql);
       const hostButton = await prepareAction(page, action);
       secondary = await secondaryOrganizer(browser, fixture, baseURL!);
-      if (action === "save") await fillThreeScores(secondary.page);
+      if (action !== "start") await fillThreeScores(secondary.page);
       const otherButton = await actionButton(secondary.page, action);
       const before = await scopedState(fixture);
       const submit = async (route: Route, reached: ReturnType<typeof deferred>, finished: ReturnType<typeof deferred>) => {
@@ -258,11 +243,11 @@ for (const action of actions) {
       release.resolve();
       await Promise.all([hostFinished.promise, otherFinished.promise]);
       expect(bodies).toHaveLength(2);
-      if (action !== "next") {
+      {
         // startRound has an optimistic version check but no session lock. When
         // both transactions read the old version, the unique round key rejects
         // the loser; a later reader instead gets the explicit stale-version error.
-        const conflict = action === "start" ? /session changed|duplicate key value violates unique constraint/ : /match changed/;
+        const conflict = action === "start" ? /session changed|duplicate key value violates unique constraint/ : action === "next" ? /session changed/ : /match changed/;
         expect(bodies.filter(body => conflict.test(body))).toHaveLength(1);
       }
       await page.unrouteAll({ behavior: "wait" });
@@ -272,7 +257,7 @@ for (const action of actions) {
       await waitForAction(page, action);
       await waitForAction(secondary.page, action);
       const after = await assertCommitted(fixture, action, before);
-      expect(after.rounds[0].version).toBe(action === "next" ? 3 : 1);
+      expect(after.rounds.find(round => round.round_number === 1)!.version).toBe(action === "next" ? 2 : 1);
     } finally {
       release.resolve();
       await page.unrouteAll({ behavior: "wait" });
@@ -292,7 +277,7 @@ test("shared accounts scoring in two groups retain account, alias, snapshot and 
     const before = await scopedState(fixture);
     await page.getByTestId("save-all-scores-button").click();
     await waitForAction(page, "save");
-    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await page.getByTestId("save-and-start-next-round-button").click();
     await waitForAction(page, "next");
     const first = await assertCommitted(fixture, "next", before);
     // Only this fixture's previously inactive alias is activated for its second session.
@@ -307,14 +292,14 @@ test("shared accounts scoring in two groups retain account, alias, snapshot and 
     await prepareAction(page, "save");
     await page.getByTestId("save-all-scores-button").click();
     await waitForAction(page, "save");
-    await page.getByRole("button", { name: "Next Round", exact: true }).click();
+    await page.getByTestId("save-and-start-next-round-button").click();
     await waitForAction(page, "next");
     const after = await scopedState(fixture);
     expect(after.sessions).toHaveLength(2);
-    expect(after.rounds).toHaveLength(2);
-    expect(after.matches).toHaveLength(6);
+    expect(after.rounds).toHaveLength(4);
+    expect(after.matches).toHaveLength(12);
     expect(after.attendance).toHaveLength(24);
-    expect(after.snapshots).toHaveLength(24);
+    expect(after.snapshots).toHaveLength(48);
     expect(after.sits).toHaveLength(0);
     expect(after.permissions).toEqual(first.permissions);
     expect(after.snapshots.filter(snapshot => first.snapshots.some(original => original.match_id === snapshot.match_id))).toEqual(first.snapshots);
@@ -325,17 +310,52 @@ test("shared accounts scoring in two groups retain account, alias, snapshot and 
         expect(player.rated_games_played).toBe(2);
       }
     }
-    for (const snapshot of after.snapshots) {
+    for (const snapshot of after.snapshots.filter(member => after.matches.some(match => match.id === member.match_id && match.status === "completed"))) {
       expect(snapshot.rating_before).not.toBeNull();
       expect(snapshot.rating_after).not.toBeNull();
     }
     expect(after.chemistry.reduce((sum, pair) => sum + Number(pair.matches_played), 0)).toBe(12);
-    for (const match of after.matches) {
+    const pendingMatches = after.matches.filter(match => match.status === "pending");
+    expect(pendingMatches).toHaveLength(6);
+    expect(after.matches.filter(match => match.status === "completed")).toHaveLength(6);
+    for (const match of pendingMatches) {
+      expect(match.version).toBe(1);
+      expect([match.team1_score, match.team2_score]).toEqual([null, null]);
+    }
+    for (const snapshot of after.snapshots.filter(member => pendingMatches.some(match => match.id === member.match_id))) {
+      expect(snapshot.rating_before).toBeNull();
+      expect(snapshot.rating_after).toBeNull();
+    }
+    for (const match of after.matches.filter(match => match.status === "completed")) {
       expect(match.status).toBe("completed");
       expect(match.version).toBe(2);
       expect([match.team1_score, match.team2_score]).toEqual([11, 5]);
     }
     await page.reload();
     expect(await scopedState(fixture)).toEqual(after);
+  } finally { await sql.end(); }
+});
+
+test("combined Save & Start reconciles versions across consecutive rounds without a refresh", async ({ page }) => {
+  test.setTimeout(120_000);
+  const sql = resilienceDatabase();
+  try {
+    const fixture = await createResilienceFixture(page, sql);
+    await prepareAction(page, "save");
+    for (const roundNumber of [2, 3]) {
+      await fillThreeScores(page);
+      const response = page.waitForResponse(response => response.request().method() === "POST" && Boolean(response.request().headers()["next-action"]));
+      await page.getByTestId("save-and-start-next-round-button").click();
+      expect((await response).ok()).toBe(true);
+      await expect(page.getByRole("heading", { name: `Round ${roundNumber} Results`, exact: true })).toBeVisible();
+      await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
+      await expect(page.getByRole("alert").filter({ hasText: /session changed|round changed|failed/i })).toHaveCount(0);
+      const state = await scopedState(fixture);
+      expect(state.rounds).toHaveLength(roundNumber);
+      expect(state.sessions[0].version).toBe(roundNumber + 1);
+      expect(state.rounds.filter(round => round.status === "started")).toHaveLength(1);
+    }
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Round 3 Results", exact: true })).toBeVisible();
   } finally { await sql.end(); }
 });

@@ -46,7 +46,10 @@ test("organizer saves and refreshes session partners before starting a paired ro
   await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
   await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("5");
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
-  await page.getByRole("button", { name: "Next Round", exact: true }).click();
+  await page.getByTestId("save-and-start-next-round-button").click();
+  await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByTestId("reshuffle-matchups-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   if (!showedSoloNotice) await expect(soloNotice).toBeVisible();
 });
