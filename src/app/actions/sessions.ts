@@ -315,6 +315,7 @@ export async function saveAndStartNextRoundAction(
       nextProposal,
       seed: parsed.data.seed,
       expectedSessionVersion: parsed.data.sessionVersion,
+      expectedRoundVersion: parsed.data.roundVersion,
     });
     revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
     return { ok: true, data: result };

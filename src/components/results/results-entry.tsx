@@ -89,12 +89,12 @@ export function ResultsEntryView({
   };
 
   const allMatchesHaveScores = matches.length > 0 && matches.every((m) => {
-    if (m.status !== "pending") return true;
+    if (m.status === "cancelled") return true;
     const s = getScores(m);
     if (!s.team1 || !s.team2) return false;
-    const t1 = parseInt(s.team1, 10);
-    const t2 = parseInt(s.team2, 10);
-    return !isNaN(t1) && !isNaN(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0;
+    const t1 = Number(s.team1);
+    const t2 = Number(s.team2);
+    return Number.isSafeInteger(t1) && Number.isSafeInteger(t2) && t1 !== t2 && t1 >= 0 && t2 >= 0;
   });
 
   const hasDraftDiffs = matches.some((match) => {

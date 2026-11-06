@@ -262,6 +262,19 @@ export class SessionService {
     return result.value;
   }
 
+  private async validateSuppliedLineup(repository: DomainRepository, session: SessionRecord, proposal: RoundProposal): Promise<void> {
+    const [roster, attendance, rounds] = await Promise.all([repository.listPlayers(session.groupId), repository.listAttendance(session.id), repository.listStartedRounds(session.id)]);
+    const present = matchmakingPlayers(roster, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)).map(p => p.id);
+    const all = [...proposal.courts.flatMap(c => [...c.team1, ...c.team2]), ...proposal.sitting];
+    const doubles = Math.min(Math.floor(present.length / 4), session.courtCount);
+    const sizes = session.courtPlayerCounts ?? [...Array<number>(doubles).fill(4), ...(session.courtCount > doubles && present.length - doubles * 4 >= 2 ? [2] : [])];
+    if (all.length !== present.length || new Set(all).size !== all.length || all.some(id => !present.includes(id)) || proposal.courts.length !== sizes.length || proposal.courts.some((c, i) => c.courtNumber !== i + 1 || c.team1.length + c.team2.length !== sizes[i] || c.team1.length < 1 || c.team2.length < 1 || c.team1.length > 2 || c.team2.length > 2)) {
+      throw new DomainError("INVALID_STATE", "The lineup must include every present player once and match the configured courts.");
+    }
+    const error = validateStayTogetherLineup(proposal, session.stayTogetherPairs ?? [], present);
+    if (error) throw new DomainError("INVALID_STATE", error);
+  }
+
   async startRound(sessionId: string, proposal: RoundProposal, expectedVersion?: number): Promise<RoundRecord> {
     return this.repository.transaction(async (repository) => {
       const session = await requiredSession(repository, sessionId);
@@ -270,16 +283,7 @@ export class SessionService {
       }
       if (expectedVersion !== undefined && session.version !== expectedVersion) throw new DomainError("INVALID_STATE", "The session changed. Refresh the lineup before starting.");
       if (session.stayTogetherPairs?.length) {
-        const [roster, attendance, rounds] = await Promise.all([repository.listPlayers(session.groupId), repository.listAttendance(sessionId), repository.listStartedRounds(sessionId)]);
-        const present = matchmakingPlayers(roster, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)).map(p => p.id);
-        const all = [...proposal.courts.flatMap(c => [...c.team1, ...c.team2]), ...proposal.sitting];
-        const doubles = Math.min(Math.floor(present.length / 4), session.courtCount);
-        const sizes = session.courtPlayerCounts ?? [...Array<number>(doubles).fill(4), ...(session.courtCount > doubles && present.length - doubles * 4 >= 2 ? [2] : [])];
-        if (all.length !== present.length || new Set(all).size !== all.length || all.some(id => !present.includes(id)) || proposal.courts.length !== sizes.length || proposal.courts.some((c, i) => c.courtNumber !== i + 1 || c.team1.length + c.team2.length !== sizes[i] || c.team1.length < 1 || c.team2.length < 1 || c.team1.length > 2 || c.team2.length > 2)) {
-          throw new DomainError("INVALID_STATE", "The lineup must include every present player once and match the configured courts.");
-        }
-        const error = validateStayTogetherLineup(proposal, session.stayTogetherPairs, present);
-        if (error) throw new DomainError("INVALID_STATE", error);
+        await this.validateSuppliedLineup(repository, session, proposal);
       }
       const now = this.dependencies.now();
       const round: RoundRecord = {
@@ -508,6 +512,7 @@ export class SessionService {
     nextProposal?: RoundProposal;
     seed?: number;
     expectedSessionVersion?: number;
+    expectedRoundVersion?: number;
   }): Promise<{ completedRound: RoundRecord; startedRound: StartedRoundRecord }> {
     if (new Set(input.results.map((r) => r.matchId)).size !== input.results.length) {
       throw new DomainError("INVALID_RESULT", "A match can only appear once in a score batch.");
@@ -534,6 +539,15 @@ export class SessionService {
         throw new DomainError("INVALID_STATE", "The session changed. Refresh before continuing.");
       }
 
+      const currentRound = await requiredRound(repository, input.roundId);
+      if (currentRound.sessionId !== session.id || currentRound.status !== "started" || currentRound.roundNumber !== session.currentRoundNumber) {
+        throw new DomainError("INVALID_STATE", "Only the current started round can be advanced.");
+      }
+      if (input.expectedRoundVersion !== undefined && currentRound.version !== input.expectedRoundVersion) {
+        throw new DomainError("INVALID_STATE", "The round changed. Refresh before continuing.");
+      }
+      if (input.nextProposal) await this.validateSuppliedLineup(repository, session, input.nextProposal);
+
       // 1. Save scores if provided
       if (input.results.length > 0) {
         const contexts = await repository.getMatchResultContexts(input.results.map((r) => r.matchId));
@@ -541,6 +555,9 @@ export class SessionService {
         for (const r of input.results) {
           const context = byId.get(r.matchId);
           if (!context) throw new DomainError("NOT_FOUND", "Match not found.");
+          if (context.match.roundId !== input.roundId) {
+            throw new DomainError("INVALID_STATE", "Scores must belong to the current round.");
+          }
           if (r.matchVersion !== undefined && r.matchVersion !== context.match.version) {
             throw new DomainError("INVALID_STATE", "A match changed. Refresh before saving.");
           }

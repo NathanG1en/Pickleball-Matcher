@@ -200,6 +200,12 @@ describe("ResultsEntryView Component", () => {
     expect(button).not.toMatch(/\sdisabled([=>\s])/);
   });
 
+  it.each(["", "11", "-1", "1.5"])("blocks an invalid correction %s before Save & Start", team2 => {
+    const html = renderToStaticMarkup(<ResultsEntryView roundId="r1" roundNumber={1} matches={sampleMatches} scoreDrafts={{ m1: { team1: "11", team2 } }} onSaveAndStartNextRound={() => {}} />);
+    const button = html.match(/<button[^>]*data-testid="save-and-start-next-round-button"[^>]*>/)?.[0] ?? "";
+    expect(button).toMatch(/\sdisabled([=>\s])/);
+  });
+
   it("disables Save & Start button if Start is disabled (pending matches lack scores)", () => {
     const pendingMatches = [
       {
