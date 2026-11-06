@@ -422,10 +422,9 @@ describe("OpenPlayManagerClient Component", () => {
     const selectSection = html.slice(html.indexOf('aria-label="Team 1 Player 1"'), html.indexOf("Team 1 Points"));
     expect(selectSection).not.toContain('data-testid="black-pin-icon"');
 
-    // Pinned button exists for Dave in attendee chips for organizer with black styling
-    expect(html).toContain('data-testid="pin-player-Dave"');
-    expect(html).toContain('aria-label="Unpin Dave"');
-    expect(html).toContain("bg-black text-[#ccff00]");
+    // Option to pin players is not present in open play player management chips
+    expect(html).not.toContain('data-testid="pin-player-Dave"');
+    expect(html).not.toContain('aria-label="Unpin Dave"');
 
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
