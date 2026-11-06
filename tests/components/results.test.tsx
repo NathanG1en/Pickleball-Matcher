@@ -195,7 +195,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Alice &amp; Bob");
     expect(html).toContain("Charlie &amp; Diana");
     expect(html).toContain("Evan");
-    expect(html).toContain("Save &amp; Start Round 2");
+    expect(html).toContain("Save &amp; Start R2");
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
   });
 });

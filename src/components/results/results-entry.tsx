@@ -348,29 +348,29 @@ export function ResultsEntryView({
 
       {/* Persistent Bottom Mobile Action Area */}
       {canManage && (
-        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
           {hasUnsavedScores && (
-            <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-3 text-sm font-bold text-black">
+            <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-1.5 text-xs font-bold text-black">
               Save or revert your score changes before continuing.
             </p>
           )}
-          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-            <div className="text-left">
-              <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Round Progress</p>
-              <p className="font-display text-base font-black uppercase text-black tracking-tight">
-                {matches.filter((m) => m.status !== "pending").length} of {matches.length} courts completed
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
+            <div className="text-left shrink-0">
+              <p className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-neutral-500 leading-none mb-0.5">Round Progress</p>
+              <p className="font-display text-sm sm:text-base font-black uppercase text-black tracking-tight leading-tight">
+                {matches.filter((m) => m.status !== "pending").length} of {matches.length} done
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-1 justify-end flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end min-w-0">
               {hasUnsavedScores && onSaveAllScores && (
                 <Button
                   type="button"
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   disabled={isPending || Boolean(savingMatchIds && savingMatchIds.size > 0)}
                   onClick={onSaveAllScores}
                   data-testid="save-all-scores-button"
-                  className="font-display text-sm sm:text-base tracking-wide uppercase"
+                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0"
                 >
                   {Boolean(savingMatchIds && savingMatchIds.size > 0) ? "Saving..." : "Save Scores"}
                 </Button>
@@ -379,23 +379,31 @@ export function ResultsEntryView({
                 <Button
                   type="button"
                   variant="primary"
-                  size="lg"
+                  size="sm"
                   disabled={isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
                   onClick={onSaveAndStartNextRound}
                   data-testid="save-and-start-next-round-button"
-                  className="flex-1 max-w-xs font-display text-base sm:text-lg tracking-wide uppercase bg-[#ccff00] text-black shadow-[4px_4px_0px_0px_#000]"
+                  title={`Save all scores and start Round ${roundNumber + 1}`}
+                  className="flex-1 max-w-[190px] font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] truncate"
                 >
-                  {isGeneratingRound ? <RoundGenerationIndicator /> : `Save & Start Round ${roundNumber + 1}`}
+                  {isGeneratingRound ? (
+                    <RoundGenerationIndicator />
+                  ) : (
+                    <>
+                      <span className="sm:hidden">Start R{roundNumber + 1}</span>
+                      <span className="hidden sm:inline">Save &amp; Start R{roundNumber + 1}</span>
+                    </>
+                  )}
                 </Button>
               )}
               <Button
                 type="button"
                 variant={hasUnsavedScores ? "secondary" : "primary"}
-                size="lg"
+                size="sm"
                 disabled={!allResolved || hasUnsavedScores || isPending || isGeneratingRound || Boolean(savingMatchIds && savingMatchIds.size > 0)}
                 aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 onClick={onNextRound}
-                className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+                className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000]"
               >
                 {isGeneratingRound ? <RoundGenerationIndicator /> : "Next Round"}
               </Button>
