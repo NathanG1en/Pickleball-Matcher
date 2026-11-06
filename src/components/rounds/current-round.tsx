@@ -53,6 +53,7 @@ export interface CurrentRoundViewProps {
   readonly matchmakingVariety?: number;
   readonly onChangeMatchmakingVariety?: (variety: number) => void;
   readonly onAddGame?: () => void;
+  readonly confirmMatchups?: boolean;
 }
 
 const subscribeToHydration = () => () => {};

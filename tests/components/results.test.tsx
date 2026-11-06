@@ -354,5 +354,38 @@ describe("ResultsEntryView Component", () => {
     const addGameButton = html.match(/<button[^>]*>[^<]*<span[^>]*>\+ Add Game<\/span><\/button>/)?.[0] ?? "";
     expect(addGameButton).toContain("whitespace-nowrap");
   });
+
+  it("does not render matchup confirmation modal when confirmMatchups is false", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onSaveAndStartNextRound={() => {}}
+        confirmMatchups={false}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
+  });
+
+  it("passes confirmMatchups prop cleanly and maintains save-and-start functionality", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onSaveAndStartNextRound={() => {}}
+        confirmMatchups={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+  });
 });
 

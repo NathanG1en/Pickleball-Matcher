@@ -105,4 +105,12 @@ describe("CurrentRoundView Component", () => {
     // The Start Round button should have the disabled attribute
     expect(html).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Start Round[\s\S]*?<\/button>/);
   });
+
+  it("accepts confirmMatchups prop cleanly and renders Start Round", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView {...sampleProps} confirmMatchups={true} />
+    );
+
+    expect(html).toContain("Start Round");
+  });
 });

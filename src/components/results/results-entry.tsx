@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ export interface ResultsEntryViewProps {
   readonly onSaveAndStartNextRound?: () => void;
   readonly upcomingProposal?: RoundProposal | null;
   readonly playerNames?: Readonly<Record<string, string>>;
+  readonly confirmMatchups?: boolean;
 }
 
 export function ResultsEntryView({
@@ -71,7 +72,9 @@ export function ResultsEntryView({
   onSaveAndStartNextRound,
   upcomingProposal,
   playerNames = {},
+  confirmMatchups = false,
 }: ResultsEntryViewProps) {
+  const [showConfirmNextRound, setShowConfirmNextRound] = useState(false);
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
     team2: match.team2Score !== null ? String(match.team2Score) : "",
@@ -411,7 +414,14 @@ export function ResultsEntryView({
                   variant="primary"
                   size="sm"
                   disabled={isSaveAndStartDisabled}
-                  onClick={onSaveAndStartNextRound ?? onNextRound}
+                  onClick={() => {
+                    if (confirmMatchups) {
+                      setShowConfirmNextRound(true);
+                    } else {
+                      const startFn = onSaveAndStartNextRound ?? onNextRound;
+                      startFn?.();
+                    }
+                  }}
                   data-testid="save-and-start-next-round-button"
                   title={`Save all scores and start Round ${roundNumber + 1}`}
                   className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
@@ -427,6 +437,77 @@ export function ResultsEntryView({
                   )}
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Matchup Confirmation Modal */}
+      {showConfirmNextRound && (
+        <div
+          data-testid="matchup-confirmation-modal"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
+            <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
+              Start Round {roundNumber + 1}?
+            </h3>
+
+            {upcomingProposal ? (
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-neutral-600">
+                  Confirm matchups before starting Round {roundNumber + 1}:
+                </p>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {upcomingProposal.courts.map((c) => (
+                    <div
+                      key={c.courtNumber}
+                      className="p-2.5 rounded-xl bg-neutral-50 border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs"
+                    >
+                      <span className="font-black text-black">Court {c.courtNumber}: </span>
+                      <span className="font-bold text-neutral-800">
+                        {c.team1.map((id) => playerNames[id] ?? id).join(" & ")} vs{" "}
+                        {c.team2.map((id) => playerNames[id] ?? id).join(" & ")}
+                      </span>
+                    </div>
+                  ))}
+                  {upcomingProposal.sitting.length > 0 && (
+                    <p className="text-xs font-bold text-neutral-600 pt-1">
+                      <span className="font-black uppercase text-neutral-500">Sitting: </span>
+                      {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-bold text-neutral-700">
+                Once started, court assignments and sitting players are locked in for tracking match results.
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-2 justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowConfirmNextRound(false)}
+                className="font-display uppercase tracking-wider text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  setShowConfirmNextRound(false);
+                  const startFn = onSaveAndStartNextRound ?? onNextRound;
+                  startFn?.();
+                }}
+                disabled={isSaveAndStartDisabled}
+                data-testid="confirm-start-next-round-button"
+                className="font-display uppercase tracking-wider text-xs bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+              >
+                Confirm &amp; Start Round {roundNumber + 1}
+              </Button>
             </div>
           </div>
         </div>

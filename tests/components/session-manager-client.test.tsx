@@ -735,6 +735,8 @@ describe("SessionManagerClient Component", () => {
     expect(courtConfigPanelHtml).toContain("Save Court Configuration");
     expect(courtConfigPanelHtml).toContain('aria-label="Players on court 1"');
     expect(courtConfigPanelHtml).toContain("text-xs font-bold text-black");
+    expect(courtConfigPanelHtml).toContain("Matchup Confirmation");
+    expect(courtConfigPanelHtml).toContain('data-testid="confirm-matchups-toggle"');
 
     const partnersPanelHtml = renderToStaticMarkup(
       <SessionManagerClient
@@ -751,6 +753,35 @@ describe("SessionManagerClient Component", () => {
       />
     );
     expect(partnersPanelHtml).toContain('id="tabpanel-partners"');
+  });
+
+  it("renders Matchup Confirmation setting toggle in session settings and supports preferences tab", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 1,
+    };
+
+    const prefPanelHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={[]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+        initialSettingsModalTab="preferences"
+      />
+    );
+
+    expect(prefPanelHtml).toContain('id="tabpanel-preferences"');
+    expect(prefPanelHtml).toContain("Matchup Confirmation");
+    expect(prefPanelHtml).toContain('data-testid="confirm-matchups-toggle-pref"');
+    expect(prefPanelHtml).toContain("Require confirmation before starting rounds.");
   });
 });
 
