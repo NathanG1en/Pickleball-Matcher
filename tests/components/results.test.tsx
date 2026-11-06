@@ -81,7 +81,7 @@ describe("ResultsEntryView Component", () => {
     );
 
     expect(html).toContain("mobile-action-bar");
-    expect(html).toContain("Next Round");
+    expect(html).toContain("Start Round 2");
   });
 
   it("renders sitting players banner when sitting players exist", () => {
@@ -142,7 +142,7 @@ describe("ResultsEntryView Component", () => {
       />
     );
 
-    expect(html).toContain("Save Scores");
+    expect(html).toContain("Save All");
     expect(html).toContain('data-testid="save-all-scores-button"');
   });
 
