@@ -636,7 +636,7 @@ describe("SessionManagerClient Component", () => {
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
 
-  it("renders session settings tabs in correct order: Attendance, Court Configuration, Partners, Partner Synergies", () => {
+  it("renders session settings tabs in correct order: Attendance, Court Configuration, Partners", () => {
     const activeSession: SessionRecord = {
       ...completedSession,
       status: "active",
@@ -662,22 +662,20 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).toContain('id="tab-attendance"');
     expect(managerHtml).toContain('id="tab-court-config"');
     expect(managerHtml).toContain('id="tab-partners"');
-    expect(managerHtml).toContain('id="tab-synergies"');
+    expect(managerHtml).not.toContain('id="tab-synergies"');
 
     // Verify modal header & tabs container is static (shrink-0) and tab content container is scrollable (overflow-y-auto flex-1)
     expect(managerHtml).toContain("shrink-0 space-y-4 bg-white");
     expect(managerHtml).toContain("flex-1 overflow-y-auto space-y-4");
 
-    // Verify exact ordering in HTML: attendance -> court_config -> partners -> synergies
+    // Verify exact ordering in HTML: attendance -> court_config -> partners
     const attendanceIndex = managerHtml.indexOf('id="tab-attendance"');
     const courtConfigIndex = managerHtml.indexOf('id="tab-court-config"');
     const partnersIndex = managerHtml.indexOf('id="tab-partners"');
-    const synergiesIndex = managerHtml.indexOf('id="tab-synergies"');
 
     expect(attendanceIndex).toBeGreaterThan(-1);
     expect(courtConfigIndex).toBeGreaterThan(attendanceIndex);
     expect(partnersIndex).toBeGreaterThan(courtConfigIndex);
-    expect(synergiesIndex).toBeGreaterThan(partnersIndex);
 
     // Verify non-manager only sees Attendance and Partners tabs
     const nonManagerHtml = renderToStaticMarkup(
@@ -734,78 +732,6 @@ describe("SessionManagerClient Component", () => {
       />
     );
     expect(partnersPanelHtml).toContain('id="tabpanel-partners"');
-
-    const inProgressRoundForSynergy: StartedRoundRecord[] = [
-      {
-        round: {
-          id: "rnd_synergy",
-          sessionId,
-          roundNumber: 1,
-          status: "started",
-          seed: 42,
-          scoreBreakdown: {
-            playingTime: 0,
-            consecutiveSit: 0,
-            partnerRepeat: 0,
-            skillBalance: 0,
-            opponentRepeat: 0,
-            tieBreak: 0,
-            total: 0,
-          },
-          createdAt: new Date(),
-          startedAt: new Date(),
-          completedAt: null,
-          version: 1,
-        },
-        matches: [
-          {
-            id: "m_syn_1",
-            roundId: "rnd_synergy",
-            courtNumber: 1,
-            team1Score: null,
-            team2Score: null,
-            status: "pending",
-            completedAt: null,
-            version: 1,
-          },
-        ],
-        matchPlayers: [
-          { matchId: "m_syn_1", playerId: "p1", team: 1, ratingBefore: 1200, ratingAfter: null },
-          { matchId: "m_syn_1", playerId: "p2", team: 1, ratingBefore: 1200, ratingAfter: null },
-          { matchId: "m_syn_1", playerId: "p3", team: 2, ratingBefore: 1200, ratingAfter: null },
-          { matchId: "m_syn_1", playerId: "p4", team: 2, ratingBefore: 1200, ratingAfter: null },
-        ],
-        sits: [],
-      },
-    ];
-
-    const playersWithAccounts: PlayerRecord[] = [
-      { ...players[0], accountId: "acc_1" },
-      { ...players[1], accountId: "acc_2" },
-      { ...players[2], accountId: "acc_3" },
-      { ...players[3], accountId: "acc_4" },
-    ];
-
-    const synergiesPanelHtml = renderToStaticMarkup(
-      <SessionManagerClient
-        groupId={groupId}
-        session={activeSession}
-        players={playersWithAccounts}
-        attendance={attendance}
-        startedRounds={inProgressRoundForSynergy}
-        initialProposal={null}
-        pairSynergies={{
-          [JSON.stringify(["acc_1", "acc_2"].sort())]: { score: 18, matchesPlayed: 4 },
-        }}
-        canManage={true}
-        isOrganizer={true}
-        initialOpenSettingsModal={true}
-        initialSettingsModalTab="synergies"
-      />
-    );
-    expect(synergiesPanelHtml).toContain('id="tabpanel-synergies"');
-    expect(synergiesPanelHtml).toContain("+18% (4 games)");
-    expect(synergiesPanelHtml).toContain("Alice &amp; Bob");
   });
 });
 
