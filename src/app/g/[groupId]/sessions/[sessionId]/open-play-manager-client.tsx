@@ -1270,29 +1270,17 @@ export function OpenPlayManagerClient({
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
-        <div className="flex items-center justify-between">
-          <BackButton
-            href={isFromProfile ? "/players" : `/g/${groupId}`}
-            label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
-            ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          />
-          <div className="flex items-center gap-2">
-            <Badge variant={isSessionActive ? "warning" : "muted"}>
-              {isSessionActive ? "In Progress" : "Completed"}
-            </Badge>
-            {(isOrganizer || isHost) && (
-              <SessionOptionsMenu
-                groupId={groupId}
-                sessionId={session.id}
-                sessionName={sessionName}
-                sessionDate={session.startedAt}
-                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
-                onRenamed={(newName) => setSessionName(newName)}
-              />
-            )}
-            {isSessionActive && canManage && (
+      {/* Top Header Controls */}
+      <div className="flex items-center justify-between">
+        <BackButton
+          href={isFromProfile ? "/players" : `/g/${groupId}`}
+          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+        />
+        {isSessionActive ? (
+          <div className="flex items-center gap-2 sm:gap-3">
+            {canManage && (
               <button
                 type="button"
                 onClick={handleEndSession}
@@ -1304,10 +1292,19 @@ export function OpenPlayManagerClient({
               </button>
             )}
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Badge variant="muted" className="text-xs font-black uppercase">
+              Completed Session
+            </Badge>
+          </div>
+        )}
+      </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-          <div className="min-w-0 flex-1">
+      {/* Session Header Card */}
+      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
             <SessionNameEditor
               groupId={groupId}
               sessionId={session.id}
@@ -1327,6 +1324,18 @@ export function OpenPlayManagerClient({
               ) : null}
             </p>
           </div>
+          {(isOrganizer || isHost) && (
+            <div className="shrink-0">
+              <SessionOptionsMenu
+                groupId={groupId}
+                sessionId={session.id}
+                sessionName={sessionName}
+                sessionDate={session.startedAt}
+                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                onRenamed={(newName) => setSessionName(newName)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Quick Stats & Summary - only rendered when session has ended */}

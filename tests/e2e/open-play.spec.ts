@@ -362,7 +362,8 @@ test.describe("Open Play Workflow", () => {
     expect(duplicatedSessionUrl).not.toBe(sessionUrl);
 
     // Verify duplicated session has active Open Play status, attendees, and current date in title
-    await expect(page.locator("text=In Progress")).toBeVisible();
+    await expect(page.locator("button[data-testid='end-session-button']")).toBeVisible();
+    await expect(page.locator("text=In Progress")).toHaveCount(0);
     const todayFormattedMonth = await page.evaluate(() => new Date().toLocaleDateString("en-US", { month: "short" }));
     await expect(page.locator("h1")).toContainText(todayFormattedMonth);
     const attendeesList = page.locator("[data-testid='open-play-attendees']");

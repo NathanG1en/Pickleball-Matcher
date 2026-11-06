@@ -108,7 +108,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("whitespace-nowrap");
   });
 
-  it("removes the open play label and renders the three dots in the top right corner of the header box", () => {
+  it("renders the three dots options menu inside the session card matching normal sessions", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -127,7 +127,7 @@ describe("OpenPlayManagerClient Component", () => {
     // Verify Open Play badge is not rendered
     expect(html).not.toContain("bg-black text-[#ccff00]");
 
-    // Verify Session Options Menu button is rendered in the top header row
+    // Verify Session Options Menu button and title positions
     const optionsIndex = html.indexOf('data-testid="session-options-menu-button"');
     const sessionNameIndex = html.indexOf("Open Play Session");
     const endSessionIndex = html.indexOf('data-testid="end-session-button"');
@@ -136,14 +136,18 @@ describe("OpenPlayManagerClient Component", () => {
     expect(sessionNameIndex).toBeGreaterThan(-1);
     expect(endSessionIndex).toBeGreaterThan(-1);
 
-    // Three dots menu in the top bar appears before the session title and end session button
-    expect(optionsIndex).toBeLessThan(sessionNameIndex);
-    expect(optionsIndex).toBeLessThan(endSessionIndex);
+    // End session is in the top header controls before the session card
+    expect(endSessionIndex).toBeLessThan(sessionNameIndex);
+    // Three dots menu is in the session card alongside/after the session title
+    expect(sessionNameIndex).toBeLessThan(optionsIndex);
 
     // End session button matches normal session styling
     expect(html).toContain("bg-[#ff6b6b]");
     expect(html).toContain("border-2 border-black font-black uppercase text-xs text-black");
     expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
+
+    // "In Progress" badge is removed
+    expect(html).not.toContain("In Progress");
   });
 
   it("renders Add Existing Group Member dropdown directly without a separate submit button", () => {
@@ -517,6 +521,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).not.toContain('data-testid="live-sync-indicator"');
     expect(html).not.toContain("Live");
     expect(html).not.toContain("Checked In");
+    expect(html).not.toContain("In Progress");
   });
 });
 
