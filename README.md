@@ -1,175 +1,217 @@
-# Pickleball Matchmaker (MVP)
+# Pickleball Matchmaker
 
-A mobile-first, high-contrast web application designed for recurring recreational pickleball groups (12–24 players, 2–4 courts). It generates fair, varied doubles pairings in under 500 ms while running on phones outdoors in bright sunlight.
+**Fair rounds. Fresh partners. Less time organizing, more time playing.**
 
----
+A mobile-first app for pickleball clubs and recurring groups. Manage attendance, generate varied court lineups, record scores, and follow player ratings and partner chemistry across sessions.
 
-## Key Features
+![Pickleball Matchmaker home screen with account and quick-session options](docs/screenshots/home.webp)
 
-- **Fair Matchmaking Engine**: Enforces strict lexicographic fairness:
-  1. Sit equity (no player sits twice until all eligible players have sat).
-  2. Court utilization (maximize active courts).
-  3. Partnership variation (minimize repeat partners).
-  4. Opponent variation (minimize repeat opponents).
-  5. Competitive balance (even matches based on dynamic skill ratings).
-- **Outdoor-Optimized Mobile UI**: High-contrast, large tap targets, dark surface theme (`slate-950`), sticky action bar within thumb reach, and Atkinson Hyperlegible typography.
-- **PIN-Based Group Security**: Lightweight 4-digit PIN for group organizers; no email or OAuth required on court. Protected by bcrypt, rate limiting, and signed JWT cookies.
-- **Safe Corrections & Rating Replay**: Edit past scores, cancel matches, or undo rounds at any point. When a historical score changes, ratings are deterministically recomputed from the beginning.
-- **Installable PWA**: Web manifest and icons support "Add to Home Screen" on iOS and Android.
+[Explore the screens](#screenshots) · [Run locally](#run-locally) · [Testing](#testing) · [Technical docs](#technical-docs)
 
----
+## What you can do
 
-## Architecture & Tech Stack
+- **Run organized sessions.** Choose up to six courts, mark attendance, and generate lineups that weigh playing time, consecutive sit-outs, repeat partners and opponents, and skill balance.
+- **Keep the group flexible.** Mix doubles, singles, and 2v1 courts; adjust attendance or court sizes as the session changes. Rated doubles affect Elo; singles and 2v1 games in normal sessions keep scores without changing ratings.
+- **Keep friends together.** Set session-specific Stay Together pairs, or let members request a partner for organizer approval. Friends generally play and sit together, with an exception when only one bench spot is available.
+- **Save scores and keep moving.** Save individual courts, batch-save results, or use **Save & Start** to save scores and start the next round in one action. Preview upcoming lineups before advancing.
+- **Correct mistakes.** Edit historical scores, cancel matches, or undo a round. Rating and chemistry replay keeps derived history consistent with corrected results.
+- **Choose another format.** Use Open Play for flexible game submissions, tournaments for bracket play, or a temporary quick session without creating an account.
+- **Follow progress.** Player profiles show ratings, results, and partner chemistry. Completed sessions include highlights and a player-by-player summary.
+- **Share the organizing.** Group hosts can appoint additional organizers. Public/private group and profile settings control visibility.
 
-- **Framework**: Next.js 16 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS v4, mobile-first responsive layout, Atkinson Hyperlegible typography
-- **Database**: PostgreSQL (Supabase or standard Postgres), `postgres.js` client
-- **Testing**:
-  - **Vitest**: Unit tests, component tests, and Monte Carlo fairness simulations
-  - **Playwright**: End-to-end acceptance workflows at mobile and desktop viewports
-  - **@axe-core/playwright**: Automated accessibility audits (WCAG AA)
+The interface uses high contrast, large controls, a thumb-reachable action bar, and small pickleball animations with reduced-motion support.
 
----
+## Screenshots
 
-## Authentication & Security Model
+Captured from a local instance with a fictional **Riverside Pickleball Club** and demo accounts. No production player data is shown. Click a screenshot to view it at full size.
 
-1. **Group Creation**:
-   - Creating a group at `/setup` requires a secret `SETUP_TOKEN` defined in the server environment.
-   - The organizer sets the group name and a 4-digit PIN.
-2. **PIN Authentication**:
-   - Organizers sign in at `/g/[groupId]/login` with their 4-digit PIN.
-   - PINs are hashed using `bcryptjs` (salt rounds: 10).
-   - Rate limiting tracks failed attempts by group and client fingerprint in Postgres; excessive attempts trigger temporary lockout.
-3. **Session Cookies**:
-   - Organizers receive an `organizer_session` HTTP-only, SameSite=Lax JWT cookie signed with HS256 (`ORGANIZER_SESSION_SECRET`).
-   - The token payload binds the group ID, expiration, and a hash of the client's user-agent fingerprint (`ORGANIZER_FINGERPRINT_SECRET`).
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Group dashboard</strong><br>
+      Manage the roster, search and filter players, and organize your club.<br><br>
+      <a href="docs/screenshots/group-dashboard.webp"><img src="docs/screenshots/group-dashboard.webp" alt="Riverside club dashboard with a searchable roster and player ratings" width="100%"></a>
+    </td>
+    <td width="50%" valign="top">
+      <strong>Session setup</strong><br>
+      Choose court sizes and select the players who are attending.<br><br>
+      <a href="docs/screenshots/session-setup.webp"><img src="docs/screenshots/session-setup.webp" alt="Session setup with two doubles courts and twelve selected players" width="100%"></a>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>Round lineups</strong><br>
+      Review teams, sitting players, and the matchmaking variety setting.<br><br>
+      <a href="docs/screenshots/round-lineup.webp"><img src="docs/screenshots/round-lineup.webp" alt="Generated doubles lineups on two courts with four players sitting out" width="100%"></a>
+    </td>
+    <td valign="top">
+      <strong>Score entry</strong><br>
+      Enter court results and save them together before starting the next round.<br><br>
+      <a href="docs/screenshots/score-entry.webp"><img src="docs/screenshots/score-entry.webp" alt="Organizer score entry with two court results and Save All and Save and Start controls" width="100%"></a>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>Player profile</strong><br>
+      See your rating, partner chemistry, results, and groups.<br><br>
+      <a href="docs/screenshots/player-profile.webp"><img src="docs/screenshots/player-profile.webp" alt="Demo player profile showing current rating, chemistry spotlight, and match statistics" width="100%"></a>
+    </td>
+    <td valign="top">
+      <strong>Session recap</strong><br>
+      Look back at highlights and each player's results.<br><br>
+      <a href="docs/screenshots/session-summary.webp"><img src="docs/screenshots/session-summary.webp" alt="Completed session showing game totals and closest-game, wins, and partnership highlights" width="100%"></a>
+    </td>
+  </tr>
+</table>
 
----
+<details>
+<summary><strong>On your phone</strong> — scoring with the action bar within reach</summary>
+<br>
+<img src="docs/screenshots/mobile-scoring.webp" alt="Mobile score entry with large score inputs and a sticky Save All and Save and Start action bar" width="390">
+</details>
 
-## Matchmaking Configuration & Tuning
+## A typical club session
 
-Matchmaking weights and penalties are defined in `src/lib/matchmaking/config.ts`:
+1. Create an account and a group, then add registered players or guests.
+2. Start a normal session, select attendees and courts, and optionally pair friends with Stay Together.
+3. Review the proposed lineup, reshuffle or make manual changes, then confirm the round.
+4. Enter results and use **Save & Start** to advance. Adjust attendance as people arrive or leave.
+5. End the session and review its highlights, results, and rating changes.
 
-```ts
-export const DEFAULT_MATCHMAKING_CONFIG: MatchmakingConfig = {
-  weights: {
-    repeatPartnerSession: 1_000,
-    repeatOpponentSession: 100,
-    ratingImbalance: 10,
-    repeatPartnerLifetime: 5,
-    repeatOpponentLifetime: 1,
-  },
-  // Recency decay, partner/opponent limits, and court priorities
-};
-```
+## Run locally
 
-Monte Carlo simulation benchmarks in `tests/matchmaking/simulation.test.ts` verify that:
-- Every round is computed in < 500 ms (median < 50 ms).
-- Sit variance across players remains $\le 1$ game.
-- Duplicate partnerships are minimized over multi-round sessions.
+### Prerequisites
 
----
+- Node.js **22.12.0 or newer** and npm.
+- PostgreSQL. A local Docker container works; a separate Neon development branch also works.
 
-## Local Development Setup
-
-### 1. Prerequisites
-
-- **Node.js**: >= 22.12.0
-- **Docker**: For running the local PostgreSQL container (or Supabase CLI)
-
-### 2. Start PostgreSQL
-
-Run the Postgres container on port `54322`:
-
-```bash
-docker run -d \
-  --name pickleball-test-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_HOST_AUTH_METHOD=trust \
-  -e POSTGRES_DB=postgres \
-  -p 54322:5432 \
-  postgres:17-alpine
-```
-
-*(Alternatively, use `npx supabase start` if you prefer the Supabase CLI).*
-
-### 3. Configure Environment Variables
-
-Copy `.env.example` to `.env.local`:
+### 1. Install dependencies
 
 ```bash
+npm install
 cp .env.example .env.local
 ```
 
-Example configuration:
+### 2. Start a local database
 
-```env
-DATABASE_URL=postgresql://postgres@127.0.0.1:54322/postgres
-ORGANIZER_SESSION_SECRET=local-dev-organizer-secret-at-least-32-chars
-ORGANIZER_FINGERPRINT_SECRET=local-dev-fingerprint-secret-at-least-32-chars
-SESSION_COOKIE_SECURE=false
-SETUP_TOKEN=test-setup-token
+If you already have a development database, use its connection string instead. Otherwise:
+
+```bash
+docker run -d \
+  --name pickleball-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=local-dev-only \
+  -e POSTGRES_DB=pickleball \
+  -p 127.0.0.1:54322:5432 \
+  postgres:17-alpine
 ```
 
-### 4. Run Migrations
+### 3. Configure `.env.local`
 
-Apply the database schema and rate limiting tables:
+Set `DATABASE_URL` to your development database. For the container above:
+
+```dotenv
+DATABASE_URL=postgresql://postgres:local-dev-only@127.0.0.1:54322/pickleball
+PLAYER_SESSION_SECRET=replace-with-an-independent-random-secret
+ORGANIZER_SESSION_SECRET=replace-with-an-independent-random-secret
+ORGANIZER_FINGERPRINT_SECRET=replace-with-an-independent-random-secret
+SESSION_COOKIE_SECURE=false
+```
+
+Generate a different secret for each secret variable; each must contain at least 32 bytes:
+
+```bash
+openssl rand -hex 32
+```
+
+Keep environment files and database credentials out of Git. Use secure cookies (`SESSION_COOKIE_SECURE=true`) for HTTPS deployments. `.env.example` also includes `SETUP_TOKEN` for legacy setup compatibility; current group creation uses an authenticated player account.
+
+### 4. Migrate and start
 
 ```bash
 npm run db:migrate
-```
-
-To reset the database cleanly:
-
-```bash
-npm run db:reset
-```
-
-### 5. Start the Dev Server
-
-```bash
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) to view the application.
+Open [localhost:3000](http://localhost:3000), create a player account, and create your first group. Its creator becomes the host and is automatically included in the roster.
 
----
+## Testing
 
-## Verification & Testing Gates
-
-Run the verification suite across all layers:
+Fast checks:
 
 ```bash
-# 1. Code Quality & Formatting
 npm run lint
-
-# 2. Type Checking
 npm run typecheck
-
-# 3. Unit & Component Tests
 npm test
-
-# 4. Matchmaking Fairness & Simulation Benchmarks
 npm run test:simulation
+```
 
-# 5. Database & Server Action Integration Tests
+Database integration and browser tests require a **separate test database**. For the disposable local container above:
+
+```bash
+export DATABASE_URL='postgresql://postgres:local-dev-only@127.0.0.1:54322/pickleball'
+export TEST_DATABASE_URL='postgresql://postgres:local-dev-only@127.0.0.1:54322/test_db'
+export DISPOSABLE_POSTGRES_TESTS=1
+
+node scripts/create-test-db.js
+npm run db:migrate:test
+npx playwright install chromium
+
 npm run test:integration
-
-# 6. Production Build Verification
-npm run build
-
-# 7. End-to-End Acceptance Tests (Playwright)
 npm run test:e2e
 ```
 
----
+These suites create and modify test data; keep them off production and shared development databases. The browser suite covers desktop and mobile Chrome, organizer permissions, corrections, accessibility, failure recovery, and concurrent submissions. Its local server defaults to port **3100**.
 
-## CI / CD Pipeline
+The maintenance suite creates its own temporary database on an explicitly supplied local PostgreSQL server:
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs on every push and pull request:
-- Starts a PostgreSQL 17 service container on port `54322`.
-- Runs ESLint, TypeScript check, and Vitest unit/component tests.
-- Executes the Monte Carlo simulation suite to ensure matchmaking latency and fairness criteria.
-- Applies database migrations and runs integration tests.
-- Builds the production Next.js bundle.
-- Runs Playwright end-to-end acceptance and accessibility tests on Mobile and Desktop Chrome.
+```bash
+MAINTENANCE_TEST_ADMIN_URL="$DATABASE_URL" npm run test:maintenance
+```
+
+[GitHub Actions CI](.github/workflows/ci.yml) defines the complete lint, typecheck, unit, simulation, integration, maintenance, build, and browser gates.
+
+## Stack and project layout
+
+| Layer | Technology |
+| --- | --- |
+| Application | Next.js 16 App Router, React 19, TypeScript |
+| Styling | Tailwind CSS 4, Barlow Condensed, Atkinson Hyperlegible |
+| Persistence | PostgreSQL / Neon with `postgres.js` |
+| Authentication | Player accounts, bcrypt password hashes, signed HTTP-only session cookies |
+| Hosting | Cloudflare Workers through OpenNext |
+| Verification | Vitest, Playwright, axe accessibility checks |
+
+```text
+src/app/                 Routes and server actions
+src/components/          Shared UI and session screens
+src/lib/domain/          Session workflows, ratings, and chemistry replay
+src/lib/matchmaking/     Lineup generation, fairness scoring, and Stay Together
+src/lib/db/              PostgreSQL repositories
+migrations/             Database migrations
+scripts/maintenance/    Controlled starting-rating corrections
+tests/                  Unit, component, simulation, integration, and E2E suites
+docs/                   Design notes, operations guides, and benchmarks
+```
+
+Matchmaking weights and the search iteration budget live in [`src/lib/matchmaking/config.ts`](src/lib/matchmaking/config.ts). Application request latency also includes database and rendering work; algorithm timings alone do not measure the full organizer experience.
+
+## Deployment
+
+The repository includes an OpenNext/Cloudflare Workers configuration and a [deployment workflow](.github/workflows/deploy-cloudflare.yml) triggered by pushes to `development`.
+
+```bash
+npm run build:worker     # Build the Worker bundle
+npm run preview:worker   # Build and preview with Wrangler
+npm run deploy:worker    # Build and deploy with Wrangler
+```
+
+Configure the target database and authentication secrets in the deployment environment, and apply any pending migrations to that database. The deployment workflow and CI workflow run separately; the deploy workflow does not wait for the CI release gate.
+
+## Technical docs
+
+- [Elo rating system and displayed ratings](docs/elo-rating-system.md)
+- [Partner chemistry and privacy](docs/synergy-and-privacy-system.md)
+- [Controlled starting-rating maintenance](docs/operations/rating-maintenance.md)
+- [Organizer performance benchmarks](docs/benchmarks/2026-10-31-current-club-profile.md)
+- [Design specifications](docs/superpowers/specs/) and [implementation plans](docs/superpowers/plans/)
