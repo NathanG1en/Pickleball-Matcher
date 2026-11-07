@@ -242,8 +242,8 @@ export function LinkGuestModal({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-sm font-black truncate">{result.name}</span>
-                        <span className="rounded bg-neutral-100 border border-neutral-300 px-1 py-0.5 text-[10px] font-bold text-neutral-700">
-                          @{result.username}
+                        <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                          (@{result.username})
                         </span>
                         {result.isRestricted && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">

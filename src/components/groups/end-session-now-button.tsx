@@ -61,7 +61,14 @@ export function EndSessionNowButton({
         aria-label="End session"
         className="flex items-center justify-center text-center w-full h-full py-2 sm:py-3.5 px-2 sm:px-3 rounded-xl bg-[#ff6b6b] hover:bg-[#ff5252] text-black border-2 border-black font-display text-xs sm:text-sm font-black uppercase tracking-wider leading-tight shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
-        {isPending ? "Ending..." : "End Session"}
+        {isPending ? (
+          "Ending..."
+        ) : (
+          <>
+            <span className="sm:hidden">End</span>
+            <span className="hidden sm:inline">End Session</span>
+          </>
+        )}
       </button>
       {error && (
         <p role="alert" className="text-[10px] font-bold text-red-600 mt-1 text-center">

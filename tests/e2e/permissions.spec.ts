@@ -96,7 +96,7 @@ test.describe("Permissions and Security Workflow", () => {
     // Guest Taylor should appear in the roster
     const guestItem = page.locator("li").filter({ hasText: "Guest Taylor" });
     await expect(guestItem).toBeVisible();
-    await expect(guestItem).toContainText("Rating: 2 (");
+    await expect(guestItem).toContainText(/2(\.0)?/);
 
     // Open options dropdown for Guest Taylor
     await guestItem.locator("summary").click();

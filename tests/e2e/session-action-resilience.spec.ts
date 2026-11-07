@@ -347,7 +347,7 @@ test("combined Save & Start reconciles versions across consecutive rounds withou
       const response = page.waitForResponse(response => response.request().method() === "POST" && Boolean(response.request().headers()["next-action"]));
       await page.getByTestId("save-and-start-next-round-button").click();
       expect((await response).ok()).toBe(true);
-      await expect(page.getByRole("heading", { name: `Round ${roundNumber} Results`, exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: `Round ${roundNumber}`, exact: true })).toBeVisible();
       await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
       await expect(page.getByRole("alert").filter({ hasText: /session changed|round changed|failed/i })).toHaveCount(0);
       const state = await scopedState(fixture);
@@ -356,6 +356,6 @@ test("combined Save & Start reconciles versions across consecutive rounds withou
       expect(state.rounds.filter(round => round.status === "started")).toHaveLength(1);
     }
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Round 3 Results", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 3", exact: true })).toBeVisible();
   } finally { await sql.end(); }
 });

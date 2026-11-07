@@ -140,8 +140,9 @@ describe("PastSessionsList Component", () => {
       />
     );
 
-    // Expanded content container exists
+    // Expanded content container exists with smooth entrance animation
     expect(html).toContain('data-testid="expanded-session-content-ses_completed_1"');
+    expect(html).toContain("session-summary-expand");
 
     // Sized to fit 5 games with scrolling
     expect(html).toContain('data-testid="session-games-scroll-container-ses_completed_1"');
@@ -183,5 +184,67 @@ describe("PastSessionsList Component", () => {
     expect(html).toContain("Fall Championship · Oct 10, 2026");
     expect(html).toContain('aria-label="Fall Championship · Oct 10, 2026"');
   });
+
+  it("renders open play sessions with sequential games and no round or court labels", () => {
+    const openPlaySession: PastSessionData = {
+      id: "ses_open_play_1",
+      courtCount: 1,
+      currentRoundNumber: 1,
+      status: "completed",
+      startedAt: "2026-10-10T14:00:00.000Z",
+      endedAt: "2026-10-10T15:30:00.000Z",
+      totalGames: 2,
+      type: "open_play",
+      rounds: [
+        {
+          id: "rnd_op_1",
+          roundNumber: 1,
+          status: "started",
+          sittingNames: [],
+          matches: [
+            {
+              id: "m_op_1",
+              courtNumber: 1,
+              team1Names: ["Alice", "Bob"],
+              team2Names: ["Dave", "Eve"],
+              team1Score: 11,
+              team2Score: 9,
+              status: "completed",
+            },
+            {
+              id: "m_op_2",
+              courtNumber: 1,
+              team1Names: ["Alice", "Dave"],
+              team2Names: ["Bob", "Eve"],
+              team1Score: 8,
+              team2Score: 11,
+              status: "completed",
+            },
+          ],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <PastSessionsList
+        groupId={groupId}
+        sessions={[openPlaySession]}
+        initialExpandedSessionIds={{ ses_open_play_1: true }}
+      />
+    );
+
+    // Header says games, not courts/rounds
+    expect(html).toContain("2 games");
+    expect(html).not.toContain("1 court");
+
+    // Matches rendered with Game 1 and Game 2
+    expect(html).toContain("Game 1");
+    expect(html).toContain("Game 2");
+
+    // Does not render Round 1 banner or Court labels
+    expect(html).not.toContain("Round 1");
+    expect(html).not.toContain("Court 1");
+  });
 });
+
 

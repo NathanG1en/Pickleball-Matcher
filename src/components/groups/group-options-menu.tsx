@@ -84,13 +84,13 @@ export function GroupOptionsMenu({
         onClick={() => setMenuOpen((prev) => !prev)}
         aria-label="Group options"
         aria-expanded={menuOpen}
-        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5"
+        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5"
       >
         ···
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-11 z-30 min-w-44 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1">
+        <div className="absolute right-0 top-8 sm:top-11 z-30 min-w-44 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1">
           {isOrganizer ? (
             <button
               type="button"

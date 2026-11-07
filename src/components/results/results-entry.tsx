@@ -72,6 +72,7 @@ export function ResultsEntryView({
   onSaveAndStartNextRound,
   upcomingProposal,
   playerNames = {},
+  confirmMatchups = false,
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -124,45 +125,44 @@ export function ResultsEntryView({
   const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
 
   return (
-    <div className="results-entry-view space-y-6 pb-28 text-black">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
-            {canManage ? "Score Entry" : "Live Games"}
-          </span>
-          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
-            Round {roundNumber} {canManage ? "Results" : "Matchups"}
+    <div className="results-entry-view space-y-4 text-black">
+      <div className="flex items-center justify-between gap-2 flex-nowrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black truncate shrink-0">
+            Round {roundNumber}
           </h1>
+          {!canManage && (
+            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[1px_1px_0px_0px_#000] shrink-0">
+              Live Games
+            </span>
+          )}
         </div>
-        <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+        {canManage && (onAddGame || onReshuffleRound) && (
           <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
-            {canManage && onAddGame && (
+            {onAddGame && (
               <button
                 type="button"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
-                <span className="whitespace-nowrap">+ Add Game</span>
+                <span>+ Add Game</span>
               </button>
             )}
-            {canManage && onReshuffleRound && (
+            {onReshuffleRound && (
               <button
                 type="button"
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
-                <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">Reshuffle</span>
+                <ShuffleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                <span>Reshuffle</span>
               </button>
             )}
           </div>
-          <p className="text-xs font-bold text-neutral-600 hidden sm:block">
-            {canManage ? "Enter non-tied scores (e.g. 11–9)" : "Current games and live scores"}
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Sitting Out Action Bar */}
@@ -249,7 +249,6 @@ export function ResultsEntryView({
                 <div>
                   {isCancelled && <Badge variant="muted">{isSingles ? "Unrecorded" : "Cancelled"}</Badge>}
                   {isCompleted && <Badge variant="success">Final</Badge>}
-                  {match.status === "pending" && <Badge variant="warning">In Play</Badge>}
                 </div>
               </div>
 
@@ -413,7 +412,11 @@ export function ResultsEntryView({
                     startFn?.();
                   }}
                   data-testid="save-and-start-next-round-button"
-                  title={`Save all scores and start Round ${roundNumber + 1}`}
+                  title={
+                    confirmMatchups
+                      ? `Save all scores and review Round ${roundNumber + 1} matchups`
+                      : `Save all scores and start Round ${roundNumber + 1}`
+                  }
                   className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
                   {isGeneratingRound ? (
@@ -422,10 +425,10 @@ export function ResultsEntryView({
                     <>
                       <span className="sr-only">Next Round</span>
                       <span className="sm:hidden">
-                        Save &amp; Start R{roundNumber + 1}
+                        {confirmMatchups ? `Review R${roundNumber + 1}` : `Save & Start R${roundNumber + 1}`}
                       </span>
                       <span className="hidden sm:inline">
-                        Save &amp; Start Next Round
+                        {confirmMatchups ? "Review Next Round" : "Save & Start Next Round"}
                       </span>
                     </>
                   )}

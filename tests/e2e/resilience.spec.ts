@@ -44,7 +44,7 @@ test.describe("Resilience and Safe Drafts", () => {
     // 4. Start Round 1
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 1 Results");
+    await expect(page.locator("h1")).toContainText("Round 1");
 
     // Accessibility check on active score entry view
     const scoreEntryA11y = await new AxeBuilder({ page })
@@ -75,7 +75,7 @@ test.describe("Resilience and Safe Drafts", () => {
     // 6. Stale second tab handling
     const page2 = await context.newPage();
     await page2.goto(sessionUrl);
-    await expect(page2.locator("h1")).toContainText("Round 1 Results");
+    await expect(page2.locator("h1")).toContainText("Round 1");
 
     // Tab 1 advances to Round 2
     await page.getByTestId("save-and-start-next-round-button").click();
@@ -104,8 +104,8 @@ test("guest roster form has accessible names and passes an accessibility audit",
   expect(audit.violations).toEqual([]);
 
   for (const [index, guest] of [
-    { name: "Intermediate Guest", tick: "3", rating: "Rating: 3 (Intermediate)" },
-    { name: "Competitive Guest", tick: "4", rating: "Rating: 4 (Competitive)" },
+    { name: "Intermediate Guest", tick: "3", rating: /3(\.0)?/ },
+    { name: "Competitive Guest", tick: "4", rating: /4(\.0)?/ },
   ].entries()) {
     await page.locator(`[data-testid='rating-tick-${guest.tick}']`).click();
     await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill(guest.name);

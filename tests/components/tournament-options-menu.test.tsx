@@ -32,6 +32,7 @@ describe("TournamentOptionsMenu Component", () => {
     expect(html).toContain("···");
     expect(html).toContain('aria-label="Tournament options"');
     expect(html).toContain('data-testid="tournament-options-menu-button"');
+    expect(html).toContain("h-7 w-7");
   });
 
   it("supports custom dataTestId", () => {

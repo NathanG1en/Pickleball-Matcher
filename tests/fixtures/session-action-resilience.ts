@@ -127,10 +127,10 @@ export async function prepareAction(page: Page, action: SessionAction) {
 
 export async function waitForAction(page: Page, action: SessionAction) {
   if (action === "next") {
-    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
   } else {
-    await expect(page.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-testid^="court-match-"]')).toHaveCount(3);
     if (action === "save") for (let court = 1; court <= 3; court++) {
       await expect(page.getByTestId(`court-match-${court}`)).toContainText("Final", { timeout: 30_000 });

@@ -38,7 +38,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 4. Start Round 1
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 1 Results");
+    await expect(page.locator("h1")).toContainText("Round 1");
 
     // 5. Test cancelling a match on Court 2
     await page.locator("[data-testid='court-match-2'] button:has-text('Cancel match')").click();
@@ -83,7 +83,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 7. Advance to Round 2
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await page.getByTestId("save-and-start-next-round-button").click();
-    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
     page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("reshuffle-matchups-button").click();
     await expect(page.locator("h1")).toContainText("Round 2");
@@ -91,7 +91,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 8. Test reshuffling in-progress round matchups and round undo
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
+    await expect(page.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     // Click Reshuffle Matchups during in-progress round
     page.once("dialog", (dialog) => dialog.accept());
@@ -115,13 +115,14 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(confirmStartBtn).toBeEnabled({ timeout: 15000 });
     await confirmStartBtn.click();
     await startRoundPromise;
-    await expect(page.locator("h1")).toContainText("Round 2 Results", { timeout: 15000 });
+    await expect(page.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     // Click Undo Round 2
     page.once("dialog", (dialog) => dialog.accept());
     const undoPromise = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.status() === 200
     );
+    await page.getByTestId("session-options-menu-button").click();
     await page.click("button:has-text('Undo Round 2')");
     await undoPromise;
     // After undo, should be back to proposal or previous state
@@ -193,7 +194,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // 3. Start Round 1
     await page.click("button:has-text('Start Round')");
     await page.click("button:has-text('Confirm & Start')");
-    await expect(page.locator("h1")).toContainText("Round 1 Results");
+    await expect(page.locator("h1")).toContainText("Round 1");
 
     // 4. Cancel match on Court 2
     await page.locator("[data-testid='court-match-2'] button:has-text('Cancel match')").click();
@@ -282,7 +283,7 @@ test("host synergy follows current partners after manual swaps and new proposals
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
   await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
   await page.getByTestId("save-and-start-next-round-button").click();
-  await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("reshuffle-matchups-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
@@ -362,9 +363,9 @@ test("custom lineup survives refresh and starts with the saved assignments", asy
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
-  await expect(page.locator("h1")).toContainText("Round 1 Results");
+  await expect(page.locator("h1")).toContainText("Round 1");
   await page.reload();
-  await expect(page.locator("h1")).toContainText("Round 1 Results");
+  await expect(page.locator("h1")).toContainText("Round 1");
   const savedTeam = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).locator("../..");
   await expect(savedTeam).toHaveCount(1);
   for (const name of edited[0]) await expect(savedTeam).toContainText(name);
@@ -614,7 +615,7 @@ test("normal score corrections refresh chemistry without adding shared games", a
   await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("0");
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
   await page.getByTestId("save-and-start-next-round-button").click();
-  await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("reshuffle-matchups-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();

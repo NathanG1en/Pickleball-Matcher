@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -23,7 +23,7 @@ import { EditGuestModal } from "./edit-guest-modal";
 import { MergeGuestModal } from "./merge-guest-modal";
 import { ConfirmGroupNameModal } from "./confirm-group-name-modal";
 import { ConfirmDialog, RatingSlider } from "@/components/ui";
-import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
+import { formatDupr } from "@/lib/domain/rating-display";
 import {
   SearchIcon,
   UserPlusIcon,
@@ -31,6 +31,8 @@ import {
   HandshakeIcon,
   CheckIcon,
   PinIcon,
+  ChevronDownIcon,
+  XIcon,
 } from "@/components/ui/icons";
 import {
   usePinnedPlayerIds,
@@ -42,6 +44,30 @@ export function getRemoveGuestConfirmationMessage(name: string, gamesPlayed: num
   return `Are you sure you want to remove "${name}"? They have played ${gamesPlayed} ${gamesPlayed === 1 ? "game" : "games"}.`;
 }
 
+export const DISMISS_GUEST_DESC_STORAGE_KEY = "pickleball_dismiss_guest_desc";
+
+function getGuestDescDismissedSnapshot(): boolean {
+  try {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      return window.sessionStorage.getItem(DISMISS_GUEST_DESC_STORAGE_KEY) === "true";
+    }
+    if (typeof globalThis !== "undefined" && globalThis.sessionStorage) {
+      return globalThis.sessionStorage.getItem(DISMISS_GUEST_DESC_STORAGE_KEY) === "true";
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function subscribeGuestDescDismissed(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("pickleball_guest_desc_dismissed", callback);
+  return () => {
+    window.removeEventListener("pickleball_guest_desc_dismissed", callback);
+  };
+}
+
 export function GroupOrganizersPanel({
   groupId,
   groupName = "",
@@ -49,6 +75,9 @@ export function GroupOrganizersPanel({
   organizers,
   isHost,
   isOrganizer = false,
+  initialAddMode = "search",
+  initialSearchResults = [],
+  initialSearchUsername = "",
 }: {
   groupId: string;
   groupName?: string;
@@ -56,6 +85,9 @@ export function GroupOrganizersPanel({
   organizers: readonly GroupOrganizerRecord[];
   isHost: boolean;
   isOrganizer?: boolean;
+  initialAddMode?: "search" | "guest";
+  initialSearchResults?: readonly SearchPlayerResult[];
+  initialSearchUsername?: string;
 }) {
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
@@ -76,6 +108,22 @@ export function GroupOrganizersPanel({
   const [sortOption, setSortOption] = useState<RosterSortOption>("name_asc");
   const [filterType, setFilterType] = useState<RosterFilterType>("all");
   const [filterGender, setFilterGender] = useState<RosterFilterGender>("all");
+  const isGuestDescDismissed = useSyncExternalStore(
+    subscribeGuestDescDismissed,
+    getGuestDescDismissedSnapshot,
+    getGuestDescDismissedSnapshot
+  );
+
+  const handleDismissGuestDesc = () => {
+    try {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(DISMISS_GUEST_DESC_STORAGE_KEY, "true");
+        window.dispatchEvent(new Event("pickleball_guest_desc_dismissed"));
+      }
+    } catch {
+      // sessionStorage unavailable
+    }
+  };
 
   const pinnedCount = useMemo(
     () => players.filter((p) => pinnedPlayerIds.has(p.id)).length,
@@ -156,14 +204,14 @@ export function GroupOrganizersPanel({
   }, [players, organizers, pinnedPlayerIds, searchQuery, filterType, filterGender, sortOption]);
 
   // Mode switch: "search" | "guest"
-  const [addMode, setAddMode] = useState<"search" | "guest">("search");
+  const [addMode, setAddMode] = useState<"search" | "guest">(initialAddMode);
   const [isAddOpen, setIsAddOpen] = useState(true);
 
   // Search mode state
-  const [username, setUsername] = useState("");
-  const [searchResults, setSearchResults] = useState<readonly SearchPlayerResult[]>([]);
+  const [username, setUsername] = useState(initialSearchUsername);
+  const [searchResults, setSearchResults] = useState<readonly SearchPlayerResult[]>(initialSearchResults);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchHasRun, setSearchHasRun] = useState(false);
+  const [searchHasRun, setSearchHasRun] = useState(initialSearchResults.length > 0);
   const [addingAccountId, setAddingAccountId] = useState<string | null>(null);
   const [lookupPending, setLookupPending] = useState(false);
 
@@ -417,9 +465,13 @@ export function GroupOrganizersPanel({
               onClick={() => setIsAddOpen((prev) => !prev)}
               aria-expanded={isAddOpen}
               aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
-              className="rounded-lg border-2 border-black bg-neutral-100 px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shrink-0"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-neutral-100 hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shrink-0 shadow-[1px_1px_0px_0px_#000]"
             >
-              {isAddOpen ? "Collapse" : "Expand"}
+              <ChevronDownIcon
+                className={`h-4 w-4 text-black transition-transform duration-200 ${
+                  isAddOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
           </div>
 
@@ -461,9 +513,9 @@ export function GroupOrganizersPanel({
 
           {addMode === "search" ? (
             <div className="relative">
-              <form onSubmit={addPlayerByUsername} className="flex gap-2">
+              <form onSubmit={addPlayerByUsername} className="relative">
                 <label htmlFor="roster-player-username" className="sr-only">Look up player by username</label>
-                <div className="relative flex-1">
+                <div className="relative">
                   <input
                     id="roster-player-username"
                     required
@@ -482,6 +534,7 @@ export function GroupOrganizersPanel({
                     }}
                     placeholder="Find player by username"
                     autoComplete="off"
+                    disabled={lookupPending}
                     className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                   {isSearching && (
@@ -490,29 +543,15 @@ export function GroupOrganizersPanel({
                     </span>
                   )}
                 </div>
-                <button
-                  type="submit"
-                  disabled={lookupPending}
-                  className="rounded-lg border-2 border-black bg-black px-3 py-2 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
-                >
-                  {lookupPending ? "Adding…" : "Add"}
-                </button>
               </form>
 
               {/* Live Search Results Dropdown */}
               {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
                 <div className="mt-2 rounded-xl border-2 border-black bg-white p-2 shadow-[3px_3px_0px_0px_#000] space-y-2">
-                  <div className="flex items-center justify-between px-1">
+                  <div className="px-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                       Public Accounts ({searchResults.length})
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setSearchResults([])}
-                      className="text-[10px] font-bold text-neutral-400 hover:text-black cursor-pointer"
-                    >
-                      Dismiss
-                    </button>
                   </div>
                   {searchResults.length === 0 ? (
                     <p className="px-2 py-1 text-xs font-bold text-neutral-500">
@@ -525,8 +564,8 @@ export function GroupOrganizersPanel({
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-sm font-black truncate">{result.name}</span>
-                              <span className="rounded bg-neutral-100 border border-neutral-300 px-1 py-0.5 text-[10px] font-bold text-neutral-700">
-                                @{result.username}
+                              <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                                (@{result.username})
                               </span>
                               {result.isRestricted && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">
@@ -580,9 +619,26 @@ export function GroupOrganizersPanel({
             </div>
           ) : (
             <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-white/70 p-3 shadow-[2px_2px_0px_0px_#000]">
-              <p className="text-[11px] font-bold text-neutral-600">
-                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
-              </p>
+              {!isGuestDescDismissed && (
+                <div
+                  data-testid="guest-description-banner"
+                  className="flex items-center justify-between gap-2 p-2 bg-neutral-100/90 rounded-lg border border-neutral-300 text-neutral-700"
+                >
+                  <p className="text-[11px] font-bold text-neutral-600 leading-tight">
+                    Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDismissGuestDesc}
+                    aria-label="Dismiss guest description"
+                    title="Dismiss"
+                    data-testid="dismiss-guest-desc-button"
+                    className="p-1 text-neutral-400 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
+                  >
+                    <XIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-player-name"
@@ -640,7 +696,6 @@ export function GroupOrganizersPanel({
       >
         <div>
           <h2 className="font-display text-xl font-black uppercase">Roster ({players.length})</h2>
-          <p className="text-xs font-semibold text-neutral-700">Players and group organizers.</p>
         </div>
 
         {players.length > 0 && (
@@ -671,8 +726,8 @@ export function GroupOrganizersPanel({
 
           {/* Filter & Sort controls row */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 flex-1 min-w-[130px]">
-              <label htmlFor="roster-filter" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <label htmlFor="roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                 Filter:
               </label>
               <select
@@ -692,8 +747,8 @@ export function GroupOrganizersPanel({
             </div>
 
             {hasGenderData && (
-              <div className="flex items-center gap-1.5 min-w-[100px]">
-                <label htmlFor="roster-gender-filter" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+              <div className="flex items-center gap-1.5 min-w-[95px]">
+                <label htmlFor="roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Gender:
                 </label>
                 <select
@@ -704,15 +759,15 @@ export function GroupOrganizersPanel({
                   onChange={(e) => setFilterGender(e.target.value as RosterFilterGender)}
                   className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
                 >
-                  <option value="all">All</option>
+                  <option value="all">All Genders</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 flex-1 min-w-[130px]">
-              <label htmlFor="roster-sort" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <label htmlFor="roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                 Sort:
               </label>
               <select
@@ -780,45 +835,52 @@ export function GroupOrganizersPanel({
             const playerUsername = player.username || organizer?.username;
             const isPinned = pinnedPlayerIds.has(player.id);
             return (
-              <li key={player.id} className="flex items-center justify-between gap-3 py-3" data-testid={`roster-player-row-${player.name}`}>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-sm font-black">
+              <li key={player.id} className="flex items-center justify-between gap-3 py-2.5" data-testid={`roster-player-row-${player.name}`}>
+                <div className="min-w-0 flex-1">
+                  {/* Line 1: Name, Username, and Role */}
+                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                    <span className="truncate text-sm font-black text-black">
                       {player.name}
-                      {playerUsername ? (
-                        <>
-                          {" "}
-                          (
-                          <Link
-                            href={`/players/${encodeURIComponent(playerUsername)}`}
-                            className="underline hover:text-black cursor-pointer"
-                          >
-                            @{playerUsername}
-                          </Link>
-                          )
-                        </>
-                      ) : (
-                        ""
-                      )}
                     </span>
-                    {player.gender && (
-                      <span className="rounded border border-black/40 bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-800">
-                        {player.gender}
-                      </span>
+                    {playerUsername && (
+                      <Link
+                        href={`/players/${encodeURIComponent(playerUsername)}`}
+                        className="text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer"
+                      >
+                        @{playerUsername}
+                      </Link>
                     )}
                     {organizer && (
                       <span
-                        className={`rounded-full border border-black px-2 py-1 text-[9px] font-black uppercase ${
+                        className={`rounded-full border border-black px-2 py-0.5 text-[9px] font-black uppercase ${
                           organizer.isHost ? "bg-[#fde047]" : "bg-[#e0f2fe]"
-                        }`}
+                        } shrink-0`}
                       >
                         {organizer.isHost ? "Host" : "Organizer"}
                       </span>
                     )}
                   </div>
-                  <span className="block text-xs font-bold text-neutral-600">
-                    Rating: {formatDupr(player.rating)} ({getSkillTier(eloToDupr(player.rating)).name}) · {player.ratedGamesPlayed} games
-                  </span>
+
+                  {/* Line 2: Unified Muted Metadata Subline */}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-0.5">
+                    <span>
+                      <span className="hidden sm:inline">Rating: </span>
+                      {formatDupr(player.rating)}
+                    </span>
+                    {player.gender && (
+                      <>
+                        <span aria-hidden="true" className="text-neutral-400">·</span>
+                        <span className="uppercase text-[11px] font-bold text-neutral-600">
+                          <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
+                          <span className="hidden sm:inline">{player.gender}</span>
+                        </span>
+                      </>
+                    )}
+                    <span aria-hidden="true" className="text-neutral-400">·</span>
+                    <span>
+                      {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {(isHost || isOrganizer) ? (
@@ -838,8 +900,8 @@ export function GroupOrganizersPanel({
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
                       </button>
                       <details className="relative" data-player-menu>
-                        <summary aria-label={`Options for ${player.name}`} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100">···</summary>
-                        <div className="absolute right-0 top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#000]">
+                        <summary aria-label={`Options for ${player.name}`} className="flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-sm sm:text-base font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100">···</summary>
+                        <div className="absolute right-0 top-8 sm:top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#000]">
                           <button
                             type="button"
                             onClick={() => {

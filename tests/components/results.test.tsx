@@ -371,9 +371,8 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("+ Add Game");
     expect(html).toContain("Reshuffle");
     expect(html).toContain('data-testid="reshuffle-matchups-button"');
-    // Both buttons use the matchup confirmation header button styling
-    expect(html).toContain("shadow-[3.5px_3.5px_0px_0px_#000]");
-    expect(html).toContain("text-[11px] sm:text-xs");
+    expect(html).toContain("shadow-[2px_2px_0px_0px_#000]");
+    expect(html).toContain("text-[10px] sm:text-xs");
     expect(html).toContain("bg-[#ccff00]");
     expect(html).toContain("bg-white");
   });
@@ -396,7 +395,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
   });
 
-  it("renders Save & Start Next Round even when confirmMatchups is true", () => {
+  it("renders Review Next Round to advance to matchup confirmation and edit when confirmMatchups is true", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView
         roundId="r1"
@@ -410,9 +409,88 @@ describe("ResultsEntryView Component", () => {
     );
 
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
-    expect(html).toContain("Save &amp; Start Next Round");
-    expect(html).toContain("Save &amp; Start R2");
+    expect(html).toContain("Review Next Round");
+    expect(html).toContain("Review R2");
     expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
+  });
+
+  it("renders Round {roundNumber} without Results or Score Entry label for managers", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r7"
+        roundNumber={7}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+      />
+    );
+
+    expect(html).toContain("Round 7");
+    expect(html).not.toContain("Results");
+    expect(html).not.toContain("Score Entry");
+  });
+
+  it("renders Round {roundNumber} and Live Games label for viewers", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r7"
+        roundNumber={7}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={false}
+      />
+    );
+
+    expect(html).toContain("Round 7");
+    expect(html).not.toContain("Results");
+    expect(html).not.toContain("Score Entry");
+    expect(html).toContain("Live Games");
+  });
+
+  it("renders Round heading, Add Game, and Reshuffle inline in header on one line", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r3"
+        roundNumber={3}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onAddGame={() => {}}
+        onReshuffleRound={() => {}}
+      />
+    );
+
+    expect(html).toContain("Round 3");
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("Reshuffle");
+    expect(html).toContain("flex items-center justify-between gap-2 flex-nowrap");
+  });
+
+  it("does not render an In Play badge for pending matches in score entry", () => {
+    const pendingMatches = [
+      {
+        id: "m3",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"] as [string, string],
+        team2Names: ["Charlie", "Diana"] as [string, string],
+        team1Score: null,
+        team2Score: null,
+        status: "pending" as const,
+        version: 1,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={pendingMatches}
+        fieldErrors={{}}
+        canManage={true}
+      />
+    );
+
+    expect(html).not.toContain("In Play");
   });
 });
 

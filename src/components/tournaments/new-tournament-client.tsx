@@ -128,7 +128,7 @@ export function NewTournamentClient({
                 <span className="text-[#65a30d] font-black">✓</span> Pre-formed doubles pairs stay locked on the same team
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#65a30d] font-black">✓</span> Auto-balanced team rosters equalized by player DUPR
+                <span className="text-[#65a30d] font-black">✓</span> Auto-balanced team rosters equalized by player rating
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-[#65a30d] font-black">✓</span> Live team scoreboard with tiebreaker / Dreambreaker support

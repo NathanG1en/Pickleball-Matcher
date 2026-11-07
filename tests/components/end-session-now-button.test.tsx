@@ -39,7 +39,8 @@ describe("EndSessionNowButton Component", () => {
     );
 
     expect(html).toContain('data-testid="end-session-now-button"');
-    expect(html).toContain("End Session");
+    expect(html).toContain("End</span>");
+    expect(html).toContain("End Session</span>");
     expect(html).not.toContain("End Session Now");
     expect(html).toContain("bg-[#ff6b6b]");
     expect(html).toContain("text-black");

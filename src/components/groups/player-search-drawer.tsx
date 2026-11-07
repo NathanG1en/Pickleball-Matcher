@@ -118,10 +118,10 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-black text-sm">{player.name}</span>
-                    <span className="rounded-md border border-neutral-400 bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-700">
-                      @{player.username}
+                    <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                      (@{player.username})
                     </span>
                     {player.isRestricted && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">

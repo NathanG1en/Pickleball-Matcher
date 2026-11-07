@@ -190,10 +190,13 @@ describe("GroupOrganizersPanel and Actions", () => {
       // Verify labels are rendered with player profile styling
       expect(html).toContain("Host");
       expect(html).toContain("Organizer");
-      expect(html).toContain("rounded-full border border-black px-2 py-1 text-[9px] font-black uppercase bg-[#fde047]");
+      expect(html).toContain("rounded-full border border-black px-2 py-0.5 text-[9px] font-black uppercase bg-[#fde047]");
 
-      // Verify player ratings are displayed on DUPR decimal scale rather than raw 1000s Elo
-      expect(html).toContain("Rating: 3.5 (Advanced Intermediate) · 0 games");
+      // Verify player ratings are displayed on decimal scale rather than raw 1000s Elo
+      expect(html).toContain("3.5");
+      expect(html).not.toContain("DUPR");
+      expect(html).not.toContain("Advanced Intermediate");
+      expect(html).toContain("0 games");
       expect(html).not.toContain("Rating: 1000");
 
       // Verify "Remove group organizer" button exists for delegated organizer
@@ -234,6 +237,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain('href="/players/member_user"');
       expect(html).toContain("@member_user");
       expect(html).toContain("···");
+      expect(html).toContain("h-7 w-7");
       expect(html).toContain("Remove player");
       expect(html).toContain("Link to public player");
       expect(html).toContain("Edit guest");
@@ -288,6 +292,103 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(getRemoveGuestConfirmationMessage("Bob", 7)).toBe(
         'Are you sure you want to remove "Bob"? They have played 7 games.'
       );
+    });
+
+    it("renders dismissable guest description banner with dismiss button in guest add mode", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+          initialAddMode="guest"
+        />
+      );
+
+      expect(html).toContain('data-testid="guest-description-banner"');
+      expect(html).toContain("Guests don&#x27;t need an account to play, but their sessions won&#x27;t be saved.");
+      expect(html).toContain('data-testid="dismiss-guest-desc-button"');
+      expect(html).toContain('aria-label="Dismiss guest description"');
+    });
+
+    it("hides guest description banner when dismissed in sessionStorage", () => {
+      const originalSessionStorage = globalThis.sessionStorage;
+      const storageMap = new Map<string, string>();
+      storageMap.set("pickleball_dismiss_guest_desc", "true");
+
+      Object.defineProperty(globalThis, "sessionStorage", {
+        value: {
+          getItem: (key: string) => storageMap.get(key) ?? null,
+          setItem: (key: string, val: string) => storageMap.set(key, val),
+          removeItem: (key: string) => storageMap.delete(key),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      try {
+        const html = renderToStaticMarkup(
+          <GroupOrganizersPanel
+            groupId="g1"
+            players={samplePlayers}
+            organizers={sampleOrganizers}
+            isHost={true}
+            initialAddMode="guest"
+          />
+        );
+
+        expect(html).not.toContain('data-testid="guest-description-banner"');
+      } finally {
+        Object.defineProperty(globalThis, "sessionStorage", {
+          value: originalSessionStorage,
+          writable: true,
+          configurable: true,
+        });
+      }
+    });
+
+    it("renders player search without an Add button next to input and without Dismiss in results, formatting results as name (@username)", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+          initialAddMode="search"
+          initialSearchUsername="alice"
+          initialSearchResults={[
+            {
+              accountId: "acc_alice",
+              username: "alice",
+              name: "Alice Smith",
+              isPublic: true,
+              isRestricted: false,
+              alreadyInGroup: false,
+              rating: 1200,
+            },
+          ]}
+        />
+      );
+
+      // Search input is present
+      expect(html).toContain('id="roster-player-username"');
+      expect(html).toContain('placeholder="Find player by username"');
+
+      // No Add button next to the search input in the search form
+      expect(html).not.toContain('<button type="submit"');
+
+      // No Dismiss button in the search results header
+      expect(html).not.toContain("Dismiss");
+
+      // Public Accounts header is rendered
+      expect(html).toContain("Public Accounts (1)");
+
+      // Search result item displays name and (@username)
+      expect(html).toContain("Alice Smith");
+      expect(html).toContain("(@alice)");
+
+      // Search result item has its own Add button
+      expect(html).toContain(">Add</button>");
     });
 
     it("does not render Link to public player for players who already have an account", () => {
@@ -436,13 +537,15 @@ describe("GroupOrganizersPanel and Actions", () => {
 
       // Verify Add Player or Guest section header and description
       expect(html).toContain("Add Player or Guest");
-      expect(html).toContain("Find players by username or add guest players.");
       expect(html).toContain('aria-label="Add player or guest"');
       expect(html).toContain('aria-label="Collapse add player or guest form"');
+      expect(html).not.toContain(">Collapse<");
+      expect(html).not.toContain(">Expand<");
+      expect(html).toContain("rotate-180");
 
-      // Verify Roster Directory section header and description
+      // Verify Roster Directory section header
       expect(html).toContain("Roster (4)");
-      expect(html).toContain("Players and group organizers.");
+      expect(html).not.toContain("Players and group organizers.");
       expect(html).toContain('aria-label="Group roster"');
 
       // Verify Add section appears before Roster section

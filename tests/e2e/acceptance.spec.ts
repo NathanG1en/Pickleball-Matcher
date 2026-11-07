@@ -92,7 +92,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await page.click("button:has-text('Confirm & Start')");
 
     // 6. Enter scores for Round 1
-    await expect(page.locator("h1")).toContainText("Round 1 Results");
+    await expect(page.locator("h1")).toContainText("Round 1");
     await expect(page.getByTestId("session-highlights")).toHaveCount(0);
 
     // Fill in scores for Court 1, 2, 3
@@ -459,7 +459,7 @@ test("round generation indicator follows pending requests and clears on success 
     await expect(indicator).toBeVisible();
     await expect(indicator.locator("svg")).toHaveCSS("animation-name", "none");
     success.release();
-    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
     await expect(indicator).toHaveCount(0);
   } finally { await success.dispose(); }
 });

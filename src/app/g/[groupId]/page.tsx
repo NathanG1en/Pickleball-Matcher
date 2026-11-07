@@ -203,34 +203,51 @@ export default async function GroupDashboardPage({
           {/* Primary Action Card */}
           {activeSession ? (
             <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge variant="default" className="bg-black text-[#ccff00]">
-                  {activeSession.type === "open_play" ? "Open Play" : "Active Game"}
-                </Badge>
-                <span className="text-xs font-black uppercase tracking-wider text-black">
-                  {activeSession.type === "open_play" ? "Casual Games" : `Round ${activeSession.currentRoundNumber}`}
-                </span>
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
-                  {activeSession.name || (activeSession.type === "open_play" ? "Open Play In Progress" : "Session In Progress")}
-                </h2>
-                <p className="text-sm font-bold text-neutral-900">
-                  <ClientDate
-                    date={activeSession.startedAt}
-                    prefix="Started "
-                    options={{
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    }}
-                  />
-                  {" · "}
-                  {activeSession.type === "open_play"
-                    ? "Check in and submit games."
-                    : `Running on ${activeSession.courtCount} court${activeSession.courtCount > 1 ? "s" : ""}.`}
-                </p>
-              </div>
+              {activeSession.type === "open_play" ? (
+                <div>
+                  <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
+                    Open Play In Progress
+                  </h2>
+                  <p className="text-sm font-bold text-neutral-900">
+                    {activeSession.name || (
+                      <ClientDate
+                        date={activeSession.startedAt}
+                        options={{
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }}
+                      />
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-black">
+                      Round {activeSession.currentRoundNumber}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
+                      {activeSession.name || "Session In Progress"}
+                    </h2>
+                    <p className="text-sm font-bold text-neutral-900">
+                      <ClientDate
+                        date={activeSession.startedAt}
+                        prefix="Started "
+                        options={{
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }}
+                      />
+                      {" · "}
+                      Running on {activeSession.courtCount} court{activeSession.courtCount > 1 ? "s" : ""}.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {activeSession.type === "open_play" ? (
                 (() => {
@@ -285,9 +302,11 @@ export default async function GroupDashboardPage({
                               <span className="font-black text-black block">Court {m.courtNumber}</span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                             </div>
-                            <Badge variant={m.status === "completed" ? "success" : "warning"}>
-                              {m.status === "completed" ? `${m.team1Score} – ${m.team2Score}` : "In Play"}
-                            </Badge>
+                            {m.status === "completed" && (
+                              <Badge variant="success">
+                                {m.team1Score} – {m.team2Score}
+                              </Badge>
+                            )}
                           </div>
                         );
                       })}

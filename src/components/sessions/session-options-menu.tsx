@@ -22,8 +22,11 @@ export interface SessionOptionsMenuProps {
   readonly onDeleted?: () => void;
   readonly onDuplicated?: (newSession: SessionRecord) => void;
   readonly onRenamed?: (newName: string) => void;
+  readonly onUndoLatestRound?: () => void;
+  readonly latestRoundNumber?: number;
   readonly dataTestId?: string;
   readonly initialDeleteModalOpen?: boolean;
+  readonly initialMenuOpen?: boolean;
 }
 
 export function SessionOptionsMenu({
@@ -35,11 +38,14 @@ export function SessionOptionsMenu({
   onDeleted,
   onDuplicated,
   onRenamed,
+  onUndoLatestRound,
+  latestRoundNumber,
   dataTestId = "session-options-menu-button",
   initialDeleteModalOpen = false,
+  initialMenuOpen = false,
 }: SessionOptionsMenuProps) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameInput, setRenameInput] = useState(sessionName ?? "");
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -207,7 +213,7 @@ export function SessionOptionsMenu({
         aria-label="Session options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}
-        className="flex h-8 w-8 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-xl border-2 border-black bg-white text-lg sm:text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 select-none"
+        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 select-none"
       >
         ···
       </button>
@@ -216,7 +222,7 @@ export function SessionOptionsMenu({
         <div
           role="menu"
           aria-label="Session actions"
-          className="absolute right-0 top-10 sm:top-11 z-30 min-w-44 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1"
+          className="absolute right-0 top-8 sm:top-11 z-30 min-w-44 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1"
         >
           <button
             type="button"
@@ -246,6 +252,20 @@ export function SessionOptionsMenu({
           >
             {isRecalculating ? "Updating Chemistry..." : "Refresh Chemistry"}
           </button>
+          {onUndoLatestRound && latestRoundNumber ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="undo-round-menu-item"
+              onClick={() => {
+                setMenuOpen(false);
+                onUndoLatestRound();
+              }}
+              className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-[#ff6b6b] hover:bg-red-50 cursor-pointer transition-colors"
+            >
+              Undo Round {latestRoundNumber}
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"

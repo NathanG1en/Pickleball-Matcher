@@ -117,7 +117,7 @@ export function TournamentOptionsMenu({
         aria-label="Tournament options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}
-        className="flex h-8 w-8 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-xl border-2 border-black bg-white text-lg sm:text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 select-none"
+        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 select-none"
       >
         ···
       </button>
@@ -126,7 +126,7 @@ export function TournamentOptionsMenu({
         <div
           role="menu"
           aria-label="Tournament actions"
-          className="absolute right-0 top-10 sm:top-11 z-30 min-w-48 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1"
+          className="absolute right-0 top-8 sm:top-11 z-30 min-w-48 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1"
         >
           {status && (
             <button

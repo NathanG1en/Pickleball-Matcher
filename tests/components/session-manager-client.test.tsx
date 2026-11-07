@@ -423,7 +423,8 @@ describe("SessionManagerClient Component", () => {
 
     expect(organizerHtml).toContain("Reshuffle");
     expect(organizerHtml).toContain('data-testid="reshuffle-matchups-button"');
-    expect(organizerHtml).toContain('data-testid="reshuffle-round-link"');
+    expect(organizerHtml).not.toContain('data-testid="reshuffle-round-link"');
+    expect(organizerHtml).not.toContain("Undo Round");
 
     const memberHtml = renderToStaticMarkup(
       <SessionManagerClient
@@ -439,6 +440,67 @@ describe("SessionManagerClient Component", () => {
     );
 
     expect(memberHtml).not.toContain("Reshuffle");
+  });
+
+  it("renders 'Past Rounds' heading instead of 'Past Rounds History' when completed rounds exist", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 2,
+    };
+
+    const completedRound = {
+      round: {
+        id: "rnd_1",
+        sessionId: "ses_1",
+        roundNumber: 1,
+        status: "completed" as const,
+        seed: 1001,
+        scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+        createdAt: new Date(),
+        startedAt: new Date(),
+        completedAt: new Date(),
+        version: 1,
+      },
+      matches: [],
+      sits: [],
+      matchPlayers: [],
+    };
+
+    const inProgressRound = {
+      round: {
+        id: "rnd_2",
+        sessionId: "ses_1",
+        roundNumber: 2,
+        status: "started" as const,
+        seed: 1002,
+        scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+        createdAt: new Date(),
+        startedAt: new Date(),
+        completedAt: null,
+        version: 1,
+      },
+      matches: [],
+      sits: [],
+      matchPlayers: [],
+    };
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={[completedRound, inProgressRound]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(html).toContain("Past Rounds");
+    expect(html).not.toContain("Past Rounds History");
   });
 
   it("renders Session Settings button for organizer and member in active session", () => {

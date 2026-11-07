@@ -143,7 +143,7 @@ describe("OpenPlayManagerClient Component", () => {
 
     // End session button matches normal session styling
     expect(html).toContain("bg-[#ff6b6b]");
-    expect(html).toContain("border-2 border-black font-black uppercase text-xs text-black");
+    expect(html).toContain("border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black");
     expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
 
     // "In Progress" badge is removed
@@ -306,7 +306,7 @@ describe("OpenPlayManagerClient Component", () => {
     );
 
     // General session info on completed session
-    expect(completedHtml).toContain("Courts");
+    expect(completedHtml).not.toContain("Courts");
     expect(completedHtml).toContain("Total Games");
     expect(completedHtml).toContain("Players");
 

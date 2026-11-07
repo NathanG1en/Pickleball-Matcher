@@ -572,9 +572,6 @@ export function TemporaryGroupClient({
             {state.currentRound ? (
               <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
                 <div className="flex items-center justify-between">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-black text-[#ccff00] text-[10px] font-black uppercase tracking-wider">
-                    Active Game
-                  </span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black uppercase text-black">
                       Round {state.currentRound.roundNumber}

@@ -264,102 +264,26 @@ export function OpenPlayManagerClient({
     }
   }
 
-  // Automatically find the last game in the session for the logged in user (or most recent game in session)
-  const lastSessionGame = useMemo(() => {
-    const recent = [...allMatches].reverse();
-    const candidate = currentViewerPlayerId
-      ? (recent.find(
-          (m) =>
-            m.status === "completed" &&
-            (m.team1PlayerIds.includes(currentViewerPlayerId) ||
-              m.team2PlayerIds.includes(currentViewerPlayerId)),
-        ) ?? recent.find((m) => m.status === "completed"))
-      : recent.find((m) => m.status === "completed");
-    if (!candidate) return null;
-    const allPids = [...candidate.team1PlayerIds, ...candidate.team2PlayerIds];
-    if (allPids.some((pid) => !presentPlayerIds.has(pid))) return null;
-    return candidate;
-  }, [allMatches, currentViewerPlayerId, presentPlayerIds]);
+  // User/client-local match submission state
+  const isViewerPresent = Boolean(
+    currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
+  );
 
-  // Helper to compute autopopulated match slots, ensuring current viewer is always the first player (t1p1)
-  const getAutopopulatedSlots = (
-    game: typeof lastSessionGame,
-  ): {
-    matchType: "doubles" | "singles";
-    t1p1: string;
-    t1p2: string;
-    t2p1: string;
-    t2p2: string;
-  } => {
-    const isViewerPresent = Boolean(
-      currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
-    );
-
-    if (game) {
-      const isSingles = game.team1PlayerIds.length === 1;
-      let slotT1P1 = game.team1PlayerIds[0] ?? "";
-      let slotT1P2 = game.team1PlayerIds[1] ?? "";
-      let slotT2P1 = game.team2PlayerIds[0] ?? "";
-      let slotT2P2 = game.team2PlayerIds[1] ?? "";
-
-      if (isViewerPresent && currentViewerPlayerId) {
-        if (slotT1P1 === currentViewerPlayerId) {
-          // Already player 1
-        } else if (slotT1P2 === currentViewerPlayerId) {
-          // User was player 2 on Team 1 -> put user as player 1
-          slotT1P2 = slotT1P1;
-          slotT1P1 = currentViewerPlayerId;
-        } else if (slotT2P1 === currentViewerPlayerId) {
-          // User was player 1 on Team 2 -> put user's team as Team 1
-          const prevT1P1 = slotT1P1;
-          const prevT1P2 = slotT1P2;
-          slotT1P1 = currentViewerPlayerId;
-          slotT1P2 = isSingles ? "" : slotT2P2;
-          slotT2P1 = prevT1P1;
-          slotT2P2 = isSingles ? "" : prevT1P2;
-        } else if (slotT2P2 === currentViewerPlayerId) {
-          // User was player 2 on Team 2 -> put user's team as Team 1 with user as player 1
-          const prevT1P1 = slotT1P1;
-          const prevT1P2 = slotT1P2;
-          slotT1P1 = currentViewerPlayerId;
-          slotT1P2 = isSingles ? "" : slotT2P1;
-          slotT2P1 = prevT1P1;
-          slotT2P2 = isSingles ? "" : prevT1P2;
-        } else {
-          // User was not in this game, but is checked in -> user is always the autopopulated first player
-          slotT1P1 = currentViewerPlayerId;
-        }
-      }
-
-      return {
-        matchType: isSingles ? "singles" : "doubles",
-        t1p1: slotT1P1,
-        t1p2: slotT1P2,
-        t2p1: slotT2P1,
-        t2p2: slotT2P2,
-      };
-    }
-
-    return {
-      matchType: "doubles",
-      t1p1: isViewerPresent && currentViewerPlayerId ? currentViewerPlayerId : "",
-      t1p2: "",
-      t2p1: "",
-      t2p2: "",
-    };
-  };
-
-  const initialSlots = getAutopopulatedSlots(lastSessionGame);
-
-  // Match submission state (automatically populated from last game if available, user first)
-  const [matchType, setMatchType] = useState<"doubles" | "singles">(initialSlots.matchType);
-  const [t1p1, setT1p1] = useState(initialSlots.t1p1);
-  const [t1p2, setT1p2] = useState(initialSlots.t1p2);
-  const [t2p1, setT2p1] = useState(initialSlots.t2p1);
-  const [t2p2, setT2p2] = useState(initialSlots.t2p2);
+  const [matchType, setMatchType] = useState<"doubles" | "singles">("doubles");
+  const [t1p1, setT1p1] = useState(() => (isViewerPresent && currentViewerPlayerId ? currentViewerPlayerId : ""));
+  const [t1p2, setT1p2] = useState("");
+  const [t2p1, setT2p1] = useState("");
+  const [t2p2, setT2p2] = useState("");
   const [t1Score, setT1Score] = useState("");
   const [t2Score, setT2Score] = useState("");
   const [rotateBase, setRotateBase] = useState<[string, string, string, string] | null>(null);
+
+  // Local record of the most recent game submitted by this user/device in this session
+  const [lastSubmittedGame, setLastSubmittedGame] = useState<{
+    matchType: "doubles" | "singles";
+    team1PlayerIds: string[];
+    team2PlayerIds: string[];
+  } | null>(null);
 
   const parsedT1 = parseInt(t1Score, 10);
   const parsedT2 = parseInt(t2Score, 10);
@@ -381,18 +305,6 @@ export function OpenPlayManagerClient({
       }
     }
   };
-
-  // Automatically update when a new lastSessionGame is recorded/available
-  const [prevLastGameId, setPrevLastGameId] = useState(() => lastSessionGame?.id ?? null);
-  if (lastSessionGame && lastSessionGame.id !== prevLastGameId) {
-    setPrevLastGameId(lastSessionGame.id);
-    const slots = getAutopopulatedSlots(lastSessionGame);
-    setMatchType(slots.matchType);
-    setT1p1(slots.t1p1);
-    setT1p2(slots.t1p2);
-    setT2p1(slots.t2p1);
-    setT2p2(slots.t2p2);
-  }
 
   // Automatically populate viewer as first player upon joining if not set
   const [hasSetInitialViewer, setHasSetInitialViewer] = useState(() =>
@@ -728,19 +640,19 @@ export function OpenPlayManagerClient({
   };
 
   // Quick Rematch handler
-  const canRematch = Boolean(
-    lastSessionGame || (t1p1 && t2p1 && (matchType === "singles" || (t1p2 && t2p2)))
+  const hasCurrentPlayers = Boolean(
+    t1p1 && t2p1 && (matchType === "singles" || (t1p2 && t2p2))
   );
+  const canRematch = Boolean(hasCurrentPlayers || lastSubmittedGame);
 
   const handleRematch = () => {
     setError(null);
-    if (lastSessionGame) {
-      const slots = getAutopopulatedSlots(lastSessionGame);
-      setMatchType(slots.matchType);
-      setT1p1(slots.t1p1);
-      setT1p2(slots.t1p2);
-      setT2p1(slots.t2p1);
-      setT2p2(slots.t2p2);
+    if (!hasCurrentPlayers && lastSubmittedGame) {
+      setMatchType(lastSubmittedGame.matchType);
+      setT1p1(lastSubmittedGame.team1PlayerIds[0] ?? "");
+      setT1p2(lastSubmittedGame.team1PlayerIds[1] ?? "");
+      setT2p1(lastSubmittedGame.team2PlayerIds[0] ?? "");
+      setT2p2(lastSubmittedGame.team2PlayerIds[1] ?? "");
     }
     setT1Score("");
     setT2Score("");
@@ -751,9 +663,10 @@ export function OpenPlayManagerClient({
   // Rotate Partners (Split & Switch) handler
   const canRotate = Boolean(
     (t1p1 && t1p2 && t2p1 && t2p2) ||
-      (lastSessionGame &&
-        lastSessionGame.team1PlayerIds.length === 2 &&
-        lastSessionGame.team2PlayerIds.length === 2)
+      (lastSubmittedGame &&
+        lastSubmittedGame.matchType === "doubles" &&
+        lastSubmittedGame.team1PlayerIds.length === 2 &&
+        lastSubmittedGame.team2PlayerIds.length === 2)
   );
 
   const handleRotatePartners = () => {
@@ -762,15 +675,16 @@ export function OpenPlayManagerClient({
     if (t1p1 && t1p2 && t2p1 && t2p2) {
       current4 = [t1p1, t1p2, t2p1, t2p2];
     } else if (
-      lastSessionGame &&
-      lastSessionGame.team1PlayerIds.length === 2 &&
-      lastSessionGame.team2PlayerIds.length === 2
+      lastSubmittedGame &&
+      lastSubmittedGame.matchType === "doubles" &&
+      lastSubmittedGame.team1PlayerIds.length === 2 &&
+      lastSubmittedGame.team2PlayerIds.length === 2
     ) {
       current4 = [
-        lastSessionGame.team1PlayerIds[0],
-        lastSessionGame.team1PlayerIds[1],
-        lastSessionGame.team2PlayerIds[0],
-        lastSessionGame.team2PlayerIds[1],
+        lastSubmittedGame.team1PlayerIds[0],
+        lastSubmittedGame.team1PlayerIds[1],
+        lastSubmittedGame.team2PlayerIds[0],
+        lastSubmittedGame.team2PlayerIds[1],
       ];
     }
 
@@ -894,9 +808,7 @@ export function OpenPlayManagerClient({
     // Optimistic match generation for instant feedback
     const optimisticMatchId = createIdempotencyKey("opt");
     const targetRoundId = localStartedRounds[0]?.round.id ?? `rnd_${session.id}`;
-    const existingMatches = localStartedRounds.flatMap((sr) => sr.matches);
-    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
-    const courtNumber = maxCourtNumber + 1;
+    const courtNumber = 1;
 
     const optimisticMatch: MatchRecord = {
       id: optimisticMatchId,
@@ -985,6 +897,11 @@ export function OpenPlayManagerClient({
 
       if (res.ok) {
         const newMatch = res.data;
+        setLastSubmittedGame({
+          matchType,
+          team1PlayerIds: team1Ids,
+          team2PlayerIds: team2Ids,
+        });
         setLocalStartedRounds((prev) =>
           prev.map((sr) => ({
             ...sr,
@@ -1288,31 +1205,43 @@ export function OpenPlayManagerClient({
       )}
 
       {/* Top Header Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
           href={isFromProfile ? "/players" : `/g/${groupId}`}
-          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          label={
+            <>
+              <span className="sm:hidden">← Back</span>
+              <span className="hidden sm:inline">{isFromProfile ? "← Back to Profile" : "← Back to Group"}</span>
+            </>
+          }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isSessionActive ? (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {canManage && (
               <button
                 type="button"
                 onClick={handleEndSession}
                 disabled={isEnding}
+                aria-label="End Session"
                 data-testid="end-session-button"
-                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
-                {isEnding ? "Ending..." : "End Session"}
+                {isEnding ? "Ending..." : (
+                  <>
+                    <span className="sm:hidden">End</span>
+                    <span className="hidden sm:inline">End Session</span>
+                  </>
+                )}
               </button>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Badge variant="muted" className="text-xs font-black uppercase">
-              Completed Session
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <Badge variant="muted" className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center">
+              <span className="sm:hidden">Completed</span>
+              <span className="hidden sm:inline">Completed Session</span>
             </Badge>
           </div>
         )}
@@ -1359,11 +1288,7 @@ export function OpenPlayManagerClient({
         {!isSessionActive && (
           <>
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
-                <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
                 <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>

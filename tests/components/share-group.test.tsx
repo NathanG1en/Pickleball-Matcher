@@ -98,12 +98,14 @@ describe("Share Group and Join Feature", () => {
   });
 
   describe("ShareGroupButton and ShareGroupModal UI", () => {
-    it("renders Share button with share icon", () => {
+    it("renders compact Share button with share icon", () => {
       const html = renderToStaticMarkup(
         <ShareGroupButton groupId="grp_private1" groupName="Secret Picklers" />
       );
       expect(html).toContain("Share");
       expect(html).toContain('aria-label="Share group link and QR code"');
+      expect(html).toContain("h-7");
+      expect(html).toContain("text-[10px]");
     });
 
     it("renders ShareGroupModal with group name, link, and QR code instructions when open", () => {
