@@ -70,7 +70,17 @@ test.describe("Open Play Workflow", () => {
     expect(backBox && optionsBox && optionsBox.x > backBox.x).toBe(true);
     expect(optionsBox && optionsBox.y < (backBox?.y ?? 0) + 25).toBe(true);
 
+    // Verify collapsible drawer hides and shows checked-in players
+    const drawerToggle = page.getByTestId("toggle-players-drawer-button");
+    await expect(drawerToggle).toBeVisible();
+    await expect(page.getByTestId("open-play-attendees")).toBeVisible();
+    await drawerToggle.click();
+    await expect(page.getByTestId("open-play-attendees")).toHaveCount(0);
+    await drawerToggle.click();
+    await expect(page.getByTestId("open-play-attendees")).toBeVisible();
+
     // 7. Add Guest player "Guest Gary" with a selected rating using sliding scale
+    await page.getByTestId("tab-add-guest").click();
     await page.fill("#guest-name-input", "Guest Gary");
     // Verify sliding works by dragging across the number line on mouse devices
     const sliderContainer = page.locator("[data-testid='guest-rating-value']").locator("..");
@@ -123,6 +133,7 @@ test.describe("Open Play Workflow", () => {
     await doublesBtn.click();
 
     // 8. Add group player Bob from roster (selecting from dropdown directly adds them to open play)
+    await page.getByTestId("tab-add-member").click();
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");
@@ -471,6 +482,7 @@ test.describe("Open Play Workflow", () => {
     const sessionUrl = page.url();
 
     // Add guests to session: Charlie, Dana
+    await page.getByTestId("tab-add-guest").click();
     await page.fill("#guest-name-input", "Charlie");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
     const guestPopup = page.locator("[data-testid='guest-added-popup']");
@@ -487,6 +499,7 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Dana")).toBeVisible();
 
     // Add Bob from roster (selecting from dropdown directly adds them to open play)
+    await page.getByTestId("tab-add-member").click();
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");

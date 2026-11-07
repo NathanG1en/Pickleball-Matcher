@@ -40,7 +40,16 @@ import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rat
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
-import { ArrowLeftRightIcon, CheckIcon, CrownIcon, RotateCwIcon, SwordsIcon } from "@/components/ui/icons";
+import {
+  ArrowLeftRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CrownIcon,
+  RotateCwIcon,
+  SwordsIcon,
+  UserPlusIcon,
+  UsersIcon,
+} from "@/components/ui/icons";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -432,6 +441,12 @@ export function OpenPlayManagerClient({
       selectedElsewhere: isPlayerSelectedElsewhere(p.id, slot),
     }));
   };
+
+  // Drawer & Tab state
+  const [isPlayersDrawerOpen, setIsPlayersDrawerOpen] = useState(true);
+  const [addPlayerTab, setAddPlayerTab] = useState<"member" | "guest">(() =>
+    availableRosterPlayers.length > 0 ? "member" : "guest"
+  );
 
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
@@ -1459,7 +1474,7 @@ export function OpenPlayManagerClient({
 
       {/* Attendance & Join Section */}
       <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="font-display text-xl font-black uppercase text-black">
               Players in Session ({checkedInPlayers.length})
@@ -1469,137 +1484,225 @@ export function OpenPlayManagerClient({
             </p>
           </div>
 
-          {/* Join Open Play Button for group members not checked in */}
-          {isSessionActive && isMember && !isViewerCheckedIn && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Join Open Play Button for group members not checked in */}
+            {isSessionActive && isMember && !isViewerCheckedIn && (
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={isJoining}
+                data-testid="join-open-play-button"
+                className="py-2 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+              >
+                {isJoining ? "Joining..." : "Join Open Play"}
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={handleJoin}
-              disabled={isJoining}
-              data-testid="join-open-play-button"
-              className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-sm font-black uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+              onClick={() => setIsPlayersDrawerOpen((prev) => !prev)}
+              aria-expanded={isPlayersDrawerOpen}
+              aria-controls="checked-in-players-drawer"
+              aria-label={isPlayersDrawerOpen ? "Hide players checked in" : "Show players checked in"}
+              data-testid="toggle-players-drawer-button"
+              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer shrink-0"
             >
-              {isJoining ? "Joining..." : "Join Open Play"}
+              <span>{isPlayersDrawerOpen ? "Hide Players" : "Show Players"}</span>
+              <ChevronDownIcon
+                className={`h-3.5 w-3.5 text-black transition-transform duration-200 ${
+                  isPlayersDrawerOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Players Chips */}
-        {checkedInPlayers.length === 0 ? (
-          <p className="text-xs font-bold text-neutral-500 italic py-2">
-            No players checked in yet. Join or add players below!
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2 pt-1" data-testid="open-play-attendees">
-            {checkedInPlayers.map((p) => {
-              const isViewer = p.id === currentViewerPlayerId;
-              return (
-                <div
-                  key={p.id}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
-                    isViewer ? "bg-[#ccff00]" : "bg-neutral-50"
-                  }`}
-                >
-                  <span className="font-black text-black">{p.name}</span>
-                  <span className="text-[10px] text-neutral-600 font-mono">
-                    {formatDupr(p.rating)}
-                  </span>
-                  {isViewer && (
-                    <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
-                      You
-                    </span>
-                  )}
-                  {isSessionActive && (isOrganizer || isViewer) && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePlayer(p.id)}
-                      title="Leave / Remove from session"
-                      className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+        {/* Players Drawer Content */}
+        {isPlayersDrawerOpen && (
+          <div
+            id="checked-in-players-drawer"
+            data-testid="checked-in-players-drawer"
+            className="space-y-2 pt-1"
+          >
+            {checkedInPlayers.length === 0 ? (
+              <p className="text-xs font-bold text-neutral-500 italic py-2">
+                No players checked in yet. Join or add players below!
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2 pt-1" data-testid="open-play-attendees">
+                {checkedInPlayers.map((p) => {
+                  const isViewer = p.id === currentViewerPlayerId;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
+                        isViewer ? "bg-[#ccff00]" : "bg-neutral-50"
+                      }`}
                     >
-                      ×
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                      <span className="font-black text-black">{p.name}</span>
+                      <span className="text-[10px] text-neutral-600 font-mono">
+                        {formatDupr(p.rating)}
+                      </span>
+                      {isViewer && (
+                        <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
+                          You
+                        </span>
+                      )}
+                      {isSessionActive && (isOrganizer || isViewer) && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePlayer(p.id)}
+                          title="Leave / Remove from session"
+                          className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Add Player / Guest Forms (if session is active or organizer/host) */}
+        {/* Add Player / Guest Section */}
         {(isSessionActive || canManage) && (
-          <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-4">
-            {/* Add from Roster */}
-            {availableRosterPlayers.length > 0 && (
-              <div className="space-y-2">
+          <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-3">
+            {/* Mode Switch Tabs (matching roster style) */}
+            <div
+              className="flex items-center gap-1.5 p-1 bg-neutral-100 border border-neutral-200 rounded-xl w-fit"
+              role="tablist"
+              aria-label="Add player mode"
+            >
+              <button
+                type="button"
+                role="tab"
+                id="tab-add-member"
+                aria-selected={addPlayerTab === "member"}
+                aria-controls="tabpanel-add-member"
+                data-testid="tab-add-member"
+                onClick={() => setAddPlayerTab("member")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  addPlayerTab === "member"
+                    ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                    : "text-neutral-800 hover:bg-black/10"
+                }`}
+              >
+                <UsersIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Existing Member</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-add-guest"
+                aria-selected={addPlayerTab === "guest"}
+                aria-controls="tabpanel-add-guest"
+                data-testid="tab-add-guest"
+                onClick={() => setAddPlayerTab("guest")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  addPlayerTab === "guest"
+                    ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                    : "text-neutral-800 hover:bg-black/10"
+                }`}
+              >
+                <UserPlusIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Add Guest</span>
+              </button>
+            </div>
+
+            {/* Tab Panel: Add from Roster */}
+            {addPlayerTab === "member" && (
+              <div
+                role="tabpanel"
+                id="tabpanel-add-member"
+                aria-labelledby="tab-add-member"
+                className="space-y-2 pt-1"
+              >
                 <label className="block text-xs font-black uppercase tracking-wider text-black">
                   Add Existing Group Member
                 </label>
-                <FilterablePlayerSelect
-                  ariaLabel="Add Existing Group Member"
-                  placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
-                  value=""
-                  onChange={(val) => {
-                    if (val) {
-                      void handleSelectRosterPlayer(val);
-                    }
-                  }}
-                  options={rosterPlayerOptions}
-                  dataTestId="roster-player-select"
-                  disabled={isAddingPlayer}
-                />
+                {availableRosterPlayers.length > 0 ? (
+                  <FilterablePlayerSelect
+                    ariaLabel="Add Existing Group Member"
+                    placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
+                    value=""
+                    onChange={(val) => {
+                      if (val) {
+                        void handleSelectRosterPlayer(val);
+                      }
+                    }}
+                    options={rosterPlayerOptions}
+                    dataTestId="roster-player-select"
+                    disabled={isAddingPlayer}
+                  />
+                ) : (
+                  <p className="text-xs font-bold text-neutral-500 italic py-1">
+                    All group members are currently checked in.
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Add Guest */}
-            <form onSubmit={handleAddGuest} className="space-y-3">
-              <label
-                htmlFor="guest-name-input"
-                className="block text-xs font-black uppercase tracking-wider text-black"
+            {/* Tab Panel: Add Guest */}
+            {addPlayerTab === "guest" && (
+              <form
+                role="tabpanel"
+                id="tabpanel-add-guest"
+                aria-labelledby="tab-add-guest"
+                onSubmit={handleAddGuest}
+                className="space-y-3 pt-1"
               >
-                Add Guest to Roster
-              </label>
-              <p className="text-[11px] font-bold text-neutral-600">
-                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  id="guest-name-input"
-                  type="text"
-                  placeholder="Guest player name..."
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
-                />
-                <select
-                  id="open-play-guest-gender"
-                  aria-label="Guest Gender"
-                  value={guestGender}
-                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                <label
+                  htmlFor="guest-name-input"
+                  className="block text-xs font-black uppercase tracking-wider text-black"
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={!guestName.trim() || isAddingGuest}
-                  className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  {isAddingGuest ? "Adding..." : "Add"}
-                </button>
-              </div>
+                  Add Guest to Roster
+                </label>
+                <p className="text-[11px] font-bold text-neutral-600">
+                  Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    id="guest-name-input"
+                    type="text"
+                    placeholder="Guest player name..."
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                  />
+                  <select
+                    id="open-play-guest-gender"
+                    aria-label="Guest Gender"
+                    value={guestGender}
+                    onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+                    className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={!guestName.trim() || isAddingGuest}
+                    className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                  >
+                    {isAddingGuest ? "Adding..." : "Add"}
+                  </button>
+                </div>
 
-              {/* Sliding Scale for Rating */}
-              <div className="bg-neutral-50 border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
-                <RatingSlider
-                  id="guest-rating-slider"
-                  dataTestId="guest-rating-slider"
-                  label="Guest Rating"
-                  value={guestRating}
-                  onChange={setGuestRating}
-                  showDescription={true}
-                />
-              </div>
-            </form>
+                {/* Sliding Scale for Rating */}
+                <div className="bg-neutral-50 border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                  <RatingSlider
+                    id="guest-rating-slider"
+                    dataTestId="guest-rating-slider"
+                    label="Guest Rating"
+                    value={guestRating}
+                    onChange={setGuestRating}
+                    showDescription={true}
+                  />
+                </div>
+              </form>
+            )}
           </div>
         )}
       </section>

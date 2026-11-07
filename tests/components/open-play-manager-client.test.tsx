@@ -551,5 +551,53 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('data-testid="team-1-winner-button"');
     expect(html).toContain('data-testid="team-2-winner-button"');
   });
+
+  it("renders a collapsible drawer toggle button to hide or show checked-in players", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify drawer toggle button is rendered
+    expect(html).toContain('data-testid="toggle-players-drawer-button"');
+    expect(html).toContain("Hide Players");
+    expect(html).toContain('aria-controls="checked-in-players-drawer"');
+    expect(html).toContain('data-testid="checked-in-players-drawer"');
+    expect(html).toContain('data-testid="open-play-attendees"');
+  });
+
+  it("renders mode switch tabs matching roster style for adding existing members and guests", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify tabs are rendered
+    expect(html).toContain('data-testid="tab-add-member"');
+    expect(html).toContain('data-testid="tab-add-guest"');
+    expect(html).toContain("Existing Member");
+    expect(html).toContain("Add Guest");
+    expect(html).toContain('role="tablist"');
+  });
 });
 
