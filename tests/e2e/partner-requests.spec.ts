@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createTestGroup, createAndSignInPlayer } from "./test-helpers";
 
 test("a member requests a friend and an organizer approves it for future rounds", async ({ page, browser }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   const { groupId } = await createTestGroup(page, `Partner requests ${Date.now()}`);
   const memberContext = await browser.newContext();
   try {

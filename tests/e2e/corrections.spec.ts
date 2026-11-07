@@ -6,7 +6,7 @@ test.describe("Corrections and Replay Workflow", () => {
   test("handles match score corrections, cancellations, round undo, and attendance changes", async ({
     page,
   }) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create a group
     const groupName = `Corrections League ${Date.now()}`;
     await createTestGroup(page, groupName);
@@ -166,7 +166,7 @@ test.describe("Corrections and Replay Workflow", () => {
   test("warns about in-progress games when ending session, but not cancelled games", async ({
     page,
   }) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create group and roster
     const groupName = `End Session Warning ${Date.now()}`;
     await createTestGroup(page, groupName);
@@ -247,7 +247,7 @@ test.describe("Corrections and Replay Workflow", () => {
 
 
 test("host synergy follows current partners after manual swaps and new proposals", async ({ page, browser }) => {
-  test.setTimeout(120000);
+  test.setTimeout(45000);
   const { hostName } = await createTestGroup(page, `Pair synergy ${Date.now()}`);
   const names = [hostName];
   const otherContext = await browser.newContext();
@@ -318,7 +318,7 @@ test("host synergy follows current partners after manual swaps and new proposals
 
 
 test("custom lineup survives refresh and starts with the saved assignments", async ({ page }) => {
-  test.setTimeout(90000);
+  test.setTimeout(45000);
   await createTestGroup(page, `Lineup draft ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (const name of ["Draft Blake", "Draft Casey", "Draft Drew"]) {
@@ -436,7 +436,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
   test(`pickle celebration follows saved 11-0 scores, not drafts or history (${reducedMotion})`, async ({ page }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     await page.emulateMedia({ reducedMotion });
     await page.addInitScript(() => document.addEventListener("animationstart", event => {
       if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
@@ -498,7 +498,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 test("organizer can end an active session (normal or open play) directly from group page", async ({
   page,
 }) => {
-  test.setTimeout(90000);
+  test.setTimeout(45000);
   const groupName = `End Session Direct ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
@@ -590,7 +590,7 @@ test("organizer can end an active session (normal or open play) directly from gr
 
 
 test("normal score corrections refresh chemistry without adding shared games", async ({ page, browser }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Chemistry correction ${Date.now()}`);
   for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
     const context = await browser.newContext();

@@ -6,7 +6,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
     const { groupId, hostName } = await createTestGroup(page, groupName);
@@ -458,7 +458,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create a test group with host
     const groupName = `Ended Open Play League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
@@ -618,7 +618,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     const groupName = `Session Rename League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
 
@@ -766,7 +766,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
   test(`pickle celebration follows successful Open Play submissions (${reducedMotion})`, async ({ page }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     await page.emulateMedia({ reducedMotion });
     await page.addInitScript(() => document.addEventListener("animationstart", event => {
       if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
@@ -821,7 +821,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 }
 
 test("Open Play chemistry corrections replace the game's contribution", async ({ page, browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Open chemistry correction ${Date.now()}`);
   for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
     const context = await browser.newContext();

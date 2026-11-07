@@ -13,7 +13,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/simulations/**/*.test.ts"],
-    testTimeout: 90_000,
+    testTimeout: 30_000,
+    hookTimeout: 15_000,
     fileParallelism: false,
   },
 });

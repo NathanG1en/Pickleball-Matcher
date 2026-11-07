@@ -72,7 +72,6 @@ export function ResultsEntryView({
   onSaveAndStartNextRound,
   upcomingProposal,
   playerNames = {},
-  confirmMatchups = false,
 }: ResultsEntryViewProps) {
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
@@ -414,11 +413,7 @@ export function ResultsEntryView({
                     startFn?.();
                   }}
                   data-testid="save-and-start-next-round-button"
-                  title={
-                    confirmMatchups
-                      ? `Save all scores and review Round ${roundNumber + 1} matchups`
-                      : `Save all scores and start Round ${roundNumber + 1}`
-                  }
+                  title={`Save all scores and start Round ${roundNumber + 1}`}
                   className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
                   {isGeneratingRound ? (
@@ -427,10 +422,10 @@ export function ResultsEntryView({
                     <>
                       <span className="sr-only">Next Round</span>
                       <span className="sm:hidden">
-                        {confirmMatchups ? `Next Round R${roundNumber + 1}` : `Save & Start R${roundNumber + 1}`}
+                        Save &amp; Start R{roundNumber + 1}
                       </span>
                       <span className="hidden sm:inline">
-                        {confirmMatchups ? "Next Round" : "Save & Start Next Round"}
+                        Save &amp; Start Next Round
                       </span>
                     </>
                   )}

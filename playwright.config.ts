@@ -30,6 +30,10 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL ?? `http://localhost:${test
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  timeout: 45_000,
+  expect: {
+    timeout: 5_000,
+  },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -38,6 +42,8 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
   },
   projects: [
     {

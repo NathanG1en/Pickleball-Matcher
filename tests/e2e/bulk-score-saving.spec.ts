@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createTestGroup } from "./test-helpers";
 
 test("Save All persists every court and rejects a stale tab without replacing newer scores", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Bulk scoring ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (let i = 1; i <= 7; i++) {

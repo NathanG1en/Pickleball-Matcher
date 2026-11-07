@@ -7,7 +7,7 @@ for (const [timezoneId, localDate] of [["America/New_York", "Oct 28, 2026"], ["P
   test.describe(timezoneId, () => {
     test.use({ timezoneId, locale: "en-US" });
     test("profile session dates follow the browser across UTC midnight", async ({ page }, testInfo) => {
-      test.setTimeout(120_000);
+      test.setTimeout(45_000);
       const hydrationErrors: string[] = [];
       page.on("pageerror", error => { if (/hydration|server rendered/i.test(error.message)) hydrationErrors.push(error.message); });
       const { groupId, hostUsername } = await createTestGroup(page, `Local dates ${Date.now()}`);

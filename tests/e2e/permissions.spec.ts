@@ -43,7 +43,7 @@ test.describe("Permissions and Security Workflow", () => {
   });
 
   test.beforeEach(() => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
   });
 
   test("protects private groups and organizer pages from unauthenticated access", async ({
@@ -582,7 +582,7 @@ test.describe("Permissions and Security Workflow", () => {
   });
 
   test("rejects invalid custom signup ratings without creating an account", async ({ page }) => {
-  test.setTimeout(60000);
+  test.setTimeout(45000);
   await page.goto("/player-signup?next=%2Fsetup");
   await page.waitForSelector("form[data-hydrated='true']");
   await page.getByLabel("Username", { exact: true }).fill(`rating_${Date.now()}`);

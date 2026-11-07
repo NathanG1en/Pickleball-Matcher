@@ -4,7 +4,7 @@ import { sampleReplayMotion, checkAnimationReplay, createAndSignInPlayer, create
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }, testInfo) => {
-    test.setTimeout(120000);
+    test.setTimeout(45_000);
     // 1. Authenticate player and visit setup page
     await createAndSignInPlayer(page);
     await expect(page.locator("h1")).toContainText("Create Group");
@@ -317,7 +317,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
 
 
 test("tournament final waits for both semifinal qualifiers", async ({ page }) => {
-  test.setTimeout(90000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Tournament readiness ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (const name of ["Qualifier A", "Qualifier B"]) {
@@ -387,7 +387,7 @@ test("restored temporary group calculates capacity from saved courts without a s
 });
 
 test("round generation indicator follows pending requests and clears on success or failure", async ({ page }, testInfo) => {
-  test.setTimeout(90000);
+  test.setTimeout(45_000);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await createTestGroup(page, `Generation feedback ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
@@ -465,7 +465,7 @@ test("round generation indicator follows pending requests and clears on success 
 });
 
 test("session setup court settles once without replaying during attendance or court edits", async ({ page }, testInfo) => {
-  test.setTimeout(90000);
+  test.setTimeout(45_000);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.addInitScript(() => {
     document.addEventListener("animationstart", event => {
