@@ -106,6 +106,8 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("sm:text-xs");
     expect(html).toContain("shrink-0");
     expect(html).toContain("whitespace-nowrap");
+    expect(html).not.toContain("Record a match played between session players.");
+    expect(html).not.toContain("Record an additional match for this ended session.");
   });
 
   it("renders the three dots options menu inside the session card matching normal sessions", () => {
@@ -221,9 +223,50 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('aria-label="Guest Gender"');
     expect(html).toContain('id="open-play-guest-gender"');
     expect(html).toContain("Male");
-    expect(html).toContain("Female");
-    expect(html).toContain("Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.");
-    expect(html).not.toContain("won&apos;t be saved");
+    expect(html).toContain('data-testid="guest-description-banner"');
+    expect(html).toContain("Adding a guest here will add them to your roster.");
+    expect(html).toContain('data-testid="dismiss-guest-desc-button"');
+  });
+
+  it("hides open play guest description banner when dismissed in sessionStorage", () => {
+    const originalSessionStorage = globalThis.sessionStorage;
+    const storageMap = new Map<string, string>();
+    storageMap.set("pickleball_dismiss_guest_desc", "true");
+
+    Object.defineProperty(globalThis, "sessionStorage", {
+      value: {
+        getItem: (key: string) => storageMap.get(key) ?? null,
+        setItem: (key: string, val: string) => storageMap.set(key, val),
+        removeItem: (key: string) => storageMap.delete(key),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    try {
+      const html = renderToStaticMarkup(
+        <OpenPlayManagerClient
+          groupId={groupId}
+          groupName="Test Group"
+          session={session}
+          players={players}
+          attendance={attendance}
+          startedRounds={[]}
+          isOrganizer={true}
+          isHost={true}
+          isMember={true}
+          currentViewerPlayerId="p1"
+        />
+      );
+
+      expect(html).not.toContain('data-testid="guest-description-banner"');
+    } finally {
+      Object.defineProperty(globalThis, "sessionStorage", {
+        value: originalSessionStorage,
+        writable: true,
+        configurable: true,
+      });
+    }
   });
 
   it("renders general session info and personal session view with games won and lost in open play", () => {
@@ -435,7 +478,7 @@ describe("OpenPlayManagerClient Component", () => {
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
   });
 
-  it("renders rematch, rotate partners, and clear buttons in game submission card without next waiting option", () => {
+  it("renders rotate partners, swap sides, and clear buttons in game submission card without rematch or next waiting option", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -451,17 +494,19 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    expect(html).toContain('data-testid="rematch-button"');
-    expect(html).toContain("Rematch");
+    expect(html).not.toContain('data-testid="rematch-button"');
+    expect(html).not.toContain("Rematch");
     expect(html).toContain('data-testid="rotate-partners-button"');
     expect(html).toContain("Rotate Partners");
+    expect(html).toContain('data-testid="swap-sides-button"');
+    expect(html).toContain("Swap Sides");
     expect(html).not.toContain('data-testid="next-waiting-button"');
     expect(html).not.toContain("Next Waiting");
     expect(html).toContain('data-testid="clear-slots-button"');
     expect(html).toContain("Clear");
   });
 
-  it("renders Team 1 and Team 2 Winner selection buttons in game submission cards", () => {
+  it("renders Team 1 and Team 2 Winner selection buttons in game submission cards with prominent styling", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -480,6 +525,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('data-testid="team-1-winner-button"');
     expect(html).toContain('data-testid="team-2-winner-button"');
     expect(html).toContain("Select Winner");
+    expect(html).toContain("bg-[#fde047]");
     expect(html).not.toContain("Winner (11)");
     expect(html).toContain("whitespace-nowrap");
   });
@@ -549,8 +595,9 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).not.toContain("👑");
 
     // Verify action buttons exist
-    expect(html).toContain('data-testid="rematch-button"');
+    expect(html).not.toContain('data-testid="rematch-button"');
     expect(html).toContain('data-testid="rotate-partners-button"');
+    expect(html).toContain('data-testid="swap-sides-button"');
     expect(html).toContain('data-testid="team-1-winner-button"');
     expect(html).toContain('data-testid="team-2-winner-button"');
   });
@@ -603,6 +650,158 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("Existing Member");
     expect(html).toContain("Add Guest");
     expect(html).toContain('role="tablist"');
+  });
+
+  it("renders swap sides button with doubles title when matchType is doubles", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('title="Swap sides between Team 1 and Team 2"');
+    expect(html).toContain('data-testid="swap-sides-button"');
+  });
+
+  it("says Player 1 and Player 2 instead of Team 1 and Team 2 for singles in open play", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+        initialMatchType="singles"
+      />
+    );
+
+    // Verify Player 1 and Player 2 headings
+    expect(html).toContain("Player 1");
+    expect(html).toContain("Player 2");
+
+    // Verify Points labels
+    expect(html).toContain("Player 1 Points");
+    expect(html).toContain("Player 2 Points");
+    expect(html).not.toContain("Team 1 Points");
+    expect(html).not.toContain("Team 2 Points");
+
+    // Verify score inputs and winner button aria labels
+    expect(html).toContain('aria-label="Player 1 Score"');
+    expect(html).toContain('aria-label="Player 2 Score"');
+    expect(html).toContain('aria-label="Select Player 1 as Winner"');
+    expect(html).toContain('aria-label="Select Player 2 as Winner"');
+
+    // Verify toolbar tooltip for swap sides
+    expect(html).toContain('title="Swap sides between Player 1 and Player 2"');
+  });
+
+  it("does not render Players in Session header and places Add Players above Checked-in Players", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify outer Players in Session header is removed
+    expect(html).not.toContain("Players in Session");
+
+    // Verify both sections exist
+    expect(html).toContain('data-testid="add-players-box"');
+    expect(html).toContain('data-testid="checked-in-players-box"');
+
+    // Verify Add Players appears before Checked-in Players in DOM order
+    const addPlayersIdx = html.indexOf('data-testid="add-players-box"');
+    const checkedInIdx = html.indexOf('data-testid="checked-in-players-box"');
+    expect(addPlayersIdx).toBeGreaterThan(-1);
+    expect(checkedInIdx).toBeGreaterThan(-1);
+    expect(addPlayersIdx).toBeLessThan(checkedInIdx);
+  });
+
+  it("renders prominent Join Open Play banner outside player boxes when member is not checked in", () => {
+    // Viewer p5 is a member but not in attendance
+    const nonCheckedInViewerId = "p5";
+    const membersWithViewer = [
+      ...players,
+      { id: nonCheckedInViewerId, groupId, name: "Eve", active: true, initialRating: 1200, rating: 1200, ratedGamesPlayed: 0 },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={membersWithViewer}
+        attendance={attendance} // Eve is not in attendance
+        startedRounds={[]}
+        isOrganizer={false}
+        isHost={false}
+        isMember={true}
+        currentViewerPlayerId={nonCheckedInViewerId}
+      />
+    );
+
+    expect(html).toContain('data-testid="join-open-play-button"');
+    expect(html).toContain("Join Open Play");
+
+    // The join open play button is rendered before the Add Players box
+    const joinBtnIdx = html.indexOf('data-testid="join-open-play-button"');
+    const addPlayersIdx = html.indexOf('data-testid="add-players-box"');
+    expect(joinBtnIdx).toBeGreaterThan(-1);
+    expect(addPlayersIdx).toBeGreaterThan(-1);
+    expect(joinBtnIdx).toBeLessThan(addPlayersIdx);
+  });
+
+  it("does not allow recording games and shows check-in notice in submit game card when viewer is not checked in", () => {
+    const nonCheckedInViewerId = "p5";
+    const membersWithViewer = [
+      ...players,
+      { id: nonCheckedInViewerId, groupId, name: "Eve", active: true, initialRating: 1200, rating: 1200, ratedGamesPlayed: 0 },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={membersWithViewer}
+        attendance={attendance} // Eve is not checked in
+        startedRounds={[]}
+        isOrganizer={false}
+        isHost={false}
+        isMember={true}
+        currentViewerPlayerId={nonCheckedInViewerId}
+      />
+    );
+
+    // submit game card should indicate check-in is required
+    expect(html).toContain('data-testid="submit-game-card"');
+    expect(html).toContain("You must be checked in to this session to record games.");
+    // Should not render the match inputs / score inputs for recording
+    expect(html).not.toContain('aria-label="Team 1 Points"');
+    expect(html).not.toContain('aria-label="Player 1 Score"');
   });
 });
 

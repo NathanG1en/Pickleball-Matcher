@@ -14,7 +14,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/app/actions/sessions", () => ({
   deleteSessionAction: vi.fn(async () => ({ ok: true, data: undefined })),
   duplicateSessionAction: vi.fn(async () => ({ ok: true, data: { id: "ses_dup" } })),
-  recalculateGroupSynergiesAction: vi.fn(async () => ({ ok: true, data: { success: true } })),
   updateSessionNameAction: vi.fn(async () => ({ ok: true })),
 }));
 
@@ -125,6 +124,20 @@ describe("SessionOptionsMenu Component", () => {
 
     expect(html).toContain("Undo Round 2");
     expect(html).toContain('data-testid="undo-round-menu-item"');
+  });
+
+  it("does not render refresh chemistry or refresh synergy menu item", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        initialMenuOpen={true}
+      />
+    );
+
+    expect(html).not.toContain("Refresh Chemistry");
+    expect(html).not.toContain("Refresh Synergy");
+    expect(html).not.toContain('data-testid="refresh-chemistry-menu-item"');
   });
 });
 

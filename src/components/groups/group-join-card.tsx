@@ -33,7 +33,7 @@ export function GroupJoinCard({
   };
 
   return (
-    <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+    <section className="bg-white border-[3px] border-black rounded-3xl p-6 space-y-4">
       <div>
         <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
           Join {groupName}

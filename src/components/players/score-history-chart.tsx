@@ -177,7 +177,7 @@ export function ScoreHistoryChart({ history }: { history: readonly PlayerSession
           <div
             role="tooltip"
             data-testid="rating-tooltip"
-            className="pointer-events-none absolute z-30 flex flex-col items-center rounded-xl border-2 border-black bg-white px-3 py-1.5 text-center shadow-[3px_3px_0px_0px_#000] whitespace-nowrap"
+            className="pointer-events-none absolute z-30 flex flex-col items-center rounded-xl border-2 border-black bg-white px-3 py-1.5 text-center shadow-[3px_3px_0px_0px_#000] whitespace-nowrap tooltip-animate"
             style={{
               left: `${(activePoint.x / 400) * 100}%`,
               top: `${(activePoint.y / 130) * 100}%`,

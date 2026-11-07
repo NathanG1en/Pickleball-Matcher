@@ -15,3 +15,4 @@ export * from "./stat-card";
 export * from "./textarea";
 export * from "./visibility-toggle";
 export * from "./client-date-time";
+export * from "./use-tooltip-position";

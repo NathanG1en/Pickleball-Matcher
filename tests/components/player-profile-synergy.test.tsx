@@ -136,8 +136,9 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
     const PageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(PageElement);
 
-    expect(html).toContain("Doubles Synergy");
-    expect(html).toContain("Play doubles matches with other registered accounts");
+    expect(html).toContain("No Partner Yet");
+    expect(html).toContain("Play matches with other people to unlock");
+    expect(html).toContain("Chemistry Spotlight");
   });
 
   describe("PlayerPublicProfilePage (/players/[username])", () => {
@@ -199,6 +200,35 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("Rating over time");
       expect(html).toContain("Past Sessions");
       expect(html).not.toContain("This Profile is Private");
+    });
+
+    it("renders No Partner Yet empty state on public profile when target has no partner yet", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_solo",
+            username: "solo_star",
+            name: "Solo Star",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1100,
+            rating: 1100,
+            createdAt: new Date(),
+          },
+        ],
+      });
+      setActionRepository(repository);
+
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_other");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "solo_star" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      expect(html).toContain("No Partner Yet");
+      expect(html).toContain("Must play matches with other people to unlock");
     });
 
     it("renders only display name and username when target is private and viewer is another user", async () => {

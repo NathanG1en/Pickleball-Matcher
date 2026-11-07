@@ -320,6 +320,53 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).not.toContain("Check in and submit games.");
     });
 
+    it("makes the active session in progress card clickable anywhere to open the session", async () => {
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain('data-testid="active-session-card"');
+      expect(html).toContain("cursor-pointer");
+      expect(html).toContain('data-testid="active-session-overlay-link"');
+      expect(html).toContain("absolute inset-0 z-10");
+      expect(html).toContain(`href="/g/${groupId}/sessions/${activeSessionId}"`);
+    });
+
+    it("makes the open play in progress card clickable anywhere to open the session", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(hostAccountId);
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      const session = await repo.getSession(activeSessionId);
+      if (session) {
+        await repo.updateSession({ ...session, type: "open_play" });
+      }
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain('data-testid="active-session-card"');
+      expect(html).toContain("cursor-pointer");
+      expect(html).toContain('data-testid="active-session-overlay-link"');
+      expect(html).toContain("absolute inset-0 z-10");
+      expect(html).toContain(`href="/g/${groupId}/sessions/${activeSessionId}"`);
+    });
+
+    it("does not render non-button drop shadows on the group dashboard sections or header", async () => {
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).not.toContain("shadow-[6px_6px_0px_0px_#000]");
+      expect(html).not.toMatch(/<header[^>]*shadow-/);
+      expect(html).not.toMatch(/<section[^>]*data-testid="active-session-card"[^>]*shadow-/);
+      expect(html).not.toMatch(/<section[^>]*aria-label="Group roster"[^>]*shadow-/);
+      expect(html).toContain("shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]"); // buttons keep shadow
+    });
+
     it("allows non-members to view a public group but hides active/past sessions and shows join card", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
       const repo = createTestRepository({ activeSession: true, activeRound: true, isPublic: true });

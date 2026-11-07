@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/groups/back-button";
 import { InfoIcon, ShuffleIcon } from "@/components/ui/icons";
+import { useTooltipPosition } from "@/components/ui";
 import { saveTemporaryGroupAction } from "@/app/actions/temporary";
 import { generateRound } from "@/lib/matchmaking/generate-round";
 import type { GeneratedRound } from "@/lib/matchmaking/types";
@@ -80,6 +81,11 @@ export function TemporaryGroupClient({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showStorageTooltip, setShowStorageTooltip] = useState(false);
+  const {
+    triggerRef: storageTriggerRef,
+    tooltipRef: storageTooltipRef,
+    style: storageTooltipStyle,
+  } = useTooltipPosition(showStorageTooltip, () => setShowStorageTooltip(false));
 
   const [saveDestination, setSaveDestination] = useState<"new" | "existing">(
     userGroups.length > 0 ? "existing" : "new",
@@ -307,6 +313,7 @@ export function TemporaryGroupClient({
               onMouseLeave={() => setShowStorageTooltip(false)}
             >
               <button
+                ref={storageTriggerRef}
                 type="button"
                 onClick={() => setShowStorageTooltip((prev) => !prev)}
                 onFocus={() => setShowStorageTooltip(true)}
@@ -327,9 +334,11 @@ export function TemporaryGroupClient({
                     aria-hidden="true"
                   />
                   <div
+                    ref={storageTooltipRef}
                     role="tooltip"
                     data-testid="browser-storage-tooltip"
-                    className="absolute left-0 sm:left-6 top-6 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+                    style={storageTooltipStyle}
+                    className="absolute left-0 sm:left-6 top-6 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black tooltip-animate"
                   >
                     <p className="text-xs font-bold leading-relaxed text-neutral-800">
                       Quick sessions stay in this browser. You can {accountId ? "" : "sign in anytime to "}save your session into a new or existing group anytime.

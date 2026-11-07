@@ -6,7 +6,6 @@ import { LeaveGroupButton, PlayerLogoutButton, PlayerProfileHeader } from "@/com
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
-import { HandshakeIcon } from "@/components/ui/icons";
 import { ClientDate } from "@/components/ui/client-date-time";
 
 export default async function PlayerProfilePage() {
@@ -25,7 +24,7 @@ export default async function PlayerProfilePage() {
 
   return <main className="min-h-screen p-4 sm:p-6">
     <section className="mx-auto max-w-2xl space-y-5">
-      <header className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
+      <header className="rounded-3xl border-[3px] border-black bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
           <BackButton href="/" />
           <PlayerLogoutButton />
@@ -41,7 +40,7 @@ export default async function PlayerProfilePage() {
       </header>
 
       {bestPartner ? (
-        <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5 shadow-[5px_5px_0px_0px_#000]">
+        <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-1.5">
@@ -57,7 +56,7 @@ export default async function PlayerProfilePage() {
                 const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
                 const sign = score > 0 ? `+${score}%` : `${score}%`;
                 return (
-                  <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000] ${
+                  <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
                     score > 0
                       ? "bg-emerald-100 text-emerald-950"
                       : score < 0
@@ -75,21 +74,16 @@ export default async function PlayerProfilePage() {
           </div>
         </section>
       ) : (
-        <section className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
-                <SynergyExplainerButton />
-              </div>
-              <h2 className="font-display text-xl font-black uppercase text-neutral-800">Doubles Synergy</h2>
-              <p className="mt-1 text-xs font-bold text-neutral-600 max-w-sm">
-                Play doubles matches with other registered accounts in your groups to discover your best partner and unlock mutual chemistry scores.
-              </p>
+        <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+              <SynergyExplainerButton />
             </div>
-            <span className="flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 p-3 shadow-[2px_2px_0px_0px_#000]">
-              <HandshakeIcon className="h-6 w-6 text-black" />
-            </span>
+            <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
+            <p className="mt-1 text-xs font-bold text-neutral-600">
+              Play matches with other people to unlock.
+            </p>
           </div>
         </section>
       )}
@@ -100,17 +94,17 @@ export default async function PlayerProfilePage() {
         <StatCard label="Losses" value={losses} />
       </section>
 
-      <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 shadow-[5px_5px_0px_0px_#000]">
+      <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
         <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><div className="flex gap-2"><Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link></div></div>
         {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />}</div></li>)}</ul>}
       </section>
 
-      <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+      <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
         <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
         <ScoreHistoryChart history={history} />
       </section>
 
-      <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+      <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5">
         <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
         {history.length === 0 ? (
           <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>

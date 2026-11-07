@@ -42,7 +42,7 @@ export function GroupTournamentsList({
       {tournaments.map((tourney) => (
         <div
           key={tourney.id}
-          className="p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] space-y-3 hover:translate-x-0.5 hover:translate-y-0.5 transition-transform"
+          className="p-4 bg-white border-2 border-black rounded-2xl space-y-3 hover:translate-x-0.5 hover:translate-y-0.5 transition-transform"
         >
           <div className="flex items-center justify-between gap-2">
             <div>

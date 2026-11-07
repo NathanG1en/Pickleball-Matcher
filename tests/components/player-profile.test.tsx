@@ -779,5 +779,56 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Spring Kickoff · ");
     expect(html).toMatch(/<time[^>]*dateTime="2026-04-12T10:00:00.000Z"[^>]*>Apr 12, 2026<\/time>/);
   });
+
+  it("renders profile header, sections, and stat cards without drop shadows while buttons keep shadows", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "shadowtest",
+          name: "Shadow Test",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          rating: 1050,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [
+        {
+          id: "g1",
+          name: "Shadow Group",
+          organizerPinHash: "hash",
+          createdAt: new Date(),
+          isPublic: true,
+          ownerAccountId: testAccountId,
+        },
+      ],
+      players: [
+        {
+          id: "p1",
+          groupId: "g1",
+          accountId: testAccountId,
+          name: "Shadow Test",
+          initialRating: 1000,
+          rating: 1050,
+          ratedGamesPlayed: 0,
+          active: true,
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    // Header and sections should NOT have shadow
+    expect(html).not.toContain("shadow-[6px_6px_0px_0px_#000]");
+    expect(html).not.toContain("shadow-[5px_5px_0px_0px_#000]");
+    expect(html).not.toMatch(/(?<!hover:)shadow-\[3px_3px_0px_0px_#000\]/);
+    // Buttons (like Create / Find groups / BackButton) SHOULD have shadow
+    expect(html).toContain("shadow-[2px_2px_0px_0px_#000]");
+  });
 });
+
 

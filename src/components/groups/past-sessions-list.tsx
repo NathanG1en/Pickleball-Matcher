@@ -147,7 +147,7 @@ export function PastSessionsList({
             {/* Expanded Content: Categorized by Rounds, Sized to fit 5 games with scrolling */}
             {isExpanded && (
               <div
-                className="session-summary-expand bg-neutral-50 border-2 border-black rounded-2xl p-4 space-y-4 shadow-[3px_3px_0px_0px_#000]"
+                className="session-summary-expand bg-neutral-50 border-2 border-black rounded-2xl p-4 space-y-4"
                 data-testid={`expanded-session-content-${session.id}`}
               >
                 {session.rounds.length === 0 ? (
@@ -173,7 +173,7 @@ export function PastSessionsList({
                           return (
                             <div
                               key={m.id}
-                              className="p-3 bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] text-xs space-y-1.5"
+                              className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
                               data-testid={`match-card-${m.id}`}
                             >
                               <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
@@ -206,7 +206,7 @@ export function PastSessionsList({
                                   <span
                                     className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
                                       isT1Winner
-                                        ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
+                                        ? "bg-[#ccff00] text-black"
                                         : "bg-neutral-100 text-neutral-800"
                                     }`}
                                   >
@@ -225,7 +225,7 @@ export function PastSessionsList({
                                   <span
                                     className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
                                       isT2Winner
-                                        ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
+                                        ? "bg-[#ccff00] text-black"
                                         : "bg-neutral-100 text-neutral-800"
                                     }`}
                                   >
@@ -240,7 +240,7 @@ export function PastSessionsList({
                     ) : (
                       session.rounds.map((round) => (
                         <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
-                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-white px-3 py-1.5 rounded-xl border-2 border-black/20 shadow-[1px_1px_0px_0px_rgba(0,0,0,0.1)]">
+                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-white px-3 py-1.5 rounded-xl border-2 border-black/20">
                             <span>Round {round.roundNumber}</span>
                             <span className="text-[10px] font-bold text-neutral-500">
                               {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
@@ -267,7 +267,7 @@ export function PastSessionsList({
                               return (
                                 <div
                                   key={m.id}
-                                  className="p-3 bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] text-xs space-y-1.5"
+                                  className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
                                   data-testid={`match-card-${m.id}`}
                                 >
                                   <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
@@ -300,7 +300,7 @@ export function PastSessionsList({
                                       <span
                                         className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
                                           isT1Winner
-                                            ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
+                                            ? "bg-[#ccff00] text-black"
                                             : "bg-neutral-100 text-neutral-800"
                                         }`}
                                       >
@@ -319,7 +319,7 @@ export function PastSessionsList({
                                       <span
                                         className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
                                           isT2Winner
-                                            ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
+                                            ? "bg-[#ccff00] text-black"
                                             : "bg-neutral-100 text-neutral-800"
                                         }`}
                                       >

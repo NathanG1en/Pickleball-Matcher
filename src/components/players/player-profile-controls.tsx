@@ -16,6 +16,7 @@ import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
+import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 
 export function PlayerProfileHeader({
   initialName,
@@ -64,6 +65,11 @@ export function PlayerProfileHeader({
   const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [privacyToast, setPrivacyToast] = useState<string | null>(null);
   const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
+  const {
+    triggerRef: privacyTriggerRef,
+    tooltipRef: privacyTooltipRef,
+    style: privacyTooltipStyle,
+  } = useTooltipPosition(showPrivacyTooltip, () => setShowPrivacyTooltip(false));
 
   const handleTogglePrivacy = async () => {
     if (privacySaving) return;
@@ -229,7 +235,7 @@ export function PlayerProfileHeader({
               maxLength={80}
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
-              className="min-w-0 max-w-xs rounded-xl border-2 border-black bg-white px-3 py-1.5 font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+              className="min-w-0 max-w-xs rounded-xl border-2 border-black bg-white px-3 py-1.5 font-bold focus:outline-none"
               autoFocus
             />
             <Button
@@ -286,7 +292,7 @@ export function PlayerProfileHeader({
                   setUsernameInput(val);
                 }}
                 aria-invalid={isUsernameTaken}
-                className={`w-full rounded-xl pl-7 pr-3 py-1.5 font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none ${
+                className={`w-full rounded-xl pl-7 pr-3 py-1.5 font-bold focus:outline-none ${
                   isUsernameTaken
                     ? "border-2 border-red-600 bg-red-50 text-red-900"
                     : "border-2 border-black bg-white"
@@ -349,7 +355,7 @@ export function PlayerProfileHeader({
               aria-label="Gender"
               value={genderInput}
               onChange={(event) => setGenderInput(event.target.value as "male" | "female")}
-              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold focus:outline-none"
               autoFocus
             >
               <option value="male">Male</option>
@@ -423,6 +429,7 @@ export function PlayerProfileHeader({
             onMouseLeave={() => setShowPrivacyTooltip(false)}
           >
             <button
+              ref={privacyTriggerRef}
               type="button"
               onClick={() => setShowPrivacyTooltip((prev) => !prev)}
               onFocus={() => setShowPrivacyTooltip(true)}
@@ -442,8 +449,10 @@ export function PlayerProfileHeader({
                   aria-hidden="true"
                 />
                 <div
+                  ref={privacyTooltipRef}
                   role="tooltip"
-                  className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+                  style={privacyTooltipStyle}
+                  className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
                 >
                   <div className="space-y-1.5 text-xs">
                     <p className="font-bold leading-snug">
@@ -464,7 +473,7 @@ export function PlayerProfileHeader({
         {privacyToast && (
           <div
             role="status"
-            className="flex items-center gap-1.5 rounded-lg border border-black bg-neutral-200 px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000] w-fit"
+            className="flex items-center gap-1.5 rounded-lg border border-black bg-neutral-200 px-2.5 py-1 text-xs font-black text-black w-fit"
           >
             <CheckIcon className="h-3.5 w-3.5 shrink-0" />
             <span>{privacyToast}</span>
@@ -497,6 +506,7 @@ export function PlayerVisibilityControl({
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const { triggerRef, tooltipRef, style } = useTooltipPosition(showTooltip, () => setShowTooltip(false));
 
   const toggle = async () => {
     if (pending) return;
@@ -548,6 +558,7 @@ export function PlayerVisibilityControl({
           onMouseLeave={() => setShowTooltip(false)}
         >
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setShowTooltip((prev) => !prev)}
             onFocus={() => setShowTooltip(true)}
@@ -567,8 +578,10 @@ export function PlayerVisibilityControl({
                 aria-hidden="true"
               />
               <div
+                ref={tooltipRef}
                 role="tooltip"
-                className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+                style={style}
+                className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
               >
                 <div className="space-y-1.5 text-xs">
                   <p className="font-bold leading-snug">
@@ -589,7 +602,7 @@ export function PlayerVisibilityControl({
       {toast && (
         <div
           role="status"
-          className="flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black shadow-[1px_1px_0px_0px_#000] w-fit"
+          className="flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black w-fit"
         >
           <CheckIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{toast}</span>

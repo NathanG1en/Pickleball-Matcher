@@ -46,7 +46,7 @@ export function getRemoveGuestConfirmationMessage(name: string, gamesPlayed: num
 
 export const DISMISS_GUEST_DESC_STORAGE_KEY = "pickleball_dismiss_guest_desc";
 
-function getGuestDescDismissedSnapshot(): boolean {
+export function getGuestDescDismissedSnapshot(): boolean {
   try {
     if (typeof window !== "undefined" && window.sessionStorage) {
       return window.sessionStorage.getItem(DISMISS_GUEST_DESC_STORAGE_KEY) === "true";
@@ -60,7 +60,7 @@ function getGuestDescDismissedSnapshot(): boolean {
   return false;
 }
 
-function subscribeGuestDescDismissed(callback: () => void): () => void {
+export function subscribeGuestDescDismissed(callback: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("pickleball_guest_desc_dismissed", callback);
   return () => {
@@ -446,11 +446,11 @@ export function GroupOrganizersPanel({
       {(isHost || isOrganizer) && (
         <section
           aria-label="Add player or guest"
-          className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]"
+          className="space-y-3 rounded-2xl border-2 border-black bg-white p-4"
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]">
+              <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shrink-0">
                 <UserPlusIcon className="h-4 w-4 text-black" />
               </div>
               <div>
@@ -547,7 +547,7 @@ export function GroupOrganizersPanel({
 
               {/* Live Search Results Dropdown */}
               {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
-                <div className="mt-2 rounded-xl border-2 border-black bg-white p-2 shadow-[3px_3px_0px_0px_#000] space-y-2">
+                <div className="mt-2 rounded-xl border-2 border-black bg-white p-2 space-y-2">
                   <div className="px-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                       Public Accounts ({searchResults.length})
@@ -618,7 +618,7 @@ export function GroupOrganizersPanel({
               )}
             </div>
           ) : (
-            <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-white/70 p-3 shadow-[2px_2px_0px_0px_#000]">
+            <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-white/70 p-3">
               {!isGuestDescDismissed && (
                 <div
                   data-testid="guest-description-banner"
@@ -692,7 +692,7 @@ export function GroupOrganizersPanel({
       {/* Roster Directory Section */}
       <section
         aria-label="Group roster"
-        className="space-y-3 rounded-2xl border-2 border-black bg-[#fef08a] p-4 shadow-[3px_3px_0px_0px_#000]"
+        className="space-y-3 rounded-2xl border-2 border-black bg-[#fef08a] p-4"
       >
         <div>
           <h2 className="font-display text-xl font-black uppercase">Roster ({players.length})</h2>
