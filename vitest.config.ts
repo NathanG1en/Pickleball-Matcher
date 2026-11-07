@@ -20,6 +20,7 @@ export default defineConfig({
       "tests/simulations/**",
       "tests/auth/rate-limit.test.ts",
     ],
-    testTimeout: 15000,
+    testTimeout: 10000,
+    hookTimeout: 10000,
   },
 });

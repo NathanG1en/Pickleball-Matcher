@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createTestGroup } from "./test-helpers";
 
 test("semifinal corrections clear the final and champion, including after refresh", async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Bracket corrections ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (const name of ["Blake", "Casey", "Drew"]) {

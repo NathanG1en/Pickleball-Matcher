@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createTestGroup } from "./test-helpers";
 
 test("joining a new session without playing does not reset the rating graph", async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   const { groupId, hostName, hostUsername } = await createTestGroup(page, `History carry-forward ${Date.now()}`);
   await page.getByTestId("start-new-session-button").click();
   await page.getByTestId("select-open-play-button").click();
@@ -28,7 +28,7 @@ test("joining a new session without playing does not reset the rating graph", as
   await expect(page.getByTestId("open-play-matches-list")).toContainText("11 – 7");
   page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("end-session-button").click();
-  await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Completed Session")).toBeVisible();
   await page.goto(`/g/${groupId}`);
   await page.getByTestId("start-new-session-button").click();
   await page.getByTestId("select-normal-session-button").click();

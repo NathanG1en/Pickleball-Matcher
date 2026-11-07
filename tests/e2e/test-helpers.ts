@@ -64,7 +64,23 @@ export async function checkAnimationReplay(
   const starts = () => page.evaluate(key => Number(document.documentElement.dataset[key] ?? "0"), counter);
   let expected = await starts();
   let requests = 0;
-  const trackRequest = (request: import("@playwright/test").Request) => { if (request.method() === "POST") requests++; };
+  const trackRequest = (request: import("@playwright/test").Request) => {
+    if (request.method() === "POST") {
+      try {
+        const parsed = JSON.parse(request.postData() ?? "");
+        if (Array.isArray(parsed) && parsed.length === 1 && typeof parsed[0] === "object" && parsed[0] !== null) {
+          const keys = Object.keys(parsed[0]);
+          if (keys.length === 2 && keys.includes("groupId") && keys.includes("sessionId")) {
+            // Ignore background live-sync polling which is not triggered by replay button
+            return;
+          }
+        }
+      } catch {
+        // Not JSON
+      }
+      requests++;
+    }
+  };
   page.on("request", trackRequest);
   try {
     await button.focus();

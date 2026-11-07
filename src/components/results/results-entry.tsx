@@ -46,6 +46,7 @@ export interface ResultsEntryViewProps {
   readonly onSaveAndStartNextRound?: () => void;
   readonly upcomingProposal?: RoundProposal | null;
   readonly playerNames?: Readonly<Record<string, string>>;
+  readonly confirmMatchups?: boolean;
 }
 
 export function ResultsEntryView({
@@ -124,7 +125,7 @@ export function ResultsEntryView({
 
   return (
     <div className="results-entry-view space-y-6 pb-28 text-black">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] mb-1">
             {canManage ? "Score Entry" : "Live Games"}
@@ -133,33 +134,29 @@ export function ResultsEntryView({
             Round {roundNumber} {canManage ? "Results" : "Matchups"}
           </h1>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
             {canManage && onAddGame && (
-              <Button
+              <button
                 type="button"
-                variant="primary"
-                size="sm"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
-                <span>+ Add Game</span>
-              </Button>
+                <span className="whitespace-nowrap">+ Add Game</span>
+              </button>
             )}
             {canManage && onReshuffleRound && (
-              <Button
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[2px_2px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Reshuffle</span>
-              </Button>
+                <span className="whitespace-nowrap">Reshuffle</span>
+              </button>
             )}
           </div>
           <p className="text-xs font-bold text-neutral-600 hidden sm:block">
@@ -411,7 +408,10 @@ export function ResultsEntryView({
                   variant="primary"
                   size="sm"
                   disabled={isSaveAndStartDisabled}
-                  onClick={onSaveAndStartNextRound ?? onNextRound}
+                  onClick={() => {
+                    const startFn = onSaveAndStartNextRound ?? onNextRound;
+                    startFn?.();
+                  }}
                   data-testid="save-and-start-next-round-button"
                   title={`Save all scores and start Round ${roundNumber + 1}`}
                   className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
@@ -421,8 +421,12 @@ export function ResultsEntryView({
                   ) : (
                     <>
                       <span className="sr-only">Next Round</span>
-                      <span className="sm:hidden">Save &amp; Start R{roundNumber + 1}</span>
-                      <span className="hidden sm:inline">Save &amp; Start Next Round</span>
+                      <span className="sm:hidden">
+                        Save &amp; Start R{roundNumber + 1}
+                      </span>
+                      <span className="hidden sm:inline">
+                        Save &amp; Start Next Round
+                      </span>
                     </>
                   )}
                 </Button>

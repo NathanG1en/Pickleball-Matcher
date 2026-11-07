@@ -108,7 +108,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("whitespace-nowrap");
   });
 
-  it("removes the open play label and renders the three dots in the top right corner of the header box", () => {
+  it("renders the three dots options menu inside the session card matching normal sessions", () => {
     const html = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
@@ -127,7 +127,7 @@ describe("OpenPlayManagerClient Component", () => {
     // Verify Open Play badge is not rendered
     expect(html).not.toContain("bg-black text-[#ccff00]");
 
-    // Verify Session Options Menu button is rendered in the top header row
+    // Verify Session Options Menu button and title positions
     const optionsIndex = html.indexOf('data-testid="session-options-menu-button"');
     const sessionNameIndex = html.indexOf("Open Play Session");
     const endSessionIndex = html.indexOf('data-testid="end-session-button"');
@@ -136,9 +136,18 @@ describe("OpenPlayManagerClient Component", () => {
     expect(sessionNameIndex).toBeGreaterThan(-1);
     expect(endSessionIndex).toBeGreaterThan(-1);
 
-    // Three dots menu in the top bar appears before the session title and end session button
-    expect(optionsIndex).toBeLessThan(sessionNameIndex);
-    expect(optionsIndex).toBeLessThan(endSessionIndex);
+    // End session is in the top header controls before the session card
+    expect(endSessionIndex).toBeLessThan(sessionNameIndex);
+    // Three dots menu is in the session card alongside/after the session title
+    expect(sessionNameIndex).toBeLessThan(optionsIndex);
+
+    // End session button matches normal session styling
+    expect(html).toContain("bg-[#ff6b6b]");
+    expect(html).toContain("border-2 border-black font-black uppercase text-xs text-black");
+    expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
+
+    // "In Progress" badge is removed
+    expect(html).not.toContain("In Progress");
   });
 
   it("renders Add Existing Group Member dropdown directly without a separate submit button", () => {
@@ -213,6 +222,8 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('id="open-play-guest-gender"');
     expect(html).toContain("Male");
     expect(html).toContain("Female");
+    expect(html).toContain("Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.");
+    expect(html).not.toContain("won&apos;t be saved");
   });
 
   it("renders general session info and personal session view with games won and lost in open play", () => {
@@ -252,7 +263,7 @@ describe("OpenPlayManagerClient Component", () => {
       },
     ];
 
-    const html = renderToStaticMarkup(
+    const activeHtml = renderToStaticMarkup(
       <OpenPlayManagerClient
         groupId={groupId}
         groupName="Test Group"
@@ -267,19 +278,45 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    // General session info
-    expect(html).toContain("Courts");
-    expect(html).toContain("Total Games");
-    expect(html).toContain("Players");
-    expect(html).toContain("Started:");
+    // Session summary should NOT be present when session has not ended
+    expect(activeHtml).not.toContain('data-testid="personal-session-summary"');
+    expect(activeHtml).not.toContain("Total Games");
+    expect(activeHtml).not.toContain("Your Session");
 
-    // Personal session view
-    expect(html).toContain('data-testid="personal-session-summary"');
-    expect(html).toContain("Your Session");
-    expect(html).toContain("Games Won");
-    expect(html).toContain("Games Lost");
-    expect(html).toContain("Games Played");
-    expect(html).toContain("You won 1 game and lost 0 games.");
+    // Session summary SHOULD be present when session is completed
+    const completedSession: SessionRecord = {
+      ...session,
+      status: "completed",
+      endedAt: new Date("2026-10-10T15:30:00.000Z"),
+    };
+
+    const completedHtml = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // General session info on completed session
+    expect(completedHtml).toContain("Courts");
+    expect(completedHtml).toContain("Total Games");
+    expect(completedHtml).toContain("Players");
+
+    // Personal session view on completed session
+    expect(completedHtml).toContain('data-testid="personal-session-summary"');
+    expect(completedHtml).toContain("Your Session");
+    expect(completedHtml).toContain("Games Won");
+    expect(completedHtml).toContain("Games Lost");
+    expect(completedHtml).toContain("Games Played");
+    expect(completedHtml).toContain("You won 1 game and lost 0 games.");
   });
 
   it("renders Player Summary leaderboard when open play session is completed", () => {
@@ -391,12 +428,181 @@ describe("OpenPlayManagerClient Component", () => {
     const selectSection = html.slice(html.indexOf('aria-label="Team 1 Player 1"'), html.indexOf("Team 1 Points"));
     expect(selectSection).not.toContain('data-testid="black-pin-icon"');
 
-    // Pinned button exists for Dave in attendee chips for organizer with black styling
-    expect(html).toContain('data-testid="pin-player-Dave"');
-    expect(html).toContain('aria-label="Unpin Dave"');
-    expect(html).toContain("bg-black text-[#ccff00]");
+    // Option to pin players is not present in open play player management chips
+    expect(html).not.toContain('data-testid="pin-player-Dave"');
+    expect(html).not.toContain('aria-label="Unpin Dave"');
 
     localStorage.removeItem(`pickleball_pinned_players_${groupId}`);
+  });
+
+  it("renders rematch, rotate partners, and clear buttons in game submission card without next waiting option", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="rematch-button"');
+    expect(html).toContain("Rematch");
+    expect(html).toContain('data-testid="rotate-partners-button"');
+    expect(html).toContain("Rotate Partners");
+    expect(html).not.toContain('data-testid="next-waiting-button"');
+    expect(html).not.toContain("Next Waiting");
+    expect(html).toContain('data-testid="clear-slots-button"');
+    expect(html).toContain("Clear");
+  });
+
+  it("renders Team 1 and Team 2 Winner selection buttons in game submission cards", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="team-1-winner-button"');
+    expect(html).toContain('data-testid="team-2-winner-button"');
+    expect(html).toContain("Select Winner");
+    expect(html).not.toContain("Winner (11)");
+    expect(html).toContain("whitespace-nowrap");
+  });
+
+  it("does not render quick score preset buttons in open play", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).not.toContain("Quick Scores:");
+    expect(html).not.toContain("11–9");
+    expect(html).not.toContain("15–13");
+  });
+
+  it("does not render live label badge in open play header", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).not.toContain('data-testid="live-sync-indicator"');
+    expect(html).not.toContain("Live");
+    expect(html).not.toContain("Checked In");
+    expect(html).not.toContain("In Progress");
+  });
+
+  it("replaces emojis in open play toolbar and winner buttons with clean svg icons", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify emojis are not present
+    expect(html).not.toContain("⚔️");
+    expect(html).not.toContain("🔄");
+    expect(html).not.toContain("👑");
+
+    // Verify action buttons exist
+    expect(html).toContain('data-testid="rematch-button"');
+    expect(html).toContain('data-testid="rotate-partners-button"');
+    expect(html).toContain('data-testid="team-1-winner-button"');
+    expect(html).toContain('data-testid="team-2-winner-button"');
+  });
+
+  it("renders a collapsible drawer toggle button to hide or show checked-in players", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify drawer toggle button is rendered inside its own box
+    expect(html).toContain('data-testid="checked-in-players-box"');
+    expect(html).toContain('data-testid="toggle-players-drawer-button"');
+    expect(html).toContain("Hide Players");
+    expect(html).toContain('aria-controls="checked-in-players-drawer"');
+    expect(html).toContain('data-testid="checked-in-players-drawer"');
+    expect(html).toContain('data-testid="open-play-attendees"');
+  });
+
+  it("renders mode switch tabs matching roster style for adding existing members and guests", () => {
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={[]}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    // Verify tabs are rendered inside add-players-box
+    expect(html).toContain('data-testid="add-players-box"');
+    expect(html).toContain('data-testid="tab-add-member"');
+    expect(html).toContain('data-testid="tab-add-guest"');
+    expect(html).toContain("Existing Member");
+    expect(html).toContain("Add Guest");
+    expect(html).toContain('role="tablist"');
   });
 });
 

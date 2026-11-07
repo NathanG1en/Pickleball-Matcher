@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createTestGroup } from "./test-helpers";
 
 test("organizer saves and refreshes session partners before starting a paired round", async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Stay Together ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (const name of ["Alex Friend", "Sam Friend", "Casey Friend", "Drew Friend"]) {

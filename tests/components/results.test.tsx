@@ -336,5 +336,83 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
     expect(html).not.toContain("Start Round 4");
   });
+
+  it("renders Add Game button with single-line whitespace-nowrap and shrink-0 classes to prevent squishing on mobile", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onAddGame={() => {}}
+      />
+    );
+
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("whitespace-nowrap shrink-0");
+    const addGameButton = html.match(/<button[^>]*>[^<]*<span[^>]*>\+ Add Game<\/span><\/button>/)?.[0] ?? "";
+    expect(addGameButton).toContain("whitespace-nowrap");
+  });
+
+  it("renders Add Game and Reshuffle with matching matchup confirmation pill styling", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onAddGame={() => {}}
+        onReshuffleRound={() => {}}
+      />
+    );
+
+    expect(html).toContain("+ Add Game");
+    expect(html).toContain("Reshuffle");
+    expect(html).toContain('data-testid="reshuffle-matchups-button"');
+    // Both buttons use the matchup confirmation header button styling
+    expect(html).toContain("shadow-[3.5px_3.5px_0px_0px_#000]");
+    expect(html).toContain("text-[11px] sm:text-xs");
+    expect(html).toContain("bg-[#ccff00]");
+    expect(html).toContain("bg-white");
+  });
+
+  it("renders Save & Start Next Round when confirmMatchups is false", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onSaveAndStartNextRound={() => {}}
+        confirmMatchups={false}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).toContain("Save &amp; Start Next Round");
+    expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
+  });
+
+  it("renders Save & Start Next Round even when confirmMatchups is true", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        canManage={true}
+        onSaveAndStartNextRound={() => {}}
+        confirmMatchups={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).toContain("Save &amp; Start Next Round");
+    expect(html).toContain("Save &amp; Start R2");
+    expect(html).not.toContain('data-testid="matchup-confirmation-modal"');
+  });
 });
 

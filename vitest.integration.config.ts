@@ -22,6 +22,7 @@ export default defineConfig({
     setupFiles: ["tests/integration/setup-env.ts"],
     fileParallelism: false,
     maxWorkers: 1,
-    testTimeout: 30_000,
+    testTimeout: 20_000,
+    hookTimeout: 15_000,
   },
 });

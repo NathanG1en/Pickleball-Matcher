@@ -3,7 +3,7 @@ import { createTestGroup } from "./test-helpers";
 
 for (const surface of ["session", "dashboard"] as const) {
   test(`Open Play completion from ${surface} succeeds without a chemistry replay error`, async ({ page }, testInfo) => {
-    test.setTimeout(90_000);
+    test.setTimeout(45_000);
     const { groupId } = await createTestGroup(page, `Completion regression ${Date.now()}`);
     await page.getByTestId("start-new-session-button").click();
     await page.getByTestId("select-open-play-button").click();
@@ -23,12 +23,12 @@ for (const surface of ["session", "dashboard"] as const) {
       if (await replayError.count()) return true;
       return surface === "dashboard"
         ? await page.getByTestId("end-session-now-button").count() === 0
-        : await page.getByText("Completed", { exact: true }).count() > 0;
+        : await page.getByText("Completed Session").count() > 0;
     }).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("completion-result.png"), fullPage: true });
     await expect(replayError).toHaveCount(0);
     await page.goto(sessionUrl);
-    await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+    await expect(page.getByText("Completed Session")).toBeVisible();
     await expect(page.getByTestId("end-session-button")).toHaveCount(0);
   });
 }

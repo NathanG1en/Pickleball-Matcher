@@ -10,6 +10,7 @@ import {
   removeOpenPlayPlayerAction,
   startOpenPlaySessionAction,
   submitOpenPlayGameAction,
+  syncOpenPlaySessionAction,
   updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
 import { setActionRepository } from "@/app/actions/action-context";
@@ -559,6 +560,36 @@ describe("Open Play Server Actions", () => {
     expect(updateRes.ok).toBe(false);
     if (!updateRes.ok) {
       expect(updateRes.error).toBe("All players in a game must be currently checked in to the open play session.");
+    }
+  });
+
+  it("syncs open play session state for active sessions", async () => {
+    const startRes = await startOpenPlaySessionAction({ groupId: "g1" });
+    expect(startRes.ok).toBe(true);
+    if (!startRes.ok) return;
+
+    const syncRes = await syncOpenPlaySessionAction({
+      groupId: "g1",
+      sessionId: startRes.data.id,
+    });
+    expect(syncRes.ok).toBe(true);
+    if (!syncRes.ok) return;
+
+    expect(syncRes.data.session.id).toBe(startRes.data.id);
+    expect(syncRes.data.session.type).toBe("open_play");
+    expect(syncRes.data.players.length).toBeGreaterThanOrEqual(1);
+    expect(syncRes.data.attendance).toHaveLength(1);
+    expect(syncRes.data.startedRounds).toHaveLength(1);
+  });
+
+  it("returns error when syncing non-existent session", async () => {
+    const syncRes = await syncOpenPlaySessionAction({
+      groupId: "g1",
+      sessionId: "non-existent-session",
+    });
+    expect(syncRes.ok).toBe(false);
+    if (!syncRes.ok) {
+      expect(syncRes.error).toBe("Open play session not found.");
     }
   });
 });

@@ -270,3 +270,49 @@ export function PinIcon({ className = "h-4 w-4", filled = false, ...props }: Ico
   );
 }
 
+export function CrownIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+    </svg>
+  );
+}
+
+export function SwordsIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
+      <line x1="13" x2="19" y1="19" y2="13" />
+      <line x1="16" x2="20" y1="16" y2="20" />
+      <line x1="19" x2="21" y1="21" y2="19" />
+      <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" />
+      <line x1="5" x2="9" y1="14" y2="18" />
+      <line x1="7" x2="4" y1="17" y2="20" />
+      <line x1="3" x2="5" y1="19" y2="21" />
+    </svg>
+  );
+}
+
+export function RotateCwIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  );
+}
+
+export function ArrowLeftRightIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="m16 3 4 4-4 4" />
+      <path d="M20 7H4" />
+      <path d="m8 21-4-4 4-4" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
+
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useEffect, useMemo, useTransition, useSyncExternalStore } from "react";
 import { PartnerRequests } from "@/components/sessions/partner-requests";
 import { StayTogetherEditor } from "@/components/attendance/stay-together-editor";
 import { canonicalPairs } from "@/lib/matchmaking/stay-together";
@@ -58,7 +58,34 @@ import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
 
-export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together";
+export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together" | "preferences";
+
+const CONFIRM_MATCHUPS_STORAGE_KEY = "pickleball_confirm_matchups";
+
+function getConfirmMatchupsSnapshot(groupId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const groupVal = window.localStorage.getItem(`${CONFIRM_MATCHUPS_STORAGE_KEY}_${groupId}`);
+    if (groupVal !== null) return groupVal === "true";
+    const globalVal = window.localStorage.getItem(CONFIRM_MATCHUPS_STORAGE_KEY);
+    if (globalVal !== null) return globalVal === "true";
+  } catch {
+    // localStorage unavailable
+  }
+  return false;
+}
+
+function subscribeConfirmMatchups(groupId: string, callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => callback();
+  const eventName = `pickleball_confirm_matchups_changed_${groupId}`;
+  window.addEventListener("storage", handler);
+  window.addEventListener(eventName, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(eventName, handler);
+  };
+}
 
 export interface SessionManagerClientProps {
   readonly groupId: string;
@@ -214,6 +241,21 @@ export function SessionManagerClient({
   const [courtConfigMessage, setCourtConfigMessage] = useState<string | null>(null);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
+  const confirmMatchups = useSyncExternalStore(
+    (cb) => subscribeConfirmMatchups(groupId, cb),
+    () => getConfirmMatchupsSnapshot(groupId),
+    () => false
+  );
+
+  const handleToggleConfirmMatchups = (enabled: boolean) => {
+    try {
+      window.localStorage.setItem(`${CONFIRM_MATCHUPS_STORAGE_KEY}_${groupId}`, String(enabled));
+      window.localStorage.setItem(CONFIRM_MATCHUPS_STORAGE_KEY, String(enabled));
+      window.dispatchEvent(new Event(`pickleball_confirm_matchups_changed_${groupId}`));
+    } catch {
+      // localStorage unavailable
+    }
+  };
 
   const handlePickupGameAdded = (match: MatchRecord, matchPlayers: readonly MatchPlayerRecord[]) => {
     let hadNoRound = false;
@@ -897,6 +939,26 @@ export function SessionManagerClient({
   const handleNextRound = () => {
     if (!latestStarted || hasUnsavedScores || isPending) return;
     setError(null);
+    const proposalToUse = preGeneratedProposal;
+    const previousRounds = localStartedRounds;
+    if (proposalToUse) {
+      setRegeneratedProposal(proposalToUse);
+    }
+    setLocalStartedRounds((prev) =>
+      prev.map((sr) =>
+        sr.round.id === latestStarted.round.id
+          ? {
+              ...sr,
+              round: {
+                ...sr.round,
+                status: "completed" as const,
+                completedAt: latestStarted.round.startedAt,
+                version: sr.round.version + 1,
+              },
+            }
+          : sr
+      )
+    );
     startGeneratingRound(async () => {
       try {
         const res = await completeRoundAction({
@@ -908,12 +970,15 @@ export function SessionManagerClient({
           idempotencyKey: createIdempotencyKey("next_rd"),
         });
         if (res.ok) {
-          // The action revalidates this route and returns its fresh server tree.
-          setRegeneratedProposal(null);
+          if (!proposalToUse) {
+            setRegeneratedProposal(null);
+          }
         } else {
+          setLocalStartedRounds(previousRounds);
           setError(res.error);
         }
       } catch {
+        setLocalStartedRounds(previousRounds);
         setError("Failed to advance to next round.");
       }
     });
@@ -1732,6 +1797,7 @@ export function SessionManagerClient({
                 onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
                 upcomingProposal={canManage ? preGeneratedProposal : null}
                 playerNames={playerNames}
+                confirmMatchups={confirmMatchups}
               />
               {canManage && (
                 <div className="flex items-center justify-center gap-4 pt-2">
@@ -1786,6 +1852,7 @@ export function SessionManagerClient({
               matchmakingVariety={matchmakingVariety}
               onChangeMatchmakingVariety={handleChangeVariety}
               onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+              confirmMatchups={confirmMatchups}
             />
           ) : (
             <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
@@ -1797,7 +1864,7 @@ export function SessionManagerClient({
                   <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
                     {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
                     + Add Game
                   </Button>
                 </div>
@@ -2406,6 +2473,33 @@ export function SessionManagerClient({
                   </p>
                 )}
 
+                <div className="p-4 bg-neutral-50 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_#000] space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="matchup-confirmation-toggle"
+                        className="font-display text-sm font-black uppercase text-black block cursor-pointer"
+                      >
+                        Matchup Confirmation
+                      </label>
+                      <p className="text-xs font-bold text-neutral-600">
+                        Require confirmation before starting rounds. When disabled, hitting Start immediately locks in lineups without extra confirmation prompts.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                      <input
+                        id="matchup-confirmation-toggle"
+                        type="checkbox"
+                        checked={confirmMatchups}
+                        onChange={(e) => handleToggleConfirmMatchups(e.target.checked)}
+                        data-testid="confirm-matchups-toggle"
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-black after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black" />
+                    </label>
+                  </div>
+                </div>
+
                 <Button
                   type="button"
                   onClick={handleSaveCourtConfig}
@@ -2414,6 +2508,42 @@ export function SessionManagerClient({
                 >
                   {isPending ? "Saving..." : "Save Court Configuration"}
                 </Button>
+              </div>
+            )}
+
+            {modalTab === "preferences" && canManage && (
+              <div
+                role="tabpanel"
+                id="tabpanel-preferences"
+                aria-labelledby="tab-preferences"
+                className="space-y-4"
+              >
+                <div className="p-4 bg-neutral-50 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_#000] space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="matchup-confirmation-toggle-pref"
+                        className="font-display text-sm font-black uppercase text-black block cursor-pointer"
+                      >
+                        Matchup Confirmation
+                      </label>
+                      <p className="text-xs font-bold text-neutral-600">
+                        Require confirmation before starting rounds. When disabled, hitting Start immediately locks in lineups without extra confirmation prompts.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                      <input
+                        id="matchup-confirmation-toggle-pref"
+                        type="checkbox"
+                        checked={confirmMatchups}
+                        onChange={(e) => handleToggleConfirmMatchups(e.target.checked)}
+                        data-testid="confirm-matchups-toggle-pref"
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-black after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black" />
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 

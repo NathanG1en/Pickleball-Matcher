@@ -25,7 +25,7 @@ async function recoverView(page: Page, fixture: ResilienceFixture, action: Sessi
 
 for (const action of actions) {
   test(`${action}: organizer permission revoked after rendering is rejected by the real server`, async ({ page, browser, baseURL }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     let secondary: Awaited<ReturnType<typeof secondaryOrganizer>> | undefined;
     try {
@@ -51,7 +51,7 @@ for (const action of actions) {
   });
 
   test(`${action}: actual server failure rolls back the entire three-court action and retry succeeds`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     let removeFailure: (() => Promise<void>) | undefined;
     try {
@@ -78,7 +78,7 @@ for (const action of actions) {
   });
 
   test(`${action}: slow and dropped request keeps persisted data unchanged and can be retried`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     const reached = deferred();
     const release = deferred();
@@ -114,7 +114,7 @@ for (const action of actions) {
   });
 
   test(`${action}: rapid repeated clicks commit one logical action`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     try {
       const fixture = await createResilienceFixture(page, sql);
@@ -132,7 +132,7 @@ for (const action of actions) {
   });
 
   test(`${action}: refresh while request is paused recovers the persisted pre-action view`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     const reached = deferred();
     const release = deferred();
@@ -170,7 +170,7 @@ for (const action of actions) {
   });
 
   test(`${action}: committed response lost, refresh and exact stale retry preserve control behavior`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     let captured: { url: string; headers: Record<string, string>; body: string } | undefined;
     const committed = deferred();
@@ -210,7 +210,7 @@ for (const action of actions) {
   });
 
   test(`${action}: independently authenticated organizers overlap stale submissions atomically`, async ({ page, browser, baseURL }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(45_000);
     const sql = resilienceDatabase();
     let secondary: Awaited<ReturnType<typeof secondaryOrganizer>> | undefined;
     const hostReached = deferred();
@@ -269,7 +269,7 @@ for (const action of actions) {
 }
 
 test("shared accounts scoring in two groups retain account, alias, snapshot and chemistry consistency", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(45_000);
   const sql = resilienceDatabase();
   try {
     const fixture = await createResilienceFixture(page, sql);
@@ -337,7 +337,7 @@ test("shared accounts scoring in two groups retain account, alias, snapshot and 
 });
 
 test("combined Save & Start reconciles versions across consecutive rounds without a refresh", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   const sql = resilienceDatabase();
   try {
     const fixture = await createResilienceFixture(page, sql);

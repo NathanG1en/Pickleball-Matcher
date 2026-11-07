@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createTestGroup } from "./test-helpers";
 
 test("session mutations render fresh state in the action response without an extra session GET", async ({ page }, testInfo) => {
-  test.setTimeout(180_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Action refresh ${Date.now()}-${testInfo.workerIndex}-${testInfo.repeatEachIndex}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (let i = 1; i <= 7; i++) {

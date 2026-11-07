@@ -13,9 +13,8 @@ import { SessionHighlights } from "@/components/sessions/session-highlights";
 import {
   sortPlayersWithPinned,
   usePinnedPlayerIds,
-  togglePinnedPlayer,
 } from "@/lib/storage/pinned-players";
-import { PinIcon } from "@/components/ui/icons";
+import { useRouter } from "next/navigation";
 import {
   addOpenPlayGuestAction,
   addOpenPlayPlayerAction,
@@ -24,11 +23,14 @@ import {
   joinOpenPlaySessionAction,
   removeOpenPlayPlayerAction,
   submitOpenPlayGameAction,
+  syncOpenPlaySessionAction,
   updateOpenPlayGameAction,
 } from "@/app/actions/open-play";
+import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type {
   AttendanceRecord,
   MatchPlayerRecord,
+  MatchRecord,
   PlayerRecord,
   SessionRecord,
   StartedRoundRecord,
@@ -38,6 +40,16 @@ import { RatingSlider, RATING_TICKS, type RatingTick } from "@/components/ui/rat
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
+import {
+  ArrowLeftRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CrownIcon,
+  RotateCwIcon,
+  SwordsIcon,
+  UserPlusIcon,
+  UsersIcon,
+} from "@/components/ui/icons";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -67,6 +79,7 @@ export function OpenPlayManagerClient({
   currentViewerPlayerId = null,
   isFromProfile = false,
 }: OpenPlayManagerClientProps) {
+  const router = useRouter();
   const isHydrated = useHydrated();
 
   // Local state for instant UI updates without waiting for router.refresh()
@@ -346,6 +359,28 @@ export function OpenPlayManagerClient({
   const [t2p2, setT2p2] = useState(initialSlots.t2p2);
   const [t1Score, setT1Score] = useState("");
   const [t2Score, setT2Score] = useState("");
+  const [rotateBase, setRotateBase] = useState<[string, string, string, string] | null>(null);
+
+  const parsedT1 = parseInt(t1Score, 10);
+  const parsedT2 = parseInt(t2Score, 10);
+  const isT1Winner = !isNaN(parsedT1) && (isNaN(parsedT2) ? parsedT1 >= 11 : parsedT1 > parsedT2);
+  const isT2Winner = !isNaN(parsedT2) && (isNaN(parsedT1) ? parsedT2 >= 11 : parsedT2 > parsedT1);
+
+  const handleSelectWinner = (team: 1 | 2) => {
+    if (team === 1) {
+      setT1Score("11");
+      const curT2 = parseInt(t2Score, 10);
+      if (curT2 >= 11) {
+        setT2Score("");
+      }
+    } else {
+      setT2Score("11");
+      const curT1 = parseInt(t1Score, 10);
+      if (curT1 >= 11) {
+        setT1Score("");
+      }
+    }
+  };
 
   // Automatically update when a new lastSessionGame is recorded/available
   const [prevLastGameId, setPrevLastGameId] = useState(() => lastSessionGame?.id ?? null);
@@ -407,6 +442,12 @@ export function OpenPlayManagerClient({
     }));
   };
 
+  // Drawer & Tab state
+  const [isPlayersDrawerOpen, setIsPlayersDrawerOpen] = useState(true);
+  const [addPlayerTab, setAddPlayerTab] = useState<"member" | "guest">(() =>
+    availableRosterPlayers.length > 0 ? "member" : "guest"
+  );
+
   // Guest / Add player state
   const [guestName, setGuestName] = useState("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
@@ -440,6 +481,93 @@ export function OpenPlayManagerClient({
     if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
     if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
   }, []);
+
+  // Live Sync polling effect to keep session state in sync across devices
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    let isSubscribed = true;
+
+    const performSync = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      try {
+        const res = await syncOpenPlaySessionAction({ groupId, sessionId: session.id });
+        if (res.ok && isSubscribed) {
+          const { session: serverSession, players: serverPlayers, attendance: serverAttendance, startedRounds: serverStartedRounds } = res.data;
+
+          setLocalPlayers((prev) => {
+            const serverIds = new Set(serverPlayers.map((p) => p.id));
+            const pendingLocal = prev.filter((p) => !serverIds.has(p.id));
+            return [...serverPlayers, ...pendingLocal];
+          });
+
+          setLocalAttendance((prev) => {
+            const serverPids = new Set(serverAttendance.map((a) => a.playerId));
+            const pendingLocal = prev.filter((a) => !serverPids.has(a.playerId));
+            return [...serverAttendance, ...pendingLocal];
+          });
+
+          setLocalStartedRounds((prev) => {
+            const serverMatchIds = new Set(serverStartedRounds.flatMap((sr) => sr.matches.map((m) => m.id)));
+            const pendingLocalMatches = prev.flatMap((sr) =>
+              sr.matches.filter((m) => !serverMatchIds.has(m.id) && m.id.startsWith("opt_"))
+            );
+            const pendingLocalMatchPlayers = prev.flatMap((sr) =>
+              sr.matchPlayers.filter((mp) => !serverMatchIds.has(mp.matchId) && mp.matchId.startsWith("opt_"))
+            );
+            if (serverStartedRounds.length > 0) {
+              return serverStartedRounds.map((sr, idx) =>
+                idx === 0
+                  ? {
+                      ...sr,
+                      matches: [...sr.matches, ...pendingLocalMatches],
+                      matchPlayers: [...sr.matchPlayers, ...pendingLocalMatchPlayers],
+                    }
+                  : sr
+              );
+            }
+            return serverStartedRounds;
+          });
+
+          if (serverSession.status === "completed" && session.status === "active") {
+            router.refresh();
+          }
+        }
+      } catch {
+        // Silently catch background poll failures
+      }
+    };
+
+    const intervalId = setInterval(performSync, 5000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        void performSync();
+      }
+    };
+
+    const handleOnline = () => {
+      void performSync();
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", handleOnline);
+    }
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(intervalId);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", handleOnline);
+      }
+    };
+  }, [groupId, session.id, isSessionActive, router, session.status]);
 
   const showToast = (msg: string) => {
     if (guestPopupTimeoutRef.current !== null) {
@@ -599,6 +727,135 @@ export function OpenPlayManagerClient({
     }
   };
 
+  // Quick Rematch handler
+  const canRematch = Boolean(
+    lastSessionGame || (t1p1 && t2p1 && (matchType === "singles" || (t1p2 && t2p2)))
+  );
+
+  const handleRematch = () => {
+    setError(null);
+    if (lastSessionGame) {
+      const slots = getAutopopulatedSlots(lastSessionGame);
+      setMatchType(slots.matchType);
+      setT1p1(slots.t1p1);
+      setT1p2(slots.t1p2);
+      setT2p1(slots.t2p1);
+      setT2p2(slots.t2p2);
+    }
+    setT1Score("");
+    setT2Score("");
+    setRotateBase(null);
+    showToast("Rematch ready — enter scores when done!");
+  };
+
+  // Rotate Partners (Split & Switch) handler
+  const canRotate = Boolean(
+    (t1p1 && t1p2 && t2p1 && t2p2) ||
+      (lastSessionGame &&
+        lastSessionGame.team1PlayerIds.length === 2 &&
+        lastSessionGame.team2PlayerIds.length === 2)
+  );
+
+  const handleRotatePartners = () => {
+    setError(null);
+    let current4: [string, string, string, string] | null = null;
+    if (t1p1 && t1p2 && t2p1 && t2p2) {
+      current4 = [t1p1, t1p2, t2p1, t2p2];
+    } else if (
+      lastSessionGame &&
+      lastSessionGame.team1PlayerIds.length === 2 &&
+      lastSessionGame.team2PlayerIds.length === 2
+    ) {
+      current4 = [
+        lastSessionGame.team1PlayerIds[0],
+        lastSessionGame.team1PlayerIds[1],
+        lastSessionGame.team2PlayerIds[0],
+        lastSessionGame.team2PlayerIds[1],
+      ];
+    }
+
+    if (!current4) {
+      setError("Please select 4 players first to rotate partners.");
+      return;
+    }
+
+    const currentSet = new Set(current4);
+    let base = rotateBase;
+    if (!base || base.length !== 4 || base.some((id) => !currentSet.has(id))) {
+      let p1 = current4[0];
+      let p2 = current4[1];
+      let p3 = current4[2];
+      let p4 = current4[3];
+      if (currentViewerPlayerId && current4.includes(currentViewerPlayerId) && p1 !== currentViewerPlayerId) {
+        const remaining = current4.filter((id) => id !== currentViewerPlayerId);
+        p1 = currentViewerPlayerId;
+        p2 = remaining[0];
+        p3 = remaining[1];
+        p4 = remaining[2];
+      }
+      base = [p1, p2, p3, p4];
+      setRotateBase(base);
+    }
+
+    const [p1, p2, p3, p4] = base;
+
+    // Determine who is currently partnered with p1
+    let currentPartner: string;
+    if (t1p1 === p1) currentPartner = t1p2;
+    else if (t1p2 === p1) currentPartner = t1p1;
+    else if (t2p1 === p1) currentPartner = t2p2;
+    else if (t2p2 === p1) currentPartner = t2p1;
+    else currentPartner = p2;
+
+    // Cycle combinations: (p1, p2) -> (p1, p3) -> (p1, p4) -> (p1, p2)
+    if (currentPartner === p2) {
+      // Rotation 1: p1 and p3 vs p2 and p4
+      setT1p1(p1);
+      setT1p2(p3);
+      setT2p1(p2);
+      setT2p2(p4);
+    } else if (currentPartner === p3) {
+      // Rotation 2: p1 and p4 vs p2 and p3
+      setT1p1(p1);
+      setT1p2(p4);
+      setT2p1(p2);
+      setT2p2(p3);
+    } else {
+      // Rotation 3: p1 and p2 vs p3 and p4
+      setT1p1(p1);
+      setT1p2(p2);
+      setT2p1(p3);
+      setT2p2(p4);
+    }
+
+    setT1Score("");
+    setT2Score("");
+    showToast("Partners rotated!");
+  };
+
+  // Swap sides for singles
+  const handleSwapSides = () => {
+    setError(null);
+    const prevT1 = t1p1;
+    const prevT2 = t2p1;
+    setT1p1(prevT2);
+    setT2p1(prevT1);
+    setT1Score("");
+    setT2Score("");
+    showToast("Sides swapped!");
+  };
+
+  // Clear slots handler
+  const handleClearSlots = () => {
+    setT1p1(currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId) ? currentViewerPlayerId : "");
+    setT1p2("");
+    setT2p1("");
+    setT2p2("");
+    setT1Score("");
+    setT2Score("");
+    setRotateBase(null);
+  };
+
   const handleSubmitGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -634,6 +891,87 @@ export function OpenPlayManagerClient({
       return;
     }
 
+    // Optimistic match generation for instant feedback
+    const optimisticMatchId = createIdempotencyKey("opt");
+    const targetRoundId = localStartedRounds[0]?.round.id ?? `rnd_${session.id}`;
+    const existingMatches = localStartedRounds.flatMap((sr) => sr.matches);
+    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+    const courtNumber = maxCourtNumber + 1;
+
+    const optimisticMatch: MatchRecord = {
+      id: optimisticMatchId,
+      roundId: targetRoundId,
+      courtNumber,
+      status: "completed",
+      team1Score: s1,
+      team2Score: s2,
+      completedAt: new Date(),
+      version: 1,
+      rated: true,
+    };
+
+    const optimisticMatchPlayers: MatchPlayerRecord[] = [
+      ...team1Ids.map((p) => ({
+        matchId: optimisticMatchId,
+        playerId: p,
+        team: 1 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+      ...team2Ids.map((p) => ({
+        matchId: optimisticMatchId,
+        playerId: p,
+        team: 2 as const,
+        ratingBefore: null,
+        ratingAfter: null,
+      })),
+    ];
+
+    setLocalStartedRounds((prev) => {
+      if (prev.length === 0) {
+        const newSr: StartedRoundRecord = {
+          round: {
+            id: targetRoundId,
+            sessionId: session.id,
+            roundNumber: 1,
+            status: "started",
+            seed: 0,
+            scoreBreakdown: {
+              playingTime: 0,
+              consecutiveSit: 0,
+              partnerRepeat: 0,
+              skillBalance: 0,
+              opponentRepeat: 0,
+              tieBreak: 0,
+              total: 0,
+            },
+            createdAt: new Date(),
+            startedAt: new Date(),
+            completedAt: null,
+            version: 1,
+          },
+          matches: [optimisticMatch],
+          matchPlayers: optimisticMatchPlayers,
+          sits: [],
+        };
+        return [newSr];
+      }
+      return prev.map((sr) =>
+        sr.round.id === targetRoundId || prev.length === 1
+          ? {
+              ...sr,
+              matches: [...sr.matches.filter((m) => m.id !== optimisticMatchId), optimisticMatch],
+              matchPlayers: [
+                ...sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+                ...optimisticMatchPlayers,
+              ],
+            }
+          : sr
+      );
+    });
+
+    setT1Score("");
+    setT2Score("");
     setIsSubmittingGame(true);
     try {
       const res = await submitOpenPlayGameAction({
@@ -647,51 +985,46 @@ export function OpenPlayManagerClient({
 
       if (res.ok) {
         const newMatch = res.data;
-        const newMatchPlayers: MatchPlayerRecord[] = [
-          ...team1Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 1 as const, ratingBefore: null, ratingAfter: null })),
-          ...team2Ids.map((p) => ({ matchId: newMatch.id, playerId: p, team: 2 as const, ratingBefore: null, ratingAfter: null })),
-        ];
-
-        setLocalStartedRounds((prev) => {
-          if (prev.length === 0) {
-            const newSr: StartedRoundRecord = {
-              round: {
-                id: newMatch.roundId,
-                sessionId: session.id,
-                roundNumber: 1,
-                status: "started",
-                seed: 0,
-                scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
-                createdAt: new Date(),
-                startedAt: new Date(),
-                completedAt: null,
-                version: 1,
-              },
-              matches: [newMatch],
-              matchPlayers: newMatchPlayers,
-              sits: [],
-            };
-            return [newSr];
-          }
-          return prev.map((sr) =>
-            sr.round.id === newMatch.roundId || prev.length === 1
-              ? {
-                  ...sr,
-                  matches: [...sr.matches.filter((m) => m.id !== newMatch.id), newMatch],
-                  matchPlayers: [...sr.matchPlayers.filter((mp) => mp.matchId !== newMatch.id), ...newMatchPlayers],
-                }
-              : sr
-          );
-        });
-
-        setPickledGameId(isPickleScore(s1, s2) ? res.data.id : null);
-        setT1Score("");
-        setT2Score("");
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.map((m) => (m.id === optimisticMatchId ? newMatch : m)),
+            matchPlayers: sr.matchPlayers.map((mp) =>
+              mp.matchId === optimisticMatchId ? { ...mp, matchId: newMatch.id } : mp
+            ),
+          }))
+        );
         showToast("Game submitted successfully!");
+        if (isPickleScore(newMatch.team1Score, newMatch.team2Score)) {
+          setPickledGameId(newMatch.id);
+        } else {
+          setPickledGameId(null);
+        }
       } else {
+        // Rollback optimistic update
+        setLocalStartedRounds((prev) =>
+          prev.map((sr) => ({
+            ...sr,
+            matches: sr.matches.filter((m) => m.id !== optimisticMatchId),
+            matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+          }))
+        );
+        setPickledGameId(null);
+        setT1Score(String(s1));
+        setT2Score(String(s2));
         setError(res.error ?? "Failed to submit game.");
       }
     } catch {
+      setLocalStartedRounds((prev) =>
+        prev.map((sr) => ({
+          ...sr,
+          matches: sr.matches.filter((m) => m.id !== optimisticMatchId),
+          matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
+        }))
+      );
+      setPickledGameId(null);
+      setT1Score(String(s1));
+      setT2Score(String(s2));
       setError("An unexpected error occurred while submitting game.");
     } finally {
       setIsSubmittingGame(false);
@@ -899,7 +1232,7 @@ export function OpenPlayManagerClient({
   };
 
   const handleEndSession = async () => {
-    if (!confirm("Are you sure you want to end this Open Play session?")) return;
+    if (!confirm("End this session? Match history and ratings will be finalized.")) return;
     setIsEnding(true);
     setError(null);
     try {
@@ -947,39 +1280,48 @@ export function OpenPlayManagerClient({
       {successToast && (
         <div
           role="status"
-          className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce"
+          className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce flex items-center gap-1.5"
         >
-          ✓ {successToast}
+          <CheckIcon className="h-4 w-4 shrink-0 stroke-[3]" />
+          <span>{successToast}</span>
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
-        <div className="flex items-center justify-between">
-          <BackButton
-            href={isFromProfile ? "/players" : `/g/${groupId}`}
-            label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
-            ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          />
-          <div className="flex items-center gap-2">
-            <Badge variant={isSessionActive ? "warning" : "muted"}>
-              {isSessionActive ? "In Progress" : "Completed"}
-            </Badge>
-            {(isOrganizer || isHost) && (
-              <SessionOptionsMenu
-                groupId={groupId}
-                sessionId={session.id}
-                sessionName={sessionName}
-                sessionDate={session.startedAt}
-                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
-                onRenamed={(newName) => setSessionName(newName)}
-              />
+      {/* Top Header Controls */}
+      <div className="flex items-center justify-between">
+        <BackButton
+          href={isFromProfile ? "/players" : `/g/${groupId}`}
+          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+        />
+        {isSessionActive ? (
+          <div className="flex items-center gap-2 sm:gap-3">
+            {canManage && (
+              <button
+                type="button"
+                onClick={handleEndSession}
+                disabled={isEnding}
+                data-testid="end-session-button"
+                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+              >
+                {isEnding ? "Ending..." : "End Session"}
+              </button>
             )}
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Badge variant="muted" className="text-xs font-black uppercase">
+              Completed Session
+            </Badge>
+          </div>
+        )}
+      </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-          <div className="min-w-0 flex-1">
+      {/* Session Header Card */}
+      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
             <SessionNameEditor
               groupId={groupId}
               sessionId={session.id}
@@ -999,85 +1341,88 @@ export function OpenPlayManagerClient({
               ) : null}
             </p>
           </div>
-
-          {isSessionActive && isOrganizer && (
+          {(isOrganizer || isHost) && (
             <div className="shrink-0">
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isEnding}
-                data-testid="end-session-button"
-                className="py-2 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer self-start sm:self-auto"
+              <SessionOptionsMenu
+                groupId={groupId}
+                sessionId={session.id}
+                sessionName={sessionName}
+                sessionDate={session.startedAt}
+                redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
+                onRenamed={(newName) => setSessionName(newName)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Quick Stats & Summary - only rendered when session has ended */}
+        {!isSessionActive && (
+          <>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
+                <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+                <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
+              </div>
+              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+                <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
+              </div>
+            </div>
+
+            {/* Personal Session View (when a player is signed in) */}
+            {viewerSessionStats && (
+              <div
+                data-testid="personal-session-summary"
+                className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
               >
-                {isEnding ? "Ending..." : "End Session"}
-              </button>
-            </div>
-          )}
-        </div>
+                <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+                  Your Session
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
+                  </div>
+                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                    <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-neutral-700">
+                  You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
+                </p>
+              </div>
+            )}
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
-            <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
-          </div>
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
-            <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
-          </div>
-          <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
-            <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
-          </div>
-        </div>
-
-        {/* Personal Session View (when a player is signed in) */}
-        {viewerSessionStats && (
-          <div
-            data-testid="personal-session-summary"
-            className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
-          >
-            <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
-              Your Session
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
-              </div>
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
-              </div>
-              <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
-                <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
-              </div>
+            {/* Time / Duration info */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
+              <ClientTime
+                date={session.startedAt}
+                prefix={<strong className="text-black">Started: </strong>}
+              />
+              {session.endedAt && (
+                <ClientTime
+                  date={session.endedAt}
+                  prefix={<strong className="text-black">Ended: </strong>}
+                />
+              )}
+              {durationFormatted && (
+                <span>
+                  <strong className="text-black">Duration:</strong> {durationFormatted}
+                </span>
+              )}
             </div>
-            <p className="text-xs font-bold text-neutral-700">
-              You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
-            </p>
-          </div>
+          </>
         )}
-
-        {/* Time / Duration info */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t-2 border-neutral-100">
-          <ClientTime
-            date={session.startedAt}
-            prefix={<strong className="text-black">Started: </strong>}
-          />
-          {session.endedAt && (
-            <ClientTime
-              date={session.endedAt}
-              prefix={<strong className="text-black">Ended: </strong>}
-            />
-          )}
-          {durationFormatted && (
-            <span>
-              <strong className="text-black">Duration:</strong> {durationFormatted}
-            </span>
-          )}
-        </div>
 
         {error && (
           <div role="alert" className="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-700 text-xs font-bold">
@@ -1129,7 +1474,7 @@ export function OpenPlayManagerClient({
 
       {/* Attendance & Join Section */}
       <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="font-display text-xl font-black uppercase text-black">
               Players in Session ({checkedInPlayers.length})
@@ -1146,152 +1491,261 @@ export function OpenPlayManagerClient({
               onClick={handleJoin}
               disabled={isJoining}
               data-testid="join-open-play-button"
-              className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-sm font-black uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+              className="py-2 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
             >
               {isJoining ? "Joining..." : "Join Open Play"}
             </button>
           )}
+        </div>
 
-          {isSessionActive && isViewerCheckedIn && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#ccff00]/40 border border-black rounded-full text-xs font-black text-black">
-              ✓ You&apos;re Checked In
-            </span>
+        {/* Box 1: Checked-in Players Drawer Box */}
+        <div
+          data-testid="checked-in-players-box"
+          className="rounded-2xl border-2 border-black bg-neutral-50 p-3 sm:p-4 shadow-[2px_2px_0px_0px_#000] space-y-3"
+        >
+          {/* Header inside the box that toggles the drawer */}
+          <button
+            type="button"
+            onClick={() => setIsPlayersDrawerOpen((prev) => !prev)}
+            aria-expanded={isPlayersDrawerOpen}
+            aria-controls="checked-in-players-drawer"
+            aria-label={isPlayersDrawerOpen ? "Hide players checked in" : "Show players checked in"}
+            data-testid="toggle-players-drawer-button"
+            className="w-full flex items-center justify-between gap-2 text-left cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]">
+                <UsersIcon className="h-4 w-4 text-black" />
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-black uppercase text-black">
+                  Checked-in Players ({checkedInPlayers.length})
+                </h3>
+                <p className="text-[11px] font-bold text-neutral-600">
+                  {isPlayersDrawerOpen ? "Tap to hide player list" : "Tap to view checked-in players"}
+                </p>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000] hover:bg-neutral-100 transition-colors shrink-0">
+              <span>{isPlayersDrawerOpen ? "Hide Players" : "Show Players"}</span>
+              <ChevronDownIcon
+                className={`h-3.5 w-3.5 text-black transition-transform duration-200 ${
+                  isPlayersDrawerOpen ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </button>
+
+          {/* Players Drawer Content */}
+          {isPlayersDrawerOpen && (
+            <div
+              id="checked-in-players-drawer"
+              data-testid="checked-in-players-drawer"
+              className="space-y-2 pt-2 border-t-2 border-neutral-200"
+            >
+              {checkedInPlayers.length === 0 ? (
+                <p className="text-xs font-bold text-neutral-500 italic py-1">
+                  No players checked in yet. Join or add players below!
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2" data-testid="open-play-attendees">
+                  {checkedInPlayers.map((p) => {
+                    const isViewer = p.id === currentViewerPlayerId;
+                    return (
+                      <div
+                        key={p.id}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
+                          isViewer ? "bg-[#ccff00]" : "bg-white"
+                        }`}
+                      >
+                        <span className="font-black text-black">{p.name}</span>
+                        <span className="text-[10px] text-neutral-600 font-mono">
+                          {formatDupr(p.rating)}
+                        </span>
+                        {isViewer && (
+                          <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
+                            You
+                          </span>
+                        )}
+                        {isSessionActive && (isOrganizer || isViewer) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemovePlayer(p.id);
+                            }}
+                            title="Leave / Remove from session"
+                            className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Players Chips */}
-        {checkedInPlayers.length === 0 ? (
-          <p className="text-xs font-bold text-neutral-500 italic py-2">
-            No players checked in yet. Join or add players below!
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2 pt-1" data-testid="open-play-attendees">
-            {checkedInPlayers.map((p) => {
-              const isViewer = p.id === currentViewerPlayerId;
-              return (
-                <div
-                  key={p.id}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
-                    isViewer ? "bg-[#ccff00]" : "bg-neutral-50"
+        {/* Box 2: Add Players Box */}
+        {(isSessionActive || canManage) && (
+          <div
+            data-testid="add-players-box"
+            className="rounded-2xl border-2 border-black bg-neutral-50 p-3 sm:p-4 shadow-[2px_2px_0px_0px_#000] space-y-3"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]">
+                  <UserPlusIcon className="h-4 w-4 text-black" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-black uppercase text-black">
+                    Add Players
+                  </h3>
+                  <p className="text-[11px] font-bold text-neutral-600">
+                    Add group members to the session or new guests to your group roster.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode Switch Tabs (matching roster style) */}
+              <div
+                className="flex items-center gap-1.5 p-1 bg-white border border-neutral-200 rounded-xl w-fit shrink-0"
+                role="tablist"
+                aria-label="Add player mode"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-add-member"
+                  aria-selected={addPlayerTab === "member"}
+                  aria-controls="tabpanel-add-member"
+                  data-testid="tab-add-member"
+                  onClick={() => setAddPlayerTab("member")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                    addPlayerTab === "member"
+                      ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                      : "text-neutral-800 hover:bg-black/10"
                   }`}
                 >
-                  <span className="font-black text-black">{p.name}</span>
-                  <span className="text-[10px] text-neutral-600 font-mono">
-                    {formatDupr(p.rating)}
-                  </span>
-                  {isViewer && (
-                    <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
-                      You
-                    </span>
-                  )}
-                  {canManage && (
-                    <button
-                      type="button"
-                      onClick={() => togglePinnedPlayer(groupId, p.id)}
-                      aria-label={pinnedPlayerIds.has(p.id) ? `Unpin ${p.name}` : `Pin ${p.name} to top`}
-                      title={pinnedPlayerIds.has(p.id) ? "Unpin player" : "Pin player to top"}
-                      data-testid={`pin-player-${p.name}`}
-                      className={`p-1 rounded border border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
-                        pinnedPlayerIds.has(p.id)
-                          ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
-                      }`}
-                    >
-                      <PinIcon className="w-3 h-3" filled={pinnedPlayerIds.has(p.id)} />
-                    </button>
-                  )}
-                  {isSessionActive && (isOrganizer || isViewer) && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePlayer(p.id)}
-                      title="Leave / Remove from session"
-                      className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  <UsersIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Existing Member</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-add-guest"
+                  aria-selected={addPlayerTab === "guest"}
+                  aria-controls="tabpanel-add-guest"
+                  data-testid="tab-add-guest"
+                  onClick={() => setAddPlayerTab("guest")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                    addPlayerTab === "guest"
+                      ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                      : "text-neutral-800 hover:bg-black/10"
+                  }`}
+                >
+                  <UserPlusIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Add Guest</span>
+                </button>
+              </div>
+            </div>
 
-        {/* Add Player / Guest Forms (if session is active or organizer/host) */}
-        {(isSessionActive || canManage) && (
-          <div className="pt-4 border-t-2 border-neutral-100 flex flex-col gap-4">
-            {/* Add from Roster */}
-            {availableRosterPlayers.length > 0 && (
-              <div className="space-y-2">
+            {/* Tab Panel: Add from Roster */}
+            {addPlayerTab === "member" && (
+              <div
+                role="tabpanel"
+                id="tabpanel-add-member"
+                aria-labelledby="tab-add-member"
+                className="pt-2 border-t-2 border-neutral-200 space-y-2"
+              >
                 <label className="block text-xs font-black uppercase tracking-wider text-black">
                   Add Existing Group Member
                 </label>
-                <FilterablePlayerSelect
-                  ariaLabel="Add Existing Group Member"
-                  placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
-                  value=""
-                  onChange={(val) => {
-                    if (val) {
-                      void handleSelectRosterPlayer(val);
-                    }
-                  }}
-                  options={rosterPlayerOptions}
-                  dataTestId="roster-player-select"
-                  disabled={isAddingPlayer}
-                />
+                {availableRosterPlayers.length > 0 ? (
+                  <FilterablePlayerSelect
+                    ariaLabel="Add Existing Group Member"
+                    placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
+                    value=""
+                    onChange={(val) => {
+                      if (val) {
+                        void handleSelectRosterPlayer(val);
+                      }
+                    }}
+                    options={rosterPlayerOptions}
+                    dataTestId="roster-player-select"
+                    disabled={isAddingPlayer}
+                  />
+                ) : (
+                  <p className="text-xs font-bold text-neutral-500 italic py-1">
+                    All group members are currently checked in.
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Add Guest */}
-            <form onSubmit={handleAddGuest} className="space-y-3">
-              <label
-                htmlFor="guest-name-input"
-                className="block text-xs font-black uppercase tracking-wider text-black"
+            {/* Tab Panel: Add Guest */}
+            {addPlayerTab === "guest" && (
+              <form
+                role="tabpanel"
+                id="tabpanel-add-guest"
+                aria-labelledby="tab-add-guest"
+                onSubmit={handleAddGuest}
+                className="pt-2 border-t-2 border-neutral-200 space-y-3"
               >
-                Add Guest to Roster
-              </label>
-              <p className="text-[11px] font-bold text-neutral-600">
-                Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  id="guest-name-input"
-                  type="text"
-                  placeholder="Guest player name..."
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
-                />
-                <select
-                  id="open-play-guest-gender"
-                  aria-label="Guest Gender"
-                  value={guestGender}
-                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                <label
+                  htmlFor="guest-name-input"
+                  className="block text-xs font-black uppercase tracking-wider text-black"
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={!guestName.trim() || isAddingGuest}
-                  className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  {isAddingGuest ? "Adding..." : "Add"}
-                </button>
-              </div>
+                  Add Guest to Roster
+                </label>
+                <p className="text-[11px] font-bold text-neutral-600">
+                  Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    id="guest-name-input"
+                    type="text"
+                    placeholder="Guest player name..."
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                  />
+                  <select
+                    id="open-play-guest-gender"
+                    aria-label="Guest Gender"
+                    value={guestGender}
+                    onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+                    className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={!guestName.trim() || isAddingGuest}
+                    className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                  >
+                    {isAddingGuest ? "Adding..." : "Add"}
+                  </button>
+                </div>
 
-              {/* Sliding Scale for Rating */}
-              <div className="bg-neutral-50 border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
-                <RatingSlider
-                  id="guest-rating-slider"
-                  dataTestId="guest-rating-slider"
-                  label="Guest Rating"
-                  value={guestRating}
-                  onChange={setGuestRating}
-                  showDescription={true}
-                />
-              </div>
-            </form>
+                {/* Sliding Scale for Rating */}
+                <div className="bg-white border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                  <RatingSlider
+                    id="guest-rating-slider"
+                    dataTestId="guest-rating-slider"
+                    label="Guest Rating"
+                    value={guestRating}
+                    onChange={setGuestRating}
+                    showDescription={true}
+                  />
+                </div>
+              </form>
+            )}
           </div>
         )}
       </section>
@@ -1347,10 +1801,75 @@ export function OpenPlayManagerClient({
             </p>
           ) : (
             <form onSubmit={handleSubmitGame} className="space-y-4">
+              {/* Quick Action Toolbar: Rematch, Rotate Partners, Next Waiting, Clear */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRematch}
+                  disabled={!canRematch}
+                  data-testid="rematch-button"
+                  title="Keep the same players and teams for a rematch"
+                  className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                >
+                  <SwordsIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Rematch</span>
+                </button>
+                {matchType === "doubles" ? (
+                  <button
+                    type="button"
+                    onClick={handleRotatePartners}
+                    disabled={!canRotate}
+                    data-testid="rotate-partners-button"
+                    title="Split and switch partners between the 4 players"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                  >
+                    <RotateCwIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>Rotate Partners</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSwapSides}
+                    disabled={!t1p1 || !t2p1}
+                    data-testid="swap-sides-button"
+                    title="Swap sides between the 2 players"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                  >
+                    <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>Swap Sides</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClearSlots}
+                  data-testid="clear-slots-button"
+                  title="Clear all player selections and scores"
+                  className="inline-flex items-center gap-1 py-1.5 px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto"
+                >
+                  <span>Clear</span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Team 1 Card */}
                 <div className="p-4 bg-[#ccff00]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
-                  <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWinner(1)}
+                      data-testid="team-1-winner-button"
+                      aria-label="Select Team 1 as Winner"
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                        isT1Winner
+                          ? "bg-black text-[#ccff00]"
+                          : "bg-white hover:bg-neutral-100 text-black"
+                      }`}
+                    >
+                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
                       ariaLabel="Team 1 Player 1"
@@ -1391,7 +1910,23 @@ export function OpenPlayManagerClient({
 
                 {/* Team 2 Card */}
                 <div className="p-4 bg-[#fde047]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
-                  <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWinner(2)}
+                      data-testid="team-2-winner-button"
+                      aria-label="Select Team 2 as Winner"
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                        isT2Winner
+                          ? "bg-black text-[#ccff00]"
+                          : "bg-white hover:bg-neutral-100 text-black"
+                      }`}
+                    >
+                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
                       ariaLabel="Team 2 Player 1"
@@ -1439,10 +1974,12 @@ export function OpenPlayManagerClient({
               >
                 {isSubmittingGame ? "Recording Game..." : isSessionActive ? "Record Game Result" : "Add Game Result"}
               </button>
-              {pickledGameId && allMatches.some(match => match.id === pickledGameId && isPickleScore(match.team1Score, match.team2Score)) && (
-                <PickleCelebration key={pickledGameId} />
-              )}
             </form>
+          )}
+          {pickledGameId && allMatches.some(match => match.id === pickledGameId && isPickleScore(match.team1Score, match.team2Score)) && (
+            <div className="pt-2">
+              <PickleCelebration key={pickledGameId} />
+            </div>
           )}
         </section>
       )}

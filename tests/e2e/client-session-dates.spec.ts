@@ -7,7 +7,7 @@ for (const [timezoneId, localDate] of [["America/New_York", "Oct 28, 2026"], ["P
   test.describe(timezoneId, () => {
     test.use({ timezoneId, locale: "en-US" });
     test("profile session dates follow the browser across UTC midnight", async ({ page }, testInfo) => {
-      test.setTimeout(120_000);
+      test.setTimeout(45_000);
       const hydrationErrors: string[] = [];
       page.on("pageerror", error => { if (/hydration|server rendered/i.test(error.message)) hydrationErrors.push(error.message); });
       const { groupId, hostUsername } = await createTestGroup(page, `Local dates ${Date.now()}`);
@@ -23,7 +23,7 @@ for (const [timezoneId, localDate] of [["America/New_York", "Oct 28, 2026"], ["P
           const id = page.url().split("/sessions/")[1].split("?")[0];
           page.once("dialog", dialog => dialog.accept());
           await page.getByTestId("end-session-button").click();
-          await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+          await expect(page.getByText("Completed Session")).toBeVisible();
           // Only this newly created fixture is changed; application/public history is untouched.
           await sql`update sessions set started_at = ${instant}, ended_at = ${instant}, name = ${name} where id = ${id} and group_id = ${groupId}`;
           sessions.push({ id, name });

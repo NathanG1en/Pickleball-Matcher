@@ -6,7 +6,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
     const { groupId, hostName } = await createTestGroup(page, groupName);
@@ -59,18 +59,28 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("h1")).toContainText(new RegExp(possibleDates.join("|")));
     await expect(page.locator("[data-testid='open-play-attendees']")).toBeVisible();
 
-    // Verify Open Play badge label is removed from the header and three dots is in the top right corner
+    // Verify Open Play badge label is removed from the header and three dots is inside the session card matching normal sessions
     const header = page.locator("header").first();
     await expect(header.locator("span.bg-black.text-\\[\\#ccff00\\]")).toHaveCount(0);
     const headerOptionsButton = header.locator("[data-testid='session-options-menu-button']");
     await expect(headerOptionsButton).toBeVisible();
-    const headerBackBtn = header.locator("a[aria-label='Go back'], a[aria-label='Go back to profile']");
+    const headerBackBtn = page.locator("a[aria-label='Go back'], a[aria-label='Go back to profile']");
+    await expect(headerBackBtn).toBeVisible();
     const backBox = await headerBackBtn.boundingBox();
     const optionsBox = await headerOptionsButton.boundingBox();
-    expect(backBox && optionsBox && optionsBox.x > backBox.x).toBe(true);
-    expect(optionsBox && optionsBox.y < (backBox?.y ?? 0) + 25).toBe(true);
+    expect(backBox && optionsBox && optionsBox.y > backBox.y).toBe(true);
+
+    // Verify collapsible drawer hides and shows checked-in players
+    const drawerToggle = page.getByTestId("toggle-players-drawer-button");
+    await expect(drawerToggle).toBeVisible();
+    await expect(page.getByTestId("open-play-attendees")).toBeVisible();
+    await drawerToggle.click();
+    await expect(page.getByTestId("open-play-attendees")).toHaveCount(0);
+    await drawerToggle.click();
+    await expect(page.getByTestId("open-play-attendees")).toBeVisible();
 
     // 7. Add Guest player "Guest Gary" with a selected rating using sliding scale
+    await page.getByTestId("tab-add-guest").click();
     await page.fill("#guest-name-input", "Guest Gary");
     // Verify sliding works by dragging across the number line on mouse devices
     const sliderContainer = page.locator("[data-testid='guest-rating-value']").locator("..");
@@ -123,6 +133,7 @@ test.describe("Open Play Workflow", () => {
     await doublesBtn.click();
 
     // 8. Add group player Bob from roster (selecting from dropdown directly adds them to open play)
+    await page.getByTestId("tab-add-member").click();
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");
@@ -146,9 +157,8 @@ test.describe("Open Play Workflow", () => {
     const sessionUrl = page.url();
     await playerPage.goto(sessionUrl);
     const joinOpenPlayBtn = playerPage.locator("button[data-testid='join-open-play-button']");
-    await expect(joinOpenPlayBtn).toBeVisible();
     await joinOpenPlayBtn.click();
-    await expect(playerPage.locator("text=You're Checked In")).toBeVisible();
+    await expect(playerPage.locator("[data-testid='open-play-attendees']").getByText(secondPlayer.name)).toBeVisible();
 
     // Refresh host page to see all 4 players
     await page.reload();
@@ -272,6 +282,7 @@ test.describe("Open Play Workflow", () => {
     // Verify both games are displayed in Games Played list
     await expect(matchesList.locator("article")).toHaveCount(2, { timeout: 15000 });
     await expect(matchesList).toContainText("11 – 8");
+    await expect(submitCard.locator("button[data-testid='submit-game-button']")).toBeEnabled();
 
     // Check group dashboard while Open Play is in progress
     await page.goto(`/g/${groupId}`);
@@ -341,7 +352,7 @@ test.describe("Open Play Workflow", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
 
-    await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
 
     // 11b. Host duplicates the open play session via options menu dropdown
     const optionsButton = page.locator("[data-testid='session-options-menu-button']");
@@ -363,7 +374,8 @@ test.describe("Open Play Workflow", () => {
     expect(duplicatedSessionUrl).not.toBe(sessionUrl);
 
     // Verify duplicated session has active Open Play status, attendees, and current date in title
-    await expect(page.locator("text=In Progress")).toBeVisible();
+    await expect(page.locator("button[data-testid='end-session-button']")).toBeVisible();
+    await expect(page.locator("text=In Progress")).toHaveCount(0);
     const todayFormattedMonth = await page.evaluate(() => new Date().toLocaleDateString("en-US", { month: "short" }));
     await expect(page.locator("h1")).toContainText(todayFormattedMonth);
     const attendeesList = page.locator("[data-testid='open-play-attendees']");
@@ -447,7 +459,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     // 1. Create a test group with host
     const groupName = `Ended Open Play League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
@@ -471,6 +483,7 @@ test.describe("Open Play Workflow", () => {
     const sessionUrl = page.url();
 
     // Add guests to session: Charlie, Dana
+    await page.getByTestId("tab-add-guest").click();
     await page.fill("#guest-name-input", "Charlie");
     await page.locator("form").filter({ has: page.locator("#guest-name-input") }).locator("button[type='submit']").click();
     const guestPopup = page.locator("[data-testid='guest-added-popup']");
@@ -487,6 +500,7 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='open-play-attendees']").getByText("Dana")).toBeVisible();
 
     // Add Bob from roster (selecting from dropdown directly adds them to open play)
+    await page.getByTestId("tab-add-member").click();
     const rosterSelect = page.locator("[data-testid='roster-player-select']");
     await rosterSelect.click();
     await page.locator("[data-testid='filterable-select-search']").fill("Bob");
@@ -530,14 +544,14 @@ test.describe("Open Play Workflow", () => {
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
-    await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
 
     const highlights = page.getByTestId("session-highlights");
     await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 5");
 
     // In playerPage (regular member), visit the ended session URL
     await playerPage.goto(sessionUrl);
-    await expect(playerPage.getByText("Completed", { exact: true })).toBeVisible();
+    await expect(playerPage.getByText("Completed Session")).toBeVisible();
     await expect(playerPage.getByTestId("session-highlights")).toBeVisible();
     // Regular player should NOT see Submit Game card, and should NOT see Edit or Delete buttons
     await expect(playerPage.locator("[data-testid='submit-game-card']")).toHaveCount(0);
@@ -605,7 +619,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     const groupName = `Session Rename League ${Date.now()}`;
     const { groupId } = await createTestGroup(page, groupName);
 
@@ -670,7 +684,7 @@ test.describe("Open Play Workflow", () => {
     await page.goto(sessionUrl);
     page.once("dialog", (dialog) => dialog.accept());
     await page.locator("button[data-testid='end-session-button']").click();
-    await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
 
     // Check completed session view displays the renamed session name
     await expect(page.locator("h1")).toContainText("Friday Night Open Play");
@@ -727,7 +741,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     }
     page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("end-session-button").click();
-    await expect(page.getByText("Completed", { exact: true })).toBeVisible();
+    await expect(page.getByText("Completed Session")).toBeVisible();
     const art = page.getByTestId("session-signoff");
     await expect(art).toBeInViewport();
     await expect(art).toHaveAttribute("aria-hidden", "true");
@@ -753,7 +767,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
   test(`pickle celebration follows successful Open Play submissions (${reducedMotion})`, async ({ page }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(45000);
     await page.emulateMedia({ reducedMotion });
     await page.addInitScript(() => document.addEventListener("animationstart", event => {
       if (event.animationName === "pickle-victory-wiggle") document.documentElement.dataset.pickleWiggles = String(Number(document.documentElement.dataset.pickleWiggles ?? "0") + 1);
@@ -798,6 +812,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await score1.fill("0");
     await score2.fill("11");
     await form.getByTestId("submit-game-button").click();
+    await expect(form.getByTestId("submit-game-button")).toBeEnabled();
     await expect(page.getByTestId("open-play-matches-list").locator("article")).toHaveCount(3);
     await expect(reaction).toBeVisible();
     await expect(art).toHaveAttribute("data-motion", "still");
@@ -808,7 +823,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 }
 
 test("Open Play chemistry corrections replace the game's contribution", async ({ page, browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(45_000);
   await createTestGroup(page, `Open chemistry correction ${Date.now()}`);
   for (const name of ["Blake Chemistry", "Casey Chemistry", "Drew Chemistry"]) {
     const context = await browser.newContext();
@@ -837,22 +852,23 @@ test("Open Play chemistry corrections replace the game's contribution", async ({
   await page.getByRole("spinbutton", { name: "Team 1 Score", exact: true }).fill("11");
   await page.getByRole("spinbutton", { name: "Team 2 Score", exact: true }).fill("0");
   await page.getByRole("button", { name: "Record Game Result", exact: true }).click();
+  await expect(page.getByTestId("submit-game-button")).toBeEnabled();
   await expect(page.getByRole("heading", { name: "Games Played (1)", exact: true })).toBeVisible({ timeout: 20_000 });
   const profile = await page.context().newPage();
   await profile.goto("/players");
-  await expect(profile.getByText("+5% Synergy", { exact: true })).toBeVisible();
+  await expect(profile.getByText("+5% Synergy", { exact: true })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByRole("spinbutton", { name: "Edit Team 1 Score", exact: true }).fill("0");
   await page.getByRole("spinbutton", { name: "Edit Team 2 Score", exact: true }).fill("11");
   await page.getByRole("button", { name: "Save Changes", exact: true }).click();
   await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible({ timeout: 20_000 });
   await profile.reload();
-  await expect(profile.getByText("-5% Synergy", { exact: true })).toBeVisible();
+  await expect(profile.getByText("-5% Synergy", { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   // The list hides the game optimistically; wait for the committed save before reloading.
-  await expect(page.getByText("✓ Game deleted.", { exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("status")).toContainText("Game deleted.", { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Games Played (0)", exact: true })).toBeVisible();
   await profile.reload();
   await expect(profile.getByRole("heading", { name: "Best Partner", exact: true })).toHaveCount(0);
