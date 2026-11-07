@@ -1,8 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
 import postgres from "postgres";
-
-let database: postgres.Sql | undefined;
 
 export function createDatabase(connectionString: string): postgres.Sql {
   return postgres(connectionString, {
@@ -15,9 +14,9 @@ export function createDatabase(connectionString: string): postgres.Sql {
   });
 }
 
-export function getDatabase(): postgres.Sql {
+export const getDatabase = cache((): postgres.Sql => {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is required");
-  database ??= createDatabase(connectionString);
-  return database;
-}
+  return createDatabase(connectionString);
+});
+
