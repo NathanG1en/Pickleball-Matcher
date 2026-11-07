@@ -1297,7 +1297,11 @@ export function OpenPlayManagerClient({
           </div>
         ) : (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <Badge variant="muted" className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center">
+            <Badge
+              variant="muted"
+              data-testid="completed-session-badge"
+              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center"
+            >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
             </Badge>
