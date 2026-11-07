@@ -569,7 +569,8 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    // Verify drawer toggle button is rendered
+    // Verify drawer toggle button is rendered inside its own box
+    expect(html).toContain('data-testid="checked-in-players-box"');
     expect(html).toContain('data-testid="toggle-players-drawer-button"');
     expect(html).toContain("Hide Players");
     expect(html).toContain('aria-controls="checked-in-players-drawer"');
@@ -593,7 +594,8 @@ describe("OpenPlayManagerClient Component", () => {
       />
     );
 
-    // Verify tabs are rendered
+    // Verify tabs are rendered inside add-players-box
+    expect(html).toContain('data-testid="add-players-box"');
     expect(html).toContain('data-testid="tab-add-member"');
     expect(html).toContain('data-testid="tab-add-guest"');
     expect(html).toContain("Existing Member");
