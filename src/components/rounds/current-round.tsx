@@ -878,9 +878,9 @@ function CurrentRoundEditor({
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
           <div>
-            <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+            <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
               Sitting this round ({localSitting.length})
-            </h3>
+            </h2>
             <p className="text-xs font-bold text-neutral-600">
               {isUnlocked
                 ? "Drag players here to sit out, or drag sitting players to an active court."

@@ -8,17 +8,25 @@ export type SessionAction = "start" | "save" | "next";
 const password = "Password123";
 const fixtureTime = new Date("2026-10-01T12:00:00Z");
 
-/** These tests install narrowly scoped failure triggers; remote databases are forbidden. */
-export function resilienceDatabase() {
+export function isResilienceDatabaseSupported(): boolean {
   const value = process.env.TEST_DATABASE_URL;
   const url = value ? new URL(value) : undefined;
-  if (!url || !["postgres:", "postgresql:"].includes(url.protocol) ||
-      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
-      url.pathname !== "/test_db" || [...url.searchParams.keys()].some(key => key !== "sslmode") ||
-      process.env.DISPOSABLE_POSTGRES_TESTS !== "1") {
+  return Boolean(
+    url &&
+    ["postgres:", "postgresql:"].includes(url.protocol) &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
+    url.pathname === "/test_db" &&
+    [...url.searchParams.keys()].every(key => key === "sslmode") &&
+    process.env.DISPOSABLE_POSTGRES_TESTS === "1"
+  );
+}
+
+/** These tests install narrowly scoped failure triggers; remote databases are forbidden. */
+export function resilienceDatabase() {
+  if (!isResilienceDatabaseSupported()) {
     throw new Error("Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere.");
   }
-  return postgres(value!, { max: 2, prepare: false, onnotice: () => {} });
+  return postgres(process.env.TEST_DATABASE_URL!, { max: 2, prepare: false, onnotice: () => {} });
 }
 
 export interface ResilienceFixture {

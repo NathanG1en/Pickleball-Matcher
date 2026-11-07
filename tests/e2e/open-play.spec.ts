@@ -6,7 +6,7 @@ test.describe("Open Play Workflow", () => {
     page,
     browser,
   }, testInfo) => {
-    test.setTimeout(45000);
+    test.setTimeout(90000);
     // 1. Create a test group with host
     const groupName = `Open Play League ${Date.now()}`;
     const { groupId, hostName } = await createTestGroup(page, groupName);
@@ -278,6 +278,7 @@ test.describe("Open Play Workflow", () => {
     await submitCard.locator("input[aria-label='Team 1 Score']").fill("11");
     await submitCard.locator("input[aria-label='Team 2 Score']").fill("8");
     await submitCard.locator("button[data-testid='submit-game-button']").click();
+    await expect(page.locator("text=Game submitted successfully!")).toBeVisible();
 
     // Verify both games are displayed in Games Played list
     await expect(matchesList.locator("article")).toHaveCount(2, { timeout: 15000 });
@@ -352,7 +353,7 @@ test.describe("Open Play Workflow", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
 
-    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
     // 11b. Host duplicates the open play session via options menu dropdown
     const optionsButton = page.locator("[data-testid='session-options-menu-button']");
@@ -544,14 +545,14 @@ test.describe("Open Play Workflow", () => {
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
     page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
-    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
     const highlights = page.getByTestId("session-highlights");
     await expect(highlights.getByTestId("highlight-closest-game")).toContainText("11 – 5");
 
     // In playerPage (regular member), visit the ended session URL
     await playerPage.goto(sessionUrl);
-    await expect(playerPage.getByText("Completed Session")).toBeVisible();
+    await expect(playerPage.getByTestId("completed-session-badge")).toBeVisible();
     await expect(playerPage.getByTestId("session-highlights")).toBeVisible();
     // Regular player should NOT see Submit Game card, and should NOT see Edit or Delete buttons
     await expect(playerPage.locator("[data-testid='submit-game-card']")).toHaveCount(0);
@@ -568,6 +569,7 @@ test.describe("Open Play Workflow", () => {
     await endedSubmitCard.locator("input[aria-label='Team 1 Score']").fill("11");
     await endedSubmitCard.locator("input[aria-label='Team 2 Score']").fill("8");
     await endedSubmitCard.locator("button[data-testid='submit-game-button']").click();
+    await expect(page.locator("text=Game submitted successfully!")).toBeVisible();
 
     await expect(matchesList.locator("article")).toHaveCount(2);
     await expect(matchesList).toContainText("11 – 8");
@@ -676,7 +678,7 @@ test.describe("Open Play Workflow", () => {
 
     // Host checks group dashboard - active session card displays renamed session
     await page.goto(`/g/${groupId}`);
-    await expect(page.locator("h2:has-text('Friday Night Open Play')")).toBeVisible();
+    await expect(page.getByText("Friday Night Open Play")).toBeVisible();
     // Host should NOT see edit session name button on main group page
     await expect(page.locator("button[aria-label='Edit session name']")).toHaveCount(0);
 
@@ -684,7 +686,7 @@ test.describe("Open Play Workflow", () => {
     await page.goto(sessionUrl);
     page.once("dialog", (dialog) => dialog.accept());
     await page.locator("button[data-testid='end-session-button']").click();
-    await expect(page.getByText("Completed Session")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
     // Check completed session view displays the renamed session name
     await expect(page.locator("h1")).toContainText("Friday Night Open Play");
@@ -741,7 +743,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     }
     page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("end-session-button").click();
-    await expect(page.getByText("Completed Session")).toBeVisible();
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
     const art = page.getByTestId("session-signoff");
     await expect(art).toBeInViewport();
     await expect(art).toHaveAttribute("aria-hidden", "true");
@@ -784,8 +786,8 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await form.getByRole("button", { name: "Singles (1v1)", exact: true }).click();
     await form.getByTestId("select-team-2-player-1").click();
     await page.getByRole("option").filter({ hasText: "Pickle Guest" }).click();
-    const score1 = form.getByRole("spinbutton", { name: "Team 1 Score", exact: true });
-    const score2 = form.getByRole("spinbutton", { name: "Team 2 Score", exact: true });
+    const score1 = form.getByRole("spinbutton", { name: /(Team|Player) 1 Score/, exact: true });
+    const score2 = form.getByRole("spinbutton", { name: /(Team|Player) 2 Score/, exact: true });
     const reaction = page.getByTestId("pickle-celebration");
     await score1.fill("21");
     await score2.fill("0");

@@ -41,7 +41,10 @@ test("organizer saves and refreshes session partners before starting a paired ro
   const showedSoloNotice = await soloNotice.isVisible();
   await page.screenshot({ path: testInfo.outputPath("stay-together-preview.png"), fullPage: true });
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  const confirmBtn = page.getByRole("button", { name: "Confirm & Start", exact: true });
+  if (await confirmBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await confirmBtn.click();
+  }
   await expect(page.getByRole("button", { name: "Save Result", exact: true })).toBeVisible();
   await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
   await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("5");

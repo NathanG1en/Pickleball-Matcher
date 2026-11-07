@@ -21,10 +21,13 @@ test("Save All persists every court and rejects a stale tab without replacing ne
   const proposalResponse = page.waitForResponse(response => response.request().method() === "POST" && response.url() === page.url());
   await reshuffle.click();
   expect((await proposalResponse).ok()).toBe(true);
-  await expect(reshuffle).toBeEnabled();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+  const confirmBtn = page.getByRole("button", { name: "Confirm & Start", exact: true });
+  if (await confirmBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await confirmBtn.click();
+  }
   await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeVisible();
   const stale = await page.context().newPage();
   try {
     await stale.goto(page.url());

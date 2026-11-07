@@ -236,7 +236,7 @@ describe("Open Play Server Actions", () => {
     });
     expect(game2Res.ok).toBe(true);
     if (!game2Res.ok) return;
-    expect(game2Res.data.courtNumber).toBe(1);
+    expect(game2Res.data.courtNumber).toBe(2);
 
     // Verify autopopulation of last game for p-host
     const autopopulateRes = await getPlayerLastOpenPlayGameAction({

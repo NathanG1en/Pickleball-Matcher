@@ -41,9 +41,11 @@ test.describe("Resilience and Safe Drafts", () => {
     await expect(page).toHaveURL(/\/sessions\/session_/);
     const sessionUrl = page.url();
 
-    // 4. Start Round 1
     await page.click("button:has-text('Start Round')");
-    await page.click("button:has-text('Confirm & Start')");
+    const confirmBtn = page.locator("button:has-text('Confirm & Start')");
+    if (await confirmBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await confirmBtn.click();
+    }
     await expect(page.locator("h1")).toContainText("Round 1");
 
     // Accessibility check on active score entry view

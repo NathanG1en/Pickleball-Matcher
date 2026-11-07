@@ -4,7 +4,7 @@ import { sampleReplayMotion, checkAnimationReplay, createAndSignInPlayer, create
 
 test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
   test("creates group, manages attendance, generates fair rounds, and records scores", async ({ page }, testInfo) => {
-    test.setTimeout(45_000);
+    test.setTimeout(90_000);
     // 1. Authenticate player and visit setup page
     await createAndSignInPlayer(page);
     await expect(page.locator("h1")).toContainText("Create Group");

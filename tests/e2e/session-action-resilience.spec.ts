@@ -1,9 +1,16 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import {
   actionButton, assertCommitted, closeSecondary, createResilienceFixture, deferred,
-  fillThreeScores, installFailure, prepareAction, resilienceDatabase, scopedState,
+  fillThreeScores, installFailure, isResilienceDatabaseSupported, prepareAction, resilienceDatabase, scopedState,
   secondaryOrganizer, waitForAction, type ResilienceFixture, type SessionAction,
 } from "../fixtures/session-action-resilience";
+
+test.beforeEach(() => {
+  test.skip(
+    !isResilienceDatabaseSupported(),
+    "Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere."
+  );
+});
 
 const actions: SessionAction[] = ["start", "save", "next"];
 const isAction = (route: Route) => route.request().method() === "POST" && Boolean(route.request().headers()["next-action"]);
