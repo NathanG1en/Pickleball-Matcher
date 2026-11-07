@@ -970,13 +970,8 @@ export function OpenPlayManagerClient({
       );
     });
 
-    if (isPickleScore(s1, s2)) {
-      setPickledGameId(optimisticMatchId);
-    }
     setT1Score("");
     setT2Score("");
-    showToast("Game submitted successfully!");
-
     setIsSubmittingGame(true);
     try {
       const res = await submitOpenPlayGameAction({
@@ -999,7 +994,12 @@ export function OpenPlayManagerClient({
             ),
           }))
         );
-        setPickledGameId((current) => (current === optimisticMatchId ? newMatch.id : current));
+        showToast("Game submitted successfully!");
+        if (isPickleScore(newMatch.team1Score, newMatch.team2Score)) {
+          setPickledGameId(newMatch.id);
+        } else {
+          setPickledGameId(null);
+        }
       } else {
         // Rollback optimistic update
         setLocalStartedRounds((prev) =>
@@ -1009,7 +1009,7 @@ export function OpenPlayManagerClient({
             matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
           }))
         );
-        setPickledGameId((current) => (current === optimisticMatchId ? null : current));
+        setPickledGameId(null);
         setT1Score(String(s1));
         setT2Score(String(s2));
         setError(res.error ?? "Failed to submit game.");
@@ -1022,7 +1022,7 @@ export function OpenPlayManagerClient({
           matchPlayers: sr.matchPlayers.filter((mp) => mp.matchId !== optimisticMatchId),
         }))
       );
-      setPickledGameId((current) => (current === optimisticMatchId ? null : current));
+      setPickledGameId(null);
       setT1Score(String(s1));
       setT2Score(String(s2));
       setError("An unexpected error occurred while submitting game.");
@@ -1974,10 +1974,12 @@ export function OpenPlayManagerClient({
               >
                 {isSubmittingGame ? "Recording Game..." : isSessionActive ? "Record Game Result" : "Add Game Result"}
               </button>
-              {pickledGameId && allMatches.some(match => match.id === pickledGameId && isPickleScore(match.team1Score, match.team2Score)) && (
-                <PickleCelebration key={pickledGameId} />
-              )}
             </form>
+          )}
+          {pickledGameId && allMatches.some(match => match.id === pickledGameId && isPickleScore(match.team1Score, match.team2Score)) && (
+            <div className="pt-2">
+              <PickleCelebration key={pickledGameId} />
+            </div>
           )}
         </section>
       )}
