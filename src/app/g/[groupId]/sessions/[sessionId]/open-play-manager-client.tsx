@@ -1824,7 +1824,7 @@ export function OpenPlayManagerClient({
                       }`}
                     >
                       <CrownIcon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{isT1Winner ? "Winner (11)" : "Select Winner"}</span>
+                      <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -1881,7 +1881,7 @@ export function OpenPlayManagerClient({
                       }`}
                     >
                       <CrownIcon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{isT2Winner ? "Winner (11)" : "Select Winner"}</span>
+                      <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">

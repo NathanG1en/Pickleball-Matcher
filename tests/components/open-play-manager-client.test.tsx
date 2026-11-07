@@ -478,6 +478,7 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('data-testid="team-1-winner-button"');
     expect(html).toContain('data-testid="team-2-winner-button"');
     expect(html).toContain("Select Winner");
+    expect(html).not.toContain("Winner (11)");
     expect(html).toContain("whitespace-nowrap");
   });
 
