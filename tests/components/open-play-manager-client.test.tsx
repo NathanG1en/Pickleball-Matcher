@@ -222,6 +222,8 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain('id="open-play-guest-gender"');
     expect(html).toContain("Male");
     expect(html).toContain("Female");
+    expect(html).toContain("Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.");
+    expect(html).not.toContain("won&apos;t be saved");
   });
 
   it("renders general session info and personal session view with games won and lost in open play", () => {

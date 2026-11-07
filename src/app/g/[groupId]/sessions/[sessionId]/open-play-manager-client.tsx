@@ -1606,7 +1606,7 @@ export function OpenPlayManagerClient({
                     Add Players
                   </h3>
                   <p className="text-[11px] font-bold text-neutral-600">
-                    Add existing group members or guests to the session.
+                    Add group members to the session or new guests to your group roster.
                   </p>
                 </div>
               </div>
@@ -1703,7 +1703,7 @@ export function OpenPlayManagerClient({
                   Add Guest to Roster
                 </label>
                 <p className="text-[11px] font-bold text-neutral-600">
-                  Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
+                  Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
