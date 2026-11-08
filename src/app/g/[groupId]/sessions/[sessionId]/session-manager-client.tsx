@@ -1905,7 +1905,7 @@ export function SessionManagerClient({
               onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
               onSaveAllScores={canManage ? handleSaveAllScores : undefined}
               onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
-              upcomingProposal={canManage ? preGeneratedProposal : null}
+              upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
               playerNames={playerNames}
               confirmMatchups={confirmMatchups}
             />
