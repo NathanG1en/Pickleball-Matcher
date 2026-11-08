@@ -45,8 +45,7 @@ for (const action of actions) {
       await expect(secondary.page.getByRole("alert").filter({ hasText: "Not authorized" })).toBeVisible();
       expect(await scopedState(fixture)).toEqual(before);
       // The owner retains permission and can still complete the same operation.
-      if (action === "start") await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
-      else await (await actionButton(page, action)).click();
+      await (await actionButton(page, action)).click();
       await waitForAction(page, action);
       await assertCommitted(fixture, action, before);
     } finally {
