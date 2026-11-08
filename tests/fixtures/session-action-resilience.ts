@@ -85,6 +85,11 @@ export async function createResilienceFixture(page: Page, sql: postgres.Sql): Pr
   await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page).toHaveURL(/\/sessions\/session_/);
+  // Ensure the confirmMatchups dialog is active so the two-step action interception works predictably
+  await page.evaluate((gid) => {
+    window.localStorage.setItem("pickleball_confirm_matchups", "true");
+    window.localStorage.setItem(`pickleball_confirm_matchups_${gid}`, "true");
+  }, groupId);
   const sessionPath = new URL(page.url()).pathname;
   const sessionId = sessionPath.split("/").at(-1)!;
   const [session] = await sql<{ court_count: number }[]>`select court_count from sessions where id = ${sessionId}`;
@@ -102,6 +107,10 @@ export async function secondaryOrganizer(browser: Browser, fixture: ResilienceFi
     await page.locator("#player-login-password").fill(password);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page).toHaveURL(fixture.sessionPath);
+    await page.evaluate((gid) => {
+      window.localStorage.setItem("pickleball_confirm_matchups", "true");
+      window.localStorage.setItem(`pickleball_confirm_matchups_${gid}`, "true");
+    }, fixture.groupId);
     return { context, page };
   } catch (error) {
     await context.close();
