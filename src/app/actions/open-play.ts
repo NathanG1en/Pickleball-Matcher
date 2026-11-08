@@ -447,8 +447,8 @@ export async function submitOpenPlayGameAction(
       }
 
       const existingMatches = startedRounds.find((r) => r.round.id === targetRound.id)?.matches ?? [];
-      const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
-      const courtNumber = parsed.data.courtNumber ?? (maxCourtNumber + 1);
+      const maxCourt = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
+      const courtNumber = parsed.data.courtNumber ?? (maxCourt + 1);
 
       const matchId = defaultDependencies.nextId("match");
       const match: MatchRecord = {

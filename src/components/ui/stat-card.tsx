@@ -16,9 +16,9 @@ export function StatCard({
   ...props
 }: StatCardProps) {
   const variants = {
-    default: "bg-white text-black border-2 border-black shadow-[3px_3px_0px_0px_#000]",
-    accent: "bg-[#ccff00] text-black border-2 border-black shadow-[3px_3px_0px_0px_#000]",
-    highlight: "bg-[#fde047] text-black border-2 border-black shadow-[3px_3px_0px_0px_#000]",
+    default: "bg-white text-black border-2 border-black",
+    accent: "bg-[#ccff00] text-black border-2 border-black",
+    highlight: "bg-[#fde047] text-black border-2 border-black",
   };
 
   return (

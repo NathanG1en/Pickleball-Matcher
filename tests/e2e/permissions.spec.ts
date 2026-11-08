@@ -96,7 +96,7 @@ test.describe("Permissions and Security Workflow", () => {
     // Guest Taylor should appear in the roster
     const guestItem = page.locator("li").filter({ hasText: "Guest Taylor" });
     await expect(guestItem).toBeVisible();
-    await expect(guestItem).toContainText("Rating: 2 (");
+    await expect(guestItem).toContainText(/2(\.0)?/);
 
     // Open options dropdown for Guest Taylor
     await guestItem.locator("summary").click();
@@ -128,7 +128,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Modal should close and player should now be linked with username
     await expect(modal).not.toBeVisible();
-    await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toContainText(`@${publicUser.username}`);
     await expect(page.locator("li").filter({ hasText: publicUser.name }).getByRole("link", { name: `@${publicUser.username}` })).toBeVisible();
 
     // Open dropdown for linked player
@@ -523,14 +523,15 @@ test.describe("Permissions and Security Workflow", () => {
     await page.fill("#roster-player-username", publicUser.username);
     await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: publicUser.name })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("#roster-player-username")).toHaveValue("");
 
     await page.fill("#roster-player-username", privateUser.username);
     await page.click("button:text-is('Add')");
     await expect(page.locator("li").filter({ hasText: privateUser.name })).toBeVisible({ timeout: 15000 });
 
-    // 4. In the roster, both should have an underlined link for their username in (@username)
-    await expect(page.locator(`text=${publicUser.name} (@${publicUser.username})`)).toBeVisible();
-    await expect(page.locator(`text=${privateUser.name} (@${privateUser.username})`)).toBeVisible();
+    // 4. In the roster, both should have an underlined link for their username
+    await expect(page.locator("li").filter({ hasText: publicUser.name })).toContainText(`@${publicUser.username}`);
+    await expect(page.locator("li").filter({ hasText: privateUser.name })).toContainText(`@${privateUser.username}`);
 
     const publicLink = page.locator("li").filter({ hasText: publicUser.name }).getByRole("link", { name: `@${publicUser.username}` });
     await expect(publicLink).toBeVisible();

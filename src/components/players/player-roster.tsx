@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
-import { formatDupr, eloToDupr, getSkillTier, duprToElo } from "@/lib/domain/rating-display";
+import { formatDupr, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { PinIcon } from "@/components/ui/icons";
 import {
@@ -253,8 +253,8 @@ export function PlayerRoster({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 flex-1 min-w-[130px]">
-                <label htmlFor="player-roster-filter" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+              <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+                <label htmlFor="player-roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Filter:
                 </label>
                 <select
@@ -272,8 +272,8 @@ export function PlayerRoster({
               </div>
 
               {hasGenderData && (
-                <div className="flex items-center gap-1.5 min-w-[100px]">
-                  <label htmlFor="player-roster-gender-filter" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+                <div className="flex items-center gap-1.5 min-w-[95px]">
+                  <label htmlFor="player-roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                     Gender:
                   </label>
                   <select
@@ -283,15 +283,15 @@ export function PlayerRoster({
                     onChange={(e) => setFilterGender(e.target.value as PlayerRosterFilterGender)}
                     className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
                   >
-                    <option value="all">All</option>
+                    <option value="all">All Genders</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                   </select>
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 flex-1 min-w-[130px]">
-                <label htmlFor="player-roster-sort" className="text-[10px] font-black uppercase text-neutral-800 shrink-0">
+              <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+                <label htmlFor="player-roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Sort:
                 </label>
                 <select
@@ -354,34 +354,43 @@ export function PlayerRoster({
             {filteredAndSortedPlayers.map((player) => {
               const isPinned = pinnedPlayerIds.has(player.id);
               return (
-                <div key={player.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="font-black text-black text-base block truncate">
-                      {player.name}
-                      {player.username ? (
-                        <>
-                          {" "}
-                          (
-                          <Link
-                            href={`/players/${encodeURIComponent(player.username)}`}
-                            className="underline hover:text-black cursor-pointer"
-                          >
-                            @{player.username}
-                          </Link>
-                          )
-                        </>
-                      ) : (
-                        ""
+                <div key={player.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {/* Line 1: Name and Username */}
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <span className="font-black text-black text-base truncate">
+                        {player.name}
+                      </span>
+                      {player.username && (
+                        <Link
+                          href={`/players/${encodeURIComponent(player.username)}`}
+                          className="text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer"
+                        >
+                          @{player.username}
+                        </Link>
                       )}
+                    </div>
+
+                    {/* Line 2: Unified Muted Metadata Subline */}
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-0.5">
+                      <span>
+                        <span className="hidden sm:inline">Rating: </span>
+                        {formatDupr(player.rating)}
+                      </span>
                       {player.gender && (
-                        <span className="ml-2 rounded border border-black/40 bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-800 align-middle">
-                          {player.gender}
-                        </span>
+                        <>
+                          <span aria-hidden="true" className="text-neutral-400">·</span>
+                          <span className="uppercase text-[11px] font-bold text-neutral-600">
+                            <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
+                            <span className="hidden sm:inline">{player.gender}</span>
+                          </span>
+                        </>
                       )}
-                    </span>
-                    <span className="text-xs font-bold text-neutral-600 block mt-0.5">
-                      Rating: {formatDupr(player.rating)} ({getSkillTier(eloToDupr(player.rating)).name}) · {player.ratedGamesPlayed} games played
-                    </span>
+                      <span aria-hidden="true" className="text-neutral-400">·</span>
+                      <span>
+                        {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {canManage && (

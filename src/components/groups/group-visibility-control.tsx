@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateGroupVisibilityAction } from "@/app/actions/group-settings";
 import { InfoIcon } from "@/components/ui/icons";
+import { useTooltipPosition } from "@/components/ui";
 
 export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: string; initialIsPublic: boolean }) {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const { triggerRef, tooltipRef, style } = useTooltipPosition(showTooltip, () => setShowTooltip(false));
 
   const toggle = async (nextIsPublic: boolean) => {
     if (nextIsPublic === isPublic || pending) return;
@@ -31,7 +33,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
           role="group"
           aria-label="Group visibility"
           data-testid="group-visibility-toggle"
-          className="inline-flex items-center rounded-md border-2 border-black bg-neutral-200 p-0.5 shadow-[1px_1px_0px_0px_#000]"
+          className="inline-flex items-center rounded-md border-2 border-black bg-neutral-200 p-0.5"
         >
           <button
             type="button"
@@ -69,6 +71,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
           onMouseLeave={() => setShowTooltip(false)}
         >
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setShowTooltip((prev) => !prev)}
             onFocus={() => setShowTooltip(true)}
@@ -89,9 +92,11 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
                 aria-hidden="true"
               />
               <div
+                ref={tooltipRef}
                 role="tooltip"
                 data-testid="group-visibility-tooltip"
-                className="absolute left-0 sm:left-6 top-6 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black"
+                style={style}
+                className="absolute left-0 sm:left-6 top-6 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left shadow-[4px_4px_0px_0px_#000] text-black tooltip-animate"
               >
                 <div className="space-y-1.5 text-xs">
                   <p className="font-bold leading-snug">

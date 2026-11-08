@@ -23,7 +23,7 @@ for (const [timezoneId, localDate] of [["America/New_York", "Oct 28, 2026"], ["P
           const id = page.url().split("/sessions/")[1].split("?")[0];
           page.once("dialog", dialog => dialog.accept());
           await page.getByTestId("end-session-button").click();
-          await expect(page.getByText("Completed Session")).toBeVisible();
+          await expect(page.getByTestId("completed-session-badge")).toBeVisible();
           // Only this newly created fixture is changed; application/public history is untouched.
           await sql`update sessions set started_at = ${instant}, ended_at = ${instant}, name = ${name} where id = ${id} and group_id = ${groupId}`;
           sessions.push({ id, name });

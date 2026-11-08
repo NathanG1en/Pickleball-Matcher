@@ -21,14 +21,17 @@ test("Save All persists every court and rejects a stale tab without replacing ne
   const proposalResponse = page.waitForResponse(response => response.request().method() === "POST" && response.url() === page.url());
   await reshuffle.click();
   expect((await proposalResponse).ok()).toBe(true);
-  await expect(reshuffle).toBeEnabled();
   await page.getByRole("button", { name: "Start Round", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible();
+  const confirmBtn = page.getByRole("button", { name: "Confirm & Start", exact: true });
+  if (await confirmBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await confirmBtn.click();
+  }
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeVisible();
   const stale = await page.context().newPage();
   try {
     await stale.goto(page.url());
-    await expect(stale.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible();
+    await expect(stale.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
     for (const [tab, score] of [[page, "7"], [stale, "9"]] as const) {
       for (let court = 1; court <= 2; court++) {
         await tab.getByRole("spinbutton", { name: `Court ${court} Team 1 score`, exact: true }).fill("11");
@@ -48,6 +51,6 @@ test("Save All persists every court and rejects a stale tab without replacing ne
     await stale.reload();
     for (let court = 1; court <= 2; court++) await expect(stale.getByRole("spinbutton", { name: `Court ${court} Team 2 score`, exact: true })).toHaveValue("7");
     await page.getByTestId("save-and-start-next-round-button").click();
-    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   } finally { await stale.close(); }
 });

@@ -1,9 +1,14 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import {
   actionButton, assertCommitted, closeSecondary, createResilienceFixture, deferred,
-  fillThreeScores, installFailure, prepareAction, resilienceDatabase, scopedState,
+  fillThreeScores, installFailure, isResilienceDatabaseSupported, prepareAction, resilienceDatabase, scopedState,
   secondaryOrganizer, waitForAction, type ResilienceFixture, type SessionAction,
 } from "../fixtures/session-action-resilience";
+
+test.skip(
+  !isResilienceDatabaseSupported(),
+  "Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere."
+);
 
 const actions: SessionAction[] = ["start", "save", "next"];
 const isAction = (route: Route) => route.request().method() === "POST" && Boolean(route.request().headers()["next-action"]);
@@ -40,8 +45,7 @@ for (const action of actions) {
       await expect(secondary.page.getByRole("alert").filter({ hasText: "Not authorized" })).toBeVisible();
       expect(await scopedState(fixture)).toEqual(before);
       // The owner retains permission and can still complete the same operation.
-      if (action === "start") await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
-      else await (await actionButton(page, action)).click();
+      await (await actionButton(page, action)).click();
       await waitForAction(page, action);
       await assertCommitted(fixture, action, before);
     } finally {
@@ -347,7 +351,7 @@ test("combined Save & Start reconciles versions across consecutive rounds withou
       const response = page.waitForResponse(response => response.request().method() === "POST" && Boolean(response.request().headers()["next-action"]));
       await page.getByTestId("save-and-start-next-round-button").click();
       expect((await response).ok()).toBe(true);
-      await expect(page.getByRole("heading", { name: `Round ${roundNumber} Results`, exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: `Round ${roundNumber}`, exact: true })).toBeVisible();
       await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
       await expect(page.getByRole("alert").filter({ hasText: /session changed|round changed|failed/i })).toHaveCount(0);
       const state = await scopedState(fixture);
@@ -356,6 +360,6 @@ test("combined Save & Start reconciles versions across consecutive rounds withou
       expect(state.rounds.filter(round => round.status === "started")).toHaveLength(1);
     }
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Round 3 Results", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Round 3", exact: true })).toBeVisible();
   } finally { await sql.end(); }
 });

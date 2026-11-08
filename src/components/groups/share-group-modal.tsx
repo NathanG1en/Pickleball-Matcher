@@ -170,7 +170,7 @@ export function ShareGroupButton({
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Share group link and QR code"
-        className={`px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer ${className}`}
+        className={`h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${className}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -180,7 +180,7 @@ export function ShareGroupButton({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="w-3.5 h-3.5"
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0"
           aria-hidden="true"
         >
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />

@@ -86,6 +86,7 @@ function CurrentRoundEditor({
   matchmakingVariety = 0,
   onChangeMatchmakingVariety,
   onAddGame,
+  confirmMatchups = false,
 }: CurrentRoundViewProps & { restoreDraft: boolean }) {
   const allowRegenerate = canRegenerate !== undefined ? canRegenerate : Boolean(onRegenerate);
   const [showVarietyInfo, setShowVarietyInfo] = useState(false);
@@ -365,14 +366,14 @@ function CurrentRoundEditor({
   return (
     <div className="current-round-view space-y-6 pb-28 text-black">
       {/* Round Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+      <div className="flex items-center justify-between gap-2 flex-nowrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black truncate shrink-0">
             Round {round.roundNumber}
           </h1>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
           {round.status === "proposed" && (
             canManage ? (
               <>
@@ -380,7 +381,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={onAddGame}
-                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-[#b8eb00] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <span>+ Add Game</span>
                   </button>
@@ -389,18 +390,18 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setIsUnlocked(false)}
-                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
-                    <LockIcon className="h-3.5 w-3.5 shrink-0" />
+                    <LockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Lock</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-[11px] sm:text-xs text-black shadow-[3.5px_3.5px_0px_0px_#000] hover:bg-neutral-50 hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
-                    <PencilIcon className="h-3.5 w-3.5 shrink-0" />
+                    <PencilIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Manual Edit</span>
                   </button>
                 )}
@@ -877,9 +878,9 @@ function CurrentRoundEditor({
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
           <div>
-            <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
+            <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
               Sitting this round ({localSitting.length})
-            </h3>
+            </h2>
             <p className="text-xs font-bold text-neutral-600">
               {isUnlocked
                 ? "Drag players here to sit out, or drag sitting players to an active court."
@@ -1121,7 +1122,11 @@ function CurrentRoundEditor({
                 size="lg"
                 onClick={() => {
                   setAcknowledgedOverride(false);
-                  setShowConfirmStart(true);
+                  if (confirmMatchups || hasModifications) {
+                    setShowConfirmStart(true);
+                  } else {
+                    handleStartConfirm();
+                  }
                 }}
                 disabled={isPending || isGeneratingRound || !isValidLineup}
                 className="flex-1 font-display text-lg uppercase tracking-wider"

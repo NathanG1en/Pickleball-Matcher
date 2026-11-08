@@ -147,7 +147,7 @@ export function PastSessionsList({
             {/* Expanded Content: Categorized by Rounds, Sized to fit 5 games with scrolling */}
             {isExpanded && (
               <div
-                className="bg-neutral-50 border-2 border-black rounded-2xl p-4 space-y-4 shadow-[3px_3px_0px_0px_#000]"
+                className="session-summary-expand bg-neutral-50 border-2 border-black rounded-2xl p-4 space-y-4"
                 data-testid={`expanded-session-content-${session.id}`}
               >
                 {session.rounds.length === 0 ? (
@@ -158,101 +158,182 @@ export function PastSessionsList({
                     className="max-h-[390px] overflow-y-auto space-y-3.5 pr-1.5 scrollbar-thin"
                     data-testid={`session-games-scroll-container-${session.id}`}
                   >
-                    {session.rounds.map((round) => (
-                      <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
-                        <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-white px-3 py-1.5 rounded-xl border-2 border-black/20 shadow-[1px_1px_0px_0px_rgba(0,0,0,0.1)]">
-                          <span>Round {round.roundNumber}</span>
-                          <span className="text-[10px] font-bold text-neutral-500">
-                            {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
-                          </span>
-                        </div>
+                    {session.type === "open_play" ? (
+                      <div className="space-y-2">
+                        {session.rounds.flatMap((r) => r.matches).map((m, idx) => {
+                          const isT1Winner =
+                            m.team1Score !== null &&
+                            m.team2Score !== null &&
+                            m.team1Score > m.team2Score;
+                          const isT2Winner =
+                            m.team1Score !== null &&
+                            m.team2Score !== null &&
+                            m.team2Score > m.team1Score;
 
-                        {round.sittingNames.length > 0 && (
-                          <p className="text-[11px] font-bold text-neutral-500 pl-1">
-                            Sitting out: {round.sittingNames.join(", ")}
-                          </p>
-                        )}
+                          return (
+                            <div
+                              key={m.id}
+                              className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
+                              data-testid={`match-card-${m.id}`}
+                            >
+                              <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
+                                <span>Game {idx + 1}</span>
+                                {m.status === "completed" &&
+                                m.team1Score !== null &&
+                                m.team2Score !== null ? (
+                                  <span className="font-mono font-black text-black">
+                                    {m.team1Score} – {m.team2Score}
+                                  </span>
+                                ) : (
+                                  <Badge
+                                    variant={m.status === "cancelled" ? "muted" : "warning"}
+                                    className="text-[10px] py-0 px-1.5"
+                                  >
+                                    {m.status === "cancelled" ? "Cancelled" : "In Play"}
+                                  </Badge>
+                                )}
+                              </div>
 
-                        <div className="space-y-2">
-                          {round.matches.map((m) => {
-                            const isT1Winner =
-                              m.team1Score !== null &&
-                              m.team2Score !== null &&
-                              m.team1Score > m.team2Score;
-                            const isT2Winner =
-                              m.team1Score !== null &&
-                              m.team2Score !== null &&
-                              m.team2Score > m.team1Score;
-
-                            return (
-                              <div
-                                key={m.id}
-                                className="p-3 bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] text-xs space-y-1.5"
-                                data-testid={`match-card-${m.id}`}
-                              >
-                                <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
-                                  <span>Court {m.courtNumber}</span>
-                                  {m.status === "completed" &&
-                                  m.team1Score !== null &&
-                                  m.team2Score !== null ? (
-                                    <span className="font-mono font-black text-black">
-                                      {m.team1Score} – {m.team2Score}
-                                    </span>
-                                  ) : (
-                                    <Badge
-                                      variant={m.status === "cancelled" ? "muted" : "warning"}
-                                      className="text-[10px] py-0 px-1.5"
-                                    >
-                                      {m.status === "cancelled" ? "Cancelled" : "In Play"}
-                                    </Badge>
-                                  )}
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span
+                                    className={`truncate font-bold ${
+                                      isT1Winner ? "font-black text-black" : "text-neutral-800"
+                                    }`}
+                                  >
+                                    {m.team1Names.join(" & ") || "Team 1"}
+                                  </span>
+                                  <span
+                                    className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
+                                      isT1Winner
+                                        ? "bg-[#ccff00] text-black"
+                                        : "bg-neutral-100 text-neutral-800"
+                                    }`}
+                                  >
+                                    {m.team1Score ?? 0}
+                                  </span>
                                 </div>
 
-                                <div className="space-y-1 pt-0.5">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span
-                                      className={`truncate font-bold ${
-                                        isT1Winner ? "font-black text-black" : "text-neutral-800"
-                                      }`}
-                                    >
-                                      {m.team1Names.join(" & ") || "Team 1"}
-                                    </span>
-                                    <span
-                                      className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
-                                        isT1Winner
-                                          ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
-                                          : "bg-neutral-100 text-neutral-800"
-                                      }`}
-                                    >
-                                      {m.team1Score ?? 0}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span
-                                      className={`truncate font-bold ${
-                                        isT2Winner ? "font-black text-black" : "text-neutral-800"
-                                      }`}
-                                    >
-                                      {m.team2Names.join(" & ") || "Team 2"}
-                                    </span>
-                                    <span
-                                      className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
-                                        isT2Winner
-                                          ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
-                                          : "bg-neutral-100 text-neutral-800"
-                                      }`}
-                                    >
-                                      {m.team2Score ?? 0}
-                                    </span>
-                                  </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span
+                                    className={`truncate font-bold ${
+                                      isT2Winner ? "font-black text-black" : "text-neutral-800"
+                                    }`}
+                                  >
+                                    {m.team2Names.join(" & ") || "Team 2"}
+                                  </span>
+                                  <span
+                                    className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
+                                      isT2Winner
+                                        ? "bg-[#ccff00] text-black"
+                                        : "bg-neutral-100 text-neutral-800"
+                                    }`}
+                                  >
+                                    {m.team2Score ?? 0}
+                                  </span>
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    ) : (
+                      session.rounds.map((round) => (
+                        <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
+                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-white px-3 py-1.5 rounded-xl border-2 border-black/20">
+                            <span>Round {round.roundNumber}</span>
+                            <span className="text-[10px] font-bold text-neutral-500">
+                              {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+
+                          {round.sittingNames.length > 0 && (
+                            <p className="text-[11px] font-bold text-neutral-500 pl-1">
+                              Sitting out: {round.sittingNames.join(", ")}
+                            </p>
+                          )}
+
+                          <div className="space-y-2">
+                            {round.matches.map((m) => {
+                              const isT1Winner =
+                                m.team1Score !== null &&
+                                m.team2Score !== null &&
+                                m.team1Score > m.team2Score;
+                              const isT2Winner =
+                                m.team1Score !== null &&
+                                m.team2Score !== null &&
+                                m.team2Score > m.team1Score;
+
+                              return (
+                                <div
+                                  key={m.id}
+                                  className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
+                                  data-testid={`match-card-${m.id}`}
+                                >
+                                  <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
+                                    <span>Court {m.courtNumber}</span>
+                                    {m.status === "completed" &&
+                                    m.team1Score !== null &&
+                                    m.team2Score !== null ? (
+                                      <span className="font-mono font-black text-black">
+                                        {m.team1Score} – {m.team2Score}
+                                      </span>
+                                    ) : (
+                                      <Badge
+                                        variant={m.status === "cancelled" ? "muted" : "warning"}
+                                        className="text-[10px] py-0 px-1.5"
+                                      >
+                                        {m.status === "cancelled" ? "Cancelled" : "In Play"}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  <div className="space-y-1 pt-0.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span
+                                        className={`truncate font-bold ${
+                                          isT1Winner ? "font-black text-black" : "text-neutral-800"
+                                        }`}
+                                      >
+                                        {m.team1Names.join(" & ") || "Team 1"}
+                                      </span>
+                                      <span
+                                        className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
+                                          isT1Winner
+                                            ? "bg-[#ccff00] text-black"
+                                            : "bg-neutral-100 text-neutral-800"
+                                        }`}
+                                      >
+                                        {m.team1Score ?? 0}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span
+                                        className={`truncate font-bold ${
+                                          isT2Winner ? "font-black text-black" : "text-neutral-800"
+                                        }`}
+                                      >
+                                        {m.team2Names.join(" & ") || "Team 2"}
+                                      </span>
+                                      <span
+                                        className={`font-mono text-xs px-2 py-0.5 rounded border-2 border-black font-black flex-shrink-0 ${
+                                          isT2Winner
+                                            ? "bg-[#ccff00] text-black"
+                                            : "bg-neutral-100 text-neutral-800"
+                                        }`}
+                                      >
+                                        {m.team2Score ?? 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
 

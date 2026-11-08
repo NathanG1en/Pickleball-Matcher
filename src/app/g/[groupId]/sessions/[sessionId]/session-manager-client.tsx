@@ -691,6 +691,91 @@ export function SessionManagerClient({
     const previousSession = currentSession;
     const previousDrafts = scoreDrafts;
 
+    if (confirmMatchups) {
+      // Optimistically advance to the proposed round screen (CurrentRoundView for matchup review and manual edit)
+      setLocalStartedRounds((prev) =>
+        prev.map((sr) =>
+          sr.round.id === latestStarted.round.id
+            ? {
+                ...sr,
+                round: {
+                  ...sr.round,
+                  status: "completed" as const,
+                  completedAt: latestStarted.round.startedAt,
+                  version: sr.round.version + 1,
+                },
+                matches: sr.matches.map((m) => {
+                  const saved = entriesToSave.find((e) => e.matchId === m.id);
+                  return saved
+                    ? {
+                        ...m,
+                        status: "completed" as const,
+                        team1Score: saved.team1Score,
+                        team2Score: saved.team2Score,
+                        version: m.version + 1,
+                      }
+                    : m;
+                }),
+              }
+            : sr
+        )
+      );
+      if (proposalToUse) {
+        setRegeneratedProposal(proposalToUse);
+      }
+      setScoreDrafts({});
+
+      startGeneratingRound(async () => {
+        try {
+          if (entriesToSave.length > 0) {
+            await recordMultipleResultsAction({
+              groupId,
+              sessionId: currentSession.id,
+              results: entriesToSave.map((e) => ({
+                matchId: e.matchId,
+                team1Score: e.team1Score,
+                team2Score: e.team2Score,
+                matchVersion: e.version,
+              })),
+              idempotencyKey: createIdempotencyKey("save_results"),
+            });
+          }
+          const res = await completeRoundAction({
+            groupId,
+            sessionId: currentSession.id,
+            sessionVersion: currentSession.version,
+            roundId: latestStarted.round.id,
+            roundVersion: latestStarted.round.version,
+            idempotencyKey: createIdempotencyKey("complete_rd"),
+          });
+          if (res.ok) {
+            if (!proposalToUse) {
+              const generated = await proposeRoundAction({
+                groupId,
+                sessionId: currentSession.id,
+                sessionVersion: currentSession.version,
+                temperature: matchmakingVariety,
+              });
+              if (generated.ok) {
+                setRegeneratedProposal(generated.data);
+              }
+            }
+          } else {
+            setLocalStartedRounds(previousRounds);
+            setCurrentSession(previousSession);
+            setScoreDrafts(previousDrafts);
+            setError(res.error);
+          }
+        } catch {
+          setLocalStartedRounds(previousRounds);
+          setCurrentSession(previousSession);
+          setScoreDrafts(previousDrafts);
+          setError("Failed to advance to next round.");
+        }
+      });
+      return;
+    }
+
     // Optimistically advance UI immediately on click
     if (proposalToUse) {
       const nextRoundNumber = latestStarted.round.roundNumber + 1;
@@ -1351,47 +1436,71 @@ export function SessionManagerClient({
   return (
     <div className="space-y-6 text-black">
       {/* Top Header Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
           href={isFromProfile ? "/players" : `/g/${groupId}`}
-          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          label={
+            <>
+              <span className="sm:hidden">← Back</span>
+              <span className="hidden sm:inline">{isFromProfile ? "← Back to Profile" : "← Back to Group"}</span>
+            </>
+          }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Badge variant="muted" className="text-xs font-black uppercase">
-              Completed Session
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <Badge
+              variant="muted"
+              data-testid="completed-session-badge"
+              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center"
+            >
+              <span className="sm:hidden">Completed</span>
+              <span className="hidden sm:inline">Completed Session</span>
             </Badge>
             <button
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              aria-label="Session Settings"
+              className="inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Session Settings</span>
+              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <span>
+                <span className="sm:hidden">Settings</span>
+                <span className="hidden sm:inline">Session Settings</span>
+              </span>
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              aria-label="Session Settings"
+              className="inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Session Settings</span>
+              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <span>
+                <span className="sm:hidden">Settings</span>
+                <span className="hidden sm:inline">Session Settings</span>
+              </span>
             </button>
             {canManage && (
               <button
                 type="button"
                 onClick={handleEndSession}
                 disabled={isPending || hasUnsavedScores}
+                aria-label="End Session"
                 aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 data-testid="end-session-button"
-                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
-                {isPending ? "Ending..." : "End Session"}
+                {isPending ? "Ending..." : (
+                  <>
+                    <span className="sm:hidden">End</span>
+                    <span className="hidden sm:inline">End Session</span>
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -1431,6 +1540,8 @@ export function SessionManagerClient({
                   sessionDate={session.startedAt}
                   redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                   onRenamed={(newName) => setSessionName(newName)}
+                  onUndoLatestRound={latestStarted ? handleUndo : undefined}
+                  latestRoundNumber={latestStarted?.round.roundNumber}
                 />
               </div>
             )}
@@ -1772,56 +1883,32 @@ export function SessionManagerClient({
         <>
           {/* Main Mode: Round In Progress (Score Entry) OR Proposed Round */}
           {isRoundInProgress ? (
-            <div className="space-y-4">
-              <ResultsEntryView
-                pickledMatchId={pickledMatchId}
-                roundId={latestStarted.round.id}
-                roundNumber={latestStarted.round.roundNumber}
-                courtCount={currentSession.courtCount}
-                sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
-                matches={scoreEntries}
-                fieldErrors={fieldErrors}
-                isPending={isPending}
-                savingMatchIds={savingMatchIds}
-                onSubmitResult={canManage ? handleSaveResult : undefined}
-                onCancelMatch={canManage ? handleCancelMatch : undefined}
-                onNextRound={canManage ? handleNextRound : undefined}
-                onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
-                isGeneratingRound={isGeneratingRound}
-                canManage={canManage}
-                scoreDrafts={scoreDrafts}
-                onScoreChange={handleScoreChange}
-                hasUnsavedScores={hasUnsavedScores}
-                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
-                onSaveAllScores={canManage ? handleSaveAllScores : undefined}
-                onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
-                upcomingProposal={canManage ? preGeneratedProposal : null}
-                playerNames={playerNames}
-                confirmMatchups={confirmMatchups}
-              />
-              {canManage && (
-                <div className="flex items-center justify-center gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleReshuffleInProgressRound}
-                    disabled={isPending}
-                    data-testid="reshuffle-round-link"
-                    className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer"
-                  >
-                    Reshuffle
-                  </button>
-                  <span className="text-neutral-400">·</span>
-                  <button
-                    type="button"
-                    onClick={handleUndo}
-                    disabled={isPending}
-                    className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black underline cursor-pointer"
-                  >
-                    Undo Round {latestStarted.round.roundNumber}
-                  </button>
-                </div>
-              )}
-            </div>
+            <ResultsEntryView
+              pickledMatchId={pickledMatchId}
+              roundId={latestStarted.round.id}
+              roundNumber={latestStarted.round.roundNumber}
+              courtCount={currentSession.courtCount}
+              sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
+              matches={scoreEntries}
+              fieldErrors={fieldErrors}
+              isPending={isPending}
+              savingMatchIds={savingMatchIds}
+              onSubmitResult={canManage ? handleSaveResult : undefined}
+              onCancelMatch={canManage ? handleCancelMatch : undefined}
+              onNextRound={canManage ? handleNextRound : undefined}
+              onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
+              isGeneratingRound={isGeneratingRound}
+              canManage={canManage}
+              scoreDrafts={scoreDrafts}
+              onScoreChange={handleScoreChange}
+              hasUnsavedScores={hasUnsavedScores}
+              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+              onSaveAllScores={canManage ? handleSaveAllScores : undefined}
+              onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
+              upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
+              playerNames={playerNames}
+              confirmMatchups={confirmMatchups}
+            />
           ) : activeProposal ? (
             <CurrentRoundView
               draftKey={lineupDraftKey(session.id)}
@@ -1878,9 +1965,9 @@ export function SessionManagerClient({
 
           {/* Past Rounds Accordion / List */}
           {pastRounds.length > 0 && (
-            <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000]">
+            <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000] -mt-2">
               <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
-                Past Rounds History
+                Past Rounds
               </h3>
               <div className="space-y-4">
                 {pastRounds.map((past) => (

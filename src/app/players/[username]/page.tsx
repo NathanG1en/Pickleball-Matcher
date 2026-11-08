@@ -12,7 +12,7 @@ import {
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
-import { GlobeIcon, HandshakeIcon, LockIcon } from "@/components/ui/icons";
+import { GlobeIcon, LockIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { ClientDate } from "@/components/ui/client-date-time";
 
@@ -51,7 +51,7 @@ export default async function PlayerPublicProfilePage({
     return (
       <main className="min-h-screen p-4 sm:p-6">
         <section className="mx-auto max-w-2xl space-y-5">
-          <header className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
+          <header className="rounded-3xl border-[3px] border-black bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
               <BackButton fallbackHref="/" />
             </div>
@@ -64,15 +64,15 @@ export default async function PlayerPublicProfilePage({
               </p>
             </div>
             <div className="mt-3 flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-200 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-200 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
                 <LockIcon className="h-2.5 w-2.5 shrink-0" />
                 <span>Private</span>
               </span>
             </div>
           </header>
 
-          <section className="rounded-3xl border-[3px] border-black bg-white p-6 shadow-[5px_5px_0px_0px_#000] text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 shadow-[2px_2px_0px_0px_#000]">
+          <section className="rounded-3xl border-[3px] border-black bg-white p-6 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-neutral-100">
               <LockIcon className="h-6 w-6 text-neutral-700" />
             </div>
             <h2 className="font-display text-xl font-black uppercase text-black">This Profile is Private</h2>
@@ -101,7 +101,7 @@ export default async function PlayerPublicProfilePage({
   return (
     <main className="min-h-screen p-4 sm:p-6">
       <section className="mx-auto max-w-2xl space-y-5">
-        <header className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
+        <header className="rounded-3xl border-[3px] border-black bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
             <BackButton fallbackHref="/" />
             {isOwner && <PlayerLogoutButton />}
@@ -130,7 +130,7 @@ export default async function PlayerPublicProfilePage({
                 </p>
               )}
               <div className="flex items-center gap-2 pt-0.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
                   <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
                   <span>Public</span>
                 </span>
@@ -145,7 +145,7 @@ export default async function PlayerPublicProfilePage({
         </header>
 
         {bestPartner ? (
-          <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5 shadow-[5px_5px_0px_0px_#000]">
+          <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-1.5">
@@ -168,7 +168,7 @@ export default async function PlayerPublicProfilePage({
                   const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
                   const sign = score > 0 ? `+${score}%` : `${score}%`;
                   return (
-                    <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000] ${
+                    <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
                       score > 0
                         ? "bg-emerald-100 text-emerald-950"
                         : score < 0
@@ -186,27 +186,24 @@ export default async function PlayerPublicProfilePage({
             </div>
           </section>
         ) : (
-          <section className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
-                  <SynergyExplainerButton />
-                </div>
-                <h2 className="font-display text-xl font-black uppercase text-neutral-800">Doubles Synergy</h2>
-                <p className="mt-1 text-xs font-bold text-neutral-600 max-w-sm">
-                  Play doubles matches with other registered accounts in your groups to discover your best partner and unlock mutual chemistry scores.
-                </p>
+          <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                <SynergyExplainerButton />
               </div>
-              <span className="flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 p-3 shadow-[2px_2px_0px_0px_#000]">
-                <HandshakeIcon className="h-6 w-6 text-black" />
-              </span>
+              <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
+              <p className="mt-1 text-xs font-bold text-neutral-600">
+                {isOwner
+                  ? "Play matches with other people to unlock."
+                  : "Must play matches with other people to unlock."}
+              </p>
             </div>
           </section>
         )}
 
         {viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
-          <section className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+          <section className="rounded-3xl border-[3px] border-black bg-white p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
@@ -216,7 +213,7 @@ export default async function PlayerPublicProfilePage({
                 </p>
               </div>
               <div className="text-right">
-                <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black shadow-[2px_2px_0px_0px_#000]">
+                <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black">
                   {(() => {
                     const raw = viewerSynergy.synergyScore;
                     const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
@@ -234,7 +231,7 @@ export default async function PlayerPublicProfilePage({
           <StatCard label="Losses" value={losses} />
         </section>
 
-        <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 shadow-[5px_5px_0px_0px_#000]">
+        <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-display text-2xl font-black uppercase">
               {isOwner ? "My Groups" : "Groups"}
@@ -274,12 +271,12 @@ export default async function PlayerPublicProfilePage({
           )}
         </section>
 
-        <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+        <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
           <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
           <ScoreHistoryChart history={history} />
         </section>
 
-        <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+        <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5">
           <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
           {history.length === 0 ? (
             <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>

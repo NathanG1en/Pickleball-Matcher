@@ -31,3 +31,5 @@ describe("GroupVisibilityControl", () => {
     expect(html).toContain("group-visibility-info-button");
   });
 });
+
+

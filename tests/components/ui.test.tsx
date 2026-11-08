@@ -183,13 +183,14 @@ describe("Reusable UI Components", () => {
   });
 
   describe("StatCard", () => {
-    it("renders metric value and label", () => {
+    it("renders metric value and label without drop shadow", () => {
       const html = renderToStaticMarkup(
         <StatCard label="Total Games" value={42} subtext="+5 this week" />
       );
       expect(html).toContain("42");
       expect(html).toContain("Total Games");
       expect(html).toContain("+5 this week");
+      expect(html).not.toContain("shadow-");
     });
   });
 

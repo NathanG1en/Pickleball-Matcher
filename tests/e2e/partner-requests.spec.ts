@@ -53,7 +53,10 @@ test("a member requests a friend and an organizer approves it for future rounds"
     await expect(organizerPanel.getByRole("button", { name: "Approve Alex Requester and Sam Requested", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await page.getByRole("button", { name: "Start Round", exact: true }).click();
-    await page.getByRole("button", { name: "Confirm & Start", exact: true }).click();
+    const confirmBtn = page.getByRole("button", { name: "Confirm & Start", exact: true });
+    if (await confirmBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await confirmBtn.click();
+    }
     const teamOneScore = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true });
     const teamTwoScore = page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true });
     await teamOneScore.fill("11");

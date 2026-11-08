@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
@@ -46,10 +46,15 @@ import {
   ChevronDownIcon,
   CrownIcon,
   RotateCwIcon,
-  SwordsIcon,
   UserPlusIcon,
   UsersIcon,
+  XIcon,
 } from "@/components/ui/icons";
+import {
+  DISMISS_GUEST_DESC_STORAGE_KEY,
+  getGuestDescDismissedSnapshot,
+  subscribeGuestDescDismissed,
+} from "@/components/groups/group-organizers-panel";
 export { RATING_TICKS, type RatingTick };
 
 export interface OpenPlayManagerClientProps {
@@ -64,6 +69,7 @@ export interface OpenPlayManagerClientProps {
   readonly isMember?: boolean;
   readonly currentViewerPlayerId?: string | null;
   readonly isFromProfile?: boolean;
+  readonly initialMatchType?: "doubles" | "singles";
 }
 
 export function OpenPlayManagerClient({
@@ -78,6 +84,7 @@ export function OpenPlayManagerClient({
   isMember = false,
   currentViewerPlayerId = null,
   isFromProfile = false,
+  initialMatchType = "doubles",
 }: OpenPlayManagerClientProps) {
   const router = useRouter();
   const isHydrated = useHydrated();
@@ -264,102 +271,26 @@ export function OpenPlayManagerClient({
     }
   }
 
-  // Automatically find the last game in the session for the logged in user (or most recent game in session)
-  const lastSessionGame = useMemo(() => {
-    const recent = [...allMatches].reverse();
-    const candidate = currentViewerPlayerId
-      ? (recent.find(
-          (m) =>
-            m.status === "completed" &&
-            (m.team1PlayerIds.includes(currentViewerPlayerId) ||
-              m.team2PlayerIds.includes(currentViewerPlayerId)),
-        ) ?? recent.find((m) => m.status === "completed"))
-      : recent.find((m) => m.status === "completed");
-    if (!candidate) return null;
-    const allPids = [...candidate.team1PlayerIds, ...candidate.team2PlayerIds];
-    if (allPids.some((pid) => !presentPlayerIds.has(pid))) return null;
-    return candidate;
-  }, [allMatches, currentViewerPlayerId, presentPlayerIds]);
+  // User/client-local match submission state
+  const isViewerPresent = Boolean(
+    currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
+  );
 
-  // Helper to compute autopopulated match slots, ensuring current viewer is always the first player (t1p1)
-  const getAutopopulatedSlots = (
-    game: typeof lastSessionGame,
-  ): {
-    matchType: "doubles" | "singles";
-    t1p1: string;
-    t1p2: string;
-    t2p1: string;
-    t2p2: string;
-  } => {
-    const isViewerPresent = Boolean(
-      currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
-    );
-
-    if (game) {
-      const isSingles = game.team1PlayerIds.length === 1;
-      let slotT1P1 = game.team1PlayerIds[0] ?? "";
-      let slotT1P2 = game.team1PlayerIds[1] ?? "";
-      let slotT2P1 = game.team2PlayerIds[0] ?? "";
-      let slotT2P2 = game.team2PlayerIds[1] ?? "";
-
-      if (isViewerPresent && currentViewerPlayerId) {
-        if (slotT1P1 === currentViewerPlayerId) {
-          // Already player 1
-        } else if (slotT1P2 === currentViewerPlayerId) {
-          // User was player 2 on Team 1 -> put user as player 1
-          slotT1P2 = slotT1P1;
-          slotT1P1 = currentViewerPlayerId;
-        } else if (slotT2P1 === currentViewerPlayerId) {
-          // User was player 1 on Team 2 -> put user's team as Team 1
-          const prevT1P1 = slotT1P1;
-          const prevT1P2 = slotT1P2;
-          slotT1P1 = currentViewerPlayerId;
-          slotT1P2 = isSingles ? "" : slotT2P2;
-          slotT2P1 = prevT1P1;
-          slotT2P2 = isSingles ? "" : prevT1P2;
-        } else if (slotT2P2 === currentViewerPlayerId) {
-          // User was player 2 on Team 2 -> put user's team as Team 1 with user as player 1
-          const prevT1P1 = slotT1P1;
-          const prevT1P2 = slotT1P2;
-          slotT1P1 = currentViewerPlayerId;
-          slotT1P2 = isSingles ? "" : slotT2P1;
-          slotT2P1 = prevT1P1;
-          slotT2P2 = isSingles ? "" : prevT1P2;
-        } else {
-          // User was not in this game, but is checked in -> user is always the autopopulated first player
-          slotT1P1 = currentViewerPlayerId;
-        }
-      }
-
-      return {
-        matchType: isSingles ? "singles" : "doubles",
-        t1p1: slotT1P1,
-        t1p2: slotT1P2,
-        t2p1: slotT2P1,
-        t2p2: slotT2P2,
-      };
-    }
-
-    return {
-      matchType: "doubles",
-      t1p1: isViewerPresent && currentViewerPlayerId ? currentViewerPlayerId : "",
-      t1p2: "",
-      t2p1: "",
-      t2p2: "",
-    };
-  };
-
-  const initialSlots = getAutopopulatedSlots(lastSessionGame);
-
-  // Match submission state (automatically populated from last game if available, user first)
-  const [matchType, setMatchType] = useState<"doubles" | "singles">(initialSlots.matchType);
-  const [t1p1, setT1p1] = useState(initialSlots.t1p1);
-  const [t1p2, setT1p2] = useState(initialSlots.t1p2);
-  const [t2p1, setT2p1] = useState(initialSlots.t2p1);
-  const [t2p2, setT2p2] = useState(initialSlots.t2p2);
+  const [matchType, setMatchType] = useState<"doubles" | "singles">(initialMatchType);
+  const [t1p1, setT1p1] = useState(() => (isViewerPresent && currentViewerPlayerId ? currentViewerPlayerId : ""));
+  const [t1p2, setT1p2] = useState("");
+  const [t2p1, setT2p1] = useState("");
+  const [t2p2, setT2p2] = useState("");
   const [t1Score, setT1Score] = useState("");
   const [t2Score, setT2Score] = useState("");
   const [rotateBase, setRotateBase] = useState<[string, string, string, string] | null>(null);
+
+  // Local record of the most recent game submitted by this user/device in this session
+  const [lastSubmittedGame, setLastSubmittedGame] = useState<{
+    matchType: "doubles" | "singles";
+    team1PlayerIds: string[];
+    team2PlayerIds: string[];
+  } | null>(null);
 
   const parsedT1 = parseInt(t1Score, 10);
   const parsedT2 = parseInt(t2Score, 10);
@@ -381,18 +312,6 @@ export function OpenPlayManagerClient({
       }
     }
   };
-
-  // Automatically update when a new lastSessionGame is recorded/available
-  const [prevLastGameId, setPrevLastGameId] = useState(() => lastSessionGame?.id ?? null);
-  if (lastSessionGame && lastSessionGame.id !== prevLastGameId) {
-    setPrevLastGameId(lastSessionGame.id);
-    const slots = getAutopopulatedSlots(lastSessionGame);
-    setMatchType(slots.matchType);
-    setT1p1(slots.t1p1);
-    setT1p2(slots.t1p2);
-    setT2p1(slots.t2p1);
-    setT2p2(slots.t2p2);
-  }
 
   // Automatically populate viewer as first player upon joining if not set
   const [hasSetInitialViewer, setHasSetInitialViewer] = useState(() =>
@@ -452,6 +371,23 @@ export function OpenPlayManagerClient({
   const [guestName, setGuestName] = useState("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState(3.5);
+
+  const isGuestDescDismissed = useSyncExternalStore(
+    subscribeGuestDescDismissed,
+    getGuestDescDismissedSnapshot,
+    getGuestDescDismissedSnapshot
+  );
+
+  const handleDismissGuestDesc = () => {
+    try {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(DISMISS_GUEST_DESC_STORAGE_KEY, "true");
+        window.dispatchEvent(new Event("pickleball_guest_desc_dismissed"));
+      }
+    } catch {
+      // sessionStorage unavailable
+    }
+  };
 
   const rosterPlayerOptions = useMemo(
     () =>
@@ -727,33 +663,14 @@ export function OpenPlayManagerClient({
     }
   };
 
-  // Quick Rematch handler
-  const canRematch = Boolean(
-    lastSessionGame || (t1p1 && t2p1 && (matchType === "singles" || (t1p2 && t2p2)))
-  );
-
-  const handleRematch = () => {
-    setError(null);
-    if (lastSessionGame) {
-      const slots = getAutopopulatedSlots(lastSessionGame);
-      setMatchType(slots.matchType);
-      setT1p1(slots.t1p1);
-      setT1p2(slots.t1p2);
-      setT2p1(slots.t2p1);
-      setT2p2(slots.t2p2);
-    }
-    setT1Score("");
-    setT2Score("");
-    setRotateBase(null);
-    showToast("Rematch ready — enter scores when done!");
-  };
 
   // Rotate Partners (Split & Switch) handler
   const canRotate = Boolean(
     (t1p1 && t1p2 && t2p1 && t2p2) ||
-      (lastSessionGame &&
-        lastSessionGame.team1PlayerIds.length === 2 &&
-        lastSessionGame.team2PlayerIds.length === 2)
+      (lastSubmittedGame &&
+        lastSubmittedGame.matchType === "doubles" &&
+        lastSubmittedGame.team1PlayerIds.length === 2 &&
+        lastSubmittedGame.team2PlayerIds.length === 2)
   );
 
   const handleRotatePartners = () => {
@@ -762,15 +679,16 @@ export function OpenPlayManagerClient({
     if (t1p1 && t1p2 && t2p1 && t2p2) {
       current4 = [t1p1, t1p2, t2p1, t2p2];
     } else if (
-      lastSessionGame &&
-      lastSessionGame.team1PlayerIds.length === 2 &&
-      lastSessionGame.team2PlayerIds.length === 2
+      lastSubmittedGame &&
+      lastSubmittedGame.matchType === "doubles" &&
+      lastSubmittedGame.team1PlayerIds.length === 2 &&
+      lastSubmittedGame.team2PlayerIds.length === 2
     ) {
       current4 = [
-        lastSessionGame.team1PlayerIds[0],
-        lastSessionGame.team1PlayerIds[1],
-        lastSessionGame.team2PlayerIds[0],
-        lastSessionGame.team2PlayerIds[1],
+        lastSubmittedGame.team1PlayerIds[0],
+        lastSubmittedGame.team1PlayerIds[1],
+        lastSubmittedGame.team2PlayerIds[0],
+        lastSubmittedGame.team2PlayerIds[1],
       ];
     }
 
@@ -833,15 +751,64 @@ export function OpenPlayManagerClient({
     showToast("Partners rotated!");
   };
 
-  // Swap sides for singles
+  // Swap sides for singles and doubles
+  const canSwapSides =
+    matchType === "doubles"
+      ? Boolean(
+          (t1p1 || t1p2 || t2p1 || t2p2) ||
+            (lastSubmittedGame && lastSubmittedGame.matchType === "doubles")
+        )
+      : Boolean(
+          (t1p1 && t2p1) ||
+            (lastSubmittedGame && lastSubmittedGame.matchType === "singles")
+        );
+
   const handleSwapSides = () => {
     setError(null);
-    const prevT1 = t1p1;
-    const prevT2 = t2p1;
-    setT1p1(prevT2);
-    setT2p1(prevT1);
+    if (matchType === "doubles") {
+      let t1_1 = t1p1;
+      let t1_2 = t1p2;
+      let t2_1 = t2p1;
+      let t2_2 = t2p2;
+
+      if (
+        !t1_1 &&
+        !t1_2 &&
+        !t2_1 &&
+        !t2_2 &&
+        lastSubmittedGame &&
+        lastSubmittedGame.matchType === "doubles"
+      ) {
+        t1_1 = lastSubmittedGame.team1PlayerIds[0] ?? "";
+        t1_2 = lastSubmittedGame.team1PlayerIds[1] ?? "";
+        t2_1 = lastSubmittedGame.team2PlayerIds[0] ?? "";
+        t2_2 = lastSubmittedGame.team2PlayerIds[1] ?? "";
+      }
+
+      setT1p1(t2_1);
+      setT1p2(t2_2);
+      setT2p1(t1_1);
+      setT2p2(t1_2);
+    } else {
+      let t1_1 = t1p1;
+      let t2_1 = t2p1;
+
+      if (
+        !t1_1 &&
+        !t2_1 &&
+        lastSubmittedGame &&
+        lastSubmittedGame.matchType === "singles"
+      ) {
+        t1_1 = lastSubmittedGame.team1PlayerIds[0] ?? "";
+        t2_1 = lastSubmittedGame.team2PlayerIds[0] ?? "";
+      }
+
+      setT1p1(t2_1);
+      setT2p1(t1_1);
+    }
     setT1Score("");
     setT2Score("");
+    setRotateBase(null);
     showToast("Sides swapped!");
   };
 
@@ -859,6 +826,11 @@ export function OpenPlayManagerClient({
   const handleSubmitGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!isViewerCheckedIn) {
+      setError("You must be checked in to this session to record games.");
+      return;
+    }
 
     const team1Ids = matchType === "doubles" ? [t1p1, t1p2] : [t1p1];
     const team2Ids = matchType === "doubles" ? [t2p1, t2p2] : [t2p1];
@@ -894,9 +866,7 @@ export function OpenPlayManagerClient({
     // Optimistic match generation for instant feedback
     const optimisticMatchId = createIdempotencyKey("opt");
     const targetRoundId = localStartedRounds[0]?.round.id ?? `rnd_${session.id}`;
-    const existingMatches = localStartedRounds.flatMap((sr) => sr.matches);
-    const maxCourtNumber = existingMatches.reduce((max, m) => Math.max(max, m.courtNumber), 0);
-    const courtNumber = maxCourtNumber + 1;
+    const courtNumber = 1;
 
     const optimisticMatch: MatchRecord = {
       id: optimisticMatchId,
@@ -985,6 +955,11 @@ export function OpenPlayManagerClient({
 
       if (res.ok) {
         const newMatch = res.data;
+        setLastSubmittedGame({
+          matchType,
+          team1PlayerIds: team1Ids,
+          team2PlayerIds: team2Ids,
+        });
         setLocalStartedRounds((prev) =>
           prev.map((sr) => ({
             ...sr,
@@ -1288,31 +1263,47 @@ export function OpenPlayManagerClient({
       )}
 
       {/* Top Header Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
           href={isFromProfile ? "/players" : `/g/${groupId}`}
-          label={isFromProfile ? "← Back to Profile" : "← Back to Group"}
+          label={
+            <>
+              <span className="sm:hidden">← Back</span>
+              <span className="hidden sm:inline">{isFromProfile ? "← Back to Profile" : "← Back to Group"}</span>
+            </>
+          }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isSessionActive ? (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {canManage && (
               <button
                 type="button"
                 onClick={handleEndSession}
                 disabled={isEnding}
+                aria-label="End Session"
                 data-testid="end-session-button"
-                className="px-2.5 py-1 rounded-lg bg-[#ff6b6b] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
-                {isEnding ? "Ending..." : "End Session"}
+                {isEnding ? "Ending..." : (
+                  <>
+                    <span className="sm:hidden">End</span>
+                    <span className="hidden sm:inline">End Session</span>
+                  </>
+                )}
               </button>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Badge variant="muted" className="text-xs font-black uppercase">
-              Completed Session
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <Badge
+              variant="muted"
+              data-testid="completed-session-badge"
+              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center"
+            >
+              <span className="sm:hidden">Completed</span>
+              <span className="hidden sm:inline">Completed Session</span>
             </Badge>
           </div>
         )}
@@ -1359,11 +1350,7 @@ export function OpenPlayManagerClient({
         {!isSessionActive && (
           <>
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
-                <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
                 <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
@@ -1472,279 +1459,282 @@ export function OpenPlayManagerClient({
         </section>
       )}
 
-      {/* Attendance & Join Section */}
-      <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 className="font-display text-xl font-black uppercase text-black">
-              Players in Session ({checkedInPlayers.length})
+      {/* Prominent Join Open Play Banner for group members not checked in */}
+      {isSessionActive && isMember && !isViewerCheckedIn && (
+        <section className="bg-[#ccff00] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-black tracking-tight">
+              Join Open Play
             </h2>
-            <p className="text-xs font-bold text-neutral-600">
-              Check in to play or add players and guests.
+            <p className="text-xs sm:text-sm font-bold text-neutral-800">
+              Check in to this session to play matches, rotate with partners, and record scores.
             </p>
           </div>
-
-          {/* Join Open Play Button for group members not checked in */}
-          {isSessionActive && isMember && !isViewerCheckedIn && (
-            <button
-              type="button"
-              onClick={handleJoin}
-              disabled={isJoining}
-              data-testid="join-open-play-button"
-              className="py-2 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
-            >
-              {isJoining ? "Joining..." : "Join Open Play"}
-            </button>
-          )}
-        </div>
-
-        {/* Box 1: Checked-in Players Drawer Box */}
-        <div
-          data-testid="checked-in-players-box"
-          className="rounded-2xl border-2 border-black bg-neutral-50 p-3 sm:p-4 shadow-[2px_2px_0px_0px_#000] space-y-3"
-        >
-          {/* Header inside the box that toggles the drawer */}
           <button
             type="button"
-            onClick={() => setIsPlayersDrawerOpen((prev) => !prev)}
-            aria-expanded={isPlayersDrawerOpen}
-            aria-controls="checked-in-players-drawer"
-            aria-label={isPlayersDrawerOpen ? "Hide players checked in" : "Show players checked in"}
-            data-testid="toggle-players-drawer-button"
-            className="w-full flex items-center justify-between gap-2 text-left cursor-pointer select-none"
+            onClick={handleJoin}
+            disabled={isJoining}
+            data-testid="join-open-play-button"
+            className="py-3 px-6 rounded-2xl bg-black hover:bg-neutral-800 text-white font-display text-xs sm:text-sm font-black uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer shrink-0 transition-transform"
           >
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]">
-                <UsersIcon className="h-4 w-4 text-black" />
-              </div>
-              <div>
-                <h3 className="font-display text-sm font-black uppercase text-black">
-                  Checked-in Players ({checkedInPlayers.length})
-                </h3>
-                <p className="text-[11px] font-bold text-neutral-600">
-                  {isPlayersDrawerOpen ? "Tap to hide player list" : "Tap to view checked-in players"}
-                </p>
-              </div>
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1px_1px_0px_0px_#000] hover:bg-neutral-100 transition-colors shrink-0">
-              <span>{isPlayersDrawerOpen ? "Hide Players" : "Show Players"}</span>
-              <ChevronDownIcon
-                className={`h-3.5 w-3.5 text-black transition-transform duration-200 ${
-                  isPlayersDrawerOpen ? "rotate-180" : ""
-                }`}
-              />
-            </div>
+            {isJoining ? "Joining..." : "Join Open Play"}
           </button>
+        </section>
+      )}
 
-          {/* Players Drawer Content */}
-          {isPlayersDrawerOpen && (
+      {/* Add Players Section */}
+      {(isSessionActive || canManage) && (
+        <section
+          data-testid="add-players-box"
+          className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 flex items-center justify-center rounded-xl border-2 border-black bg-[#ccff00] shadow-[2px_2px_0px_0px_#000] shrink-0">
+                <UserPlusIcon className="h-4 w-4 text-black" />
+              </div>
+              <h2 className="font-display text-xl font-black uppercase text-black">
+                Add Players
+              </h2>
+            </div>
+
+            {/* Mode Switch Tabs (matching roster style) */}
             <div
-              id="checked-in-players-drawer"
-              data-testid="checked-in-players-drawer"
-              className="space-y-2 pt-2 border-t-2 border-neutral-200"
+              className="flex items-center gap-1.5 p-1 bg-white border border-neutral-200 rounded-xl w-fit shrink-0"
+              role="tablist"
+              aria-label="Add player mode"
             >
-              {checkedInPlayers.length === 0 ? (
-                <p className="text-xs font-bold text-neutral-500 italic py-1">
-                  No players checked in yet. Join or add players below!
-                </p>
+              <button
+                type="button"
+                role="tab"
+                id="tab-add-member"
+                aria-selected={addPlayerTab === "member"}
+                aria-controls="tabpanel-add-member"
+                data-testid="tab-add-member"
+                onClick={() => setAddPlayerTab("member")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  addPlayerTab === "member"
+                    ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                    : "text-neutral-800 hover:bg-black/10"
+                }`}
+              >
+                <UsersIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Existing Member</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-add-guest"
+                aria-selected={addPlayerTab === "guest"}
+                aria-controls="tabpanel-add-guest"
+                data-testid="tab-add-guest"
+                onClick={() => setAddPlayerTab("guest")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  addPlayerTab === "guest"
+                    ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
+                    : "text-neutral-800 hover:bg-black/10"
+                }`}
+              >
+                <UserPlusIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Add Guest</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Panel: Add from Roster */}
+          {addPlayerTab === "member" && (
+            <div
+              role="tabpanel"
+              id="tabpanel-add-member"
+              aria-labelledby="tab-add-member"
+              className="pt-2 border-t-2 border-neutral-200 space-y-2"
+            >
+              <label className="block text-xs font-black uppercase tracking-wider text-black">
+                Add Existing Group Member
+              </label>
+              {availableRosterPlayers.length > 0 ? (
+                <FilterablePlayerSelect
+                  ariaLabel="Add Existing Group Member"
+                  placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
+                  value=""
+                  onChange={(val) => {
+                    if (val) {
+                      void handleSelectRosterPlayer(val);
+                    }
+                  }}
+                  options={rosterPlayerOptions}
+                  dataTestId="roster-player-select"
+                  disabled={isAddingPlayer}
+                />
               ) : (
-                <div className="flex flex-wrap gap-2" data-testid="open-play-attendees">
-                  {checkedInPlayers.map((p) => {
-                    const isViewer = p.id === currentViewerPlayerId;
-                    return (
-                      <div
-                        key={p.id}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
-                          isViewer ? "bg-[#ccff00]" : "bg-white"
-                        }`}
-                      >
-                        <span className="font-black text-black">{p.name}</span>
-                        <span className="text-[10px] text-neutral-600 font-mono">
-                          {formatDupr(p.rating)}
-                        </span>
-                        {isViewer && (
-                          <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
-                            You
-                          </span>
-                        )}
-                        {isSessionActive && (isOrganizer || isViewer) && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemovePlayer(p.id);
-                            }}
-                            title="Leave / Remove from session"
-                            className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <p className="text-xs font-bold text-neutral-500 italic py-1">
+                  All group members are currently checked in.
+                </p>
               )}
             </div>
           )}
-        </div>
 
-        {/* Box 2: Add Players Box */}
-        {(isSessionActive || canManage) && (
-          <div
-            data-testid="add-players-box"
-            className="rounded-2xl border-2 border-black bg-neutral-50 p-3 sm:p-4 shadow-[2px_2px_0px_0px_#000] space-y-3"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]">
-                  <UserPlusIcon className="h-4 w-4 text-black" />
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-black uppercase text-black">
-                    Add Players
-                  </h3>
-                  <p className="text-[11px] font-bold text-neutral-600">
-                    Add group members to the session or new guests to your group roster.
+          {/* Tab Panel: Add Guest */}
+          {addPlayerTab === "guest" && (
+            <form
+              role="tabpanel"
+              id="tabpanel-add-guest"
+              aria-labelledby="tab-add-guest"
+              onSubmit={handleAddGuest}
+              className="pt-2 border-t-2 border-neutral-200 space-y-3"
+            >
+              <label
+                htmlFor="guest-name-input"
+                className="block text-xs font-black uppercase tracking-wider text-black"
+              >
+                Add Guest to Roster
+              </label>
+              {!isGuestDescDismissed && (
+                <div
+                  data-testid="guest-description-banner"
+                  className="flex items-center justify-between gap-2 p-2 bg-neutral-100/90 rounded-lg border border-neutral-300 text-neutral-700"
+                >
+                  <p className="text-[11px] font-bold text-neutral-600 leading-tight">
+                    Adding a guest here will add them to your roster.
                   </p>
-                </div>
-              </div>
-
-              {/* Mode Switch Tabs (matching roster style) */}
-              <div
-                className="flex items-center gap-1.5 p-1 bg-white border border-neutral-200 rounded-xl w-fit shrink-0"
-                role="tablist"
-                aria-label="Add player mode"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-add-member"
-                  aria-selected={addPlayerTab === "member"}
-                  aria-controls="tabpanel-add-member"
-                  data-testid="tab-add-member"
-                  onClick={() => setAddPlayerTab("member")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
-                    addPlayerTab === "member"
-                      ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
-                      : "text-neutral-800 hover:bg-black/10"
-                  }`}
-                >
-                  <UsersIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span>Existing Member</span>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  id="tab-add-guest"
-                  aria-selected={addPlayerTab === "guest"}
-                  aria-controls="tabpanel-add-guest"
-                  data-testid="tab-add-guest"
-                  onClick={() => setAddPlayerTab("guest")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
-                    addPlayerTab === "guest"
-                      ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
-                      : "text-neutral-800 hover:bg-black/10"
-                  }`}
-                >
-                  <UserPlusIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span>Add Guest</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Panel: Add from Roster */}
-            {addPlayerTab === "member" && (
-              <div
-                role="tabpanel"
-                id="tabpanel-add-member"
-                aria-labelledby="tab-add-member"
-                className="pt-2 border-t-2 border-neutral-200 space-y-2"
-              >
-                <label className="block text-xs font-black uppercase tracking-wider text-black">
-                  Add Existing Group Member
-                </label>
-                {availableRosterPlayers.length > 0 ? (
-                  <FilterablePlayerSelect
-                    ariaLabel="Add Existing Group Member"
-                    placeholder={isAddingPlayer ? "Adding player..." : "Select player..."}
-                    value=""
-                    onChange={(val) => {
-                      if (val) {
-                        void handleSelectRosterPlayer(val);
-                      }
-                    }}
-                    options={rosterPlayerOptions}
-                    dataTestId="roster-player-select"
-                    disabled={isAddingPlayer}
-                  />
-                ) : (
-                  <p className="text-xs font-bold text-neutral-500 italic py-1">
-                    All group members are currently checked in.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Tab Panel: Add Guest */}
-            {addPlayerTab === "guest" && (
-              <form
-                role="tabpanel"
-                id="tabpanel-add-guest"
-                aria-labelledby="tab-add-guest"
-                onSubmit={handleAddGuest}
-                className="pt-2 border-t-2 border-neutral-200 space-y-3"
-              >
-                <label
-                  htmlFor="guest-name-input"
-                  className="block text-xs font-black uppercase tracking-wider text-black"
-                >
-                  Add Guest to Roster
-                </label>
-                <p className="text-[11px] font-bold text-neutral-600">
-                  Adds this guest to your group roster and checks them into this session. They will remain on your roster for future sessions without needing an account.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    id="guest-name-input"
-                    type="text"
-                    placeholder="Guest player name..."
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
-                  />
-                  <select
-                    id="open-play-guest-gender"
-                    aria-label="Guest Gender"
-                    value={guestGender}
-                    onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-                    className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
                   <button
-                    type="submit"
-                    disabled={!guestName.trim() || isAddingGuest}
-                    className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                    type="button"
+                    onClick={handleDismissGuestDesc}
+                    aria-label="Dismiss guest description"
+                    title="Dismiss"
+                    data-testid="dismiss-guest-desc-button"
+                    className="p-1 text-neutral-400 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
                   >
-                    {isAddingGuest ? "Adding..." : "Add"}
+                    <XIcon className="h-3.5 w-3.5" />
                   </button>
                 </div>
+              )}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="guest-name-input"
+                  type="text"
+                  placeholder="Guest player name..."
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                />
+                <select
+                  id="open-play-guest-gender"
+                  aria-label="Guest Gender"
+                  value={guestGender}
+                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
+                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={!guestName.trim() || isAddingGuest}
+                  className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {isAddingGuest ? "Adding..." : "Add"}
+                </button>
+              </div>
 
-                {/* Sliding Scale for Rating */}
-                <div className="bg-white border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
-                  <RatingSlider
-                    id="guest-rating-slider"
-                    dataTestId="guest-rating-slider"
-                    label="Guest Rating"
-                    value={guestRating}
-                    onChange={setGuestRating}
-                    showDescription={true}
-                  />
-                </div>
-              </form>
+              {/* Sliding Scale for Rating */}
+              <div className="bg-white border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                <RatingSlider
+                  id="guest-rating-slider"
+                  dataTestId="guest-rating-slider"
+                  label="Guest Rating"
+                  value={guestRating}
+                  onChange={setGuestRating}
+                  showDescription={true}
+                />
+              </div>
+            </form>
+          )}
+        </section>
+      )}
+
+      {/* Checked-in Players Section */}
+      <section
+        data-testid="checked-in-players-box"
+        className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+      >
+        {/* Header inside the box that toggles the drawer */}
+        <button
+          type="button"
+          onClick={() => setIsPlayersDrawerOpen((prev) => !prev)}
+          aria-expanded={isPlayersDrawerOpen}
+          aria-controls="checked-in-players-drawer"
+          aria-label={isPlayersDrawerOpen ? "Hide players checked in" : "Show players checked in"}
+          data-testid="toggle-players-drawer-button"
+          className="w-full flex items-center justify-between gap-2 text-left cursor-pointer select-none"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 flex items-center justify-center rounded-xl border-2 border-black bg-[#ccff00] shadow-[2px_2px_0px_0px_#000] shrink-0">
+              <UsersIcon className="h-4 w-4 text-black" />
+            </div>
+            <h2 className="font-display text-xl font-black uppercase text-black">
+              Checked-in Players ({checkedInPlayers.length})
+            </h2>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 transition-colors shrink-0">
+            <span>{isPlayersDrawerOpen ? "Hide Players" : "Show Players"}</span>
+            <ChevronDownIcon
+              className={`h-3.5 w-3.5 text-black transition-transform duration-200 ${
+                isPlayersDrawerOpen ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Players Drawer Content */}
+        {isPlayersDrawerOpen && (
+          <div
+            id="checked-in-players-drawer"
+            data-testid="checked-in-players-drawer"
+            className="space-y-2 pt-2 border-t-2 border-neutral-200"
+          >
+            {checkedInPlayers.length === 0 ? (
+              <p className="text-xs font-bold text-neutral-500 italic py-1">
+                No players checked in yet. Join or add players above!
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2" data-testid="open-play-attendees">
+                {checkedInPlayers.map((p) => {
+                  const isViewer = p.id === currentViewerPlayerId;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
+                        isViewer ? "bg-[#ccff00]" : "bg-white"
+                      }`}
+                    >
+                      <span className="font-black text-black">{p.name}</span>
+                      <span className="text-[10px] text-neutral-600 font-mono">
+                        {formatDupr(p.rating)}
+                      </span>
+                      {isViewer && (
+                        <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
+                          You
+                        </span>
+                      )}
+                      {isSessionActive && (isOrganizer || isViewer) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemovePlayer(p.id);
+                          }}
+                          title="Leave / Remove from session"
+                          className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -1757,122 +1747,128 @@ export function OpenPlayManagerClient({
           data-testid="submit-game-card"
         >
           <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black">
-                {isSessionActive ? "Submit Game" : "Add Game"}
-              </h2>
-              <p className="text-[10px] sm:text-xs font-bold text-neutral-600 line-clamp-1 sm:line-clamp-none">
-                {isSessionActive
-                  ? "Record a match played between session players."
-                  : "Record an additional match for this ended session."}
-              </p>
-            </div>
+            <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black">
+              {isSessionActive ? "Submit Game" : "Add Game"}
+            </h2>
 
             {/* Match Type Switcher */}
-            <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_#000] shrink-0">
-              <button
-                type="button"
-                onClick={() => setMatchType("doubles")}
-                className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase whitespace-nowrap ${
-                  matchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
-                }`}
-              >
-                Doubles (2v2)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMatchType("singles");
-                  setT1p2("");
-                  setT2p2("");
-                }}
-                className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase border-l-2 border-black whitespace-nowrap ${
-                  matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
-                }`}
-              >
-                Singles (1v1)
-              </button>
-            </div>
+            {isViewerCheckedIn && (
+              <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_#000] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMatchType("doubles")}
+                  className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase whitespace-nowrap ${
+                    matchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
+                  }`}
+                >
+                  Doubles (2v2)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatchType("singles");
+                    setT1p2("");
+                    setT2p2("");
+                  }}
+                  className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase border-l-2 border-black whitespace-nowrap ${
+                    matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
+                  }`}
+                >
+                  Singles (1v1)
+                </button>
+              </div>
+            )}
           </div>
 
-          {selectableGamePlayers.length < (matchType === "doubles" ? 4 : 2) ? (
+          {!isViewerCheckedIn ? (
+            <div className="p-4 sm:p-5 rounded-2xl border-2 border-black bg-neutral-50 text-center space-y-3 shadow-[2px_2px_0px_0px_#000]">
+              <p className="text-xs sm:text-sm font-bold text-neutral-700">
+                You must be checked in to this session to record games.
+              </p>
+              {isSessionActive && isMember && (
+                <button
+                  type="button"
+                  onClick={handleJoin}
+                  disabled={isJoining}
+                  data-testid="join-open-play-submit-button"
+                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                >
+                  {isJoining ? "Joining..." : "Join Open Play to Record Games"}
+                </button>
+              )}
+            </div>
+          ) : selectableGamePlayers.length < (matchType === "doubles" ? 4 : 2) ? (
             <p className="text-xs font-bold text-neutral-500 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
               Need at least {matchType === "doubles" ? "4 players" : "2 players"} to record a {matchType} game. Add or join players above!
             </p>
           ) : (
             <form onSubmit={handleSubmitGame} className="space-y-4">
-              {/* Quick Action Toolbar: Rematch, Rotate Partners, Next Waiting, Clear */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleRematch}
-                  disabled={!canRematch}
-                  data-testid="rematch-button"
-                  title="Keep the same players and teams for a rematch"
-                  className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
-                >
-                  <SwordsIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span>Rematch</span>
-                </button>
-                {matchType === "doubles" ? (
+              {/* Quick Action Toolbar: Rotate Partners (doubles only), Swap Sides, Clear */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {matchType === "doubles" && (
                   <button
                     type="button"
                     onClick={handleRotatePartners}
                     disabled={!canRotate}
                     data-testid="rotate-partners-button"
                     title="Split and switch partners between the 4 players"
-                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
                   >
                     <RotateCwIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Rotate Partners</span>
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSwapSides}
-                    disabled={!t1p1 || !t2p1}
-                    data-testid="swap-sides-button"
-                    title="Swap sides between the 2 players"
-                    className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
-                  >
-                    <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span>Swap Sides</span>
-                  </button>
                 )}
+                <button
+                  type="button"
+                  onClick={handleSwapSides}
+                  disabled={!canSwapSides}
+                  data-testid="swap-sides-button"
+                  title={
+                    matchType === "doubles"
+                      ? "Swap sides between Team 1 and Team 2"
+                      : "Swap sides between Player 1 and Player 2"
+                  }
+                  className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
+                >
+                  <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Swap Sides</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleClearSlots}
                   data-testid="clear-slots-button"
                   title="Clear all player selections and scores"
-                  className="inline-flex items-center gap-1 py-1.5 px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto"
+                  className="inline-flex items-center gap-1 py-1.5 px-2 sm:px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-[11px] sm:text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto whitespace-nowrap"
                 >
                   <span>Clear</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Team 1 Card */}
+                {/* Team 1 / Player 1 Card */}
                 <div className="p-4 bg-[#ccff00]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-sm font-black uppercase text-black">Team 1</h3>
+                    <h3 className="font-display text-sm font-black uppercase text-black">
+                      {matchType === "singles" ? "Player 1" : "Team 1"}
+                    </h3>
                     <button
                       type="button"
                       onClick={() => handleSelectWinner(1)}
                       data-testid="team-1-winner-button"
-                      aria-label="Select Team 1 as Winner"
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                      aria-label={matchType === "singles" ? "Select Player 1 as Winner" : "Select Team 1 as Winner"}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT1Winner
                           ? "bg-black text-[#ccff00]"
-                          : "bg-white hover:bg-neutral-100 text-black"
+                          : "bg-[#fde047] hover:bg-[#facc15] text-black"
                       }`}
                     >
-                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
+                      <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT1Winner ? "fill-current" : ""}`} />
                       <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
-                      ariaLabel="Team 1 Player 1"
+                      ariaLabel={matchType === "singles" ? "Player 1" : "Team 1 Player 1"}
                       placeholder="Select Player 1..."
                       value={t1p1}
                       onChange={(val) => handleSelectGamePlayer("t1p1", val)}
@@ -1893,7 +1889,7 @@ export function OpenPlayManagerClient({
 
                     <div className="pt-2">
                       <label className="block text-[11px] font-black uppercase text-black mb-1">
-                        Team 1 Points
+                        {matchType === "singles" ? "Player 1 Points" : "Team 1 Points"}
                       </label>
                       <input
                         type="number"
@@ -1901,36 +1897,38 @@ export function OpenPlayManagerClient({
                         placeholder="e.g. 11"
                         value={t1Score}
                         onChange={(e) => setT1Score(e.target.value)}
-                        aria-label="Team 1 Score"
+                        aria-label={matchType === "singles" ? "Player 1 Score" : "Team 1 Score"}
                         className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Team 2 Card */}
+                {/* Team 2 / Player 2 Card */}
                 <div className="p-4 bg-[#fde047]/20 border-2 border-black rounded-2xl space-y-3 shadow-[2px_2px_0px_0px_#000]">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-sm font-black uppercase text-black">Team 2</h3>
+                    <h3 className="font-display text-sm font-black uppercase text-black">
+                      {matchType === "singles" ? "Player 2" : "Team 2"}
+                    </h3>
                     <button
                       type="button"
                       onClick={() => handleSelectWinner(2)}
                       data-testid="team-2-winner-button"
-                      aria-label="Select Team 2 as Winner"
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                      aria-label={matchType === "singles" ? "Select Player 2 as Winner" : "Select Team 2 as Winner"}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT2Winner
                           ? "bg-black text-[#ccff00]"
-                          : "bg-white hover:bg-neutral-100 text-black"
+                          : "bg-[#fde047] hover:bg-[#facc15] text-black"
                       }`}
                     >
-                      <CrownIcon className="h-3.5 w-3.5 shrink-0" />
+                      <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT2Winner ? "fill-current" : ""}`} />
                       <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
                     </button>
                   </div>
                   <div className="space-y-2">
                     <FilterablePlayerSelect
-                      ariaLabel="Team 2 Player 1"
-                      placeholder="Select Player 1..."
+                      ariaLabel={matchType === "singles" ? "Player 2" : "Team 2 Player 1"}
+                      placeholder={matchType === "singles" ? "Select Player 2..." : "Select Player 1..."}
                       value={t2p1}
                       onChange={(val) => handleSelectGamePlayer("t2p1", val)}
                       options={getSlotOptions("t2p1")}
@@ -1950,7 +1948,7 @@ export function OpenPlayManagerClient({
 
                     <div className="pt-2">
                       <label className="block text-[11px] font-black uppercase text-black mb-1">
-                        Team 2 Points
+                        {matchType === "singles" ? "Player 2 Points" : "Team 2 Points"}
                       </label>
                       <input
                         type="number"
@@ -1958,7 +1956,7 @@ export function OpenPlayManagerClient({
                         placeholder="e.g. 9"
                         value={t2Score}
                         onChange={(e) => setT2Score(e.target.value)}
-                        aria-label="Team 2 Score"
+                        aria-label={matchType === "singles" ? "Player 2 Score" : "Team 2 Score"}
                         className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
                       />
                     </div>
@@ -2041,11 +2039,13 @@ export function OpenPlayManagerClient({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Team 1 */}
+                      {/* Team 1 / Player 1 */}
                       <div className="p-3 bg-[#ccff00]/20 border-2 border-black rounded-xl space-y-2">
-                        <span className="text-[11px] font-black uppercase text-black block">Team 1</span>
+                        <span className="text-[11px] font-black uppercase text-black block">
+                          {editMatchType === "singles" ? "Player 1" : "Team 1"}
+                        </span>
                         <FilterablePlayerSelect
-                          ariaLabel="Edit Team 1 Player 1"
+                          ariaLabel={editMatchType === "singles" ? "Edit Player 1" : "Edit Team 1 Player 1"}
                           placeholder="Select Player 1..."
                           value={editT1p1}
                           onChange={(val) => handleSelectEditPlayer("t1p1", val)}
@@ -2069,7 +2069,7 @@ export function OpenPlayManagerClient({
                           <input
                             type="number"
                             min="0"
-                            aria-label="Edit Team 1 Score"
+                            aria-label={editMatchType === "singles" ? "Edit Player 1 Score" : "Edit Team 1 Score"}
                             value={editT1Score}
                             onChange={(e) => setEditT1Score(e.target.value)}
                             className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"
@@ -2077,12 +2077,14 @@ export function OpenPlayManagerClient({
                         </div>
                       </div>
 
-                      {/* Team 2 */}
+                      {/* Team 2 / Player 2 */}
                       <div className="p-3 bg-[#fde047]/20 border-2 border-black rounded-xl space-y-2">
-                        <span className="text-[11px] font-black uppercase text-black block">Team 2</span>
+                        <span className="text-[11px] font-black uppercase text-black block">
+                          {editMatchType === "singles" ? "Player 2" : "Team 2"}
+                        </span>
                         <FilterablePlayerSelect
-                          ariaLabel="Edit Team 2 Player 1"
-                          placeholder="Select Player 1..."
+                          ariaLabel={editMatchType === "singles" ? "Edit Player 2" : "Edit Team 2 Player 1"}
+                          placeholder={editMatchType === "singles" ? "Select Player 2..." : "Select Player 1..."}
                           value={editT2p1}
                           onChange={(val) => handleSelectEditPlayer("t2p1", val)}
                           options={getEditSlotOptions("t2p1")}
@@ -2105,7 +2107,7 @@ export function OpenPlayManagerClient({
                           <input
                             type="number"
                             min="0"
-                            aria-label="Edit Team 2 Score"
+                            aria-label={editMatchType === "singles" ? "Edit Player 2 Score" : "Edit Team 2 Score"}
                             value={editT2Score}
                             onChange={(e) => setEditT2Score(e.target.value)}
                             className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"

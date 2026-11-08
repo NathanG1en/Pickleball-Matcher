@@ -131,6 +131,7 @@ describe("Group Navigation and Options Menu", () => {
 
       expect(html).toContain("···");
       expect(html).toContain('aria-label="Group options"');
+      expect(html).toContain("h-7 w-7");
     });
 
     it("renders the 3 dots button for non-organizer members", () => {

@@ -8,17 +8,25 @@ export type SessionAction = "start" | "save" | "next";
 const password = "Password123";
 const fixtureTime = new Date("2026-10-01T12:00:00Z");
 
-/** These tests install narrowly scoped failure triggers; remote databases are forbidden. */
-export function resilienceDatabase() {
+export function isResilienceDatabaseSupported(): boolean {
   const value = process.env.TEST_DATABASE_URL;
   const url = value ? new URL(value) : undefined;
-  if (!url || !["postgres:", "postgresql:"].includes(url.protocol) ||
-      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
-      url.pathname !== "/test_db" || [...url.searchParams.keys()].some(key => key !== "sslmode") ||
-      process.env.DISPOSABLE_POSTGRES_TESTS !== "1") {
+  return Boolean(
+    url &&
+    ["postgres:", "postgresql:"].includes(url.protocol) &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
+    url.pathname === "/test_db" &&
+    [...url.searchParams.keys()].every(key => key === "sslmode") &&
+    process.env.DISPOSABLE_POSTGRES_TESTS === "1"
+  );
+}
+
+/** These tests install narrowly scoped failure triggers; remote databases are forbidden. */
+export function resilienceDatabase() {
+  if (!isResilienceDatabaseSupported()) {
     throw new Error("Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere.");
   }
-  return postgres(value!, { max: 2, prepare: false, onnotice: () => {} });
+  return postgres(process.env.TEST_DATABASE_URL!, { max: 2, prepare: false, onnotice: () => {} });
 }
 
 export interface ResilienceFixture {
@@ -110,8 +118,7 @@ export async function fillThreeScores(page: Page, reverse = false) {
 
 export async function actionButton(page: Page, action: SessionAction): Promise<Locator> {
   if (action === "start") {
-    await page.getByRole("button", { name: "Start Round", exact: true }).click();
-    return page.getByRole("button", { name: "Confirm & Start", exact: true });
+    return page.getByRole("button", { name: "Start Round", exact: true });
   }
   return action === "save" ? page.getByTestId("save-all-scores-button") : page.getByTestId("save-and-start-next-round-button");
 }
@@ -127,10 +134,10 @@ export async function prepareAction(page: Page, action: SessionAction) {
 
 export async function waitForAction(page: Page, action: SessionAction) {
   if (action === "next") {
-    await expect(page.getByRole("heading", { name: "Round 2 Results", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true })).toBeEnabled();
   } else {
-    await expect(page.getByRole("heading", { name: "Round 1 Results", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-testid^="court-match-"]')).toHaveCount(3);
     if (action === "save") for (let court = 1; court <= 3; court++) {
       await expect(page.getByTestId(`court-match-${court}`)).toContainText("Final", { timeout: 30_000 });
