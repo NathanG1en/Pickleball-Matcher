@@ -5,12 +5,10 @@ import {
   secondaryOrganizer, waitForAction, type ResilienceFixture, type SessionAction,
 } from "../fixtures/session-action-resilience";
 
-test.beforeEach(() => {
-  test.skip(
-    !isResilienceDatabaseSupported(),
-    "Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere."
-  );
-});
+test.skip(
+  !isResilienceDatabaseSupported(),
+  "Session action resilience requires explicitly disposable loopback test_db; refusing fixture writes or failure triggers elsewhere."
+);
 
 const actions: SessionAction[] = ["start", "save", "next"];
 const isAction = (route: Route) => route.request().method() === "POST" && Boolean(route.request().headers()["next-action"]);
