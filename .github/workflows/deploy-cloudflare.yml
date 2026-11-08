@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - development
+      - fix/cloudflare-database-runtime
 
 concurrency:
   group: deploy-cloudflare-${{ github.ref }}
