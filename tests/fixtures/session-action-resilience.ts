@@ -41,6 +41,9 @@ export interface ResilienceFixture {
 }
 
 export async function createResilienceFixture(page: Page, sql: postgres.Sql): Promise<ResilienceFixture> {
+  await page.context().addInitScript(() => {
+    window.localStorage.setItem("pickleball_confirm_matchups", "true");
+  });
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   const { groupId, hostUsername } = await createTestGroup(page, `Action resilience ${suffix}`);
   const [host] = await sql<{ id: string }[]>`select id from player_accounts where username = ${hostUsername}`;
@@ -89,6 +92,7 @@ export async function createResilienceFixture(page: Page, sql: postgres.Sql): Pr
   await page.evaluate((gid) => {
     window.localStorage.setItem("pickleball_confirm_matchups", "true");
     window.localStorage.setItem(`pickleball_confirm_matchups_${gid}`, "true");
+    window.dispatchEvent(new Event(`pickleball_confirm_matchups_changed_${gid}`));
   }, groupId);
   const sessionPath = new URL(page.url()).pathname;
   const sessionId = sessionPath.split("/").at(-1)!;
@@ -100,6 +104,9 @@ export async function createResilienceFixture(page: Page, sql: postgres.Sql): Pr
 
 export async function secondaryOrganizer(browser: Browser, fixture: ResilienceFixture, baseURL: string) {
   const context = await browser.newContext({ baseURL });
+  await context.addInitScript(() => {
+    window.localStorage.setItem("pickleball_confirm_matchups", "true");
+  });
   const page = await context.newPage();
   try {
     await page.goto(`/player-login?next=${encodeURIComponent(fixture.sessionPath)}`);
@@ -110,6 +117,7 @@ export async function secondaryOrganizer(browser: Browser, fixture: ResilienceFi
     await page.evaluate((gid) => {
       window.localStorage.setItem("pickleball_confirm_matchups", "true");
       window.localStorage.setItem(`pickleball_confirm_matchups_${gid}`, "true");
+      window.dispatchEvent(new Event(`pickleball_confirm_matchups_changed_${gid}`));
     }, fixture.groupId);
     return { context, page };
   } catch (error) {
@@ -127,8 +135,14 @@ export async function fillThreeScores(page: Page, reverse = false) {
 
 export async function actionButton(page: Page, action: SessionAction): Promise<Locator> {
   if (action === "start") {
-    await page.getByRole("button", { name: "Start Round", exact: true }).click();
-    return page.getByRole("button", { name: "Confirm & Start", exact: true });
+    const confirmBtn = page.getByRole("button", { name: "Confirm & Start", exact: true });
+    if (!(await confirmBtn.isVisible({ timeout: 500 }).catch(() => false))) {
+      const startBtn = page.getByRole("button", { name: "Start Round", exact: true });
+      if (await startBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await startBtn.click();
+      }
+    }
+    return confirmBtn;
   }
   return action === "save" ? page.getByTestId("save-all-scores-button") : page.getByTestId("save-and-start-next-round-button");
 }
