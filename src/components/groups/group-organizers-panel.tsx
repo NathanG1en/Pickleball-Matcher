@@ -449,31 +449,36 @@ export function GroupOrganizersPanel({
           aria-label="Add player or guest"
           className="space-y-3 rounded-2xl border-2 border-black bg-white p-4"
         >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shrink-0">
-                <UserPlusIcon className="h-4 w-4 text-black" />
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shrink-0">
+                  <UserPlusIcon className="h-4 w-4 text-black" />
+                </div>
+                <h2
+                  onClick={() => setIsAddOpen((prev) => !prev)}
+                  className="font-display text-lg font-black uppercase text-black cursor-pointer select-none hover:text-neutral-700 transition-colors"
+                >
+                  Add Player or Guest
+                </h2>
               </div>
-              <div>
-                <h2 className="font-display text-lg font-black uppercase text-black">Add Player or Guest</h2>
-                <p className="text-xs font-semibold text-neutral-600">
-                  Find players by username or add guest players.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddOpen((prev) => !prev)}
+                aria-expanded={isAddOpen}
+                aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
+                className="p-1 text-black hover:text-neutral-600 hover:scale-110 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer shrink-0"
+              >
+                <ChevronDownIcon
+                  className={`h-5 w-5 text-black transform transition-transform duration-300 ease-in-out ${
+                    isAddOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsAddOpen((prev) => !prev)}
-              aria-expanded={isAddOpen}
-              aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-neutral-100 hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shrink-0 shadow-[1px_1px_0px_0px_#000]"
-            >
-              <ChevronDownIcon
-                className={`h-4 w-4 text-black transition-transform duration-200 ${
-                  isAddOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            <p className="text-xs font-semibold text-neutral-600 mt-0.5 sm:ml-9">
+              Find players by username or add guest players.
+            </p>
           </div>
 
           {isAddOpen && (

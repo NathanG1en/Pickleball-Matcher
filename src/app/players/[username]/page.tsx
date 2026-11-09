@@ -5,7 +5,6 @@ import {
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import {
-  LeaveGroupButton,
   PlayerLogoutButton,
   PlayerProfileHeader,
 } from "@/components/players/player-profile-controls";
@@ -144,17 +143,149 @@ export default async function PlayerPublicProfilePage({
           )}
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Main / Stats column */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-5">
-            <section className="grid grid-cols-3 gap-3 text-center">
-              <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
-              <StatCard label="Wins" value={wins} />
-              <StatCard label="Losses" value={losses} />
-            </section>
+        {/* Top Row: Chemistry Spotlight & Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          {/* Chemistry Spotlight & Mutual Chemistry */}
+          <div className="space-y-4 lg:col-span-7 xl:col-span-8 flex flex-col justify-center">
+            {bestPartner ? (
+              <section className="h-full rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5 flex flex-col justify-center">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
+                      <SynergyExplainerButton />
+                    </div>
+                    <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
+                    <p className="text-sm font-bold text-neutral-800">
+                      <Link
+                        href={`/players/${encodeURIComponent(bestPartner.username)}`}
+                        className="underline hover:text-black"
+                      >
+                        @{bestPartner.username}
+                      </Link>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {(() => {
+                      const raw = bestPartner.synergyScore;
+                      const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                      const sign = score > 0 ? `+${score}%` : `${score}%`;
+                      return (
+                        <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
+                          score > 0
+                            ? "bg-emerald-100 text-emerald-950"
+                            : score < 0
+                            ? "bg-rose-100 text-rose-950"
+                            : "bg-white text-black"
+                        }`}>
+                          {sign} Synergy
+                        </span>
+                      );
+                    })()}
+                    <p className="mt-1 text-[11px] font-bold text-neutral-800">
+                      {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
+                    </p>
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="h-full rounded-3xl border-[3px] border-black bg-white p-5 flex flex-col justify-center">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                    <SynergyExplainerButton />
+                  </div>
+                  <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
+                  <p className="mt-1 text-xs font-bold text-neutral-600">
+                    {isOwner
+                      ? "Play matches with other people to unlock."
+                      : "Must play matches with other people to unlock."}
+                  </p>
+                </div>
+              </section>
+            )}
 
-            <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
-              <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
+            {viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
+              <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
+                    <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
+                    <p className="mt-1 text-xs font-bold text-neutral-600">
+                      {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black">
+                      {(() => {
+                        const raw = viewerSynergy.synergyScore;
+                        const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                        return score > 0 ? `+${score}%` : `${score}%`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* Sessions / Wins / Losses */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-center">
+            <section className="grid grid-cols-3 gap-3 text-center h-full items-stretch">
+              <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} className="flex flex-col justify-center" />
+              <StatCard label="Wins" value={wins} className="flex flex-col justify-center" />
+              <StatCard label="Losses" value={losses} className="flex flex-col justify-center" />
+            </section>
+          </div>
+        </div>
+
+        {/* Bottom Row: Groups & Everything Else */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Groups: 1st on mobile, right column (4-5 cols) on desktop */}
+          <div className="space-y-5 lg:col-span-5 xl:col-span-4 order-1 lg:order-2">
+            <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="font-display text-2xl font-black uppercase">
+                  {isOwner ? "My Groups" : "Groups"}
+                </h2>
+                {isOwner && (
+                  <div className="flex gap-2">
+                    <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
+                    <Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
+                  </div>
+                )}
+              </div>
+              {groups.length === 0 ? (
+                <p className="text-sm font-bold">
+                  {isOwner ? "You haven't joined any groups yet." : "No groups joined yet."}
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {groups.map((group) => (
+                    <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold">
+                      <div>
+                        <Link href={`/g/${group.id}`} className="block underline">{group.name}</Link>
+                        <span className="text-xs text-neutral-600">{group.playerCount} {group.playerCount === 1 ? "player" : "players"}</span>
+                      </div>
+                      <Link
+                        href={`/g/${group.id}`}
+                        aria-label={`Go to ${group.name}`}
+                        title={`Go to ${group.name}`}
+                        className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
+                      >
+                        <span className="sr-only">Go to group</span>
+                        <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
+          <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
+            <section className="rounded-3xl border-[3px] border-black bg-white p-5">
               <ScoreHistoryChart history={history} />
             </section>
 
@@ -196,130 +327,6 @@ export default async function PlayerPublicProfilePage({
                     </article>
                   );
                 })
-              )}
-            </section>
-          </div>
-
-          {/* Side column: Best Partner, Mutual Chemistry & Groups */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-5">
-            {bestPartner ? (
-              <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
-                      <SynergyExplainerButton />
-                    </div>
-                    <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
-                    <p className="text-sm font-bold text-neutral-800">
-                      <Link
-                        href={`/players/${encodeURIComponent(bestPartner.username)}`}
-                        className="underline hover:text-black"
-                      >
-                        @{bestPartner.username}
-                      </Link>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {(() => {
-                      const raw = bestPartner.synergyScore;
-                      const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
-                      const sign = score > 0 ? `+${score}%` : `${score}%`;
-                      return (
-                        <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
-                          score > 0
-                            ? "bg-emerald-100 text-emerald-950"
-                            : score < 0
-                            ? "bg-rose-100 text-rose-950"
-                            : "bg-white text-black"
-                        }`}>
-                          {sign} Synergy
-                        </span>
-                      );
-                    })()}
-                    <p className="mt-1 text-[11px] font-bold text-neutral-800">
-                      {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
-                    </p>
-                  </div>
-                </div>
-              </section>
-            ) : (
-              <section className="rounded-3xl border-[3px] border-black bg-white p-5">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
-                    <SynergyExplainerButton />
-                  </div>
-                  <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
-                  <p className="mt-1 text-xs font-bold text-neutral-600">
-                    {isOwner
-                      ? "Play matches with other people to unlock."
-                      : "Must play matches with other people to unlock."}
-                  </p>
-                </div>
-              </section>
-            )}
-
-            {viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
-              <section className="rounded-3xl border-[3px] border-black bg-white p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
-                    <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
-                    <p className="mt-1 text-xs font-bold text-neutral-600">
-                      {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black">
-                      {(() => {
-                        const raw = viewerSynergy.synergyScore;
-                        const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
-                        return score > 0 ? `+${score}%` : `${score}%`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="font-display text-2xl font-black uppercase">
-                  {isOwner ? "My Groups" : "Groups"}
-                </h2>
-                {isOwner && (
-                  <div className="flex gap-2">
-                    <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
-                    <Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
-                  </div>
-                )}
-              </div>
-              {groups.length === 0 ? (
-                <p className="text-sm font-bold">
-                  {isOwner ? "You haven't joined any groups yet." : "No groups joined yet."}
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {groups.map((group) => (
-                    <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold">
-                      <div>
-                        <Link href={`/g/${group.id}`} className="block underline">{group.name}</Link>
-                        <span className="text-xs text-neutral-600">{group.playerCount} players</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {(group.isHost || group.isOrganizer) && (
-                          <span className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${group.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"}`}>
-                            {group.isHost ? "Host" : "Organizer"}
-                          </span>
-                        )}
-                        {isOwner && group.isMember && !group.isHost && (
-                          <LeaveGroupButton groupId={group.id} groupName={group.name} />
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
               )}
             </section>
           </div>

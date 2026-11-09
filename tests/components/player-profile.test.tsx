@@ -44,7 +44,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the Host label and does not render Leave group button when player is the host", async () => {
+  it("renders groups with a link and chevron and does not render host label or leave option", async () => {
     const repository = new InMemoryRepositories({
       playerAccounts: [
         {
@@ -108,28 +108,18 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Hosted League");
     expect(html).toContain("Regular League");
 
-    // Hosted League must show "Host" label
-    expect(html).toContain("Host");
+    // Must not show "Host" label or "Leave" option on profile page
+    expect(html).not.toContain(">Host<");
+    expect(html).not.toContain("Leave");
 
-    // Regular League should allow leaving
-    expect(html).toContain("Leave");
-
-    // Check specifically that Hosted League row does not contain the leave group button
-    const listItems = html.split("<li").filter((item) => item.includes("Hosted League") || item.includes("Regular League"));
-    expect(listItems).toHaveLength(2);
-
-    const hostedItem = listItems.find((item) => item.includes("Hosted League"));
-    expect(hostedItem).toBeDefined();
-    expect(hostedItem).toContain("Host");
-    expect(hostedItem).not.toContain("Leave");
-
-    const memberItem = listItems.find((item) => item.includes("Regular League"));
-    expect(memberItem).toBeDefined();
-    expect(memberItem).not.toContain("Host");
-    expect(memberItem).toContain("Leave");
+    // Both groups have a chevron link pointing to the group
+    expect(html).toContain('href="/g/grp_hosted"');
+    expect(html).toContain('href="/g/grp_member"');
+    expect(html).toContain('aria-label="Go to Hosted League"');
+    expect(html).toContain('aria-label="Go to Regular League"');
   });
 
-  it("shows Organizer label and allows leaving when player is an organizer but not host", async () => {
+  it("does not render organizer label or leave option on the profile page", async () => {
     const repository = new InMemoryRepositories({
       playerAccounts: [
         {
@@ -180,9 +170,11 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(listItems).toHaveLength(1);
 
     const orgItem = listItems[0];
-    expect(orgItem).toContain("Organizer");
+    expect(orgItem).not.toContain("Organizer");
     expect(orgItem).not.toContain("Host");
-    expect(orgItem).toContain("Leave");
+    expect(orgItem).not.toContain("Leave");
+    expect(orgItem).toContain('href="/g/grp_org"');
+    expect(orgItem).toContain('aria-label="Go to Co-Organized League"');
   });
 
   it("rejects leavePublicGroupAction when called by the host of the group", async () => {
@@ -828,6 +820,51 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toMatch(/(?<!hover:)shadow-\[3px_3px_0px_0px_#000\]/);
     // Buttons (like Create / Find groups / BackButton) SHOULD have shadow
     expect(html).toContain("shadow-[2px_2px_0px_0px_#000]");
+  });
+
+  it("renders sections in order: chemistry spotlight, sessions/wins/losses, groups, then chart and past sessions", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "order_test_user",
+          name: "Order User",
+          passwordHash: "hash",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+      groups: [
+        { id: "g1", name: "Test League", organizerPinHash: "hash", createdAt: new Date() },
+      ],
+      players: [
+        {
+          id: "p1",
+          groupId: "g1",
+          accountId: testAccountId,
+          name: "Order User",
+          initialRating: 1000,
+          rating: 1000,
+          ratedGamesPlayed: 0,
+          active: true,
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    const chemistryIndex = html.indexOf("Chemistry Spotlight");
+    const sessionsIndex = html.indexOf(">Sessions<");
+    const groupsIndex = html.indexOf("My Groups");
+    const pastSessionsIndex = html.indexOf("Past Sessions");
+
+    expect(chemistryIndex).toBeGreaterThan(-1);
+    expect(sessionsIndex).toBeGreaterThan(chemistryIndex);
+    expect(groupsIndex).toBeGreaterThan(sessionsIndex);
+    expect(pastSessionsIndex).toBeGreaterThan(groupsIndex);
   });
 });
 
