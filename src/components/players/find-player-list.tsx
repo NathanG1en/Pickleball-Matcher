@@ -17,7 +17,7 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
       {players.map((player) => {
         const isSelf = Boolean(currentAccountId && currentAccountId === player.id);
         const isPrivate = player.isPublic === false;

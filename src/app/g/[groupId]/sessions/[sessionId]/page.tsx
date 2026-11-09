@@ -71,7 +71,7 @@ export default async function ActiveSessionPage({
 
   if (sessionRecord.type === "open_play") {
     return (
-      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+      <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 text-black">
         <OpenPlayManagerClient
           groupId={groupId}
           groupName={group.name}
@@ -116,7 +116,7 @@ export default async function ActiveSessionPage({
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 text-black">
       <SessionManagerClient
         groupId={groupId}
         groupName={group.name}

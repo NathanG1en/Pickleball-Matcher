@@ -23,9 +23,9 @@ export default async function PlayerProfilePage() {
   const wins = history.reduce((total, session) => total + session.wins, 0);
   const losses = history.reduce((total, session) => total + session.losses, 0);
 
-  return <main className="min-h-screen p-4 sm:p-6">
-    <section className="mx-auto max-w-2xl space-y-5">
-      <header className="rounded-3xl border-[3px] border-black bg-white p-5">
+  return <main className="min-h-screen p-4 sm:p-6 lg:p-8">
+    <section className="mx-auto max-w-2xl lg:max-w-6xl xl:max-w-7xl space-y-5">
+      <header className="rounded-3xl border-[3px] border-black bg-white p-5 lg:p-7">
         <div className="mb-4 flex items-center justify-between">
           <BackButton href="/" />
           <PlayerLogoutButton />
@@ -40,109 +40,117 @@ export default async function PlayerProfilePage() {
         />
       </header>
 
-      {bestPartner ? (
-        <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
-                <SynergyExplainerButton />
-              </div>
-              <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
-              <p className="text-sm font-bold text-neutral-800">@{bestPartner.username}</p>
-            </div>
-            <div className="text-right">
-              {(() => {
-                const raw = bestPartner.synergyScore;
-                const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
-                const sign = score > 0 ? `+${score}%` : `${score}%`;
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Main Column: Stats, Rating Chart, Past Sessions */}
+        <div className="space-y-5 lg:col-span-7 xl:col-span-8">
+          <section className="grid grid-cols-3 gap-3 text-center">
+            <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
+            <StatCard label="Wins" value={wins} />
+            <StatCard label="Losses" value={losses} />
+          </section>
+
+          <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
+            <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
+            <ScoreHistoryChart history={history} />
+          </section>
+
+          <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5">
+            <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
+            {history.length === 0 ? (
+              <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>
+            ) : (
+              history.map((item) => {
                 return (
-                  <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
-                    score > 0
-                      ? "bg-emerald-100 text-emerald-950"
-                      : score < 0
-                      ? "bg-rose-100 text-rose-950"
-                      : "bg-white text-black"
-                  }`}>
-                    {sign} Synergy
-                  </span>
+                  <article
+                    key={`${item.groupId}-${item.sessionId}`}
+                    data-testid={`player-session-${item.sessionId}`}
+                    className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
+                  >
+                    <div>
+                      <h3 className="font-black text-black">
+                        {item.sessionName ? `${item.sessionName} · ` : null}
+                        <ClientDate date={item.startedAt} options={{ month: "short", day: "numeric", year: "numeric" }} />
+                      </h3>
+                      <p className="text-xs font-bold text-neutral-600">
+                        {item.groupName}
+                        {item.type === "open_play" ? " (Open Play)" : ""}
+                        {" · "}
+                        {item.wins}W – {item.losses}L
+                      </p>
+                    </div>
+                    <Link
+                      href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
+                      aria-label="Go to session"
+                      title="Go to session"
+                      className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
+                    >
+                      <span className="sr-only">Go to session</span>
+                      <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                    </Link>
+                  </article>
                 );
-              })()}
-              <p className="mt-1 text-[11px] font-bold text-neutral-800">
-                {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-3xl border-[3px] border-black bg-white p-5">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
-              <SynergyExplainerButton />
-            </div>
-            <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
-            <p className="mt-1 text-xs font-bold text-neutral-600">
-              Play matches with other people to unlock.
-            </p>
-          </div>
-        </section>
-      )}
+              })
+            )}
+          </section>
+        </div>
 
-      <section className="grid grid-cols-3 gap-3 text-center">
-        <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} />
-        <StatCard label="Wins" value={wins} />
-        <StatCard label="Losses" value={losses} />
-      </section>
-
-      <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
-        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><div className="flex gap-2"><Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link></div></div>
-        {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${group.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"}`}>{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />}</div></li>)}</ul>}
-      </section>
-
-      <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
-        <h2 className="font-display text-2xl font-black uppercase">Rating over time</h2>
-        <ScoreHistoryChart history={history} />
-      </section>
-
-      <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5">
-        <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
-        {history.length === 0 ? (
-          <p className="text-sm font-bold text-neutral-600">Sessions you attend will show up here.</p>
-        ) : (
-          history.map((item) => {
-            return (
-              <article
-                key={`${item.groupId}-${item.sessionId}`}
-                data-testid={`player-session-${item.sessionId}`}
-                className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
-              >
+        {/* Sidebar Column: Best Partner and My Groups */}
+        <div className="space-y-5 lg:col-span-5 xl:col-span-4">
+          {bestPartner ? (
+            <section className="rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-black text-black">
-                    {item.sessionName ? `${item.sessionName} · ` : null}
-                    <ClientDate date={item.startedAt} options={{ month: "short", day: "numeric", year: "numeric" }} />
-                  </h3>
-                  <p className="text-xs font-bold text-neutral-600">
-                    {item.groupName}
-                    {item.type === "open_play" ? " (Open Play)" : ""}
-                    {" · "}
-                    {item.wins}W – {item.losses}L
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
+                    <SynergyExplainerButton />
+                  </div>
+                  <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
+                  <p className="text-sm font-bold text-neutral-800">@{bestPartner.username}</p>
+                </div>
+                <div className="text-right">
+                  {(() => {
+                    const raw = bestPartner.synergyScore;
+                    const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                    const sign = score > 0 ? `+${score}%` : `${score}%`;
+                    return (
+                      <span className={`inline-block rounded-xl border-2 border-black px-3 py-1 font-display text-xl font-black ${
+                        score > 0
+                          ? "bg-emerald-100 text-emerald-950"
+                          : score < 0
+                          ? "bg-rose-100 text-rose-950"
+                          : "bg-white text-black"
+                      }`}>
+                        {sign} Synergy
+                      </span>
+                    );
+                  })()}
+                  <p className="mt-1 text-[11px] font-bold text-neutral-800">
+                    {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
                   </p>
                 </div>
-                <Link
-                  href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                  aria-label="Go to session"
-                  title="Go to session"
-                  className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
-                >
-                  <span className="sr-only">Go to session</span>
-                  <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
-                </Link>
-              </article>
-            );
-          })
-        )}
-      </section>
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                  <SynergyExplainerButton />
+                </div>
+                <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
+                <p className="mt-1 text-xs font-bold text-neutral-600">
+                  Play matches with other people to unlock.
+                </p>
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
+            <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><div className="flex gap-2"><Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link></div></div>
+            {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${group.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"}`}>{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />}</div></li>)}</ul>}
+          </section>
+        </div>
+      </div>
     </section>
   </main>;
 }

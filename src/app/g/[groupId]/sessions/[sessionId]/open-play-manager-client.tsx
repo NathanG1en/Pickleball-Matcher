@@ -1482,10 +1482,14 @@ export function OpenPlayManagerClient({
         </section>
       )}
 
-      {/* Add Players Section */}
-      {(isSessionActive || canManage) && (
-        <section
-          data-testid="add-players-box"
+      {/* Responsive Grid for Open Play */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Attendance & Players Column (Right on desktop, first in mobile flow) */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-6 order-1 lg:order-2">
+          {/* Add Players Section */}
+          {(isSessionActive || canManage) && (
+            <section
+              data-testid="add-players-box"
           className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1739,12 +1743,15 @@ export function OpenPlayManagerClient({
           </div>
         )}
       </section>
+        </div>
 
-      {/* Submit Game Section */}
-      {(isSessionActive || canManage) && (
-        <section
-          className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
-          data-testid="submit-game-card"
+        {/* Primary Games Column (Left on desktop: Submit Game & Games Played) */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6 order-2 lg:order-1">
+          {/* Submit Game Section */}
+          {(isSessionActive || canManage) && (
+            <section
+              className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+              data-testid="submit-game-card"
         >
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black">
@@ -2214,6 +2221,8 @@ export function OpenPlayManagerClient({
           </div>
         )}
       </section>
+        </div>
+      </div>
     </div>
   );
 }

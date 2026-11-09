@@ -20,9 +20,9 @@ export default async function FindPlayersPage({
   const players = await getActionRepository().listPlayerAccounts(q);
 
   return (
-    <main className="min-h-screen p-4 sm:p-6">
-      <section className="mx-auto max-w-xl space-y-5">
-        <header className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_#000]">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <section className="mx-auto max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl space-y-5">
+        <header className="rounded-3xl border-[3px] border-black bg-white p-5 lg:p-6 shadow-[6px_6px_0px_0px_#000]">
           <div className="mb-4 flex items-center justify-between">
             <BackButton href="/" />
             <Link

@@ -142,114 +142,118 @@ export function AttendanceManager({
 
   return (
     <div className="attendance-manager space-y-6 pb-28 text-black">
-      {/* Court Count Card */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="mb-1 flex items-center justify-between gap-3">
-          <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
-          {!isEditingSession && <SetupCourtIllustration />}
-        </div>
-        <p className="text-sm font-bold text-neutral-600 mb-4">
-          Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
-        </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Court Count Card (Left column on desktop) */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-6">
+          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
+              {!isEditingSession && <SetupCourtIllustration />}
+            </div>
+            <p className="text-sm font-bold text-neutral-600 mb-4">
+              Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
+            </p>
 
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            aria-label="Decrease courts"
-            disabled={courts <= 1}
-            onClick={() => { decreaseCourts(); setCourtPlayerCounts((previous) => previous.slice(0, -1)); }}
-            className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
-          >
-            -
-          </button>
-          <div className="text-center px-4">
-            <span
-              aria-label="Court count"
-              className="font-display text-4xl font-black text-black"
-            >
-              {courts}
-            </span>
-            <span className="block text-xs uppercase font-black tracking-wider text-neutral-500 mt-0.5">
-              {courts === 1 ? "Court" : "Courts"}
-            </span>
-          </div>
-          <button
-            type="button"
-            aria-label="Increase courts"
-            disabled={courts >= Math.min(maxCourts, Math.floor(count / 2))}
-            onClick={increaseCourts}
-            className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
-          >
-            +
-          </button>
-
-        </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {courtPlayerCounts.slice(0, courts).map((size, index) => (
-            <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
-              <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
-              <select
-                aria-label={`Players on court ${index + 1}`}
-                value={size}
-                onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
-                className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                aria-label="Decrease courts"
+                disabled={courts <= 1}
+                onClick={() => { decreaseCourts(); setCourtPlayerCounts((previous) => previous.slice(0, -1)); }}
+                className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
               >
-                {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
-              </select>
-            </label>
-          ))}
-        </div>
-        {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||
-          (courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity)) && (
-          <div className="mt-4 flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
-            <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
-            <button
-              type="button"
-              onClick={() =>
-                setCourtPlayerCounts((prev) => {
-                  let converted = false;
-                  return prev.map((s, idx) => {
-                    if (idx < courts && s === 2 && !converted) {
-                      converted = true;
-                      return 3;
-                    }
-                    return s;
-                  });
-                })
-              }
-              className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                courtPlayerCounts.slice(0, courts).some((s) => s === 3)
-                  ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                  : "bg-white text-neutral-600 hover:bg-neutral-50"
-              }`}
-            >
-              2v1 Match (No Sitters)
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setCourtPlayerCounts((prev) =>
-                  prev.map((s, idx) => (idx < courts && s === 3 ? 2 : s))
-                )
-              }
-              className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity
-                  ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                  : "bg-white text-neutral-600 hover:bg-neutral-50"
-              }`}
-            >
-              1v1 Singles (1 Sitter)
-            </button>
-          </div>
-        )}
-        {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
-      </section>
+                -
+              </button>
+              <div className="text-center px-4">
+                <span
+                  aria-label="Court count"
+                  className="font-display text-4xl font-black text-black"
+                >
+                  {courts}
+                </span>
+                <span className="block text-xs uppercase font-black tracking-wider text-neutral-500 mt-0.5">
+                  {courts === 1 ? "Court" : "Courts"}
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label="Increase courts"
+                disabled={courts >= Math.min(maxCourts, Math.floor(count / 2))}
+                onClick={increaseCourts}
+                className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
+              >
+                +
+              </button>
 
-      {/* Players Section */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
+            </div>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {courtPlayerCounts.slice(0, courts).map((size, index) => (
+                <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                  <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
+                  <select
+                    aria-label={`Players on court ${index + 1}`}
+                    value={size}
+                    onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
+                    className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
+                  >
+                    {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
+            {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||
+              (courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity)) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
+                <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCourtPlayerCounts((prev) => {
+                      let converted = false;
+                      return prev.map((s, idx) => {
+                        if (idx < courts && s === 2 && !converted) {
+                          converted = true;
+                          return 3;
+                        }
+                        return s;
+                      });
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                    courtPlayerCounts.slice(0, courts).some((s) => s === 3)
+                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  2v1 Match (No Sitters)
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCourtPlayerCounts((prev) =>
+                      prev.map((s, idx) => (idx < courts && s === 3 ? 2 : s))
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
+                    courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity
+                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  1v1 Singles (1 Sitter)
+                </button>
+              </div>
+            )}
+            {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
+          </section>
+        </div>
+
+        {/* Players Section (Right column on desktop) */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
             <p className="text-sm font-black text-black mt-1">
               <span className="bg-[#ccff00] px-2.5 py-0.5 border border-black rounded-md shadow-[1px_1px_0px_0px_#000]">
                 {count} players selected
@@ -421,10 +425,12 @@ export function AttendanceManager({
           </div>
         </form>
       </section>
+        </div>
+      </div>
 
       {/* Sticky Mobile Action Bar */}
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-        <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
             <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
             <p className="font-display text-base font-black uppercase text-black tracking-tight">

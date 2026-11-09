@@ -43,7 +43,7 @@ export default async function GroupPlayersPage({
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-6 text-black">
       <div className="flex items-center justify-between">
         <Link
           href={`/g/${groupId}`}
