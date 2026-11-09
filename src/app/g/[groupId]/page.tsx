@@ -114,6 +114,7 @@ export default async function GroupDashboardPage({
             team1Score: m.team1Score,
             team2Score: m.team2Score,
             status: m.status,
+            completedAt: m.completedAt ? m.completedAt.toISOString() : null,
           };
         });
         totalGames += roundMatches.length;
@@ -124,6 +125,8 @@ export default async function GroupDashboardPage({
           id: sr.round.id,
           roundNumber: sr.round.roundNumber,
           status: sr.round.status,
+          startedAt: sr.round.startedAt ? sr.round.startedAt.toISOString() : null,
+          completedAt: sr.round.completedAt ? sr.round.completedAt.toISOString() : null,
           matches: roundMatches,
           sittingNames,
         };
@@ -145,10 +148,10 @@ export default async function GroupDashboardPage({
   );
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 pb-24 text-black">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 pb-24 text-black">
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-6">
+      <header className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-8">
         <div className="mb-4 flex items-center justify-between">
           <BackButton href={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
@@ -187,25 +190,30 @@ export default async function GroupDashboardPage({
 
       </header>
 
-      <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Organizers and Roster panel: appears first on mobile stack, right column on desktop */}
+        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:order-2">
+          <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+          {/* Mobile Add to Home Screen Tip */}
+          <HomeScreenTip />
+        </div>
 
-      {/* Mobile Add to Home Screen Tip */}
-      <HomeScreenTip />
-
-      {!isPartOfGroup ? (
-        <GroupJoinCard
-          groupId={groupId}
-          groupName={group.name}
-          isSignedIn={Boolean(accountId)}
-        />
-      ) : (
-        <>
-          {/* Primary Action Card */}
-          {activeSession ? (
-            <section
-              data-testid="active-session-card"
-              className="relative bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
-            >
+        {/* Primary Action and Sessions column: appears after roster on mobile, left column on desktop */}
+        <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:order-1">
+          {!isPartOfGroup ? (
+            <GroupJoinCard
+              groupId={groupId}
+              groupName={group.name}
+              isSignedIn={Boolean(accountId)}
+            />
+          ) : (
+            <>
+              {/* Primary Action Card */}
+              {activeSession ? (
+                <section
+                  data-testid="active-session-card"
+                  className="relative bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 lg:p-7 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+                >
               <Link
                 href={`/g/${groupId}/sessions/${activeSession.id}`}
                 data-testid="active-session-overlay-link"
@@ -271,9 +279,9 @@ export default async function GroupDashboardPage({
                     .slice(0, 5);
                   if (recentGames.length === 0) return null;
                   return (
-                    <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                    <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                       <h3 className="text-xs font-black uppercase tracking-wider text-black">Recent Games</h3>
-                      <div data-testid="open-play-recent-games" className="max-h-[136px] overflow-y-auto space-y-2 pr-1">
+                      <div data-testid="open-play-recent-games" className="max-h-[136px] overflow-y-auto lg:max-h-72 space-y-2 pr-1">
                         {recentGames.map((m) => {
                           const t1 = currentMatchPlayers
                             .filter((mp) => mp.matchId === m.id && mp.team === 1)
@@ -302,9 +310,9 @@ export default async function GroupDashboardPage({
                 })()
               ) : (
                 currentRoundMatches.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                  <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                     <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div data-testid="current-matchups" className="max-h-[136px] overflow-y-auto lg:max-h-72 space-y-2 pr-1">
                       {currentRoundMatches.map((m) => {
                         const t1 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
@@ -313,13 +321,13 @@ export default async function GroupDashboardPage({
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         return (
-                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between">
+                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                             <div>
                               <span className="font-black text-black block">Court {m.courtNumber}</span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                             </div>
                             {m.status === "completed" && (
-                              <Badge variant="success">
+                              <Badge variant="success" className="shrink-0 whitespace-nowrap font-mono font-bold">
                                 {m.team1Score} – {m.team2Score}
                               </Badge>
                             )}
@@ -393,7 +401,7 @@ export default async function GroupDashboardPage({
           )}
 
           {/* Tournaments Section */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-black uppercase text-black">Tournaments</h2>
               {isOrganizer && (
@@ -413,7 +421,7 @@ export default async function GroupDashboardPage({
           </section>
 
           {/* Past Sessions */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
             <PastSessionsList
               groupId={groupId}
@@ -421,8 +429,10 @@ export default async function GroupDashboardPage({
               isOrganizer={Boolean(isOrganizer || isHost)}
             />
           </section>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

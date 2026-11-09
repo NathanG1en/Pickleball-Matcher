@@ -32,6 +32,7 @@ import {
   CheckIcon,
   PinIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   XIcon,
 } from "@/components/ui/icons";
 import {
@@ -448,31 +449,36 @@ export function GroupOrganizersPanel({
           aria-label="Add player or guest"
           className="space-y-3 rounded-2xl border-2 border-black bg-white p-4"
         >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shrink-0">
-                <UserPlusIcon className="h-4 w-4 text-black" />
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-[#ccff00] shrink-0">
+                  <UserPlusIcon className="h-4 w-4 text-black" />
+                </div>
+                <h2
+                  onClick={() => setIsAddOpen((prev) => !prev)}
+                  className="font-display text-lg font-black uppercase text-black cursor-pointer select-none hover:text-neutral-700 transition-colors"
+                >
+                  Add Player or Guest
+                </h2>
               </div>
-              <div>
-                <h2 className="font-display text-lg font-black uppercase text-black">Add Player or Guest</h2>
-                <p className="text-xs font-semibold text-neutral-600">
-                  Find players by username or add guest players.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddOpen((prev) => !prev)}
+                aria-expanded={isAddOpen}
+                aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
+                className="p-1 text-black hover:text-neutral-600 hover:scale-110 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer shrink-0"
+              >
+                <ChevronDownIcon
+                  className={`h-5 w-5 text-black transform transition-transform duration-300 ease-in-out ${
+                    isAddOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsAddOpen((prev) => !prev)}
-              aria-expanded={isAddOpen}
-              aria-label={isAddOpen ? "Collapse add player or guest form" : "Expand add player or guest form"}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-neutral-100 hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shrink-0 shadow-[1px_1px_0px_0px_#000]"
-            >
-              <ChevronDownIcon
-                className={`h-4 w-4 text-black transition-transform duration-200 ${
-                  isAddOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            <p className="text-xs font-semibold text-neutral-600 mt-0.5 sm:ml-9">
+              Find players by username or add guest players.
+            </p>
           </div>
 
           {isAddOpen && (
@@ -829,60 +835,62 @@ export function GroupOrganizersPanel({
           </button>
         </div>
       ) : (
-        <ul className="divide-y-2 divide-neutral-200 rounded-xl border-2 border-black bg-white px-3" data-testid="roster-players-list">
+        <ul className="divide-y-2 divide-neutral-200 rounded-xl border-2 border-black bg-[#FFFDF7] px-3.5 shadow-[4px_4px_0px_0px_#171717]" data-testid="roster-players-list">
           {filteredAndSortedPlayers.map((player) => {
             const organizer = player.accountId ? organizers.find(({ accountId }) => accountId === player.accountId) : undefined;
             const playerUsername = player.username || organizer?.username;
             const isPinned = pinnedPlayerIds.has(player.id);
             return (
-              <li key={player.id} className="flex items-center justify-between gap-3 py-2.5" data-testid={`roster-player-row-${player.name}`}>
+              <li key={player.id} className="flex items-center justify-between gap-3 py-3" data-testid={`roster-player-row-${player.name}`}>
                 <div className="min-w-0 flex-1">
-                  {/* Line 1: Name, Username, and Role */}
-                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                    <span className="truncate text-sm font-black text-black">
+                  {/* Line 1: Name and Username */}
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="truncate text-base font-black text-black">
                       {player.name}
                     </span>
                     {playerUsername && (
                       <Link
                         href={`/players/${encodeURIComponent(playerUsername)}`}
-                        className="text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer"
+                        className="truncate text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer shrink"
                       >
                         @{playerUsername}
                       </Link>
                     )}
+                  </div>
+
+                  {/* Line 2: Stats and Role Badge */}
+                  <div className="flex items-center gap-2 text-xs font-bold text-neutral-600 flex-wrap mt-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span>
+                        <span className="hidden sm:inline">Rating: </span>
+                        {formatDupr(player.rating)}
+                      </span>
+                      {player.gender && (
+                        <>
+                          <span aria-hidden="true" className="text-neutral-400">·</span>
+                          <span className="uppercase text-[11px] font-bold text-neutral-600">
+                            <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
+                            <span className="hidden sm:inline">{player.gender}</span>
+                          </span>
+                        </>
+                      )}
+                      <span aria-hidden="true" className="text-neutral-400">·</span>
+                      <span>
+                        {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
+                      </span>
+                    </div>
                     {organizer && (
                       <span
-                        className={`rounded-full border border-black px-2 py-0.5 text-[9px] font-black uppercase ${
-                          organizer.isHost ? "bg-[#fde047]" : "bg-[#e0f2fe]"
-                        } shrink-0`}
+                        className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                          organizer.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"
+                        }`}
                       >
                         {organizer.isHost ? "Host" : "Organizer"}
                       </span>
                     )}
                   </div>
-
-                  {/* Line 2: Unified Muted Metadata Subline */}
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-0.5">
-                    <span>
-                      <span className="hidden sm:inline">Rating: </span>
-                      {formatDupr(player.rating)}
-                    </span>
-                    {player.gender && (
-                      <>
-                        <span aria-hidden="true" className="text-neutral-400">·</span>
-                        <span className="uppercase text-[11px] font-bold text-neutral-600">
-                          <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
-                          <span className="hidden sm:inline">{player.gender}</span>
-                        </span>
-                      </>
-                    )}
-                    <span aria-hidden="true" className="text-neutral-400">·</span>
-                    <span>
-                      {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
-                    </span>
-                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="w-[70px] shrink-0 flex items-center justify-end gap-1.5">
                   {(isHost || isOrganizer) ? (
                     <>
                       <button
@@ -891,17 +899,22 @@ export function GroupOrganizersPanel({
                         aria-label={isPinned ? `Unpin ${player.name}` : `Pin ${player.name} to top`}
                         title={isPinned ? "Unpin player" : "Pin player to top"}
                         data-testid={`pin-player-${player.name}`}
-                        className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                        className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center transition-all cursor-pointer shadow-[1.5px_1.5px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none shrink-0 ${
                           isPinned
                             ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                            : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                            : "bg-[#FFFDF7] text-neutral-400 hover:text-black hover:bg-[#ccff00]"
                         }`}
                       >
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
                       </button>
                       <details className="relative" data-player-menu>
-                        <summary aria-label={`Options for ${player.name}`} className="flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer list-none items-center justify-center rounded-lg border-2 border-black bg-white text-sm sm:text-base font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100">···</summary>
-                        <div className="absolute right-0 top-8 sm:top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#000]">
+                        <summary
+                          aria-label={`Options for ${player.name}`}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black bg-[#FFFDF7] text-black text-sm font-black leading-none shadow-[1.5px_1.5px_0px_0px_#171717] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer list-none select-none shrink-0"
+                        >
+                          ···
+                        </summary>
+                        <div className="absolute right-0 top-9 sm:top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#171717]">
                           <button
                             type="button"
                             onClick={() => {
@@ -1042,9 +1055,12 @@ export function GroupOrganizersPanel({
                     playerUsername && (
                       <Link
                         href={`/players/${encodeURIComponent(playerUsername)}`}
-                        className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0 mr-2"
+                        aria-label="View profile"
+                        title="View profile"
+                        className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
                       >
-                        View profile
+                        <span className="sr-only">View profile</span>
+                        <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
                       </Link>
                     )
                   )}

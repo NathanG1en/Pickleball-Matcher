@@ -27,23 +27,28 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
     setPendingGroup(null);
   };
 
-  return <div className="space-y-3">
-    {error && <Alert variant="danger">{error}</Alert>}
-    {groups.length === 0 ? <EmptyState description="No public groups match that search." /> : groups.map((group) => (
-      <article key={group.id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
+  return (
+    <div className="space-y-4">
+      {error && <Alert variant="danger">{error}</Alert>}
+      {groups.length === 0 ? (
+        <EmptyState description="No public groups match that search." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {groups.map((group) => (
+            <article key={group.id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="truncate font-display text-xl font-black uppercase">{group.name}</h2>
             {group.isHost ? (
-              <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">
+              <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                 Host
               </span>
             ) : group.isOrganizer ? (
-              <span className="rounded-full border border-black bg-[#e0f2fe] px-2 py-1 text-[9px] font-black uppercase">
+              <span className="rounded-md border-2 border-black bg-[#bae6fd] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                 Organizer
               </span>
             ) : group.isMember ? (
-              <span className="rounded-full border border-black bg-[#ccff00] px-2 py-1 text-[9px] font-black uppercase">
+              <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                 Member
               </span>
             ) : null}
@@ -79,5 +84,8 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
         </div>
       </article>
     ))}
-  </div>;
+        </div>
+      )}
+    </div>
+  );
 }

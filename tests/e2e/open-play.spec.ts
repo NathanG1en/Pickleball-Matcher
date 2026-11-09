@@ -402,6 +402,11 @@ test.describe("Open Play Workflow", () => {
 
     // Verify rating over time chart hover and click tooltip
     await expect(page.locator("h2:has-text('Rating over time')")).toBeVisible();
+    await expect(page.locator("[data-testid='rating-timeline-filter']")).toBeVisible();
+    await expect(page.locator("[data-testid='rating-range-all']")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-testid='rating-range-week']")).toBeVisible();
+    await expect(page.locator("[data-testid='rating-range-month']")).toBeVisible();
+    await expect(page.locator("[data-testid='rating-range-year']")).toBeVisible();
     const ratingPoint = page.locator("[data-testid='rating-point-0']");
     await expect(ratingPoint).toBeVisible();
 

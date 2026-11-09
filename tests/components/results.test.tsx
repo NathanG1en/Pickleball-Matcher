@@ -492,5 +492,41 @@ describe("ResultsEntryView Component", () => {
 
     expect(html).not.toContain("In Play");
   });
+
+  it("renders started and finished timestamps for completed matches", () => {
+    const startedAt = "2026-10-10T14:00:00.000Z";
+    const completedAt = "2026-10-10T14:15:00.000Z";
+    const completedMatches = [
+      {
+        id: "m_final",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"] as [string, string],
+        team2Names: ["Charlie", "Diana"] as [string, string],
+        team1Score: 11,
+        team2Score: 7,
+        status: "completed" as const,
+        version: 1,
+        startedAt,
+        completedAt,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={completedMatches}
+        fieldErrors={{}}
+        canManage={true}
+      />
+    );
+
+    expect(html).toContain("Final");
+    expect(html).toContain("Started:");
+    expect(html).toContain("Finished:");
+    expect(html).toContain(`dateTime="${startedAt}"`);
+    expect(html).toContain(`dateTime="${completedAt}"`);
+  });
 });
+
 

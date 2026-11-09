@@ -641,6 +641,7 @@ export function SessionManagerClient({
                     status: "completed" as const,
                     team1Score: saved.team1Score,
                     team2Score: saved.team2Score,
+                    completedAt: m.completedAt ?? new Date(),
                     version: m.version + 1,
                   }
                 : m;
@@ -937,6 +938,7 @@ export function SessionManagerClient({
                     status: "completed" as const,
                     team1Score,
                     team2Score,
+                    completedAt: res.data?.completedAt ?? m.completedAt ?? new Date(),
                     version: m.version + 1,
                   }
                 : m
@@ -1252,7 +1254,14 @@ export function SessionManagerClient({
             ...sr,
             matches: sr.matches.map((m) =>
               m.id === matchId
-                ? { ...m, team1Score: t1, team2Score: t2, status: "completed" as const, version: m.version + 1 }
+                ? {
+                    ...m,
+                    team1Score: t1,
+                    team2Score: t2,
+                    status: "completed" as const,
+                    completedAt: res.data?.completedAt ?? m.completedAt ?? new Date(),
+                    version: m.version + 1,
+                  }
                 : m
             ),
           }))
@@ -1318,6 +1327,8 @@ export function SessionManagerClient({
           team2Score: match.team2Score,
           status: match.status,
           version: match.version,
+          startedAt: latestStarted.round.startedAt,
+          completedAt: match.completedAt,
         };
       })
     : [];
@@ -1675,44 +1686,50 @@ export function SessionManagerClient({
             </div>
           </section>
 
-          <SessionHighlights rounds={localStartedRounds} players={players} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            {/* Sidebar Column (Right on desktop, first in mobile flow: Highlights & Standings) */}
+            <div className="lg:col-span-5 xl:col-span-4 space-y-6 order-1 lg:order-2">
+              <SessionHighlights rounds={localStartedRounds} players={players} />
 
-          {/* Session Player Leaderboard / Roster */}
-          {sessionPlayerStats.length > 0 && (
-            <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
-              <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
-                Player Summary
-              </h2>
-              <div className="divide-y-2 divide-neutral-100">
-                {sessionPlayerStats.map((stat) => (
-                  <div key={stat.id} className="py-2.5 flex items-center justify-between">
-                    <div>
-                      <span className="font-black text-black text-sm block">{stat.name}</span>
-                      <span className="text-xs font-bold text-neutral-500">
-                        {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg border-2 border-black bg-neutral-50 shadow-[1px_1px_0px_0px_#000]">
-                        {stat.wins}W – {stat.losses}L
-                      </span>
-                      {stat.gamesPlayed > 0 && (
-                        <span className="text-xs font-bold text-neutral-600">
-                          ({stat.winRate}%)
-                        </span>
-                      )}
-                    </div>
+              {/* Session Player Leaderboard / Roster */}
+              {sessionPlayerStats.length > 0 && (
+                <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+                  <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
+                    Player Summary
+                  </h2>
+                  <div className="divide-y-2 divide-neutral-100">
+                    {sessionPlayerStats.map((stat) => (
+                      <div key={stat.id} className="py-2.5 flex items-center justify-between">
+                        <div>
+                          <span className="font-black text-black text-sm block">{stat.name}</span>
+                          <span className="text-xs font-bold text-neutral-500">
+                            {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg border-2 border-black bg-neutral-50 shadow-[1px_1px_0px_0px_#000]">
+                            {stat.wins}W – {stat.losses}L
+                          </span>
+                          {stat.gamesPlayed > 0 && (
+                            <span className="text-xs font-bold text-neutral-600">
+                              ({stat.winRate}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </section>
+              )}
+            </div>
 
-          {/* Categorized Rounds & Games */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
-            <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
-              All Rounds & Matchups
-            </h2>
+            {/* Primary Column (Left on desktop: All Rounds & Matchups) */}
+            <div className="lg:col-span-7 xl:col-span-8 space-y-6 order-2 lg:order-1">
+              {/* Categorized Rounds & Games */}
+              <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+                <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
+                  All Rounds & Matchups
+                </h2>
             {allSessionRounds.length === 0 ? (
               <p className="text-sm font-bold text-neutral-600">No rounds played in this session.</p>
             ) : (
@@ -1803,6 +1820,23 @@ export function SessionManagerClient({
                               </div>
                             </div>
 
+                            {m.status === "completed" && (sr.round.startedAt || m.completedAt || sr.round.completedAt) && (
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                                {sr.round.startedAt && (
+                                  <ClientTime
+                                    date={sr.round.startedAt}
+                                    prefix={<span className="text-neutral-700 font-black">Started: </span>}
+                                  />
+                                )}
+                                {(m.completedAt ?? sr.round.completedAt) && (
+                                  <ClientTime
+                                    date={m.completedAt ?? sr.round.completedAt!}
+                                    prefix={<span className="text-neutral-700 font-black">Finished: </span>}
+                                  />
+                                )}
+                              </div>
+                            )}
+
                             {isEditing ? (
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
                                 <input
@@ -1878,6 +1912,8 @@ export function SessionManagerClient({
               </div>
             )}
           </section>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -1997,6 +2033,23 @@ export function SessionManagerClient({
                             <div className="font-bold text-neutral-800">
                               {t1.join(" & ")} vs {t2.join(" & ")}
                             </div>
+
+                            {m.status === "completed" && (past.round.startedAt || m.completedAt || past.round.completedAt) && (
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                                {past.round.startedAt && (
+                                  <ClientTime
+                                    date={past.round.startedAt}
+                                    prefix={<span className="text-neutral-700 font-black">Started: </span>}
+                                  />
+                                )}
+                                {(m.completedAt ?? past.round.completedAt) && (
+                                  <ClientTime
+                                    date={m.completedAt ?? past.round.completedAt!}
+                                    prefix={<span className="text-neutral-700 font-black">Finished: </span>}
+                                  />
+                                )}
+                              </div>
+                            )}
 
                             {isEditing ? (
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">

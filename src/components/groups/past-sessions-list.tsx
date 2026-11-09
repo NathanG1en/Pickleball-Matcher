@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
+import { ClientTime } from "@/components/ui/client-date-time";
 
 export interface PastSessionMatchData {
   readonly id: string;
@@ -15,6 +16,7 @@ export interface PastSessionMatchData {
   readonly team1Score: number | null;
   readonly team2Score: number | null;
   readonly status: "pending" | "completed" | "cancelled";
+  readonly completedAt?: string | null;
 }
 
 export interface PastSessionRoundData {
@@ -23,6 +25,8 @@ export interface PastSessionRoundData {
   readonly status: "started" | "completed" | "cancelled";
   readonly matches: readonly PastSessionMatchData[];
   readonly sittingNames: readonly string[];
+  readonly startedAt?: string | null;
+  readonly completedAt?: string | null;
 }
 
 export interface PastSessionData {
@@ -108,7 +112,7 @@ export function PastSessionsList({
                 <button
                   type="button"
                   onClick={() => toggleExpand(session.id)}
-                  className="p-1.5 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shadow-[1px_1px_0px_0px_#000]"
+                  className="p-1.5 text-black hover:translate-y-0.5 transition-transform cursor-pointer"
                   aria-label={isExpanded ? `Collapse games for ${formattedDate}` : `Expand games for ${formattedDate}`}
                   data-testid={`expand-session-arrow-${session.id}`}
                 >
@@ -177,7 +181,15 @@ export function PastSessionsList({
                               data-testid={`match-card-${m.id}`}
                             >
                               <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
-                                <span>Game {idx + 1}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span>Game {idx + 1}</span>
+                                  {m.status === "completed" && m.completedAt && (
+                                    <span className="text-[10px] font-bold text-neutral-500 normal-case flex items-center gap-1">
+                                      <span>•</span>
+                                      <ClientTime date={m.completedAt} />
+                                    </span>
+                                  )}
+                                </div>
                                 {m.status === "completed" &&
                                 m.team1Score !== null &&
                                 m.team2Score !== null ? (
@@ -327,6 +339,23 @@ export function PastSessionsList({
                                       </span>
                                     </div>
                                   </div>
+
+                                  {m.status === "completed" && (round.startedAt || m.completedAt || round.completedAt) && (
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                                      {round.startedAt && (
+                                        <ClientTime
+                                          date={round.startedAt}
+                                          prefix={<span className="text-neutral-700 font-black">Started: </span>}
+                                        />
+                                      )}
+                                      {(m.completedAt ?? round.completedAt) && (
+                                        <ClientTime
+                                          date={m.completedAt ?? round.completedAt!}
+                                          prefix={<span className="text-neutral-700 font-black">Finished: </span>}
+                                        />
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

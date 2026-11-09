@@ -136,7 +136,7 @@ export function NewSessionClient({
 
   if (!selectedFormat) {
     return (
-      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+      <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto space-y-6 text-black">
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${groupId}`}
@@ -164,10 +164,10 @@ export function NewSessionClient({
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Normal Session */}
           <div
-            className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all"
+            className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
               <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
@@ -211,7 +211,7 @@ export function NewSessionClient({
 
           {/* Card 2: Open Play Session */}
           <div
-            className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all"
+            className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
               <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
@@ -260,7 +260,7 @@ export function NewSessionClient({
   if (selectedFormat === "normal") {
     if (normalStep === "stay_together" && normalConfig) {
       return (
-        <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+        <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-6 text-black">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -302,7 +302,7 @@ export function NewSessionClient({
 
           {/* Sticky Mobile Action Bar */}
           <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
-            <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+            <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
               <div className="text-left">
                 <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
                 <p className="font-display text-base font-black uppercase text-black tracking-tight">
@@ -334,7 +334,7 @@ export function NewSessionClient({
     }
 
     return (
-      <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+      <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-6 text-black">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -389,7 +389,7 @@ export function NewSessionClient({
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 text-black">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto space-y-6 text-black">
       <div className="flex items-center justify-between">
         <button
           type="button"

@@ -190,7 +190,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       // Verify labels are rendered with player profile styling
       expect(html).toContain("Host");
       expect(html).toContain("Organizer");
-      expect(html).toContain("rounded-full border border-black px-2 py-0.5 text-[9px] font-black uppercase bg-[#fde047]");
+      expect(html).toContain("rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 bg-[#fde047]");
 
       // Verify player ratings are displayed on decimal scale rather than raw 1000s Elo
       expect(html).toContain("3.5");

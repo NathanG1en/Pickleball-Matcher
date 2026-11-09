@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
 import { formatDupr, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
-import { PinIcon } from "@/components/ui/icons";
+import { PinIcon, ChevronRightIcon } from "@/components/ui/icons";
 import {
   usePinnedPlayerIds,
   togglePinnedPlayer,
@@ -350,21 +350,21 @@ export function PlayerRoster({
             </button>
           </div>
         ) : (
-          <div className="divide-y-2 divide-neutral-100">
+          <div className="rounded-xl border-2 border-black bg-[#FFFDF7] divide-y-2 divide-neutral-200 px-3.5 shadow-[4px_4px_0px_0px_#171717]">
             {filteredAndSortedPlayers.map((player) => {
               const isPinned = pinnedPlayerIds.has(player.id);
               return (
-                <div key={player.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div key={player.id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     {/* Line 1: Name and Username */}
-                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                      <span className="font-black text-black text-base truncate">
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                      <span className="truncate text-base font-black text-black">
                         {player.name}
                       </span>
                       {player.username && (
                         <Link
                           href={`/players/${encodeURIComponent(player.username)}`}
-                          className="text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer"
+                          className="truncate text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer shrink"
                         >
                           @{player.username}
                         </Link>
@@ -372,7 +372,7 @@ export function PlayerRoster({
                     </div>
 
                     {/* Line 2: Unified Muted Metadata Subline */}
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-1">
                       <span>
                         <span className="hidden sm:inline">Rating: </span>
                         {formatDupr(player.rating)}
@@ -392,7 +392,7 @@ export function PlayerRoster({
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-[70px] shrink-0 flex items-center justify-end gap-1.5">
                     {canManage && (
                       <button
                         type="button"
@@ -400,10 +400,10 @@ export function PlayerRoster({
                         aria-label={isPinned ? `Unpin ${player.name}` : `Pin ${player.name} to top`}
                         title={isPinned ? "Unpin player" : "Pin player to top"}
                         data-testid={`pin-player-${player.name}`}
-                        className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
+                        className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center transition-all cursor-pointer shadow-[1.5px_1.5px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none shrink-0 ${
                           isPinned
                             ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                            : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                            : "bg-[#FFFDF7] text-neutral-400 hover:text-black hover:bg-[#ccff00]"
                         }`}
                       >
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -412,9 +412,12 @@ export function PlayerRoster({
                     {!canManage && player.username && (
                       <Link
                         href={`/players/${encodeURIComponent(player.username)}`}
-                        className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase text-black shadow-[1.5px_1.5px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+                        aria-label="View profile"
+                        title="View profile"
+                        className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
                       >
-                        View profile
+                        <span className="sr-only">View profile</span>
+                        <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
                       </Link>
                     )}
                     {showDelete && (
