@@ -803,5 +803,64 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).not.toContain('aria-label="Team 1 Points"');
     expect(html).not.toContain('aria-label="Player 1 Score"');
   });
+
+  it("renders input timestamp for finished games in open play", () => {
+    const inputTime = new Date("2026-10-10T14:45:00.000Z");
+    const startedRoundsWithMatch: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:00:00.000Z"),
+          startedAt: new Date("2026-10-10T14:00:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_completed_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+            completedAt: inputTime,
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_completed_1", playerId: "p1", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_completed_1", playerId: "p2", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_completed_1", playerId: "p3", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_completed_1", playerId: "p4", team: 2, ratingBefore: null, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRoundsWithMatch}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain("Game 1");
+    expect(html).not.toContain("Input:");
+    expect(html).toContain(`dateTime="${inputTime.toISOString()}"`);
+  });
 });
+
 

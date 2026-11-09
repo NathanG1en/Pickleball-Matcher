@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShuffleIcon } from "@/components/ui/icons";
 
+import { ClientTime } from "@/components/ui/client-date-time";
+
 import type { RoundProposal } from "@/lib/domain/types";
 
 export interface MatchScoreEntry {
@@ -18,6 +20,8 @@ export interface MatchScoreEntry {
   readonly team2Score: number | null;
   readonly status: "pending" | "completed" | "cancelled";
   readonly version: number;
+  readonly startedAt?: Date | string | null;
+  readonly completedAt?: Date | string | null;
 }
 
 export type ScoreDrafts = Readonly<Record<string, { team1: string; team2: string }>>;
@@ -327,6 +331,24 @@ export function ResultsEntryView({
               {err && (
                 <div role="alert" className="p-2.5 rounded-lg bg-[#ff6b6b] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
                   {err}
+                </div>
+              )}
+
+              {/* Match Timestamps */}
+              {isCompleted && (match.startedAt || match.completedAt) && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                  {match.startedAt && (
+                    <ClientTime
+                      date={match.startedAt}
+                      prefix={<span className="text-neutral-700 font-black">Started: </span>}
+                    />
+                  )}
+                  {match.completedAt && (
+                    <ClientTime
+                      date={match.completedAt}
+                      prefix={<span className="text-neutral-700 font-black">Finished: </span>}
+                    />
+                  )}
                 </div>
               )}
 

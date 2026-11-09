@@ -2009,9 +2009,17 @@ export function OpenPlayManagerClient({
                     className="p-4 bg-white border-2 border-black rounded-2xl space-y-4 shadow-[2px_2px_0px_0px_#000]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase text-black">
-                        Edit Game {idx + 1}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black uppercase text-black">
+                          Edit Game {idx + 1}
+                        </span>
+                        {m.completedAt && (
+                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                            <span>•</span>
+                            <ClientTime date={m.completedAt} />
+                          </span>
+                        )}
+                      </div>
                       <div className="flex border-2 border-black rounded-xl overflow-hidden shadow-[1px_1px_0px_0px_#000] shrink-0">
                         <button
                           type="button"
@@ -2145,9 +2153,17 @@ export function OpenPlayManagerClient({
                   className="p-3.5 bg-neutral-50 border-2 border-black rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[2px_2px_0px_0px_#000]"
                 >
                   <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-                      Game {idx + 1}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+                        Game {idx + 1}
+                      </span>
+                      {isCompleted && m.completedAt && (
+                        <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                          <span>•</span>
+                          <ClientTime date={m.completedAt} />
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm font-bold flex flex-wrap items-center gap-1.5 text-black">
                       <span className={isCompleted && isT1Winner ? "font-black underline" : ""}>
                         {m.team1Names.join(" & ")}

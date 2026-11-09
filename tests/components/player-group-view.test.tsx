@@ -259,11 +259,27 @@ describe("Player View for Groups and Sessions", () => {
 
       expect(html).toContain("Session In Progress");
       expect(html).toContain("Current Matchups");
+      expect(html).toContain('data-testid="current-matchups"');
+      expect(html).toContain("max-h-[136px]");
+      expect(html).toContain("overflow-y-auto");
       expect(html).toContain("Court 1");
       expect(html).toContain("Host Pro vs Member Joe");
       expect(html).toContain("View Live Session →");
       expect(html).not.toContain("Resume Session →");
       expect(html).not.toContain("End Session");
+    });
+
+    it("renders scrollable current matchups and recent games with z-20 so they remain scrollable above the card overlay link", async () => {
+      const repo = createTestRepository({ activeSession: true, activeRound: true });
+      setActionRepository(repo);
+
+      const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
+      const html = renderToStaticMarkup(pageJsx);
+
+      expect(html).toContain('data-testid="active-session-overlay-link"');
+      expect(html).toContain('data-testid="current-matchups"');
+      // Verify current matchups wrapper has relative z-20 to stay scrollable above the z-10 overlay link
+      expect(html).toMatch(/class="[^"]*relative z-20[^"]*"[^>]*>\s*<h3[^>]*>Current Matchups<\/h3>\s*<div data-testid="current-matchups" class="max-h-\[136px\] overflow-y-auto/);
     });
 
     it("allows organizers to see 'End Session' button for active normal session", async () => {

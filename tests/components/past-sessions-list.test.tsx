@@ -245,6 +245,103 @@ describe("PastSessionsList Component", () => {
     expect(html).not.toContain("Round 1");
     expect(html).not.toContain("Court 1");
   });
+
+  it("renders input timestamp for open play games in past sessions list", () => {
+    const inputTime = "2026-10-10T14:45:00.000Z";
+    const openPlayWithTimestamp: PastSessionData = {
+      id: "ses_op_time",
+      courtCount: 1,
+      currentRoundNumber: 1,
+      status: "completed",
+      startedAt: "2026-10-10T14:00:00.000Z",
+      endedAt: "2026-10-10T15:00:00.000Z",
+      totalGames: 1,
+      type: "open_play",
+      rounds: [
+        {
+          id: "rnd_1",
+          roundNumber: 1,
+          status: "completed",
+          sittingNames: [],
+          matches: [
+            {
+              id: "m_1",
+              courtNumber: 1,
+              team1Names: ["Alice", "Bob"],
+              team2Names: ["Charlie", "Dave"],
+              team1Score: 11,
+              team2Score: 9,
+              status: "completed",
+              completedAt: inputTime,
+            },
+          ],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <PastSessionsList
+        groupId={groupId}
+        sessions={[openPlayWithTimestamp]}
+        initialExpandedSessionIds={{ ses_op_time: true }}
+      />
+    );
+
+    expect(html).toContain("Game 1");
+    expect(html).not.toContain("Input:");
+    expect(html).toContain(`dateTime="${inputTime}"`);
+  });
+
+  it("renders started and finished timestamps for regular session games in past sessions list", () => {
+    const startedAt = "2026-10-10T14:00:00.000Z";
+    const completedAt = "2026-10-10T14:15:00.000Z";
+    const regularWithTimestamps: PastSessionData = {
+      id: "ses_reg_time",
+      courtCount: 1,
+      currentRoundNumber: 1,
+      status: "completed",
+      startedAt,
+      endedAt: "2026-10-10T15:00:00.000Z",
+      totalGames: 1,
+      type: "regular",
+      rounds: [
+        {
+          id: "rnd_1",
+          roundNumber: 1,
+          status: "completed",
+          startedAt,
+          completedAt,
+          sittingNames: [],
+          matches: [
+            {
+              id: "m_1",
+              courtNumber: 1,
+              team1Names: ["Alice", "Bob"],
+              team2Names: ["Charlie", "Dave"],
+              team1Score: 11,
+              team2Score: 9,
+              status: "completed",
+              completedAt,
+            },
+          ],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <PastSessionsList
+        groupId={groupId}
+        sessions={[regularWithTimestamps]}
+        initialExpandedSessionIds={{ ses_reg_time: true }}
+      />
+    );
+
+    expect(html).toContain("Started:");
+    expect(html).toContain("Finished:");
+    expect(html).toContain(`dateTime="${startedAt}"`);
+    expect(html).toContain(`dateTime="${completedAt}"`);
+  });
 });
+
 
 

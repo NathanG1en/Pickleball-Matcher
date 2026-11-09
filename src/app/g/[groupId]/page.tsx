@@ -114,6 +114,7 @@ export default async function GroupDashboardPage({
             team1Score: m.team1Score,
             team2Score: m.team2Score,
             status: m.status,
+            completedAt: m.completedAt ? m.completedAt.toISOString() : null,
           };
         });
         totalGames += roundMatches.length;
@@ -124,6 +125,8 @@ export default async function GroupDashboardPage({
           id: sr.round.id,
           roundNumber: sr.round.roundNumber,
           status: sr.round.status,
+          startedAt: sr.round.startedAt ? sr.round.startedAt.toISOString() : null,
+          completedAt: sr.round.completedAt ? sr.round.completedAt.toISOString() : null,
           matches: roundMatches,
           sittingNames,
         };
@@ -271,7 +274,7 @@ export default async function GroupDashboardPage({
                     .slice(0, 5);
                   if (recentGames.length === 0) return null;
                   return (
-                    <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                    <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                       <h3 className="text-xs font-black uppercase tracking-wider text-black">Recent Games</h3>
                       <div data-testid="open-play-recent-games" className="max-h-[136px] overflow-y-auto space-y-2 pr-1">
                         {recentGames.map((m) => {
@@ -302,9 +305,9 @@ export default async function GroupDashboardPage({
                 })()
               ) : (
                 currentRoundMatches.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t-2 border-black/20">
+                  <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                     <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div data-testid="current-matchups" className="max-h-[136px] overflow-y-auto space-y-2 pr-1">
                       {currentRoundMatches.map((m) => {
                         const t1 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
@@ -313,13 +316,13 @@ export default async function GroupDashboardPage({
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         return (
-                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between">
+                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                             <div>
                               <span className="font-black text-black block">Court {m.courtNumber}</span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                             </div>
                             {m.status === "completed" && (
-                              <Badge variant="success">
+                              <Badge variant="success" className="shrink-0 whitespace-nowrap font-mono font-bold">
                                 {m.team1Score} – {m.team2Score}
                               </Badge>
                             )}

@@ -845,5 +845,56 @@ describe("SessionManagerClient Component", () => {
     expect(prefPanelHtml).toContain('data-testid="confirm-matchups-toggle-pref"');
     expect(prefPanelHtml).toContain("Require confirmation before starting rounds.");
   });
+
+  it("renders started and finished timestamps for completed games in a completed session", () => {
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        groupName="Downtown Club"
+        session={completedSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(html).toContain("Started:");
+    expect(html).toContain("Finished:");
+    expect(html).toContain('dateTime="2026-10-10T14:05:00.000Z"');
+    expect(html).toContain('dateTime="2026-10-10T14:25:00.000Z"');
+  });
+
+  it("renders started and finished timestamps for finished games in past rounds of an active session", () => {
+    const activeSession: SessionRecord = {
+      ...completedSession,
+      status: "active",
+      endedAt: null,
+      currentRoundNumber: 2,
+    };
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        groupName="Downtown Club"
+        session={activeSession}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRounds}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(html).toContain("Past Rounds");
+    expect(html).toContain("Started:");
+    expect(html).toContain("Finished:");
+    expect(html).toContain('dateTime="2026-10-10T14:05:00.000Z"');
+    expect(html).toContain('dateTime="2026-10-10T14:25:00.000Z"');
+  });
 });
+
 
