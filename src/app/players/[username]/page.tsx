@@ -12,7 +12,7 @@ import {
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
-import { GlobeIcon, LockIcon } from "@/components/ui/icons";
+import { GlobeIcon, LockIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { ClientDate } from "@/components/ui/client-date-time";
 
@@ -257,7 +257,7 @@ export default async function PlayerPublicProfilePage({
                   </div>
                   <div className="flex items-center gap-2">
                     {(group.isHost || group.isOrganizer) && (
-                      <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">
+                      <span className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${group.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"}`}>
                         {group.isHost ? "Host" : "Organizer"}
                       </span>
                     )}
@@ -303,9 +303,12 @@ export default async function PlayerPublicProfilePage({
                   {isOwner && (
                     <Link
                       href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                      className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+                      aria-label="Go to session"
+                      title="Go to session"
+                      className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
                     >
-                      Go to session
+                      <span className="sr-only">Go to session</span>
+                      <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
                     </Link>
                   )}
                 </article>

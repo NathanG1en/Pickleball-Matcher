@@ -112,7 +112,7 @@ export function PastSessionsList({
                 <button
                   type="button"
                   onClick={() => toggleExpand(session.id)}
-                  className="p-1.5 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer shadow-[1px_1px_0px_0px_#000]"
+                  className="p-1.5 text-black hover:translate-y-0.5 transition-transform cursor-pointer"
                   aria-label={isExpanded ? `Collapse games for ${formattedDate}` : `Expand games for ${formattedDate}`}
                   data-testid={`expand-session-arrow-${session.id}`}
                 >

@@ -37,17 +37,17 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                   {player.name}
                 </h2>
                 {isSelf && (
-                  <span className="rounded-full border border-black bg-[#fde047] px-2 py-0.5 text-[9px] font-black uppercase">
+                  <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                     You
                   </span>
                 )}
                 {isPrivate ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-black bg-neutral-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
+                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
                     <LockIcon className="h-2.5 w-2.5 shrink-0" />
                     <span>Private</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
+                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
                     <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
                     <span>Public</span>
                   </span>

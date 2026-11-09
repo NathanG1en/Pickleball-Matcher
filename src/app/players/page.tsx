@@ -7,6 +7,7 @@ import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { ClientDate } from "@/components/ui/client-date-time";
+import { ChevronRightIcon } from "@/components/ui/icons";
 
 export default async function PlayerProfilePage() {
   const accountId = await getActivePlayerAccountId();
@@ -96,7 +97,7 @@ export default async function PlayerProfilePage() {
 
       <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
         <div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black uppercase">My Groups</h2><div className="flex gap-2"><Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link><Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link></div></div>
-        {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className="rounded-full border border-black bg-[#fde047] px-2 py-1 text-[9px] font-black uppercase">{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />}</div></li>)}</ul>}
+        {groups.length === 0 ? <p className="text-sm font-bold">You haven&apos;t joined any groups yet.</p> : <ul className="space-y-2">{groups.map((group) => <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold"><div><Link href={`/g/${group.id}`} className="block underline">{group.name}</Link><span className="text-xs text-neutral-600">{group.playerCount} players</span></div><div className="flex items-center gap-2">{(group.isHost || group.isOrganizer) && <span className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${group.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"}`}>{group.isHost ? "Host" : "Organizer"}</span>}{group.isMember && !group.isHost && <LeaveGroupButton groupId={group.id} groupName={group.name} />}</div></li>)}</ul>}
       </section>
 
       <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5">
@@ -130,9 +131,12 @@ export default async function PlayerProfilePage() {
                 </div>
                 <Link
                   href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform shrink-0"
+                  aria-label="Go to session"
+                  title="Go to session"
+                  className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
                 >
-                  Go to session
+                  <span className="sr-only">Go to session</span>
+                  <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
                 </Link>
               </article>
             );
