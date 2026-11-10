@@ -176,8 +176,9 @@ export default async function GroupDashboardPage({
             <Badge variant={group.isPublic ? "success" : "default"} data-testid="group-privacy-badge">
               {group.isPublic ? "Public Group" : "Private Group"}
             </Badge>
+            <span aria-hidden="true" className="text-xs font-bold text-neutral-400">·</span>
             <span className="text-xs font-bold text-neutral-600">
-              · {players.length} {players.length === 1 ? "player" : "players"} on roster
+              {players.length} {players.length === 1 ? "player" : "players"} on roster
             </span>
           </div>
           {!activeSession && isOrganizer && latestCompletedSession && (

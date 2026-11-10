@@ -291,7 +291,7 @@ test("host synergy follows current partners after manual swaps and new proposals
       names.push(name);
       await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(account.username);
       await page.getByRole("button", { name: "Add", exact: true }).click();
-      await expect(page.getByText(`${names.length} players on roster`, { exact: true })).toBeVisible();
+      await expect(page.getByText(new RegExp(`\\b${names.length} players on roster\\b`))).toBeVisible();
     }
   } finally {
     await otherContext.close();

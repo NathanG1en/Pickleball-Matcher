@@ -97,7 +97,7 @@ test.describe("Resilience and Safe Drafts", () => {
 
 test("guest roster form has accessible names and passes an accessibility audit", async ({ page }) => {
   await createTestGroup(page, `Guest accessibility ${Date.now()}`);
-  await expect(page.getByText("1 player on roster", { exact: true })).toBeVisible();
+  await expect(page.getByText(/\b1 player on roster\b/)).toBeVisible();
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Guest player name", exact: true })).toBeVisible();
   const skill = page.getByRole("slider", { name: "Guest Rating", exact: true });
@@ -112,7 +112,7 @@ test("guest roster form has accessible names and passes an accessibility audit",
     await page.locator(`[data-testid='rating-tick-${guest.tick}']`).click();
     await page.getByRole("textbox", { name: "Guest player name", exact: true }).fill(guest.name);
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    await expect(page.getByText(`${index + 2} players on roster`, { exact: true })).toBeVisible();
+    await expect(page.getByText(new RegExp(`\\b${index + 2} players on roster\\b`))).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: guest.name })).toContainText(guest.rating);
   }
 });

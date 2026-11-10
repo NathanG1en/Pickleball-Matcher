@@ -413,7 +413,7 @@ test.describe("Permissions and Security Workflow", () => {
     await removeGuestModal.locator("[data-testid='confirm-remove-guest-button']").click();
 
     await expect(removeGuestModal).not.toBeVisible();
-    await expect(page.locator("p[role='status']")).toContainText("Player removed from the group.");
+    await expect(page.locator("p[role='status']").filter({ hasText: "Player removed from the group." })).toContainText("Player removed from the group.");
     await expect(page.locator("li").filter({ hasText: "Sam Master" })).not.toBeVisible();
   });
 

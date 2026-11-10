@@ -238,6 +238,7 @@ export function GroupOrganizersPanel({
 
   const showToast = (msg: string) => {
     if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    setRosterMessage(null);
     setToast(msg);
     toastTimeoutRef.current = setTimeout(() => {
       setToast(null);
@@ -247,7 +248,14 @@ export function GroupOrganizersPanel({
 
   const setRosterStatus = (msg: string | null) => {
     setRosterMessage(msg);
-    if (msg) setAddError(null);
+    if (msg) {
+      setAddError(null);
+      if (toastTimeoutRef.current !== null) {
+        clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = null;
+      }
+      setToast(null);
+    }
   };
 
   useEffect(() => {
@@ -1159,7 +1167,7 @@ export function GroupOrganizersPanel({
           })}
         </ul>
       )}
-      {rosterMessage && <p role="status" className="text-xs font-bold">{rosterMessage}</p>}
+      {rosterMessage && <p role="status" data-testid="roster-status-message" className="text-xs font-bold">{rosterMessage}</p>}
       {linkingPlayer && (
         <LinkGuestModal
           key={linkingPlayer.id}
