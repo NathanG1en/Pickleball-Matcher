@@ -421,7 +421,7 @@ export function SessionManagerClient({
   };
 
   const increaseCourts = () => {
-    const maxCourts = Math.min(6, Math.max(1, Math.floor(presentCount / 2)));
+    const maxCourts = Math.min(32, Math.max(1, Math.floor(presentCount / 2)));
     if (courtConfigCourts < maxCourts) {
       const nextCourtIndex = courtConfigCourts;
       const currentCapacity = courtConfigPlayerCounts.slice(0, nextCourtIndex).reduce((sum, s) => sum + s, 0);
@@ -2907,7 +2907,7 @@ export function SessionManagerClient({
                   <button
                     type="button"
                     aria-label="Increase courts"
-                    disabled={courtConfigCourts >= Math.min(6, Math.max(1, Math.floor(presentCount / 2))) || isPending}
+                    disabled={courtConfigCourts >= Math.min(32, Math.max(1, Math.floor(presentCount / 2))) || isPending}
                     onClick={increaseCourts}
                     className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
                   >

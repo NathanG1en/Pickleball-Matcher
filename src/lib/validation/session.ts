@@ -15,8 +15,8 @@ export const updateStayTogetherPairsSchema = z.object({
 export const startSessionSchema = z
   .object({
     groupId: entityIdSchema,
-    courtCount: z.coerce.number().int().min(1).max(6),
-    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    courtCount: z.coerce.number().int().min(1).max(32),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(32).optional(),
     playerIds: z.array(entityIdSchema).min(2).max(128),
     stayTogetherPairs: stayTogetherPairsSchema.optional(),
     idempotencyKey: idempotencyKeySchema,
@@ -163,8 +163,8 @@ export const updateCourtConfigSchema = z
     groupId: entityIdSchema,
     sessionId: entityIdSchema,
     sessionVersion: aggregateVersionSchema,
-    courtCount: z.coerce.number().int().min(1).max(6),
-    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    courtCount: z.coerce.number().int().min(1).max(32),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(32).optional(),
     idempotencyKey: idempotencyKeySchema,
   })
   .strict()

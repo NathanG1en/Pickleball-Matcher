@@ -66,7 +66,7 @@ describe("Tournament UI Components", () => {
       expect(html).not.toContain("No Gender");
 
       // Add guest form
-      expect(html).toContain("Add guest player name...");
+      expect(html).toContain("Guest player name");
       expect(html).toContain('aria-label="Guest Gender"');
       expect(html).toContain("Guest Starting Rating");
 

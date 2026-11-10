@@ -41,7 +41,7 @@ export function AttendanceManager({
   players,
   selectedPlayerIds: initialSelected = [],
   courtCount: initialCourts,
-  maxCourts = 6,
+  maxCourts = 32,
   isEditingSession = false,
   isPending = false,
   submitLabel,

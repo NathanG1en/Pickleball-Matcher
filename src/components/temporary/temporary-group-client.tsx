@@ -722,7 +722,7 @@ export function TemporaryGroupClient({
               onChange={(event) => {
                 const value = event.target.value;
                 const count = value.split(/[\n,]/).map((name) => name.trim()).filter(Boolean).length;
-                const courts = count < 2 ? 1 : Math.min(6, Math.max(1, Math.floor(count / 4) + (count % 4 >= 2 ? 1 : 0)));
+                const courts = count < 2 ? 1 : Math.min(32, Math.max(1, Math.floor(count / 4) + (count % 4 >= 2 ? 1 : 0)));
                 updateDraft({ playerNames: value, courtCount: courts, courtSizes: defaultCourtSizes(count, courts) });
               }}
               placeholder="Alex&#10;Jamie&#10;Morgan&#10;Riley"
@@ -744,7 +744,7 @@ export function TemporaryGroupClient({
                 const count = Number(val);
                 updateDraft({ courtCount: count, courtSizes: defaultCourtSizes(parsedNames.length, count) });
               }}
-              options={Array.from({ length: Math.max(1, Math.min(6, Math.floor(parsedNames.length / 2))) }, (_, index) => index + 1).map((count) => ({
+              options={Array.from({ length: Math.max(1, Math.min(32, Math.floor(parsedNames.length / 2))) }, (_, index) => index + 1).map((count) => ({
                 value: String(count),
                 label: `${count} ${count === 1 ? "court" : "courts"}`,
               }))}

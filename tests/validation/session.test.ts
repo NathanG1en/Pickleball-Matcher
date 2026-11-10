@@ -167,17 +167,26 @@ describe("updateCourtConfigSchema", () => {
     expect(res.success).toBe(false);
   });
 
-  it("rejects invalid court count outside 1 to 6", () => {
+  it("rejects invalid court count outside 1 to 32", () => {
     expect(
       updateCourtConfigSchema.safeParse({ ...baseInput, courtCount: 0, courtPlayerCounts: [] }).success,
     ).toBe(false);
     expect(
       updateCourtConfigSchema.safeParse({
         ...baseInput,
-        courtCount: 7,
-        courtPlayerCounts: [4, 4, 4, 4, 4, 4, 4],
+        courtCount: 33,
+        courtPlayerCounts: Array.from({ length: 33 }, () => 4),
       }).success,
     ).toBe(false);
+  });
+
+  it("allows more than 6 courts when matching player counts", () => {
+    const res = updateCourtConfigSchema.safeParse({
+      ...baseInput,
+      courtCount: 8,
+      courtPlayerCounts: [4, 4, 4, 4, 4, 4, 4, 4],
+    });
+    expect(res.success).toBe(true);
   });
 
   it("rejects invalid player counts per court (not 2, 3, or 4)", () => {

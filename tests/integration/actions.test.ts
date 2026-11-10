@@ -84,7 +84,7 @@ describe("Server Actions Security and Validation", () => {
   it("validates input fields and returns typed errors on malformed payloads", async () => {
     const malformed = await startSessionAction({
       groupId: "group-1",
-      courtCount: 10, // Max allowed is 6
+      courtCount: 40, // Max allowed is 32
       playerIds: ["p1", "p2"], // Min is 4
       idempotencyKey: "",
     });

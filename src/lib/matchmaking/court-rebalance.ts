@@ -17,7 +17,7 @@ export interface CourtChoice {
 export function getCourtRebalanceChoices(
   presentCount: number,
   baseCourtCount: number = 2,
-  maxAvailableCourts: number = 6
+  maxAvailableCourts: number = 32
 ): CourtChoice[] {
   if (presentCount < 2) return [];
 
