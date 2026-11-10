@@ -136,6 +136,7 @@ describe("AttendanceManager Component", () => {
     expect(html).toContain('data-testid="toggle-add-guest"');
     expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-label="Guest player name"');
+    expect(html).toContain('placeholder="Guest player name"');
     expect(html).toContain('aria-label="Guest Gender"');
     expect(html).toContain('id="normal-session-guest-gender"');
     expect(html).toContain('aria-label="Guest Rating"');

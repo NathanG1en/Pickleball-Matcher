@@ -2511,30 +2511,32 @@ export function SessionManagerClient({
                             id="session-guest-name"
                             type="text"
                             aria-label="Guest player name"
-                            placeholder="Add guest or new player..."
+                            placeholder="Guest player name"
                             value={guestName}
                             onChange={(e) => setGuestName(e.target.value)}
-                            className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                           />
-                          <CustomDropdown
-                            id="session-guest-gender"
-                            ariaLabel="Guest Gender"
-                            value={guestGender}
-                            onChange={(val) => setGuestGender(val as "male" | "female")}
-                            options={[
-                              { value: "male", label: "Male" },
-                              { value: "female", label: "Female" },
-                            ]}
-                            sizeVariant="sm"
-                            className="shrink-0"
-                          />
-                          <button
-                            type="submit"
-                            disabled={!guestName.trim() || isAddingGuest}
-                            className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
-                          >
-                            {isAddingGuest ? "Adding..." : "Add"}
-                          </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <CustomDropdown
+                              id="session-guest-gender"
+                              ariaLabel="Guest Gender"
+                              value={guestGender}
+                              onChange={(val) => setGuestGender(val as "male" | "female")}
+                              options={[
+                                { value: "male", label: "Male" },
+                                { value: "female", label: "Female" },
+                              ]}
+                              sizeVariant="sm"
+                              className="flex-1 sm:flex-initial shrink-0"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!guestName.trim() || isAddingGuest}
+                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                            >
+                              {isAddingGuest ? "Adding..." : "Add"}
+                            </button>
+                          </div>
                         </div>
                         <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
                           <RatingSlider

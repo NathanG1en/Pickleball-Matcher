@@ -686,6 +686,7 @@ describe("SessionManagerClient Component", () => {
     expect(managerOpenGuestHtml).toContain('aria-expanded="true"');
     expect(managerOpenGuestHtml).toContain('id="session-guest-name"');
     expect(managerOpenGuestHtml).toContain('aria-label="Guest player name"');
+    expect(managerOpenGuestHtml).toContain('placeholder="Guest player name"');
     expect(managerOpenGuestHtml).toContain('data-testid="session-guest-rating"');
 
     const nonManagerHtml = renderToStaticMarkup(

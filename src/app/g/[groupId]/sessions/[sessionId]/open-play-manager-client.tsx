@@ -1608,30 +1608,32 @@ export function OpenPlayManagerClient({
                 <input
                   id="guest-name-input"
                   type="text"
-                  placeholder="Guest player name..."
+                  placeholder="Guest player name"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   className="flex-1 min-w-0 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 />
-                <CustomDropdown
-                  id="open-play-guest-gender"
-                  ariaLabel="Guest Gender"
-                  value={guestGender}
-                  onChange={(val) => setGuestGender(val as "male" | "female")}
-                  options={[
-                    { value: "male", label: "Male" },
-                    { value: "female", label: "Female" },
-                  ]}
-                  sizeVariant="sm"
-                  className="shrink-0"
-                />
-                <button
-                  type="submit"
-                  disabled={!guestName.trim() || isAddingGuest}
-                  className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
-                >
-                  {isAddingGuest ? "Adding..." : "Add"}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <CustomDropdown
+                    id="open-play-guest-gender"
+                    ariaLabel="Guest Gender"
+                    value={guestGender}
+                    onChange={(val) => setGuestGender(val as "male" | "female")}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                    ]}
+                    sizeVariant="sm"
+                    className="flex-1 sm:flex-initial shrink-0"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!guestName.trim() || isAddingGuest}
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                  >
+                    {isAddingGuest ? "Adding..." : "Add"}
+                  </button>
+                </div>
               </div>
 
               {/* Sliding Scale for Rating */}

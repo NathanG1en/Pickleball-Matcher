@@ -362,31 +362,33 @@ export function TournamentCreationForm({
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
-              placeholder="Add guest player name..."
+              placeholder="Guest player name"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+              className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
-            <CustomDropdown
-              id="tournament-guest-gender"
-              ariaLabel="Guest Gender"
-              value={guestGender}
-              onChange={(val) => setGuestGender(val as "male" | "female")}
-              options={[
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
-              ]}
-              sizeVariant="sm"
-              className="shrink-0"
-            />
-            <button
-              type="button"
-              onClick={handleAddGuest}
-              disabled={!guestName.trim()}
-              className="bg-[#ccff00] text-black font-black uppercase text-xs px-4 py-2 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all font-display tracking-wider"
-            >
-              Add
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <CustomDropdown
+                id="tournament-guest-gender"
+                ariaLabel="Guest Gender"
+                value={guestGender}
+                onChange={(val) => setGuestGender(val as "male" | "female")}
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+                sizeVariant="sm"
+                className="flex-1 sm:flex-initial shrink-0"
+              />
+              <button
+                type="button"
+                onClick={handleAddGuest}
+                disabled={!guestName.trim()}
+                className="bg-[#ccff00] text-black font-black uppercase text-xs px-4 py-2 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all font-display tracking-wider"
+              >
+                Add
+              </button>
+            </div>
           </div>
           <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
             <RatingSlider
