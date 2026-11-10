@@ -199,5 +199,75 @@ describe("AttendanceManager Component", () => {
 
     localStorage.removeItem("pickleball_pinned_players_group-1");
   });
+
+  it("automatically adds a court when 10 players are present for 2 courts", () => {
+    const tenPlayers = Array.from({ length: 10 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={tenPlayers}
+        selectedPlayerIds={tenPlayers.map((p) => p.id)}
+        courtCount={2}
+      />
+    );
+
+    // Court count automatically increases to 3 for 10 players (since 10 >= 2 * 4 + 2)
+    expect(html).toContain('aria-label="Court count"');
+    expect(html).toContain(">3</span>");
+    expect(html).toContain("Courts");
+    // Must NOT say "Odd Count Choice" for 10 players
+    expect(html).not.toContain("Odd Count Choice");
+  });
+
+  it("does not show 'Odd Count Choice' when player count is even", () => {
+    const sixPlayers = Array.from({ length: 6 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={sixPlayers}
+        selectedPlayerIds={sixPlayers.map((p) => p.id)}
+        courtCount={1}
+      />
+    );
+
+    // 6 players on 1 court automatically increases to 2 courts (6 >= 1 * 4 + 2)
+    expect(html).toContain(">2</span>");
+    expect(html).not.toContain("Odd Count Choice");
+  });
+
+  it("shows 'Odd Count Options' when player count is odd with multiple choices", () => {
+    const fivePlayers = Array.from({ length: 5 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={fivePlayers}
+        selectedPlayerIds={fivePlayers.map((p) => p.id)}
+        courtCount={1}
+      />
+    );
+
+    expect(html).toContain("Odd Count Options (5 Players):");
+    expect(html).toContain('data-testid="setup-preset-doubles_rotate"');
+    expect(html).toContain('data-testid="setup-preset-all_active"');
+  });
 });
+
 

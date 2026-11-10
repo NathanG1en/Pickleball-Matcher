@@ -1,7 +1,8 @@
 "use client";
 
 import type { StayTogetherPair } from "@/lib/matchmaking/types";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
@@ -38,7 +39,7 @@ export function AttendanceManager({
   groupId,
   players,
   selectedPlayerIds: initialSelected = [],
-  courtCount: initialCourts = 2,
+  courtCount: initialCourts,
   maxCourts = 6,
   isEditingSession = false,
   isPending = false,
@@ -68,12 +69,30 @@ export function AttendanceManager({
     [players, pinnedPlayerIds],
   );
   const initialSelectedCount = initialSelected.length || players.length;
-  const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
+  const initialIdealCourts = Math.min(
+    maxCourts,
+    Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0))
+  );
+  const defaultCourtCount = (() => {
+    if (initialCourts !== undefined) {
+      if (initialSelectedCount >= initialCourts * 4 + 2) {
+        return Math.min(maxCourts, Math.max(initialCourts + 1, initialIdealCourts));
+      }
+      return Math.min(maxCourts, Math.max(1, initialCourts));
+    }
+    return initialIdealCourts;
+  })();
+
   const [courts, setCourts] = useState<number>(defaultCourtCount);
   const [courtPlayerCounts, setCourtPlayerCounts] = useState<(2 | 3 | 4)[]>(() => {
     let remaining = initialSelectedCount;
-    return Array.from({ length: defaultCourtCount }, () => {
-      const size = Math.min(4, Math.max(2, remaining)) as 2 | 3 | 4;
+    return Array.from({ length: defaultCourtCount }, (_, idx) => {
+      const courtsLeft = defaultCourtCount - idx - 1;
+      const minNeededLater = courtsLeft * 2;
+      const maxPossibleLater = courtsLeft * 4;
+      const minThis = Math.max(2, remaining - maxPossibleLater);
+      const maxThis = Math.min(4, remaining - minNeededLater);
+      const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
       remaining -= size;
       return size;
     });
@@ -83,18 +102,85 @@ export function AttendanceManager({
   const [guestRating, setGuestRating] = useState<number>(3.5);
 
   const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
+
+  const handlePlayerCountChange = (newSelectedIds: Set<string>) => {
+    const newCount = newSelectedIds.size;
+    setSelectedIds(newSelectedIds);
+
+    // Automatically add court if there are at least 2 more people than the current courts allow
+    if (newCount >= courts * 4 + 2 && courts < Math.min(maxCourts, Math.floor(newCount / 2))) {
+      const ideal = Math.floor(newCount / 4) + (newCount % 4 >= 2 ? 1 : 0);
+      const targetCourts = Math.min(
+        Math.min(maxCourts, Math.floor(newCount / 2)),
+        Math.max(courts + 1, ideal)
+      );
+      setCourts(targetCourts);
+      setCourtPlayerCounts(() => {
+        let remaining = newCount;
+        return Array.from({ length: targetCourts }, (_, idx) => {
+          const courtsLeft = targetCourts - idx - 1;
+          const minNeededLater = courtsLeft * 2;
+          const maxPossibleLater = courtsLeft * 4;
+          const minThis = Math.max(2, remaining - maxPossibleLater);
+          const maxThis = Math.min(4, remaining - minNeededLater);
+          const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
+          remaining -= size;
+          return size;
+        });
+      });
+    } else if (courts > Math.max(1, Math.floor(newCount / 2))) {
+      const targetCourts = Math.max(1, Math.floor(newCount / 2));
+      setCourts(targetCourts);
+      setCourtPlayerCounts((prev) => prev.slice(0, targetCourts));
+    }
+  };
+
+  const prevPlayersRef = useRef(players);
+  useEffect(() => {
+    if (players.length > prevPlayersRef.current.length) {
+      const prevIds = new Set(prevPlayersRef.current.map((p) => p.id));
+      const newPlayerIds = players.filter((p) => !prevIds.has(p.id)).map((p) => p.id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of newPlayerIds) next.add(id);
+        const newCount = next.size;
+        if (newCount >= courts * 4 + 2 && courts < Math.min(maxCourts, Math.floor(newCount / 2))) {
+          const ideal = Math.floor(newCount / 4) + (newCount % 4 >= 2 ? 1 : 0);
+          const targetCourts = Math.min(
+            Math.min(maxCourts, Math.floor(newCount / 2)),
+            Math.max(courts + 1, ideal)
+          );
+          setCourts(targetCourts);
+          setCourtPlayerCounts(() => {
+            let remaining = newCount;
+            return Array.from({ length: targetCourts }, (_, idx) => {
+              const courtsLeft = targetCourts - idx - 1;
+              const minNeededLater = courtsLeft * 2;
+              const maxPossibleLater = courtsLeft * 4;
+              const minThis = Math.max(2, remaining - maxPossibleLater);
+              const maxThis = Math.min(4, remaining - minNeededLater);
+              const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
+              remaining -= size;
+              return size;
+            });
+          });
+        }
+        return next;
+      });
+    }
+    prevPlayersRef.current = players;
+  }, [players, courts, maxCourts]);
+
   const togglePlayer = (id: string) => {
-    if (selectedIds.has(id)) setStayTogetherPairs(pairs => pairs.filter(pair => !pair.includes(id)));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    if (selectedIds.has(id)) setStayTogetherPairs((pairs) => pairs.filter((pair) => !pair.includes(id)));
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    handlePlayerCountChange(next);
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(players.map((p) => p.id)));
+    handlePlayerCountChange(new Set(players.map((p) => p.id)));
   };
 
   const clearAll = () => {
@@ -103,14 +189,28 @@ export function AttendanceManager({
   };
 
   const decreaseCourts = () => {
-    if (courts > 1) setCourts((c) => c - 1);
+    if (courts > 1) {
+      const nextCourts = courts - 1;
+      setCourts(nextCourts);
+      setCourtPlayerCounts((previous) => {
+        if (nextCourts * 4 <= count) {
+          return Array.from({ length: nextCourts }, () => 4 as const);
+        }
+        return previous.slice(0, nextCourts);
+      });
+    }
   };
 
   const increaseCourts = () => {
     if (courts < Math.min(maxCourts, Math.floor(count / 2))) {
-      const nextSize: 2 | 3 | 4 = count >= (courts + 1) * 4 ? 4 : count >= (courts + 1) * 3 ? 3 : 2;
-      setCourts((c) => c + 1);
-      setCourtPlayerCounts((previous) => [...previous.slice(0, courts), nextSize]);
+      const nextCourts = courts + 1;
+      setCourts(nextCourts);
+      setCourtPlayerCounts((previous) => {
+        const currentCapacity = previous.slice(0, courts).reduce((sum, s) => sum + s, 0);
+        const rem = count - currentCapacity;
+        const nextSize: 2 | 3 | 4 = rem >= 4 ? 4 : rem >= 3 ? 3 : 2;
+        return [...previous.slice(0, courts), nextSize];
+      });
     }
   };
 
@@ -142,6 +242,16 @@ export function AttendanceManager({
   const capacity = courtPlayerCounts.slice(0, courts).reduce((sum, size) => sum + size, 0);
   const sittingCount = Math.max(0, count - capacity);
 
+  const rebalanceChoices = useMemo(() => {
+    return getCourtRebalanceChoices(count, courts, maxCourts);
+  }, [count, courts, maxCourts]);
+
+  const currentCourts = courtPlayerCounts.slice(0, courts);
+  const isChoiceCurrent = (choice: CourtChoice) =>
+    choice.courtCount === courts &&
+    choice.courts.length === currentCourts.length &&
+    choice.courts.every((s, i) => s === currentCourts[i]);
+
   return (
     <div className="attendance-manager space-y-6 pb-28 text-black">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -161,7 +271,7 @@ export function AttendanceManager({
                 type="button"
                 aria-label="Decrease courts"
                 disabled={courts <= 1}
-                onClick={() => { decreaseCourts(); setCourtPlayerCounts((previous) => previous.slice(0, -1)); }}
+                onClick={decreaseCourts}
                 className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
               >
                 -
@@ -209,47 +319,35 @@ export function AttendanceManager({
                 </div>
               ))}
             </div>
-            {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||
-              (courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity)) && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
-                <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCourtPlayerCounts((prev) => {
-                      let converted = false;
-                      return prev.map((s, idx) => {
-                        if (idx < courts && s === 2 && !converted) {
-                          converted = true;
-                          return 3;
-                        }
-                        return s;
-                      });
-                    })
-                  }
-                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                    courtPlayerCounts.slice(0, courts).some((s) => s === 3)
-                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  2v1 Match (No Sitters)
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCourtPlayerCounts((prev) =>
-                      prev.map((s, idx) => (idx < courts && s === 3 ? 2 : s))
-                    )
-                  }
-                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                    courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity
-                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  1v1 Singles (1 Sitter)
-                </button>
+            {rebalanceChoices.length > 1 && (
+              <div className="mt-4 p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
+                <span className="text-xs font-black uppercase text-neutral-700 block">
+                  {count % 2 !== 0 ? `Odd Count Options (${count} Players):` : `Quick Presets (${count} Players):`}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {rebalanceChoices.map((choice) => (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      onClick={() => {
+                        setCourts(choice.courtCount);
+                        setCourtPlayerCounts(choice.courts);
+                      }}
+                      data-testid={`setup-preset-${choice.id}`}
+                      className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
+                        isChoiceCurrent(choice)
+                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                          : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                        <span className="text-[10px] font-black">{choice.badge}</span>
+                      </div>
+                      <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
