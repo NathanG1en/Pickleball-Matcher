@@ -242,12 +242,15 @@ describe("Player View for Groups and Sessions", () => {
       const pageJsx = await GroupDashboardPage({ params: Promise.resolve({ groupId }) });
       const html = renderToStaticMarkup(pageJsx);
 
-      // Organizer controls visible
-      expect(html).toContain("Group ID");
-      expect(html).toContain("group-visibility-toggle");
+      // Organizer actions visible on dashboard
       expect(html).toContain("Start New Session");
       expect(html).toContain("Find player by username");
-      expect(html).toContain("Edit group name");
+      expect(html).toContain('aria-label="Group options"');
+      expect(html).toContain("data-testid=\"group-privacy-badge\"");
+
+      // Inline editing controls removed from main group header
+      expect(html).not.toContain("group-visibility-toggle");
+      expect(html).not.toContain("Edit group name");
     });
 
     it("displays active session and current matchups to members", async () => {

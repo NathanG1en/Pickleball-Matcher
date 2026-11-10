@@ -5,6 +5,7 @@ import {
   getActionRepository,
   getActiveOrganizerSession,
   getActivePlayerAccountId,
+  requireGroupPermission,
   requirePlayer,
 } from "@/app/actions/action-context";
 import {
@@ -13,6 +14,7 @@ import {
   removeGroupOrganizerSchema,
   removeGroupPlayerSchema,
   transferGroupHostSchema,
+  updateGroupOrganizersSchema,
 } from "@/lib/validation/group";
 
 export async function addGroupPlayerByUsernameAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
@@ -53,18 +55,19 @@ export async function addGroupOrganizerAction(input: unknown): Promise<{ ok: boo
   const parsed = addGroupOrganizerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a valid player username." };
   try {
-    const accountId = await requirePlayer();
+    const { group } = await requireGroupPermission(parsed.data.groupId, "manage_organizers");
     const repository = getActionRepository();
-    const group = await repository.getGroup(parsed.data.groupId);
-    if (!group || group.ownerAccountId !== accountId) return { ok: false, error: "Only the host can add organizers." };
     const player = (await repository.listPlayers(group.id)).find(({ id }) => id === parsed.data.playerId);
     if (!player?.accountId) return { ok: false, error: "This player must have an account to become an organizer." };
-    if (player.accountId === accountId) return { ok: false, error: "You are already the host." };
+    if (player.accountId === group.ownerAccountId) return { ok: false, error: "You are already the host." };
     await repository.addGroupOrganizer(group.id, player.accountId);
     revalidatePath(`/g/${group.id}`);
     revalidatePath("/players");
     return { ok: true };
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "Only the host can add organizers." };
+    }
     return { ok: false, error: "Unable to add this organizer." };
   }
 }
@@ -73,19 +76,54 @@ export async function removeGroupOrganizerAction(input: unknown): Promise<{ ok: 
   const parsed = removeGroupOrganizerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   try {
-    const accountId = await requirePlayer();
+    const { group } = await requireGroupPermission(parsed.data.groupId, "manage_organizers");
     const repository = getActionRepository();
-    const group = await repository.getGroup(parsed.data.groupId);
-    if (!group || group.ownerAccountId !== accountId) return { ok: false, error: "Only the host can remove organizers." };
     const player = (await repository.listPlayers(group.id)).find(({ id }) => id === parsed.data.playerId);
     if (!player?.accountId) return { ok: false, error: "This player does not have an organizer account." };
-    if (player.accountId === accountId) return { ok: false, error: "The host cannot be removed as an organizer." };
+    if (player.accountId === group.ownerAccountId) return { ok: false, error: "The host cannot be removed as an organizer." };
     await repository.removeGroupOrganizer(group.id, player.accountId);
     revalidatePath(`/g/${group.id}`);
     revalidatePath("/players");
     return { ok: true };
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "Only the host can remove organizers." };
+    }
     return { ok: false, error: "Unable to remove this organizer." };
+  }
+}
+
+export async function updateGroupOrganizersAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
+  const parsed = updateGroupOrganizersSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid organizers update." };
+  try {
+    const { group } = await requireGroupPermission(parsed.data.groupId, "manage_organizers");
+    const repository = getActionRepository();
+
+    if (group.ownerAccountId && parsed.data.removeAccountIds.includes(group.ownerAccountId)) {
+      return { ok: false, error: "The host cannot be removed as an organizer." };
+    }
+
+    for (const accountId of parsed.data.removeAccountIds) {
+      if (accountId !== group.ownerAccountId) {
+        await repository.removeGroupOrganizer(group.id, accountId);
+      }
+    }
+
+    for (const accountId of parsed.data.addAccountIds) {
+      if (accountId !== group.ownerAccountId) {
+        await repository.addGroupOrganizer(group.id, accountId);
+      }
+    }
+
+    revalidatePath(`/g/${group.id}`);
+    revalidatePath("/players");
+    return { ok: true };
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "You do not have permission to manage organizers." };
+    }
+    return { ok: false, error: "Unable to update organizers." };
   }
 }
 

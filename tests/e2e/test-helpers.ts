@@ -49,6 +49,28 @@ export async function createTestGroup(
   return { groupName, groupId, hostName: host.name, hostUsername: host.username };
 }
 
+/**
+ * Sets group visibility via the Group Settings modal.
+ */
+export async function setGroupVisibilityViaSettings(
+  page: Page,
+  isPublic: boolean,
+) {
+  await page.getByRole("button", { name: "Group options" }).click();
+  const modal = page.getByRole("dialog");
+  await expect(modal).toBeVisible();
+  const targetBtn = modal.getByTestId(
+    isPublic ? "group-settings-privacy-public-button" : "group-settings-privacy-private-button",
+  );
+  await targetBtn.click();
+  const saveBtn = modal.getByTestId("save-general-settings-button");
+  if (await saveBtn.isEnabled()) {
+    await saveBtn.click();
+  }
+  await modal.getByRole("button", { name: "Close settings dialog" }).click();
+  await expect(modal).not.toBeVisible();
+}
+
 /** Checks that replay is cosmetic, keyboard accessible, and never stacks motion. */
 export async function checkAnimationReplay(
   page: Page,

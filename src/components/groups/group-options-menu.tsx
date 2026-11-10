@@ -2,41 +2,66 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteGroupAction } from "@/app/actions/group-settings";
 import { leavePublicGroupAction } from "@/app/actions/player-account";
 import { removeRecentGroup } from "@/lib/storage/recent-groups";
-import { ShareGroupModal } from "@/components/groups/share-group-modal";
-import { ConfirmGroupNameModal } from "@/components/groups/confirm-group-name-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Trash2Icon, LogOutIcon } from "@/components/ui/icons";
+import { LogOutIcon } from "@/components/ui/icons";
+import { GroupSettingsModal } from "@/components/groups/group-settings/group-settings-modal";
+import type {
+  GroupOrganizerPermissions,
+  GroupOrganizerRecord,
+  PlayerRecord,
+} from "@/lib/domain/types";
+
+export interface GroupOptionsMenuProps {
+  groupId: string;
+  groupName: string;
+  isPublic?: boolean;
+  isHost?: boolean;
+  isAccountOrganizer?: boolean;
+  isOrganizer?: boolean;
+  organizerPermissions?: GroupOrganizerPermissions | null;
+  players?: readonly PlayerRecord[];
+  organizers?: readonly GroupOrganizerRecord[];
+  initialMenuOpen?: boolean;
+}
 
 export function GroupOptionsMenu({
   groupId,
   groupName,
+  isPublic = false,
+  isHost = false,
   isAccountOrganizer = false,
   isOrganizer = true,
+  organizerPermissions,
+  players = [],
+  organizers = [],
   initialMenuOpen = false,
-}: {
-  groupId: string;
-  groupName: string;
-  isAccountOrganizer?: boolean;
-  isOrganizer?: boolean;
-  initialMenuOpen?: boolean;
-}) {
+}: GroupOptionsMenuProps) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
+
+  // If user is organizer or host, clicking the three dots opens the Group Settings modal
+  const hasSettingsAccess = isOrganizer || isHost;
+
+  const [showSettingsModal, setShowSettingsModal] = useState(
+    hasSettingsAccess && initialMenuOpen,
+  );
+
+  // For regular members (non-organizer non-host), clicking three dots opens the Leave dropdown
+  const [menuOpen, setMenuOpen] = useState(!hasSettingsAccess && initialMenuOpen);
   const [openUpward, setOpenUpward] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletePending, setDeletePending] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leavePending, setLeavePending] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleToggleMenu = () => {
+  const handleClickButton = () => {
+    if (hasSettingsAccess) {
+      setShowSettingsModal(true);
+      return;
+    }
+
     setMenuOpen((prev) => {
       const next = !prev;
       if (next && menuRef.current) {
@@ -69,26 +94,6 @@ export function GroupOptionsMenu({
     };
   }, [menuOpen]);
 
-  const handleDelete = async (confirmationName: string) => {
-    if (confirmationName.trim() !== groupName.trim()) {
-      setDeleteError("Group name does not match.");
-      return;
-    }
-    setDeletePending(true);
-    setDeleteError(null);
-    const result = await deleteGroupAction({
-      groupId,
-      confirmationName,
-    });
-    if (result.ok) {
-      router.replace(isAccountOrganizer ? "/players" : "/");
-      router.refresh();
-    } else {
-      setDeleteError(result.error ?? "Unable to delete group.");
-      setDeletePending(false);
-    }
-  };
-
   const handleLeave = async () => {
     setLeavePending(true);
     setLeaveError(null);
@@ -107,15 +112,16 @@ export function GroupOptionsMenu({
     <div className="relative" ref={menuRef}>
       <button
         type="button"
-        onClick={handleToggleMenu}
+        onClick={handleClickButton}
         aria-label="Group options"
-        aria-expanded={menuOpen}
+        aria-expanded={hasSettingsAccess ? showSettingsModal : menuOpen}
         className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 transition-colors"
       >
         ···
       </button>
 
-      {menuOpen && (
+      {/* Member dropdown (Leave only) */}
+      {!hasSettingsAccess && menuOpen && (
         <div
           role="menu"
           aria-label="Group actions"
@@ -123,62 +129,41 @@ export function GroupOptionsMenu({
             openUpward ? "bottom-full mb-1.5 dropdown-animate-up" : "top-full mt-1.5 dropdown-animate"
           } z-40 w-[250px] max-w-[calc(100vw-32px)] rounded-[20px] border-[2.5px] border-black bg-[#FFFDF6] p-2 space-y-0.5`}
         >
-          {isOrganizer ? (
-            <button
-              type="button"
-              role="menuitem"
-              data-testid="delete-group-menu-item"
-              onClick={() => {
-                setMenuOpen(false);
-                setDeleteError(null);
-                setShowDeleteModal(true);
-              }}
-              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-[#E32929] hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
-            >
-              <Trash2Icon className="w-[18px] h-[18px] shrink-0 text-[#E32929] stroke-2" />
-              <span>Delete Group</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              role="menuitem"
-              data-testid="leave-group-menu-item"
-              onClick={() => {
-                setMenuOpen(false);
-                setLeaveError(null);
-                setShowLeaveModal(true);
-              }}
-              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-[#E32929] hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
-            >
-              <LogOutIcon className="w-[18px] h-[18px] shrink-0 text-[#E32929] stroke-2" />
-              <span>Leave</span>
-            </button>
-          )}
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="leave-group-menu-item"
+            onClick={() => {
+              setMenuOpen(false);
+              setLeaveError(null);
+              setShowLeaveModal(true);
+            }}
+            className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-[#E32929] hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+          >
+            <LogOutIcon className="w-[18px] h-[18px] shrink-0 text-[#E32929] stroke-2" />
+            <span>Leave</span>
+          </button>
         </div>
       )}
 
-      <ShareGroupModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        groupId={groupId}
-        groupName={groupName}
-      />
+      {/* Settings Modal for Host / Organizers */}
+      {hasSettingsAccess && (
+        <GroupSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          groupId={groupId}
+          initialGroupName={groupName}
+          initialIsPublic={isPublic}
+          isHost={isHost}
+          isOrganizer={isOrganizer}
+          isAccountOrganizer={isAccountOrganizer}
+          organizerPermissions={organizerPermissions}
+          players={players}
+          organizers={organizers}
+        />
+      )}
 
-      <ConfirmGroupNameModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDelete}
-        title="Delete Group"
-        description="You are about to delete the group. Are you sure? Enter in the name of the group to continue."
-        groupName={groupName}
-        confirmButtonText="Delete Group"
-        pendingButtonText="Deleting…"
-        confirmVariant="danger"
-        error={deleteError}
-        isPending={deletePending}
-        onClearError={() => setDeleteError(null)}
-      />
-
+      {/* Leave group confirmation dialog for members */}
       <ConfirmDialog
         isOpen={showLeaveModal}
         onClose={() => {
@@ -213,4 +198,3 @@ export function GroupOptionsMenu({
     </div>
   );
 }
-

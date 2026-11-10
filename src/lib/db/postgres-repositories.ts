@@ -1,11 +1,14 @@
 import type postgres from "postgres";
 
 import type { DomainRepository } from "@/lib/domain/repositories";
-import type {
-  AttendanceRecord,
-  PartnerRequestRecord,
-  GroupRecord,
-  GroupOrganizerRecord,
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import {
+  type AttendanceRecord,
+  type PartnerRequestRecord,
+  type GroupRecord,
+  type GroupOrganizerPermissions,
+  type GroupOrganizerRecord,
+  DEFAULT_GROUP_ORGANIZER_PERMISSIONS,
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
@@ -57,6 +60,7 @@ type GroupRow = {
   created_at: Date;
   is_public: boolean;
   owner_account_id: string | null;
+  organizer_permissions?: unknown;
 };
 
 type SessionRow = {
@@ -208,6 +212,7 @@ const mapGroup = (row: GroupRow): GroupRecord => ({
   createdAt: row.created_at,
   isPublic: row.is_public,
   ownerAccountId: row.owner_account_id,
+  organizerPermissions: parseGroupOrganizerPermissions(row.organizer_permissions),
 });
 
 const mapSession = (row: SessionRow): SessionRecord => ({
@@ -329,7 +334,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroup(groupId: string): Promise<GroupRecord | null> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id, organizer_permissions
       from groups where id = ${groupId}
     `;
     return rows[0] ? mapGroup(rows[0]) : null;
@@ -337,7 +342,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getGroupsByName(name: string): Promise<readonly GroupRecord[]> {
     const rows = await this.query<GroupRow[]>`
-      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id
+      select id, name, organizer_pin_hash, created_at, is_public, owner_account_id, organizer_permissions
       from groups where name = ${name.trim()}
     `;
     return rows.map(mapGroup);
@@ -914,6 +919,10 @@ export class PostgresRepositories implements DomainRepository {
     await this.query`update groups set name = ${name} where id = ${groupId}`;
   }
 
+  async updateGroupOrganizerPermissions(groupId: string, permissions: GroupOrganizerPermissions): Promise<void> {
+    await this.query`update groups set organizer_permissions = ${JSON.stringify(permissions)}::jsonb where id = ${groupId}`;
+  }
+
   async deleteGroup(groupId: string): Promise<void> {
     await this.query`delete from groups where id = ${groupId}`;
   }
@@ -999,9 +1008,10 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async insertGroup(group: GroupRecord): Promise<void> {
+    const permissions = JSON.stringify(group.organizerPermissions ?? DEFAULT_GROUP_ORGANIZER_PERMISSIONS);
     await this.query`
-      insert into groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id)
-      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.createdAt}, ${group.isPublic ?? false}, ${group.ownerAccountId ?? null})
+      insert into groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id, organizer_permissions)
+      values (${group.id}, ${group.name}, ${group.organizerPinHash}, ${group.createdAt}, ${group.isPublic ?? false}, ${group.ownerAccountId ?? null}, ${permissions}::jsonb)
     `;
   }
 

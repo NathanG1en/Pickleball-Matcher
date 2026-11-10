@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createAndSignInPlayer, createTestGroup } from "./test-helpers";
+import { createAndSignInPlayer, createTestGroup, setGroupVisibilityViaSettings } from "./test-helpers";
 
 test.describe("Permissions and Security Workflow", () => {
   test("organizers can rename guests but cannot inject a starting-rating correction", async ({ page }) => {
@@ -616,30 +616,26 @@ test("does not include groups in recent groups if player is not part of them eve
   const groupName = `Public Recent Test ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  // Group starts as Private in toggle with info tooltip
-  const privateToggleBtn = page.getByRole("button", { name: "Private", exact: true });
-  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
+  // Group starts as Private indicated by badge on header
+  await expect(page.getByTestId("group-privacy-badge")).toContainText("Private Group");
+
+  // Open Group Settings modal
+  await page.getByRole("button", { name: "Group options" }).click();
+  const modal = page.getByRole("dialog");
+  await expect(modal).toBeVisible();
+
+  const privateToggleBtn = modal.getByTestId("group-settings-privacy-private-button");
+  const publicToggleBtn = modal.getByTestId("group-settings-privacy-public-button");
   await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "true");
   await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "false");
 
-  const infoBtn = page.getByTestId("group-visibility-info-button");
-  await expect(infoBtn).toBeVisible();
-
-  // Focus to display tooltip
-  await infoBtn.focus();
-  const tooltip = page.getByTestId("group-visibility-tooltip");
-  await expect(tooltip).toBeVisible();
-  await expect(tooltip).toContainText("Players can find and join this group");
-  await expect(tooltip).toContainText("This group is private and hidden from search");
-
-  // Blur hides tooltip
-  await infoBtn.blur();
-  await expect(tooltip).toBeHidden();
-
-  // Toggle to Public
+  // Toggle to Public and save
   await publicToggleBtn.click();
   await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
   await expect(privateToggleBtn).toHaveAttribute("aria-pressed", "false");
+  await modal.getByTestId("save-general-settings-button").click();
+  await modal.getByRole("button", { name: "Close settings dialog" }).click();
+  await expect(page.getByTestId("group-privacy-badge")).toContainText("Public Group");
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -676,9 +672,7 @@ test("non-host member can leave a group from group dashboard via three dots menu
   const groupName = `Leave From Group Dashboard ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
-  await publicToggleBtn.click();
-  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await setGroupVisibilityViaSettings(page, true);
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -734,9 +728,7 @@ test("non-host member can leave a group from find groups page with confirmation 
   const groupName = `Leave From Find Groups ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
-  await publicToggleBtn.click();
-  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await setGroupVisibilityViaSettings(page, true);
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();
@@ -800,9 +792,7 @@ test("profile page groups list shows chevron link navigating to group and does n
   const groupName = `Profile Chevron Nav ${Date.now()}`;
   const { groupId } = await createTestGroup(page, groupName);
 
-  const publicToggleBtn = page.getByRole("button", { name: "Public", exact: true });
-  await publicToggleBtn.click();
-  await expect(publicToggleBtn).toHaveAttribute("aria-pressed", "true");
+  await setGroupVisibilityViaSettings(page, true);
 
   const playerContext = await browser.newContext();
   const playerPage = await playerContext.newPage();

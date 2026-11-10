@@ -3,6 +3,7 @@ import type {
   AttendanceRecord,
   PartnerRequestRecord,
   GroupRecord,
+  GroupOrganizerPermissions,
   GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -471,6 +472,14 @@ export class InMemoryRepositories implements DomainRepository {
     const group = this.state.groups.find((item) => item.id === groupId);
     if (group) {
       this.state.groups = this.state.groups.map((item) => item.id === groupId ? { ...item, name } : item);
+      this.writeCount += 1;
+    }
+  }
+
+  async updateGroupOrganizerPermissions(groupId: string, permissions: GroupOrganizerPermissions) {
+    const group = this.state.groups.find((item) => item.id === groupId);
+    if (group) {
+      this.state.groups = this.state.groups.map((item) => item.id === groupId ? { ...item, organizerPermissions: permissions } : item);
       this.writeCount += 1;
     }
   }

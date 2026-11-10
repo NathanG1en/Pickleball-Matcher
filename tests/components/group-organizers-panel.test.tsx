@@ -16,7 +16,9 @@ import {
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
-import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import type { GroupOrganizerPermissionKey, GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import { AuthorizationError } from "@/lib/auth/authorize";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -35,11 +37,55 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
   const mockGetActivePlayerAccountId = vi.fn();
   const mockGetActiveOrganizerSession = vi.fn();
+  const mockRequirePlayer = vi.fn();
   return {
     ...actual,
     getActivePlayerAccountId: mockGetActivePlayerAccountId,
     getActiveOrganizerSession: mockGetActiveOrganizerSession,
-    requirePlayer: vi.fn(),
+    requirePlayer: mockRequirePlayer,
+    requireGroupPermission: vi.fn(async (groupId: string, permission: GroupOrganizerPermissionKey) => {
+      const repository = actual.getActionRepository();
+      const group = await repository.getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      let accountId: string | null = null;
+      try {
+        accountId = (await mockRequirePlayer()) ?? null;
+      } catch {
+        accountId = null;
+      }
+      if (!accountId) {
+        try {
+          accountId = (await mockGetActivePlayerAccountId()) ?? null;
+        } catch {
+          accountId = null;
+        }
+      }
+      const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+      if (isHost) return { group, accountId, isHost: true };
+      const isOrg = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
+      const session = await mockGetActiveOrganizerSession();
+      const isSessionOrg = Boolean(session && session.groupId === groupId);
+      if (!isOrg && !isSessionOrg) throw new AuthorizationError();
+      const perms = parseGroupOrganizerPermissions(group.organizerPermissions);
+      if (!perms[permission]) throw new AuthorizationError();
+      return { group, accountId, isHost: false };
+    }),
+    requireGroupHost: vi.fn(async (groupId: string) => {
+      let accountId: string | null = null;
+      try {
+        accountId = (await mockRequirePlayer()) ?? (await mockGetActivePlayerAccountId()) ?? null;
+      } catch {
+        accountId = null;
+      }
+      if (!accountId) throw new Error("Not signed in");
+      const repository = actual.getActionRepository();
+      const group = await repository.getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      if (group.ownerAccountId !== accountId) {
+        throw new AuthorizationError();
+      }
+      return { group, accountId };
+    }),
     requireOrganizer: vi.fn(async (groupId: string) => {
       const accountId = await mockGetActivePlayerAccountId();
       if (accountId && (await actual.getActionRepository().isGroupOrganizer(groupId, accountId))) {

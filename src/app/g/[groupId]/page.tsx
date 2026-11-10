@@ -10,12 +10,9 @@ import {
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { Badge } from "@/components/ui/badge";
 import { ClientDate } from "@/components/ui/client-date-time";
-import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
-import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
-import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
@@ -156,38 +153,37 @@ export default async function GroupDashboardPage({
           <BackButton href={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
-            {isOrganizer ? (
+            {isOrganizer || (isMember && accountId && !isHost) ? (
               <GroupOptionsMenu
                 groupId={groupId}
                 groupName={group.name}
+                isPublic={group.isPublic === true}
+                isHost={isHost}
                 isAccountOrganizer={isAccountOrganizer}
-                isOrganizer={true}
-              />
-            ) : isMember && accountId && !isHost ? (
-              <GroupOptionsMenu
-                groupId={groupId}
-                groupName={group.name}
-                isAccountOrganizer={false}
-                isOrganizer={false}
+                isOrganizer={isOrganizer}
+                organizerPermissions={group.organizerPermissions}
+                players={players}
+                organizers={organizers}
               />
             ) : null}
           </div>
         </div>
-        <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs font-bold text-neutral-600">
-            {players.length} {players.length === 1 ? "player" : "players"} on roster
-          </p>
+        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight truncate">
+          {group.name}
+        </h1>
+        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant={group.isPublic ? "success" : "default"} data-testid="group-privacy-badge">
+              {group.isPublic ? "Public Group" : "Private Group"}
+            </Badge>
+            <span className="text-xs font-bold text-neutral-600">
+              · {players.length} {players.length === 1 ? "player" : "players"} on roster
+            </span>
+          </div>
           {!activeSession && isOrganizer && latestCompletedSession && (
             <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
           )}
         </div>
-        {isOrganizer && (
-          <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
-        )}
-
-        {isOrganizer && <GroupIdReveal groupId={groupId} />}
-
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
