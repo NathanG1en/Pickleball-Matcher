@@ -75,13 +75,21 @@ export async function createResilienceFixture(page: Page, sql: postgres.Sql): Pr
     has: page.getByRole("link", { name: `@res_${suffix}_1`, exact: true }),
   });
   await secondary.locator("summary").click();
-  await secondary.getByRole("button", { name: "Make a group organizer", exact: true }).click();
+  await secondary.locator("button:has-text('Make a group organizer')").click();
   await expect(page.getByRole("status")).toContainText("Player is now a group organizer.");
   await page.getByTestId("start-new-session-button").click();
   await page.getByTestId("select-normal-session-button").click();
-  // The existing setup defaults to two courts. Explicitly exercise THREE doubles courts.
-  await page.getByRole("button", { name: "Increase courts", exact: true }).click();
-  await expect(page.getByLabel("Court count", { exact: true })).toHaveText("3");
+  // Ensure session has THREE doubles courts.
+  const courtDisplay = page.getByLabel("Court count", { exact: true });
+  while ((await courtDisplay.textContent()) !== "3") {
+    const current = Number(await courtDisplay.textContent());
+    if (current < 3) {
+      await page.getByRole("button", { name: "Increase courts", exact: true }).click();
+    } else {
+      await page.getByRole("button", { name: "Decrease courts", exact: true }).click();
+    }
+  }
+  await expect(courtDisplay).toHaveText("3");
   await page.getByTestId("continue-to-pairings-button").click();
   await page.getByRole("button", { name: "Start Session", exact: true }).click();
   await expect(page).toHaveURL(/\/sessions\/session_/);
