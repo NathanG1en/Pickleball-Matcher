@@ -168,7 +168,7 @@ describe("AttendanceManager Component", () => {
     localStorage.removeItem("pickleball_pinned_players_group-1");
   });
 
-  it("moves selected players to top of pinned tier and above nonpinned in the roster grid", () => {
+  it("preserves alphabetical order in the roster grid without pushing selected players to the top", () => {
     // Pin Alice (p1) and Bob (p2)
     localStorage.setItem("pickleball_pinned_players_group-1", JSON.stringify(["p1", "p2"]));
 
@@ -182,20 +182,20 @@ describe("AttendanceManager Component", () => {
       />
     );
 
-    const bobIndex = html.indexOf('data-testid="player-card-Bob"');
     const aliceIndex = html.indexOf('data-testid="player-card-Alice"');
-    const dianaIndex = html.indexOf('data-testid="player-card-Diana"');
+    const bobIndex = html.indexOf('data-testid="player-card-Bob"');
     const charlieIndex = html.indexOf('data-testid="player-card-Charlie"');
+    const dianaIndex = html.indexOf('data-testid="player-card-Diana"');
     const evanIndex = html.indexOf('data-testid="player-card-Evan"');
 
-    // 1. Bob (pinned & selected) is at the top of pinned
-    expect(bobIndex).toBeLessThan(aliceIndex);
-    // 2. Alice (pinned & unselected) is below selected pinned, but above unpinned
-    expect(aliceIndex).toBeLessThan(dianaIndex);
-    // 3. Diana (unpinned & selected) is above unpinned unselected
-    expect(dianaIndex).toBeLessThan(charlieIndex);
-    // 4. Charlie & Evan (unpinned & unselected, alphabetical)
-    expect(charlieIndex).toBeLessThan(evanIndex);
+    // 1. Pinned tier stays alphabetical: Alice before Bob (even though Bob is selected)
+    expect(aliceIndex).toBeLessThan(bobIndex);
+    // 2. Pinned tier comes before unpinned tier: Bob before Charlie
+    expect(bobIndex).toBeLessThan(charlieIndex);
+    // 3. Unpinned tier stays alphabetical: Charlie before Diana (even though Diana is selected)
+    expect(charlieIndex).toBeLessThan(dianaIndex);
+    // 4. Diana before Evan (alphabetical)
+    expect(dianaIndex).toBeLessThan(evanIndex);
 
     localStorage.removeItem("pickleball_pinned_players_group-1");
   });

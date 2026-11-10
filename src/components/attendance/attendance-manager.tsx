@@ -54,8 +54,8 @@ export function AttendanceManager({
   );
 
   const sortedPlayers = useMemo(
-    () => sortPlayersWithPinned(players, pinnedPlayerIds, selectedIds),
-    [players, pinnedPlayerIds, selectedIds],
+    () => sortPlayersWithPinned(players, pinnedPlayerIds),
+    [players, pinnedPlayerIds],
   );
 
   const displayedPlayers = useMemo(() => {
