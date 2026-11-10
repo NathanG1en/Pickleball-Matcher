@@ -155,6 +155,7 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(charlieLeftBtn).toBeEnabled({ timeout: 15000 });
     await charlieLeftBtn.click();
     await expect(charlieRow.getByTestId("attendance-left-Charlie")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-testid='guided-court-choice-card']")).toBeVisible();
 
     // Toggle Charlie back to Present
     await charlieRow.locator("button:has-text('Present')").click();

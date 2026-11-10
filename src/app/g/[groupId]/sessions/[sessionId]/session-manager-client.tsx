@@ -20,6 +20,7 @@ import {
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
+import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
 import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
@@ -398,6 +399,61 @@ export function SessionManagerClient({
   const configCapacity = courtConfigPlayerCounts.slice(0, courtConfigCourts).reduce((sum, s) => sum + s, 0);
   const configSitting = Math.max(0, presentCount - configCapacity);
   const isOverCapacity = configCapacity > presentCount;
+
+  const [showAttendanceRebalancePrompt, setShowAttendanceRebalancePrompt] = useState(false);
+
+  const baseCourtCount = Math.max(1, currentSession.courtCount);
+  const rebalanceChoices = useMemo(() => {
+    return getCourtRebalanceChoices(presentCount, baseCourtCount, 6);
+  }, [presentCount, baseCourtCount]);
+
+  const currentCourts = courtConfigPlayerCounts.slice(0, courtConfigCourts);
+  const isChoiceCurrent = (choice: CourtChoice) =>
+    choice.courtCount === courtConfigCourts &&
+    choice.courts.length === currentCourts.length &&
+    choice.courts.every((s, i) => s === currentCourts[i]);
+
+  const shouldShowRebalancePrompt =
+    (isOverCapacity || showAttendanceRebalancePrompt) &&
+    rebalanceChoices.length > 0 &&
+    (!rebalanceChoices.every((c) => isChoiceCurrent(c)) || isOverCapacity);
+
+  const handleApplyCourtChoice = (choice: CourtChoice) => {
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      setCourtConfigMessage(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: choice.courtCount,
+          courtPlayerCounts: choice.courts,
+          idempotencyKey: createIdempotencyKey("court_rebal"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          setCourtConfigCourts(choice.courtCount);
+          setCourtConfigPlayerCounts(choice.courts);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          setShowAttendanceRebalancePrompt(false);
+          showToast(`Courts updated for ${presentCount} players!`);
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
+      }
+    });
+  };
 
   const handleSaveCourtConfig = () => {
     // The action result and its revalidated server tree can commit separately.
@@ -1227,6 +1283,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`att_${playerId}`),
       });
       if (res.ok) {
+        setShowAttendanceRebalancePrompt(true);
         setCurrentAttendance((prev) => {
           const exists = prev.find((a) => a.playerId === playerId);
           if (!exists) {
@@ -1276,6 +1333,7 @@ export function SessionManagerClient({
       });
 
       if (res.ok) {
+        setShowAttendanceRebalancePrompt(true);
         const newPlayer = res.data;
         setSessionPlayers((prev) => [...prev, newPlayer]);
         setCurrentAttendance((prev) => [
@@ -1643,7 +1701,75 @@ export function SessionManagerClient({
         </header>
       )}
 
-      {!activeProposal && initialProposalError && !error && <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>}
+      {!activeProposal && initialProposalError && !error && !isOverCapacity && (
+        <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>
+      )}
+      {isOverCapacity && canManage && rebalanceChoices.length > 0 && (
+        <div
+          data-testid="main-guided-court-choice-card"
+          className="rounded-2xl border-2 border-black bg-amber-50 p-4 sm:p-5 shadow-[4px_4px_0px_0px_#000] space-y-3.5"
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <h4 className="font-display text-sm sm:text-base font-black uppercase tracking-wider text-black">
+                Courts Need Adjustment ({presentCount} Present Players)
+              </h4>
+            </div>
+            <p className="text-xs sm:text-sm font-bold text-amber-950 mt-1">
+              Your court configuration ({configCapacity} spots) exceeds the {presentCount} currently present players. Pick a setup to continue:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {rebalanceChoices.map((choice) => (
+              <button
+                key={choice.id}
+                type="button"
+                onClick={() => handleApplyCourtChoice(choice)}
+                disabled={isPending || isCourtConfigPending}
+                data-testid={`main-guided-choice-${choice.id}`}
+                className="text-left p-3.5 rounded-xl border-2 border-black bg-white hover:bg-[#ccff00]/20 hover:border-black transition-all flex flex-col justify-between gap-2.5 cursor-pointer shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                    <span className="font-display text-sm font-black uppercase text-black">
+                      {choice.title}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-black ${
+                        choice.sitting === 0
+                          ? "bg-[#ccff00] text-black"
+                          : "bg-amber-100 text-amber-950"
+                      }`}
+                    >
+                      {choice.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-neutral-800">{choice.summary}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-600 pt-2 border-t border-neutral-200">
+                  <span>{choice.details}</span>
+                  <span className="font-black text-black">Apply &amp; Generate →</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setModalTab("court_config");
+                setShowSessionSettingsModal(true);
+              }}
+              className="text-xs font-black uppercase text-neutral-800 hover:text-black underline cursor-pointer"
+            >
+              Customize court sizes manually →
+            </button>
+          </div>
+        </div>
+      )}
       {activeProposal?.sitting.length === 1 && (currentSession.stayTogetherPairs ?? []).some(pair => pair.includes(activeProposal.sitting[0]) && pair.every(id => currentAttendance.some(a => a.playerId === id && a.leftRound === null))) && <p role="status" className="rounded-xl border-2 border-black bg-amber-50 p-3 text-sm font-bold">{playerNames[activeProposal.sitting[0]]} is sitting this round to rotate playing time. Their Stay Together pairing is saved for later rounds.</p>}
       {error && (
         <div role="alert" className="p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
@@ -2407,6 +2533,93 @@ export function SessionManagerClient({
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {shouldShowRebalancePrompt && canManage && (
+                      <div
+                        data-testid="guided-court-choice-card"
+                        className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000] space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-base">⚡</span>
+                              <h4 className="font-display text-xs font-black uppercase tracking-wider text-black">
+                                {isOverCapacity ? "Courts Over Capacity" : "Update Court Setup"} ({presentCount} Present)
+                              </h4>
+                            </div>
+                            <p className="text-xs font-bold text-neutral-600 mt-0.5">
+                              {isOverCapacity
+                                ? `Current courts (${configCapacity} players) exceed present players (${presentCount}). Choose a setup:`
+                                : `Attendance changed. Adjust courts for ${presentCount} players:`}
+                            </p>
+                          </div>
+                          {!isOverCapacity && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAttendanceRebalancePrompt(false)}
+                              className="text-neutral-400 hover:text-black font-black text-xs p-1 cursor-pointer"
+                              aria-label="Dismiss court recommendation"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {rebalanceChoices.map((choice) => {
+                            const isCurrent = isChoiceCurrent(choice);
+                            return (
+                              <button
+                                key={choice.id}
+                                type="button"
+                                onClick={() => handleApplyCourtChoice(choice)}
+                                disabled={isPending || isCourtConfigPending || isCurrent}
+                                data-testid={`guided-choice-${choice.id}`}
+                                className={`text-left p-3 rounded-xl border-2 border-black transition-all flex flex-col justify-between gap-2 shadow-[2px_2px_0px_0px_#000] ${
+                                  isCurrent
+                                    ? "bg-neutral-100 opacity-60 cursor-default"
+                                    : "bg-white hover:bg-[#ccff00]/10 hover:border-black cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                    <span className="font-display text-xs font-black uppercase text-black">
+                                      {choice.title}
+                                    </span>
+                                    <span
+                                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-black ${
+                                        choice.sitting === 0
+                                          ? "bg-[#ccff00] text-black"
+                                          : "bg-amber-100 text-amber-950"
+                                      }`}
+                                    >
+                                      {choice.badge}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-bold text-neutral-700">{choice.summary}</p>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-200">
+                                  <span>{choice.details}</span>
+                                  <span className="font-black text-black">
+                                    {isCurrent ? "✓ Current" : "Apply →"}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setModalTab("court_config")}
+                            className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer"
+                            data-testid="customize-courts-link"
+                          >
+                            Customize court sizes manually →
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {/* Present Section */}
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between pb-1.5 border-b-2 border-black">
@@ -2705,49 +2918,37 @@ export function SessionManagerClient({
                   ))}
                 </div>
 
-                {(courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3) ||
-                  (courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity)) && (
-                  <div className="flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
-                    <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() =>
-                        setCourtConfigPlayerCounts((prev) => {
-                          let converted = false;
-                          return prev.map((s, idx) => {
-                            if (idx < courtConfigCourts && s === 2 && !converted) {
-                              converted = true;
-                              return 3;
-                            }
-                            return s;
-                          });
-                        })
-                      }
-                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3)
-                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                          : "bg-white text-neutral-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      2v1 Match (No Sitters)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() =>
-                        setCourtConfigPlayerCounts((prev) =>
-                          prev.map((s, idx) => (idx < courtConfigCourts && s === 3 ? 2 : s))
-                        )
-                      }
-                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity
-                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                          : "bg-white text-neutral-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      1v1 Singles (1 Sitter)
-                    </button>
+                {rebalanceChoices.length > 0 && (
+                  <div className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
+                    <span className="text-xs font-black uppercase text-neutral-700 block">
+                      Quick Presets ({presentCount} Present):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {rebalanceChoices.map((choice) => (
+                        <button
+                          key={choice.id}
+                          type="button"
+                          disabled={isPending || isCourtConfigPending}
+                          onClick={() => {
+                            setCourtConfigCourts(choice.courtCount);
+                            setCourtConfigPlayerCounts(choice.courts);
+                            setCourtConfigMessage(null);
+                          }}
+                          data-testid={`preset-choice-${choice.id}`}
+                          className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
+                            isChoiceCurrent(choice)
+                              ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                              : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                            <span className="text-[10px] font-black">{choice.badge}</span>
+                          </div>
+                          <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
