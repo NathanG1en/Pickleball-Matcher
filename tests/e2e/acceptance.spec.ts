@@ -52,10 +52,15 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     // Select Normal Session format
     await page.click("button[data-testid='select-normal-session-button']");
 
-    // Increase courts to 3
+    // Adjust courts to 3
     const courtDisplay = page.locator("span[aria-label='Court count']");
     while ((await courtDisplay.textContent()) !== "3") {
-      await page.click("button[aria-label='Increase courts']");
+      const current = Number(await courtDisplay.textContent());
+      if (current < 3) {
+        await page.click("button[aria-label='Increase courts']");
+      } else {
+        await page.click("button[aria-label='Decrease courts']");
+      }
     }
 
     // Verify 14 players selected

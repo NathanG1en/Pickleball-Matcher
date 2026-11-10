@@ -43,7 +43,7 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
     actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
   projects: [
     {

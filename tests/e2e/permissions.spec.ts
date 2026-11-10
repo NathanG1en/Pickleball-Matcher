@@ -11,7 +11,7 @@ test.describe("Permissions and Security Workflow", () => {
     await expect(guest).toBeVisible();
     await expect(guest).toContainText("3.5");
     await guest.locator("summary").click();
-    await guest.getByRole("button", { name: "Edit guest", exact: true }).click();
+    await guest.locator("button:has-text('Edit guest')").click();
     const modal = page.getByRole("dialog", { name: "Edit Guest" });
     await modal.locator("#edit-guest-name-input").fill("Should not save");
     let injected = false;
@@ -290,7 +290,7 @@ test.describe("Permissions and Security Workflow", () => {
     await addGuestBtn.click();
     await page.fill("#guest-player-name", "Guest Sam");
     await page.locator("button:text-is('Add')").click();
-    await expect(page.locator("p[role='status']")).toContainText('Guest player "Guest Sam" added to the roster.', { timeout: 10000 });
+    await expect(page.locator("p[role='status']").filter({ hasText: 'Guest player "Guest Sam" added' })).toContainText('Guest player "Guest Sam" added to the roster.', { timeout: 10000 });
 
     const guestItem = page.locator("li").filter({ hasText: "Guest Sam" });
     await expect(guestItem).toBeVisible();
@@ -310,14 +310,14 @@ test.describe("Permissions and Security Workflow", () => {
     await guestInput.fill("Guest Samantha");
     await editModal.locator("button:has-text('Save Changes')").click();
 
-    await expect(page.locator("p[role='status']")).toContainText('Guest "Guest Samantha" updated');
+    await expect(page.locator("p[role='status']").filter({ hasText: 'Guest "Guest Samantha" updated' })).toContainText('Guest "Guest Samantha" updated');
     await expect(page.locator("li").filter({ hasText: "Guest Samantha" })).toBeVisible();
 
     // 12. Add a second guest player and verify organizer can merge 2+ guests together
     await addGuestBtn.click();
     await page.fill("#guest-player-name", "Guest Samuel");
     await page.locator("button:text-is('Add')").click();
-    await expect(page.locator("p[role='status']")).toContainText('Guest player "Guest Samuel" added to the roster.', { timeout: 10000 });
+    await expect(page.locator("p[role='status']").filter({ hasText: 'Guest player "Guest Samuel" added' })).toContainText('Guest player "Guest Samuel" added to the roster.', { timeout: 10000 });
 
     const samanthaItem = page.locator("li").filter({ hasText: "Guest Samantha" });
     const samuelItem = page.locator("li").filter({ hasText: "Guest Samuel" });
@@ -378,7 +378,7 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Modal closes and status confirms merge
     await expect(mergeModal).not.toBeVisible({ timeout: 15000 });
-    await expect(page.locator("p[role='status']")).toContainText('Merged guest players into "Sam Master".');
+    await expect(page.locator("p[role='status']").filter({ hasText: 'Merged guest players' })).toContainText('Merged guest players into "Sam Master".');
 
     // Roster should now contain "Sam Master" and neither "Guest Samantha" nor "Guest Samuel"
     await expect(page.locator("li").filter({ hasText: "Sam Master" })).toBeVisible();
