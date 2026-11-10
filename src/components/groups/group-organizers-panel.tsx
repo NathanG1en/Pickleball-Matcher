@@ -376,7 +376,6 @@ export function GroupOrganizersPanel({
     setGuestSaving(true);
     setAddError(null);
     const ratingToAdd = guestRating;
-    setGuestRating(3.5);
     try {
       const res = await createPlayerAction({
         groupId,
@@ -389,6 +388,7 @@ export function GroupOrganizersPanel({
         showToast(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
         setGuestGender("male");
+        setGuestRating(3.5);
         router.refresh();
       } else {
         setAddError(res.error ?? "Failed to add guest player.");

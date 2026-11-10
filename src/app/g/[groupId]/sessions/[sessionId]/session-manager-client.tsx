@@ -1288,6 +1288,7 @@ export function SessionManagerClient({
           },
         ]);
         setGuestName("");
+        setGuestGender("male");
         setGuestRating(3.5);
         showToast(`Added ${newPlayer.name} to session!`);
       } else {

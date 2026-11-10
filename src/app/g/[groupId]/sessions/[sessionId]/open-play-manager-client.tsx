@@ -559,8 +559,6 @@ export function OpenPlayManagerClient({
     setError(null);
     const ratingToAdd = guestRating;
     const genderToAdd = guestGender;
-    setGuestRating(3.5);
-    setGuestGender("male");
     try {
       const res = await addOpenPlayGuestAction({
         groupId,
@@ -588,6 +586,8 @@ export function OpenPlayManagerClient({
           ];
         });
         setGuestName("");
+        setGuestGender("male");
+        setGuestRating(3.5);
         if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
         setGuestAddedPopup(guestPlayer.name);
         guestPopupTimeoutRef.current = setTimeout(() => {

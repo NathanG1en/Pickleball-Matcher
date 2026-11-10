@@ -116,13 +116,14 @@ export function AttendanceManager({
 
   const handleAddGuest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (guestName.trim() && onAddGuest) {
+    const nameToAdd = guestName.trim();
+    if (nameToAdd && onAddGuest) {
       const ratingToAdd = guestRating;
       const genderToAdd = guestGender;
-      setGuestRating(3.5);
-      setGuestGender("male");
       setGuestName("");
-      onAddGuest(guestName.trim(), ratingToAdd, genderToAdd);
+      setGuestGender("male");
+      setGuestRating(3.5);
+      onAddGuest(nameToAdd, ratingToAdd, genderToAdd);
     }
   };
 

@@ -127,8 +127,6 @@ export function TeamTournamentCreationForm({
     if (!guestName.trim()) return;
     const ratingToAdd = guestRating;
     const genderToAdd = guestGender;
-    setGuestRating(3.5);
-    setGuestGender("male");
 
     try {
       const res = await createPlayerAction({
@@ -147,6 +145,8 @@ export function TeamTournamentCreationForm({
         setPlayers((prev) => [...prev, newPlayer]);
         setSelectedPlayerIds((prev) => new Set([...prev, newPlayer.id]));
         setGuestName("");
+        setGuestGender("male");
+        setGuestRating(3.5);
       } else {
         setError(res.error);
       }
