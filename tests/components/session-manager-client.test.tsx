@@ -822,6 +822,7 @@ describe("SessionManagerClient Component", () => {
     );
     expect(courtConfigPanelHtml).toContain('id="tabpanel-court-config"');
     expect(courtConfigPanelHtml).toContain("Save Court Configuration");
+    expect(courtConfigPanelHtml).toContain("Changes save automatically.");
     expect(courtConfigPanelHtml).toContain('aria-label="Players on court 1"');
     expect(courtConfigPanelHtml).toContain("font-bold text-black");
     expect(courtConfigPanelHtml).toContain("Matchup Confirmation");

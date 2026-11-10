@@ -369,11 +369,54 @@ export function SessionManagerClient({
   const presentAttendance = currentAttendance.filter((a) => a.leftRound === null);
   const presentCount = presentAttendance.length;
 
+  const saveCourtConfig = (targetCourts: number, targetPlayerCounts: (2 | 3 | 4)[]) => {
+    const counts = targetPlayerCounts.slice(0, targetCourts);
+    const capacity = counts.reduce((sum, s) => sum + s, 0);
+    setCourtConfigCourts(targetCourts);
+    setCourtConfigPlayerCounts(targetPlayerCounts);
+    setCourtConfigMessage(null);
+
+    if (capacity > presentCount || targetCourts < 1) {
+      return;
+    }
+
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: targetCourts,
+          courtPlayerCounts: counts,
+          idempotencyKey: createIdempotencyKey("court_cfg"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          setCourtConfigMessage("Court configuration updated successfully.");
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
+      }
+    });
+  };
+
   const decreaseCourts = () => {
     if (courtConfigCourts > 1) {
-      setCourtConfigCourts((c) => c - 1);
-      setCourtConfigPlayerCounts((prev) => prev.slice(0, courtConfigCourts - 1));
-      setCourtConfigMessage(null);
+      const nextCourts = courtConfigCourts - 1;
+      const nextCounts = courtConfigPlayerCounts.slice(0, nextCourts);
+      saveCourtConfig(nextCourts, nextCounts);
     }
   };
 
@@ -384,19 +427,16 @@ export function SessionManagerClient({
       const currentCapacity = courtConfigPlayerCounts.slice(0, nextCourtIndex).reduce((sum, s) => sum + s, 0);
       const remainingPlayers = presentCount - currentCapacity;
       const nextSize: 2 | 3 | 4 = remainingPlayers >= 4 ? 4 : remainingPlayers >= 3 ? 3 : 2;
-      setCourtConfigCourts((c) => c + 1);
-      setCourtConfigPlayerCounts((prev) => [...prev.slice(0, nextCourtIndex), nextSize]);
-      setCourtConfigMessage(null);
+      const nextCourts = courtConfigCourts + 1;
+      const nextCounts = [...courtConfigPlayerCounts.slice(0, nextCourtIndex), nextSize];
+      saveCourtConfig(nextCourts, nextCounts);
     }
   };
 
   const handleCourtSizeChange = (index: number, size: 2 | 3 | 4) => {
-    setCourtConfigPlayerCounts((prev) => {
-      const next = [...prev];
-      next[index] = size;
-      return next;
-    });
-    setCourtConfigMessage(null);
+    const next = [...courtConfigPlayerCounts];
+    next[index] = size;
+    saveCourtConfig(courtConfigCourts, next);
   };
 
   const configCapacity = courtConfigPlayerCounts.slice(0, courtConfigCourts).reduce((sum, s) => sum + s, 0);
@@ -446,6 +486,7 @@ export function SessionManagerClient({
             setRegeneratedProposal(null);
           }
           setShowAttendanceRebalancePrompt(false);
+          setCourtConfigMessage("Court configuration updated successfully.");
           showToast(`Courts updated for ${presentCount} players!`);
         } else {
           setError(res.error);
@@ -2908,11 +2949,7 @@ export function SessionManagerClient({
                           key={choice.id}
                           type="button"
                           disabled={isPending || isCourtConfigPending}
-                          onClick={() => {
-                            setCourtConfigCourts(choice.courtCount);
-                            setCourtConfigPlayerCounts(choice.courts);
-                            setCourtConfigMessage(null);
-                          }}
+                          onClick={() => handleApplyCourtChoice(choice)}
                           data-testid={`preset-choice-${choice.id}`}
                           className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
                             isChoiceCurrent(choice)
@@ -2970,14 +3007,19 @@ export function SessionManagerClient({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  onClick={handleSaveCourtConfig}
-                  disabled={isPending || isOverCapacity || courtConfigCourts < 1}
-                  className="w-full font-display text-sm uppercase"
-                >
-                  {isPending ? "Saving..." : "Save Court Configuration"}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <p className="text-[11px] font-bold text-neutral-500 text-center">
+                    Changes save automatically.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleSaveCourtConfig}
+                    disabled={isPending || isOverCapacity || courtConfigCourts < 1}
+                    className="w-full font-display text-sm uppercase"
+                  >
+                    {isPending ? "Saving..." : "Save Court Configuration"}
+                  </Button>
+                </div>
               </div>
             )}
 
