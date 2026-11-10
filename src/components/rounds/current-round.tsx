@@ -544,7 +544,7 @@ function CurrentRoundEditor({
           return (
             <div
               key={court.courtNumber}
-              className={`court-card bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] text-black transition-all ${
+              className={`court-card bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] text-black transition-all ${
                 isUnbalanced ? "ring-4 ring-[#ff6b6b]" : ""
               }`}
             >
@@ -855,7 +855,7 @@ function CurrentRoundEditor({
 
       {/* Sitting Players Section */}
       <section
-        className={`bg-white border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] transition-colors ${
+        className={`bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_0px_#000] transition-colors ${
           activeDropZone === "sitting-pool" ? "bg-amber-50 ring-4 ring-black" : ""
         }`}
         onDragOver={(e) => {
@@ -967,7 +967,7 @@ function CurrentRoundEditor({
       {/* Friction Modal 1: Unlock Confirmation Dialog */}
       {showUnlockModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
+          <div className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
             <div className="flex items-center gap-2.5">
               <AlertTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
               <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
@@ -1013,7 +1013,7 @@ function CurrentRoundEditor({
       {/* Friction Modal 2: Start Round Confirmation Modal */}
       {showConfirmStart && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
+          <div className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 max-w-md w-full space-y-4 shadow-[8px_8px_0px_0px_#000] text-black">
             <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
               {hasModifications ? "Confirm Manual Lineup?" : `Start Round ${round.roundNumber}?`}
             </h3>

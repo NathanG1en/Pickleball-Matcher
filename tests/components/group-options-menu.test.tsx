@@ -147,6 +147,42 @@ describe("Group Navigation and Options Menu", () => {
       expect(html).toContain("···");
       expect(html).toContain('aria-label="Group options"');
     });
+
+    it("renders Delete Group option with destructive styling for organizers when open", () => {
+      const html = renderToStaticMarkup(
+        <GroupOptionsMenu
+          groupId="g1"
+          groupName="Friday Night Picklers"
+          isOrganizer={true}
+          initialMenuOpen={true}
+        />
+      );
+
+      expect(html).toContain('data-testid="delete-group-menu-item"');
+      expect(html).toContain("Delete Group");
+      expect(html).toContain("text-[#E32929]");
+      expect(html).toContain("rounded-[20px]");
+      expect(html).toContain("border-[2.5px]");
+      expect(html).toContain("bg-[#FFFDF6]");
+      expect(html).not.toContain("Leave Group");
+    });
+
+    it("renders Leave Group option with standard styling for non-organizers when open", () => {
+      const html = renderToStaticMarkup(
+        <GroupOptionsMenu
+          groupId="g1"
+          groupName="Friday Night Picklers"
+          isOrganizer={false}
+          initialMenuOpen={true}
+        />
+      );
+
+      expect(html).toContain('data-testid="leave-group-menu-item"');
+      expect(html).toContain("<span>Leave</span>");
+      expect(html).not.toContain("Delete Group");
+      expect(html).toContain("rounded-[20px]");
+      expect(html).toContain("bg-[#FFFDF6]");
+    });
   });
 
   describe("deleteGroupAction", () => {

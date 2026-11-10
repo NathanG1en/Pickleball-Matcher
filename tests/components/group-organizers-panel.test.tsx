@@ -205,9 +205,15 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Transfer host");
       // Verify "Make a group organizer" button exists for regular member
       expect(html).toContain("Make a group organizer");
-      // Verify "Remove player" button exists in the dropdown
+      // Verify "Remove player" button exists in the dropdown with destructive red styling
       expect(html).toContain("Remove player");
+      expect(html).toContain("text-[#E32929]");
       expect(html).toContain("data-player-menu");
+      expect(html).toContain("data-player-menu-dropdown");
+      expect(html).toContain('role="separator"');
+      expect(html).toContain("rounded-[20px]");
+      expect(html).toContain("border-[2.5px]");
+      expect(html).toContain("bg-[#FFFDF6]");
 
       // Verify Link to public player and Edit guest option exists for guest player
       expect(html).toContain("Link to public player");
@@ -345,6 +351,20 @@ describe("GroupOrganizersPanel and Actions", () => {
           configurable: true,
         });
       }
+    });
+
+    it("does not render the legacy alert box inside add player container", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+        />
+      );
+
+      expect(html).not.toContain("bg-[#ccff00]/40");
+      expect(html).not.toContain("p-2 rounded-lg border border-black/40");
     });
 
     it("renders player search without an Add button next to input and without Dismiss in results, formatting results as name (@username)", () => {

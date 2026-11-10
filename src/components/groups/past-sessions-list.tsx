@@ -177,7 +177,7 @@ export function PastSessionsList({
                           return (
                             <div
                               key={m.id}
-                              className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
+                              className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs space-y-1.5"
                               data-testid={`match-card-${m.id}`}
                             >
                               <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
@@ -252,7 +252,7 @@ export function PastSessionsList({
                     ) : (
                       session.rounds.map((round) => (
                         <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
-                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-white px-3 py-1.5 rounded-xl border-2 border-black/20">
+                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-[#FFFDF7] px-3.5 py-1.5 rounded-xl border-2 border-black/20">
                             <span>Round {round.roundNumber}</span>
                             <span className="text-[10px] font-bold text-neutral-500">
                               {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
@@ -279,7 +279,7 @@ export function PastSessionsList({
                               return (
                                 <div
                                   key={m.id}
-                                  className="p-3 bg-white border-2 border-black rounded-xl text-xs space-y-1.5"
+                                  className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs space-y-1.5"
                                   data-testid={`match-card-${m.id}`}
                                 >
                                   <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">

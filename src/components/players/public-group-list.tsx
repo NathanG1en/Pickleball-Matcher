@@ -35,7 +35,7 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {groups.map((group) => (
-            <article key={group.id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
+            <article key={group.id} className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000]">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="truncate font-display text-xl font-black uppercase">{group.name}</h2>

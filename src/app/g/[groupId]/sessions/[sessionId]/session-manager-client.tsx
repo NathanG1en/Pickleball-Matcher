@@ -8,6 +8,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { useRouter } from "next/navigation";
 
 import {
+  addSessionGuestAction,
   changeAttendanceAction,
   completeRoundAction,
   endSessionAction,
@@ -25,9 +26,7 @@ import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Modal } from "@/components/ui/modal";
+import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
@@ -129,16 +128,45 @@ export function SessionManagerClient({
   const router = useRouter();
   const isHydrated = useHydrated();
 
+  const [prevPlayers, setPrevPlayers] = useState(players);
+  const [sessionPlayers, setSessionPlayers] = useState(players);
+  if (players !== prevPlayers) {
+    setPrevPlayers(players);
+    setSessionPlayers(players);
+  }
+
+  const [guestName, setGuestName] = useState("");
+  const [guestGender, setGuestGender] = useState<"male" | "female">("male");
+  const [guestRating, setGuestRating] = useState(3.5);
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string) => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    setSuccessToast(msg);
+    toastTimeoutRef.current = setTimeout(() => {
+      setSuccessToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
   const pinnedPlayerIds = usePinnedPlayerIds(groupId);
   const [attendanceSearchQuery, setAttendanceSearchQuery] = useState("");
 
   const sortedPlayers = useMemo(
     () =>
       sortPlayersWithPinned(
-        players.filter((p) => p.active),
+        sessionPlayers.filter((p) => p.active),
         pinnedPlayerIds,
       ),
-    [players, pinnedPlayerIds],
+    [sessionPlayers, pinnedPlayerIds],
   );
 
   const displayedAttendancePlayers = useMemo(() => {
@@ -422,12 +450,12 @@ export function SessionManagerClient({
   const { playerNames, playerAccounts } = useMemo(() => {
     const names: Record<string, string> = {};
     const accounts: Record<string, string | null> = {};
-    for (const p of players) {
+    for (const p of sessionPlayers) {
       names[p.id] = p.name;
       accounts[p.id] = p.accountId ?? null;
     }
     return { playerNames: names, playerAccounts: accounts };
-  }, [players]);
+  }, [sessionPlayers]);
 
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
@@ -440,7 +468,7 @@ export function SessionManagerClient({
       return proposeRoundFromSnapshot(
         {
           session: currentSession,
-          players,
+          players: sessionPlayers,
           attendance: currentAttendance,
           rounds: localStartedRounds,
         },
@@ -450,7 +478,7 @@ export function SessionManagerClient({
     } catch {
       return null;
     }
-  }, [currentSession, players, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
+  }, [currentSession, sessionPlayers, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
 
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
@@ -1231,6 +1259,47 @@ export function SessionManagerClient({
     }
   };
 
+  const handleAddMidSessionGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = guestName.trim();
+    if (!trimmed || isAddingGuest) return;
+
+    setIsAddingGuest(true);
+    setError(null);
+    try {
+      const res = await addSessionGuestAction({
+        groupId,
+        sessionId: currentSession.id,
+        guestName: trimmed,
+        gender: guestGender,
+        initialRating: guestRating,
+      });
+
+      if (res.ok) {
+        const newPlayer = res.data;
+        setSessionPlayers((prev) => [...prev, newPlayer]);
+        setCurrentAttendance((prev) => [
+          ...prev,
+          {
+            sessionId: currentSession.id,
+            playerId: newPlayer.id,
+            joinedRound: currentSession.currentRoundNumber + 1,
+            leftRound: null,
+          },
+        ]);
+        setGuestName("");
+        setGuestRating(3.5);
+        showToast(`Added ${newPlayer.name} to session!`);
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to add guest player.");
+    } finally {
+      setIsAddingGuest(false);
+    }
+  };
+
   const handleHistoricalSaveResult = async (matchId: string, matchVersion: number) => {
     const t1 = parseInt(historicalScores.team1, 10);
     const t2 = parseInt(historicalScores.team2, 10);
@@ -1363,7 +1432,7 @@ export function SessionManagerClient({
   // Calculate participating player statistics for the session
   const attendeePlayerIds = new Set<string>();
   for (const att of currentAttendance) {
-    const player = players.find((p) => p.id === att.playerId);
+    const player = sessionPlayers.find((p) => p.id === att.playerId);
     if (player && !player.active) continue;
     attendeePlayerIds.add(att.playerId);
   }
@@ -1378,7 +1447,7 @@ export function SessionManagerClient({
 
   const sessionPlayerStats = Array.from(attendeePlayerIds)
     .map((pId) => {
-      const player = players.find((p) => p.id === pId);
+      const player = sessionPlayers.find((p) => p.id === pId);
       let gamesPlayed = 0;
       let wins = 0;
       let losses = 0;
@@ -1419,7 +1488,7 @@ export function SessionManagerClient({
   const viewerSessionStats = currentViewerPlayerId
     ? sessionPlayerStats.find((stat) => stat.id === currentViewerPlayerId) ?? {
         id: currentViewerPlayerId,
-        name: players.find((p) => p.id === currentViewerPlayerId)?.name ?? playerNames[currentViewerPlayerId] ?? "You",
+        name: sessionPlayers.find((p) => p.id === currentViewerPlayerId)?.name ?? playerNames[currentViewerPlayerId] ?? "You",
         gamesPlayed: 0,
         wins: 0,
         losses: 0,
@@ -1446,6 +1515,19 @@ export function SessionManagerClient({
 
   return (
     <div className="space-y-6 text-black">
+      {/* Toast Notification */}
+      {successToast && (
+        <Toast
+          role="status"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setSuccessToast(null);
+          }}
+        >
+          {successToast}
+        </Toast>
+      )}
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -1520,7 +1602,7 @@ export function SessionManagerClient({
 
       {/* Active Session Header Card */}
       {!isCompletedSession && (
-        <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+        <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
               <SessionNameEditor
@@ -1572,7 +1654,7 @@ export function SessionManagerClient({
       {isCompletedSession ? (
         <div className="space-y-6" data-testid="completed-session-full-view">
           {/* Completed Session Overview Card */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {groupName && (
@@ -1689,11 +1771,11 @@ export function SessionManagerClient({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
             {/* Sidebar Column (Right on desktop, first in mobile flow: Highlights & Standings) */}
             <div className="lg:col-span-5 xl:col-span-4 space-y-6 order-1 lg:order-2">
-              <SessionHighlights rounds={localStartedRounds} players={players} />
+              <SessionHighlights rounds={localStartedRounds} players={sessionPlayers} />
 
               {/* Session Player Leaderboard / Roster */}
               {sessionPlayerStats.length > 0 && (
-                <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
                   <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
                     Player Summary
                   </h2>
@@ -1726,7 +1808,7 @@ export function SessionManagerClient({
             {/* Primary Column (Left on desktop: All Rounds & Matchups) */}
             <div className="lg:col-span-7 xl:col-span-8 space-y-6 order-2 lg:order-1">
               {/* Categorized Rounds & Games */}
-              <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+              <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
                 <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
                   All Rounds & Matchups
                 </h2>
@@ -2001,7 +2083,7 @@ export function SessionManagerClient({
 
           {/* Past Rounds Accordion / List */}
           {pastRounds.length > 0 && (
-            <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000] -mt-2">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000] -mt-2">
               <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
                 Past Rounds
               </h3>
@@ -2023,7 +2105,7 @@ export function SessionManagerClient({
                         const isEditing = editingHistoricalMatchId === m.id;
 
                         return (
-                          <div key={m.id} className="p-3 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
+                          <div key={m.id} className="p-3 rounded-lg bg-[#FFFDF7] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="font-black text-black">Court {m.courtNumber}</span>
                               <span className="font-display text-sm font-black text-black">
@@ -2132,9 +2214,9 @@ export function SessionManagerClient({
       {/* Session Settings Modal */}
       {showSessionSettingsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl max-w-lg w-full shadow-[8px_8px_0px_0px_#000] max-h-[85vh] flex flex-col overflow-hidden text-black">
+          <div className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl max-w-lg w-full shadow-[8px_8px_0px_0px_#000] max-h-[85vh] flex flex-col overflow-hidden text-black">
             {/* Modal Header & Tabs (Static to box) */}
-            <div className="p-6 pb-3 border-b-2 border-neutral-200 shrink-0 space-y-4 bg-white">
+            <div className="p-6 pb-3 border-b-2 border-neutral-200 shrink-0 space-y-4 bg-[#FFFDF7]">
               <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">
                 <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">
                   <GearIcon className="h-6 w-6 text-black shrink-0" />
@@ -2204,6 +2286,17 @@ export function SessionManagerClient({
 
             {/* Scrollable Tab Content */}
             <div className="p-6 pt-4 flex-1 overflow-y-auto space-y-4">
+              {successToast && (
+                <Toast
+                  role="status"
+                  onDismiss={() => {
+                    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+                    setSuccessToast(null);
+                  }}
+                >
+                  {successToast}
+                </Toast>
+              )}
               {modalTab === "attendance" && (
               <div
                 role="tabpanel"
@@ -2216,6 +2309,60 @@ export function SessionManagerClient({
                     ? "Manage player arrivals or early departures mid-session."
                     : "Session player attendance roster."}
                 </p>
+
+                {canManage && (
+                  <form
+                    onSubmit={handleAddMidSessionGuest}
+                    className="p-3.5 bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] space-y-3"
+                  >
+                    <label
+                      htmlFor="session-guest-name"
+                      className="block text-xs font-black uppercase tracking-wider text-black"
+                    >
+                      Add Guest Player
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        id="session-guest-name"
+                        type="text"
+                        aria-label="Guest player name"
+                        placeholder="Add guest or new player..."
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                      />
+                      <CustomDropdown
+                        id="session-guest-gender"
+                        ariaLabel="Guest Gender"
+                        value={guestGender}
+                        onChange={(val) => setGuestGender(val as "male" | "female")}
+                        options={[
+                          { value: "male", label: "Male" },
+                          { value: "female", label: "Female" },
+                        ]}
+                        sizeVariant="sm"
+                        className="shrink-0"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!guestName.trim() || isAddingGuest}
+                        className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                      >
+                        {isAddingGuest ? "Adding..." : "Add"}
+                      </button>
+                    </div>
+                    <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                      <RatingSlider
+                        id="session-guest-rating"
+                        dataTestId="session-guest-rating"
+                        label="Guest Rating"
+                        value={guestRating}
+                        onChange={setGuestRating}
+                        showDescription={true}
+                      />
+                    </div>
+                  </form>
+                )}
 
                 {sortedPlayers.length > 5 && (
                   <div className="relative">
@@ -2287,7 +2434,7 @@ export function SessionManagerClient({
                               <div
                                 key={p.id}
                                 data-testid={`attendance-row-${p.name}`}
-                                className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+                                className="flex items-center justify-between p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   {canManage && (
@@ -2534,23 +2681,24 @@ export function SessionManagerClient({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {courtConfigPlayerCounts.slice(0, courtConfigCourts).map((size, index) => (
-                    <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                    <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
                       <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
-                      <select
-                        aria-label={`Players on court ${index + 1}`}
-                        value={size}
-                        onChange={(event) =>
-                          handleCourtSizeChange(index, Number(event.target.value) as 2 | 3 | 4)
+                      <CustomDropdown
+                        ariaLabel={`Players on court ${index + 1}`}
+                        value={String(size)}
+                        onChange={(val) =>
+                          handleCourtSizeChange(index, Number(val) as 2 | 3 | 4)
                         }
                         disabled={isPending}
-                        className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
-                      >
-                        {[4, 3, 2].map((playersOnCourt) => (
-                          <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">
-                            {playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}
-                          </option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: "4", label: "4 players · 2v2" },
+                          { value: "3", label: "3 players · 2v1" },
+                          { value: "2", label: "2 players · 1v1" },
+                        ]}
+                        sizeVariant="xs"
+                        className="min-w-0 shrink-0"
+                        buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1"
+                      />
                     </label>
                   ))}
                 </div>
@@ -2696,9 +2844,9 @@ export function SessionManagerClient({
               >
                 {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && (
                   <StayTogetherEditor
-                    players={players}
+                    players={sessionPlayers}
                     pairs={currentSession.stayTogetherPairs ?? []}
-                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && sessionPlayers.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
                     onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
                     disabled={isPending}
                     pending={isActionPending}
@@ -2707,8 +2855,8 @@ export function SessionManagerClient({
                 <PartnerRequests
                   groupId={groupId}
                   session={currentSession}
-                  players={players}
-                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                  players={sessionPlayers}
+                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && sessionPlayers.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
                   currentViewerPlayerId={currentViewerPlayerId}
                   canManage={canManage}
                   initialRequests={partnerRequests}
@@ -2804,7 +2952,7 @@ export function SessionManagerClient({
           onClose={() => setShowAddPickupModal(false)}
           groupId={groupId}
           sessionId={currentSession.id}
-          players={players}
+          players={sessionPlayers}
           attendance={currentAttendance}
           activeRound={latestStarted}
           activeProposal={activeProposal}

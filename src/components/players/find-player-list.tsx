@@ -29,7 +29,7 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
           <article
             key={player.id}
             data-testid={`player-card-${player.username}`}
-            className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]"
+            className="flex items-center justify-between gap-4 rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000]"
           >
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">

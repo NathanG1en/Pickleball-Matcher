@@ -4,6 +4,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import React, { useMemo, useState } from "react";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { RatingSlider } from "@/components/ui/rating-slider";
 import { PinIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDupr } from "@/lib/domain/rating-display";
@@ -145,7 +146,7 @@ export function AttendanceManager({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Court Count Card (Left column on desktop) */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-6">
-          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="mb-1 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
               {!isEditingSession && <SetupCourtIllustration />}
@@ -188,16 +189,21 @@ export function AttendanceManager({
             </div>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {courtPlayerCounts.slice(0, courts).map((size, index) => (
-                <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
                   <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
-                  <select
-                    aria-label={`Players on court ${index + 1}`}
-                    value={size}
-                    onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
-                    className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
-                  >
-                    {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
-                  </select>
+                  <CustomDropdown
+                    ariaLabel={`Players on court ${index + 1}`}
+                    value={String(size)}
+                    onChange={(val) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(val) as 2 | 3 | 4 : value))}
+                    options={[
+                      { value: "4", label: "4 players · 2v2" },
+                      { value: "3", label: "3 players · 2v1" },
+                      { value: "2", label: "2 players · 1v1" },
+                    ]}
+                    sizeVariant="xs"
+                    className="min-w-0 shrink-0"
+                    buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1"
+                  />
                 </label>
               ))}
             </div>
@@ -250,7 +256,7 @@ export function AttendanceManager({
 
         {/* Players Section (Right column on desktop) */}
         <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
@@ -343,7 +349,7 @@ export function AttendanceManager({
                   className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                     isSelected
                       ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                      : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                      : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
                   }`}
                 >
                   <input
@@ -399,19 +405,25 @@ export function AttendanceManager({
               onChange={(e) => setGuestName(e.target.value)}
               className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
-            <select
+            <CustomDropdown
               id="normal-session-guest-gender"
-              aria-label="Guest Gender"
+              ariaLabel="Guest Gender"
               value={guestGender}
-              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+              onChange={(val) => setGuestGender(val as "male" | "female")}
+              options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+              sizeVariant="sm"
+              className="shrink-0"
+            />
+            <button
+              type="submit"
+              disabled={!guestName.trim()}
+              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
             >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider shrink-0">
               Add
-            </Button>
+            </button>
           </div>
           <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
             <RatingSlider
@@ -429,7 +441,7 @@ export function AttendanceManager({
       </div>
 
       {/* Sticky Mobile Action Bar */}
-      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-[#FFFDF7]/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
             <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>

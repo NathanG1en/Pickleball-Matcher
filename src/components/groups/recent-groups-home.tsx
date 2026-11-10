@@ -59,10 +59,10 @@ export function RecentGroupsHome({
 
   return (
     <div
-      className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3"
+      className="p-4 sm:p-5 rounded-2xl bg-[#e0f2fe] border-2 border-black text-left space-y-3"
     >
       <div className="flex items-center gap-2">
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#FFFDF7] border border-black">
           Your Recent Groups ({groups.length})
         </span>
       </div>
@@ -71,7 +71,7 @@ export function RecentGroupsHome({
         {groups.map((group) => (
           <div
             key={group.id}
-            className="p-2.5 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-between gap-2"
+            className="p-2.5 rounded-xl bg-[#FFFDF7] border-2 border-black flex items-center justify-between gap-2"
           >
             <div className="min-w-0 flex-1">
               <Link

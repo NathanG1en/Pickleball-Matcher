@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
+import { Toast } from "@/components/ui/toast";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
@@ -42,7 +44,6 @@ import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
 import {
   ArrowLeftRightIcon,
-  CheckIcon,
   ChevronDownIcon,
   CrownIcon,
   RotateCwIcon,
@@ -1229,37 +1230,29 @@ export function OpenPlayManagerClient({
     <div className="space-y-6">
       {/* Dismissable Guest Added Popup */}
       {guestAddedPopup && !successToast && (
-        <div
-          data-testid="guest-added-popup"
-          className="fixed top-4 right-4 z-50 flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in"
+        <Toast
+          testId="guest-added-popup"
+          role="status"
+          onDismiss={() => {
+            if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
+            setGuestAddedPopup(null);
+          }}
         >
-          <p role="status" className="font-black text-black m-0 p-0">
-            you have added &quot;{guestAddedPopup}&quot; to the roster
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              if (guestPopupTimeoutRef.current !== null) clearTimeout(guestPopupTimeoutRef.current);
-              setGuestAddedPopup(null);
-            }}
-            aria-label="Dismiss"
-            className="ml-2 flex items-center gap-1 text-black hover:bg-neutral-100 border border-black bg-white rounded px-2 py-0.5 text-xs font-black cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            <span aria-hidden="true" className="text-sm leading-none font-black">&times;</span>
-            <span>Dismiss</span>
-          </button>
-        </div>
+          <span>you have added &quot;{guestAddedPopup}&quot; to the roster</span>
+        </Toast>
       )}
 
       {/* Toast Notification */}
       {successToast && (
-        <div
+        <Toast
           role="status"
-          className="fixed top-4 right-4 z-50 bg-[#ccff00] border-2 border-black rounded-xl p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-bounce flex items-center gap-1.5"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setSuccessToast(null);
+          }}
         >
-          <CheckIcon className="h-4 w-4 shrink-0 stroke-[3]" />
           <span>{successToast}</span>
-        </div>
+        </Toast>
       )}
 
       {/* Top Header Controls */}
@@ -1310,7 +1303,7 @@ export function OpenPlayManagerClient({
       </div>
 
       {/* Session Header Card */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-1">
             <SessionNameEditor
@@ -1371,15 +1364,15 @@ export function OpenPlayManagerClient({
                   Your Session
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                  <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
-                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
+                  <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
-                  <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
+                  <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
@@ -1419,7 +1412,7 @@ export function OpenPlayManagerClient({
       </header>
 
       {!isSessionActive && (
-        <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-4 py-2 text-sm font-bold">
+        <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 text-sm font-bold">
           <span>Session complete</span>
           <SessionSignOff play={justEndedSession} />
         </div>
@@ -1430,7 +1423,7 @@ export function OpenPlayManagerClient({
       )}
 
       {session.status === "completed" && openPlayPlayerStats.length > 0 && (
-        <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+        <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
           <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
             Player Summary
           </h2>
@@ -1482,15 +1475,13 @@ export function OpenPlayManagerClient({
         </section>
       )}
 
-      {/* Responsive Grid for Open Play */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Attendance & Players Column (Right on desktop, first in mobile flow) */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-6 order-1 lg:order-2">
-          {/* Add Players Section */}
+      {/* Attendance & Players Section (Prominent at top on desktop, taking up more space above games) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+        {/* Add Players Section */}
           {(isSessionActive || canManage) && (
             <section
               data-testid="add-players-box"
-          className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+          className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -1504,7 +1495,7 @@ export function OpenPlayManagerClient({
 
             {/* Mode Switch Tabs (matching roster style) */}
             <div
-              className="flex items-center gap-1.5 p-1 bg-white border border-neutral-200 rounded-xl w-fit shrink-0"
+              className="flex items-center gap-1.5 p-1 bg-[#FFFDF7] border border-neutral-200 rounded-xl w-fit shrink-0"
               role="tablist"
               aria-label="Add player mode"
             >
@@ -1620,22 +1611,24 @@ export function OpenPlayManagerClient({
                   placeholder="Guest player name..."
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                  className="flex-1 min-w-0 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 />
-                <select
+                <CustomDropdown
                   id="open-play-guest-gender"
-                  aria-label="Guest Gender"
+                  ariaLabel="Guest Gender"
                   value={guestGender}
-                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
+                  onChange={(val) => setGuestGender(val as "male" | "female")}
+                  options={[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                  ]}
+                  sizeVariant="sm"
+                  className="shrink-0"
+                />
                 <button
                   type="submit"
                   disabled={!guestName.trim() || isAddingGuest}
-                  className="px-5 py-2 rounded-xl bg-black text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                  className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                 >
                   {isAddingGuest ? "Adding..." : "Add"}
                 </button>
@@ -1660,7 +1653,9 @@ export function OpenPlayManagerClient({
       {/* Checked-in Players Section */}
       <section
         data-testid="checked-in-players-box"
-        className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+        className={`bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 ${
+          !(isSessionActive || canManage) ? "lg:col-span-2" : ""
+        }`}
       >
         {/* Header inside the box that toggles the drawer */}
         <button
@@ -1681,14 +1676,11 @@ export function OpenPlayManagerClient({
             </h2>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 transition-colors shrink-0">
-            <span>{isPlayersDrawerOpen ? "Hide Players" : "Show Players"}</span>
-            <ChevronDownIcon
-              className={`h-3.5 w-3.5 text-black transition-transform duration-200 ${
-                isPlayersDrawerOpen ? "rotate-180" : ""
-              }`}
-            />
-          </div>
+          <ChevronDownIcon
+            className={`h-5 w-5 text-black transform transition-transform duration-200 shrink-0 ${
+              isPlayersDrawerOpen ? "rotate-180" : ""
+            }`}
+          />
         </button>
 
         {/* Players Drawer Content */}
@@ -1710,7 +1702,7 @@ export function OpenPlayManagerClient({
                     <div
                       key={p.id}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000] ${
-                        isViewer ? "bg-[#ccff00]" : "bg-white"
+                        isViewer ? "bg-[#ccff00]" : "bg-[#FFFDF7]"
                       }`}
                     >
                       <span className="font-black text-black">{p.name}</span>
@@ -1743,14 +1735,14 @@ export function OpenPlayManagerClient({
           </div>
         )}
       </section>
-        </div>
+      </div>
 
-        {/* Primary Games Column (Left on desktop: Submit Game & Games Played) */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6 order-2 lg:order-1">
-          {/* Submit Game Section */}
+      {/* Primary Games Section (Below Attendance & Players) */}
+      <div className="space-y-6">
+        {/* Submit Game Section */}
           {(isSessionActive || canManage) && (
             <section
-              className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+              className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
               data-testid="submit-game-card"
         >
           <div className="flex items-center justify-between gap-2">
@@ -1990,7 +1982,7 @@ export function OpenPlayManagerClient({
       )}
 
       {/* Games Played Section */}
-      <section className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
         <h2 className="font-display text-xl font-black uppercase text-black">
           Games Played ({allMatches.length})
         </h2>
@@ -2013,7 +2005,7 @@ export function OpenPlayManagerClient({
                     key={m.id}
                     onSubmit={handleSaveEdit}
                     data-testid={`edit-game-form-${m.id}`}
-                    className="p-4 bg-white border-2 border-black rounded-2xl space-y-4 shadow-[2px_2px_0px_0px_#000]"
+                    className="p-4 bg-[#FFFDF7] border-2 border-black rounded-2xl space-y-4 shadow-[2px_2px_0px_0px_#000]"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -2221,7 +2213,6 @@ export function OpenPlayManagerClient({
           </div>
         )}
       </section>
-        </div>
       </div>
     </div>
   );

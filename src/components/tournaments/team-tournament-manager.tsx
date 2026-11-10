@@ -197,7 +197,7 @@ export function TeamTournamentManager({
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${tournament.groupId}`}
@@ -305,7 +305,7 @@ export function TeamTournamentManager({
       {team1 && team2 && (
         <div
           data-testid="team-scoreboard"
-          className="bg-white border-4 border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
+          className="bg-[#FFFDF7] border-4 border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4"
         >
           <div className="flex items-center justify-between text-center gap-4">
             {/* Team 1 Banner */}
@@ -384,7 +384,7 @@ export function TeamTournamentManager({
             return (
               <div
                 key={line.id}
-                className="p-4 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] space-y-3"
+                className="p-4 bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] space-y-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

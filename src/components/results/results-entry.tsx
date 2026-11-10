@@ -191,7 +191,7 @@ export function ResultsEntryView({
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {upcomingProposal.courts.map((c) => (
-                  <div key={c.courtNumber} className="p-2.5 rounded-xl bg-white border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
+                  <div key={c.courtNumber} className="p-2.5 rounded-xl bg-[#FFFDF7] border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
                     <span className="font-black text-black">Court {c.courtNumber}: </span>
                     <span className="font-bold text-neutral-800">
                       {c.team1.map((id) => playerNames[id] ?? id).join(" & ")} vs{" "}
@@ -231,7 +231,7 @@ export function ResultsEntryView({
                   ? "bg-neutral-100 opacity-60 border-neutral-400"
                   : isCompleted
                   ? "bg-[#ecfdf5]"
-                  : "bg-white"
+                  : "bg-[#FFFDF7]"
               }`}
             >
               <div className="flex items-center justify-between border-b-2 border-neutral-100 pb-2">
@@ -259,7 +259,7 @@ export function ResultsEntryView({
               {/* Match Score Input Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 {/* Team 1 */}
-                <div className="space-y-2 p-3 bg-white rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                <div className="space-y-2 p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                   <div className="text-sm font-black text-black">
                     {match.team1Names.join(" & ")}
                   </div>
@@ -293,7 +293,7 @@ export function ResultsEntryView({
                 </div>
 
                 {/* Team 2 */}
-                <div className="space-y-2 p-3 bg-white rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                <div className="space-y-2 p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                   <div className="text-sm font-black text-black">
                     {match.team2Names.join(" & ")}
                   </div>
@@ -396,7 +396,7 @@ export function ResultsEntryView({
 
       {/* Persistent Bottom Mobile Action Area */}
       {canManage && (
-        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+        <div className="mobile-action-bar sticky bottom-0 left-0 right-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-[#FFFDF7]/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
           {hasNewScores && (
             <p id="unsaved-score-warning" role="status" className="max-w-xl mx-auto mb-1.5 text-xs font-bold text-black">
               Save or revert your score changes before continuing.

@@ -662,6 +662,12 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).toContain('data-testid="attendance-present-list"');
     expect(managerHtml).toContain('data-testid="attendance-not-present-list"');
 
+    // Manager can add a guest mid-session through attendance tab
+    expect(managerHtml).toContain("Add Guest Player");
+    expect(managerHtml).toContain('id="session-guest-name"');
+    expect(managerHtml).toContain('aria-label="Guest player name"');
+    expect(managerHtml).toContain('data-testid="session-guest-rating"');
+
     const nonManagerHtml = renderToStaticMarkup(
       <SessionManagerClient
         groupId={groupId}
@@ -676,9 +682,10 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    // Non-manager cannot toggle attendance or pin players; sees read-only status
+    // Non-manager cannot toggle attendance or pin players; sees read-only status and cannot add guest
     expect(nonManagerHtml).not.toContain('data-testid="attendance-toggle-Alice"');
     expect(nonManagerHtml).not.toContain('data-testid="pin-player-Alice"');
+    expect(nonManagerHtml).not.toContain('id="session-guest-name"');
     expect(nonManagerHtml).toContain("Present");
     expect(nonManagerHtml).toContain("Left");
   });
@@ -746,7 +753,7 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).not.toContain('id="tab-synergies"');
 
     // Verify modal header & tabs container is static (shrink-0) and tab content container is scrollable (overflow-y-auto flex-1)
-    expect(managerHtml).toContain("shrink-0 space-y-4 bg-white");
+    expect(managerHtml).toContain("shrink-0 space-y-4 bg-[#FFFDF7]");
     expect(managerHtml).toContain("flex-1 overflow-y-auto space-y-4");
 
     // Verify exact ordering in HTML: attendance -> court_config -> partners
@@ -796,7 +803,7 @@ describe("SessionManagerClient Component", () => {
     expect(courtConfigPanelHtml).toContain('id="tabpanel-court-config"');
     expect(courtConfigPanelHtml).toContain("Save Court Configuration");
     expect(courtConfigPanelHtml).toContain('aria-label="Players on court 1"');
-    expect(courtConfigPanelHtml).toContain("text-xs font-bold text-black");
+    expect(courtConfigPanelHtml).toContain("font-bold text-black");
     expect(courtConfigPanelHtml).toContain("Matchup Confirmation");
     expect(courtConfigPanelHtml).toContain('data-testid="confirm-matchups-toggle"');
 

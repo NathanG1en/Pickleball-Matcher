@@ -118,11 +118,13 @@ describe("AttendanceManager Component", () => {
 
     expect(html).toContain('aria-label="Guest player name"');
     expect(html).toContain('aria-label="Guest Gender"');
+    expect(html).toContain('id="normal-session-guest-gender"');
     expect(html).toContain('aria-label="Guest Rating"');
     expect(html).toContain('data-testid="normal-session-guest-rating"');
     expect(html).toContain("3.50");
     expect(html).toContain("Advanced Intermediate");
     expect(html).toContain('data-testid="rating-tick-2"');
+    expect(html).toContain('bg-[#ccff00]');
   });
 
   it("renders player search filter and pin buttons for each player", () => {

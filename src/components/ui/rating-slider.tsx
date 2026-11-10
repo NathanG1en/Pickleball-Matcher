@@ -356,7 +356,7 @@ export function RatingSlider({
       {showDescription && (
         <div
           data-testid="rating-level-info"
-          className="rounded-xl border-2 border-black bg-white p-2.5 text-xs shadow-[2px_2px_0px_0px_#000] space-y-1"
+          className="rounded-xl border-2 border-black bg-[#FFFDF7] p-2.5 text-xs shadow-[2px_2px_0px_0px_#000] space-y-1"
         >
           <div className="flex items-center gap-2">
             <span className="font-mono font-black text-xs bg-[#ccff00] text-black border border-black px-1.5 py-0.5 rounded shadow-[1px_1px_0px_0px_#000]">

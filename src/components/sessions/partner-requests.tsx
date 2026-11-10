@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { CustomDropdown } from "@/components/ui";
 import { listPartnerRequestsAction, submitPartnerRequestAction, cancelPartnerRequestAction, decidePartnerRequestAction } from "@/app/actions/partner-requests";
 import type { ActionResult } from "@/app/actions/auth";
 import type { PartnerRequestRecord, PartnerRequestView, SessionRecord } from "@/lib/domain/types";
@@ -69,7 +70,7 @@ export function PartnerRequests({ groupId, session, players, presentPlayerIds, c
 
   const buttonClass = "rounded-lg border-2 border-black px-3 py-2 text-xs font-black disabled:opacity-50";
   const locked = disabled || busy;
-  return <section data-testid="partner-requests" className="rounded-2xl border-[3px] border-black bg-white p-5 space-y-3 shadow-[4px_4px_0px_0px_#000]">
+  return <section data-testid="partner-requests" className="rounded-2xl border-[3px] border-black bg-[#FFFDF7] p-5 space-y-3 shadow-[4px_4px_0px_0px_#000]">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="font-display text-2xl font-black uppercase">Partner requests {canManage && <span className="font-sans text-xs normal-case">{pending.length} pending</span>}</h2>
       <button type="button" disabled={locked} className={buttonClass} onClick={() => void run(() => listPartnerRequestsAction(context))}>Refresh requests</button>
@@ -77,9 +78,20 @@ export function PartnerRequests({ groupId, session, players, presentPlayerIds, c
     <p className="text-sm text-neutral-600">{canManage ? "Approve a pair for future rounds. Approving also declines competing requests involving either player." : "Ask an organizer to keep you with a friend for this session. Your friend does not need to confirm."}</p>
     {!active && <p className="text-sm font-bold">This session has ended. Pending requests can no longer be approved.</p>}
     {canRequest && <form onSubmit={event => { event.preventDefault(); if (available.some(player => player.id === partnerId)) void run(() => submitPartnerRequestAction({ ...context, partnerPlayerId: partnerId })); }} className="space-y-2">
-      <select aria-label="Requested partner" value={partnerId} disabled={locked} onChange={event => setPartnerId(event.target.value)} className="w-full rounded-xl border-2 border-black bg-white p-2 text-sm font-bold disabled:opacity-50">
-        <option value="">Choose your friend</option>{available.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}
-      </select>
+      <CustomDropdown
+        ariaLabel="Requested partner"
+        placeholder="Choose your friend"
+        value={partnerId}
+        disabled={locked}
+        onChange={(val) => setPartnerId(val)}
+        options={available.map((player) => ({
+          value: player.id,
+          label: player.name,
+        }))}
+        sizeVariant="sm"
+        className="w-full"
+        buttonClassName="w-full justify-between"
+      />
       <button type="submit" disabled={locked || !available.some(player => player.id === partnerId)} className={`${buttonClass} bg-[#ccff00]`}>Request Stay Together</button>
       {!available.length && <p className="text-sm">No unpaired friends are currently attending.</p>}
     </form>}

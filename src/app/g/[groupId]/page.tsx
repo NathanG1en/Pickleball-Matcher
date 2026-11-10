@@ -151,7 +151,7 @@ export default async function GroupDashboardPage({
     <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 pb-24 text-black">
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-8">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8">
         <div className="mb-4 flex items-center justify-between">
           <BackButton href={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ export default async function GroupDashboardPage({
                             .filter((mp) => mp.matchId === m.id && mp.team === 2)
                             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                           return (
-                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                            <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
@@ -321,7 +321,7 @@ export default async function GroupDashboardPage({
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         return (
-                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                          <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                             <div>
                               <span className="font-black text-black block">Court {m.courtNumber}</span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
@@ -376,7 +376,7 @@ export default async function GroupDashboardPage({
               )}
             </section>
           ) : isOrganizer ? (
-            <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
               <p className="text-sm font-bold text-neutral-700 mb-5">
                 Start a session with predetermined matchmaking or open play.
@@ -392,7 +392,7 @@ export default async function GroupDashboardPage({
               </div>
             </section>
           ) : (
-            <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">No Active Session</h2>
               <p className="text-sm font-bold text-neutral-700">
                 There are no games in progress right now. Live matchups will appear here when an organizer starts a session.
@@ -401,7 +401,7 @@ export default async function GroupDashboardPage({
           )}
 
           {/* Tournaments Section */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-black uppercase text-black">Tournaments</h2>
               {isOrganizer && (
@@ -421,7 +421,7 @@ export default async function GroupDashboardPage({
           </section>
 
           {/* Past Sessions */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
             <PastSessionsList
               groupId={groupId}

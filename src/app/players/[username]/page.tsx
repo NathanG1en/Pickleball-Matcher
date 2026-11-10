@@ -50,7 +50,7 @@ export default async function PlayerPublicProfilePage({
     return (
       <main className="min-h-screen p-4 sm:p-6 lg:p-8">
         <section className="mx-auto max-w-xl md:max-w-2xl space-y-5">
-          <header className="rounded-3xl border-[3px] border-black bg-white p-5 lg:p-6">
+          <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-6">
             <div className="mb-4 flex items-center justify-between">
               <BackButton fallbackHref="/" />
             </div>
@@ -70,7 +70,7 @@ export default async function PlayerPublicProfilePage({
             </div>
           </header>
 
-          <section className="rounded-3xl border-[3px] border-black bg-white p-6 text-center">
+          <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-neutral-100">
               <LockIcon className="h-6 w-6 text-neutral-700" />
             </div>
@@ -100,7 +100,7 @@ export default async function PlayerPublicProfilePage({
   return (
     <main className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl space-y-5">
-        <header className="rounded-3xl border-[3px] border-black bg-white p-5 lg:p-6">
+        <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-6">
           <div className="mb-4 flex items-center justify-between">
             <BackButton fallbackHref="/" />
             {isOwner && <PlayerLogoutButton />}
@@ -189,7 +189,7 @@ export default async function PlayerPublicProfilePage({
                 </div>
               </section>
             ) : (
-              <section className="h-full rounded-3xl border-[3px] border-black bg-white p-5 flex flex-col justify-center">
+              <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
@@ -206,7 +206,7 @@ export default async function PlayerPublicProfilePage({
             )}
 
             {viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
-              <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+              <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
@@ -251,7 +251,7 @@ export default async function PlayerPublicProfilePage({
                 {isOwner && (
                   <div className="flex gap-2">
                     <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
-                    <Link href="/players/groups" className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
+                    <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
                   </div>
                 )}
               </div>
@@ -267,7 +267,7 @@ export default async function PlayerPublicProfilePage({
                         href={`/g/${group.id}`}
                         aria-label={`Go to ${group.name}`}
                         title={`Go to ${group.name}`}
-                        className="group flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+                        className="group flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
                       >
                         <div className="min-w-0 flex-1">
                           <span className="block truncate font-black text-black group-hover:underline">{group.name}</span>
@@ -286,11 +286,11 @@ export default async function PlayerPublicProfilePage({
 
           {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
           <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
-            <section className="rounded-3xl border-[3px] border-black bg-white p-5">
+            <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
               <ScoreHistoryChart history={history} />
             </section>
 
-            <section className="space-y-3 rounded-3xl border-[3px] border-black bg-white p-5">
+            <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
               <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
               {history.length === 0 ? (
                 <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>

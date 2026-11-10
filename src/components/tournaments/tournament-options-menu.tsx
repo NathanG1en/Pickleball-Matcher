@@ -16,6 +16,7 @@ export interface TournamentOptionsMenuProps {
   readonly redirectTo?: string;
   readonly onDeleted?: () => void;
   readonly dataTestId?: string;
+  readonly initialMenuOpen?: boolean;
 }
 
 export function TournamentOptionsMenu({
@@ -27,9 +28,10 @@ export function TournamentOptionsMenu({
   redirectTo,
   onDeleted,
   dataTestId = "tournament-options-menu-button",
+  initialMenuOpen = false,
 }: TournamentOptionsMenuProps) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
   const [openUpward, setOpenUpward] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isPending, setIsPending] = useState(false);

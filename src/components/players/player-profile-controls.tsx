@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   checkUsernameAvailabilityAction,
@@ -15,7 +15,9 @@ import { clearRecentGroups, removeRecentGroup } from "@/lib/storage/recent-group
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PencilIcon, LockIcon, GlobeIcon, CheckIcon, InfoIcon } from "@/components/ui/icons";
+import { Toast } from "@/components/ui/toast";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
+import { PencilIcon, LockIcon, GlobeIcon, InfoIcon } from "@/components/ui/icons";
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 
 export function PlayerProfileHeader({
@@ -64,6 +66,7 @@ export function PlayerProfileHeader({
   const [privacySaving, setPrivacySaving] = useState(false);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [privacyToast, setPrivacyToast] = useState<string | null>(null);
+  const privacyToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
   const {
     triggerRef: privacyTriggerRef,
@@ -82,7 +85,11 @@ export function PlayerProfileHeader({
       setIsPublic(nextVal);
       setPrivacyToast(nextVal ? "Profile is now Public" : "Profile is now Private");
       router.refresh();
-      setTimeout(() => setPrivacyToast(null), 3000);
+      if (privacyToastTimeoutRef.current !== null) clearTimeout(privacyToastTimeoutRef.current);
+      privacyToastTimeoutRef.current = setTimeout(() => {
+        setPrivacyToast(null);
+        privacyToastTimeoutRef.current = null;
+      }, 3000);
     } else {
       setPrivacyError(res.error ?? "Failed to update privacy");
     }
@@ -350,17 +357,17 @@ export function PlayerProfileHeader({
       {isEditingGender ? (
         <form onSubmit={handleSaveGender} className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <CustomDropdown
               id="profile-gender-input"
-              aria-label="Gender"
+              ariaLabel="Gender"
               value={genderInput}
-              onChange={(event) => setGenderInput(event.target.value as "male" | "female")}
-              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold focus:outline-none"
-              autoFocus
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+              onChange={(val) => setGenderInput(val as "male" | "female")}
+              options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+              sizeVariant="sm"
+            />
             <Button
               type="submit"
               variant="primary"
@@ -471,13 +478,15 @@ export function PlayerProfileHeader({
         </div>
 
         {privacyToast && (
-          <div
+          <Toast
             role="status"
-            className="flex items-center gap-1.5 rounded-lg border border-black bg-neutral-200 px-2.5 py-1 text-xs font-black text-black w-fit"
+            onDismiss={() => {
+              if (privacyToastTimeoutRef.current !== null) clearTimeout(privacyToastTimeoutRef.current);
+              setPrivacyToast(null);
+            }}
           >
-            <CheckIcon className="h-3.5 w-3.5 shrink-0" />
             <span>{privacyToast}</span>
-          </div>
+          </Toast>
         )}
         {privacyError && (
           <p role="alert" className="text-xs font-bold text-red-600">
@@ -505,6 +514,7 @@ export function PlayerVisibilityControl({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const { triggerRef, tooltipRef, style } = useTooltipPosition(showTooltip, () => setShowTooltip(false));
 
@@ -519,7 +529,11 @@ export function PlayerVisibilityControl({
       setIsPublic(nextVal);
       setToast(nextVal ? "Profile is now Public" : "Profile is now Private");
       router.refresh();
-      setTimeout(() => setToast(null), 3000);
+      if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToast(null);
+        toastTimeoutRef.current = null;
+      }, 3000);
     } else {
       setError(res.error ?? "Failed to update visibility.");
     }
@@ -600,13 +614,15 @@ export function PlayerVisibilityControl({
       </div>
 
       {toast && (
-        <div
+        <Toast
           role="status"
-          className="flex items-center gap-1.5 rounded-lg border border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black text-black w-fit"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setToast(null);
+          }}
         >
-          <CheckIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{toast}</span>
-        </div>
+        </Toast>
       )}
       {error && (
         <p role="alert" className="mt-1.5 text-xs font-bold text-red-600">

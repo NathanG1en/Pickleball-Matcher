@@ -141,7 +141,7 @@ test.describe("Permissions and Security Workflow", () => {
     // "View profile" should now be present in the dropdown for organizer/host
     const viewProfileLink = linkedItem.locator("a:has-text('View profile')");
     await expect(viewProfileLink).toBeVisible();
-    await expect(viewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(viewProfileLink).toHaveClass(/hover:bg-\[#F0EEE7\]/);
     await expect(viewProfileLink).toHaveClass(/text-black/);
 
     // "Link to public player" should no longer be present
@@ -541,7 +541,7 @@ test.describe("Permissions and Security Workflow", () => {
     await publicItem.locator("summary").click();
     const publicViewProfileLink = publicItem.locator("a:has-text('View profile')");
     await expect(publicViewProfileLink).toBeVisible();
-    await expect(publicViewProfileLink).toHaveClass(/hover:bg-\[#ccff00\]/);
+    await expect(publicViewProfileLink).toHaveClass(/hover:bg-\[#F0EEE7\]/);
     await expect(publicViewProfileLink).toHaveClass(/text-black/);
     await publicItem.locator("summary").click(); // close
 

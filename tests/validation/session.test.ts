@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addSessionGuestSchema,
   deleteSessionSchema,
   manualCourtSchema,
   startRoundSchema,
@@ -314,6 +315,45 @@ describe("startSessionSchema", () => {
       courtCount: 6,
       courtPlayerCounts: [4, 4, 4, 4, 4, 4], // 24 spots
       playerIds: Array.from({ length: 20 }, (_, i) => `player_${i + 1}`), // only 20 players
+    });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("addSessionGuestSchema", () => {
+  it("accepts valid guest input with defaults", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "Charlie Brown",
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.guestName).toBe("Charlie Brown");
+      expect(res.data.gender).toBe("male");
+      expect(res.data.initialRating).toBeGreaterThan(0);
+    }
+  });
+
+  it("accepts custom gender and rating", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "Sally",
+      gender: "female",
+      initialRating: 4.5,
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.gender).toBe("female");
+    }
+  });
+
+  it("rejects empty guest name", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "   ",
     });
     expect(res.success).toBe(false);
   });

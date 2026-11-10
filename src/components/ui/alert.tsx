@@ -47,7 +47,7 @@ export function Alert({
             type="button"
             onClick={onClose}
             aria-label="Dismiss alert"
-            className="shrink-0 -mr-1 -mt-1 p-1 rounded-md hover:bg-black/10 active:bg-black/20 text-current font-bold"
+            className="shrink-0 -mr-1 -mt-1 p-0.5 text-current hover:opacity-70 transition-opacity font-bold bg-transparent border-0 shadow-none outline-none cursor-pointer"
           >
             <XIcon className="h-4 w-4" />
           </button>

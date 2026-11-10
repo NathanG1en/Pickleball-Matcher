@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import {
   TOURNAMENT_DIVISIONS,
   TOURNAMENT_DIVISION_DESCRIPTIONS,
@@ -183,7 +184,7 @@ export function TournamentCreationForm({
       )}
 
       {/* Tournament Details Card */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
         <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
           Tournament Details
         </h2>
@@ -208,7 +209,7 @@ export function TournamentCreationForm({
       </section>
 
       {/* Division Selection Card */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-display text-2xl font-black uppercase text-black">Select Divisions</h2>
@@ -249,7 +250,7 @@ export function TournamentCreationForm({
                 className={`flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                   isSelected
                     ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                    : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
                 }`}
               >
                 <input
@@ -277,7 +278,7 @@ export function TournamentCreationForm({
       </section>
 
       {/* Players Selection Card */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
@@ -323,7 +324,7 @@ export function TournamentCreationForm({
                 className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                   isSelected
                     ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                    : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                    : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
                 }`}
               >
                 <input
@@ -366,26 +367,26 @@ export function TournamentCreationForm({
               onChange={(e) => setGuestName(e.target.value)}
               className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
-            <select
+            <CustomDropdown
               id="tournament-guest-gender"
-              aria-label="Guest Gender"
+              ariaLabel="Guest Gender"
               value={guestGender}
-              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-              className="bg-white border-2 border-black rounded-xl px-3 py-2 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] cursor-pointer"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <Button
+              onChange={(val) => setGuestGender(val as "male" | "female")}
+              options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+              sizeVariant="sm"
+              className="shrink-0"
+            />
+            <button
               type="button"
               onClick={handleAddGuest}
-              variant="secondary"
-              size="sm"
               disabled={!guestName.trim()}
-              className="font-display uppercase tracking-wider shrink-0"
+              className="bg-[#ccff00] text-black font-black uppercase text-xs px-4 py-2 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all font-display tracking-wider"
             >
               Add
-            </Button>
+            </button>
           </div>
           <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
             <RatingSlider

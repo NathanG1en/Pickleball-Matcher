@@ -43,7 +43,7 @@ export default async function HomePage() {
       />
 
       <section
-        className="relative max-w-lg w-full bg-white border-[3px] border-black rounded-3xl p-7 sm:p-10 shadow-[8px_8px_0px_0px_#000] text-center space-y-7 z-10"
+        className="relative max-w-lg w-full bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-7 sm:p-10 text-center space-y-7 z-10"
         aria-labelledby="home-title"
       >
         {/* Eyebrow badge */}
@@ -81,9 +81,9 @@ export default async function HomePage() {
         {/* Actions */}
         <div className="space-y-4 pt-2">
           {activeGroup && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#dcfce7] border-[3px] border-black shadow-[4px_4px_0px_0px_#000] text-left space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#dcfce7] border-[3px] border-black text-left space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
                   Organizer Session
                 </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,7 +22,7 @@ import { LinkGuestModal } from "./link-guest-modal";
 import { EditGuestModal } from "./edit-guest-modal";
 import { MergeGuestModal } from "./merge-guest-modal";
 import { ConfirmGroupNameModal } from "./confirm-group-name-modal";
-import { ConfirmDialog, RatingSlider } from "@/components/ui";
+import { ConfirmDialog, RatingSlider, Toast, CustomDropdown } from "@/components/ui";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
   SearchIcon,
@@ -231,18 +231,30 @@ export function GroupOrganizersPanel({
   const [guestRating, setGuestRating] = useState<number>(3.5);
   const [guestSaving, setGuestSaving] = useState(false);
 
-  const [addMessage, setAddMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const [rosterMessage, setRosterMessage] = useState<string | null>(null);
 
-  const setAddStatus = (msg: string | null) => {
-    setAddMessage(msg);
-    if (msg) setRosterMessage(null);
+  const showToast = (msg: string) => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    setToast(msg);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
   };
 
   const setRosterStatus = (msg: string | null) => {
     setRosterMessage(msg);
-    if (msg) setAddMessage(null);
+    if (msg) setAddError(null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   // Live search for public users as user types
   useEffect(() => {
@@ -339,19 +351,19 @@ export function GroupOrganizersPanel({
 
   const handleAddSearchedPlayer = async (accountId: string) => {
     setAddingAccountId(accountId);
-    setAddStatus(null);
+    setAddError(null);
     try {
       const res = await addPlayerByAccountIdAction({ groupId, accountId });
       if (res.ok) {
-        setAddStatus("Player added to the roster.");
+        showToast(res.data?.name ? `Added ${res.data.name} to the roster.` : "Player added to the roster.");
         setUsername("");
         setSearchResults([]);
         router.refresh();
       } else {
-        setAddStatus(res.error ?? "Failed to add player.");
+        setAddError(res.error ?? "Failed to add player.");
       }
     } catch {
-      setAddStatus("Failed to add player.");
+      setAddError("Failed to add player.");
     } finally {
       setAddingAccountId(null);
     }
@@ -362,7 +374,7 @@ export function GroupOrganizersPanel({
     const trimmed = guestName.trim();
     if (!trimmed || guestSaving) return;
     setGuestSaving(true);
-    setAddStatus(null);
+    setAddError(null);
     const ratingToAdd = guestRating;
     setGuestRating(3.5);
     try {
@@ -374,15 +386,15 @@ export function GroupOrganizersPanel({
         idempotencyKey: createIdempotencyKey("guest_add"),
       });
       if (res.ok) {
-        setAddStatus(`Guest player "${trimmed}" added to the roster.`);
+        showToast(`Guest player "${trimmed}" added to the roster.`);
         setGuestName("");
         setGuestGender("male");
         router.refresh();
       } else {
-        setAddStatus(res.error ?? "Failed to add guest player.");
+        setAddError(res.error ?? "Failed to add guest player.");
       }
     } catch {
-      setAddStatus("Failed to add guest player.");
+      setAddError("Failed to add guest player.");
     } finally {
       setGuestSaving(false);
     }
@@ -394,14 +406,14 @@ export function GroupOrganizersPanel({
     if (!clean) return;
 
     setLookupPending(true);
-    setAddStatus(null);
+    setAddError(null);
 
     const matching = searchResults.find(
       (r) => r.username.toLowerCase() === clean.toLowerCase()
     );
     if (matching) {
       if (matching.alreadyInGroup) {
-        setAddStatus("Player is already on the roster.");
+        setAddError("Player is already on the roster.");
         setLookupPending(false);
         return;
       }
@@ -411,11 +423,13 @@ export function GroupOrganizersPanel({
     }
 
     const result = await addGroupPlayerByUsernameAction({ groupId, username: clean });
-    setAddStatus(result.ok ? "Player added to the roster." : result.error ?? "Unable to find that player.");
     if (result.ok) {
+      showToast("Player added to the roster.");
       setUsername("");
       setSearchResults([]);
       router.refresh();
+    } else {
+      setAddError(result.error ?? "Unable to find that player.");
     }
     setLookupPending(false);
   };
@@ -476,11 +490,23 @@ export function GroupOrganizersPanel({
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <Toast
+          role="status"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setToast(null);
+          }}
+        >
+          <span>{toast}</span>
+        </Toast>
+      )}
+
       {/* Add Player / Guest Section */}
       {(isHost || isOrganizer) && (
         <section
           aria-label="Add player or guest"
-          className="space-y-3 rounded-2xl border-2 border-black bg-white p-4"
+          className="space-y-3 rounded-2xl border-2 border-black bg-[#FFFDF7] p-4"
         >
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -522,7 +548,7 @@ export function GroupOrganizersPanel({
                   type="button"
                   onClick={() => {
                     setAddMode("search");
-                    setAddMessage(null);
+                    setAddError(null);
                   }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
                     addMode === "search"
@@ -537,7 +563,7 @@ export function GroupOrganizersPanel({
                   type="button"
                   onClick={() => {
                     setAddMode("guest");
-                    setAddMessage(null);
+                    setAddError(null);
                   }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
                     addMode === "guest"
@@ -564,7 +590,7 @@ export function GroupOrganizersPanel({
                     onChange={(event) => {
                       const val = event.target.value;
                       setUsername(val);
-                      if (addMessage) setAddMessage(null);
+                      if (addError) setAddError(null);
                       if (val.replace(/^@/, "").trim().length < 2) {
                         setSearchResults([]);
                         setSearchHasRun(false);
@@ -586,7 +612,7 @@ export function GroupOrganizersPanel({
 
               {/* Live Search Results Dropdown */}
               {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
-                <div className="mt-2 rounded-xl border-2 border-black bg-white p-2 space-y-2">
+                <div className="mt-2 rounded-xl border-2 border-black bg-[#FFFDF7] p-2 space-y-2">
                   <div className="px-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
                       Public Accounts ({searchResults.length})
@@ -657,7 +683,7 @@ export function GroupOrganizersPanel({
               )}
             </div>
           ) : (
-            <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-white/70 p-3">
+            <form onSubmit={handleAddGuest} className="space-y-3 rounded-xl border-2 border-black bg-[#FFFDF7]/70 p-3">
               {!isGuestDescDismissed && (
                 <div
                   data-testid="guest-description-banner"
@@ -678,7 +704,7 @@ export function GroupOrganizersPanel({
                   </button>
                 </div>
               )}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="space-y-2">
                 <input
                   id="guest-player-name"
                   aria-label="Guest Name"
@@ -687,25 +713,30 @@ export function GroupOrganizersPanel({
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   placeholder="Guest Name"
-                  className="flex-1 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
+                  className="w-full rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
                 />
-                <select
-                  id="guest-player-gender"
-                  aria-label="Guest Gender"
-                  value={guestGender}
-                  onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-                  className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={guestSaving || !guestName.trim()}
-                  className="rounded-lg border-2 border-black bg-[#ccff00] px-4 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0"
-                >
-                  {guestSaving ? "Adding…" : "Add"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <CustomDropdown
+                    id="guest-player-gender"
+                    ariaLabel="Guest Gender"
+                    value={guestGender}
+                    onChange={(val) => setGuestGender(val as "male" | "female")}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                    ]}
+                    sizeVariant="sm"
+                    className="shrink-0"
+                    buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1.5"
+                  />
+                  <button
+                    type="submit"
+                    disabled={guestSaving || !guestName.trim()}
+                    className="flex-1 rounded-lg border-2 border-black bg-[#ccff00] px-4 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer text-center"
+                  >
+                    {guestSaving ? "Adding…" : "Add"}
+                  </button>
+                </div>
               </div>
               <RatingSlider
                 id="guest-player-rating"
@@ -718,9 +749,9 @@ export function GroupOrganizersPanel({
             </form>
           )}
 
-          {addMessage && (
-            <p role="status" className="text-xs font-bold text-neutral-800 bg-[#ccff00]/40 p-2 rounded-lg border border-black/40">
-              {addMessage}
+          {addError && (
+            <p role="alert" className="text-xs font-bold text-red-600">
+              {addError}
             </p>
           )}
         </div>
@@ -765,65 +796,69 @@ export function GroupOrganizersPanel({
 
           {/* Filter & Sort controls row */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+            <div className="flex items-center gap-1.5">
               <label htmlFor="roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                 Filter:
               </label>
-              <select
+              <CustomDropdown
                 id="roster-filter"
-                aria-label="Filter roster"
-                data-testid="roster-filter-select"
+                ariaLabel="Filter roster"
+                dataTestId="roster-filter-select"
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value as RosterFilterType)}
-                className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-              >
-                <option value="all">All ({players.length})</option>
-                <option value="pinned">Pinned ({pinnedCount})</option>
-                <option value="organizers">Organizers ({organizerCount})</option>
-                <option value="members">Members ({memberCount})</option>
-                <option value="guests">Guests ({guestCount})</option>
-              </select>
+                onChange={(val) => setFilterType(val as RosterFilterType)}
+                options={[
+                  { value: "all", label: `All (${players.length})` },
+                  { value: "pinned", label: `Pinned (${pinnedCount})` },
+                  { value: "organizers", label: `Organizers (${organizerCount})` },
+                  { value: "members", label: `Members (${memberCount})` },
+                  { value: "guests", label: `Guests (${guestCount})` },
+                ]}
+                sizeVariant="xs"
+              />
             </div>
 
             {hasGenderData && (
-              <div className="flex items-center gap-1.5 min-w-[95px]">
+              <div className="flex items-center gap-1.5">
                 <label htmlFor="roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Gender:
                 </label>
-                <select
+                <CustomDropdown
                   id="roster-gender-filter"
-                  aria-label="Filter by gender"
-                  data-testid="roster-gender-filter-select"
+                  ariaLabel="Filter by gender"
+                  dataTestId="roster-gender-filter-select"
                   value={filterGender}
-                  onChange={(e) => setFilterGender(e.target.value as RosterFilterGender)}
-                  className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All Genders</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
+                  onChange={(val) => setFilterGender(val as RosterFilterGender)}
+                  options={[
+                    { value: "all", label: "All Genders" },
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                  ]}
+                  sizeVariant="xs"
+                />
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+            <div className="flex items-center gap-1.5">
               <label htmlFor="roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                 Sort:
               </label>
-              <select
+              <CustomDropdown
                 id="roster-sort"
-                aria-label="Sort roster"
-                data-testid="roster-sort-select"
+                ariaLabel="Sort roster"
+                dataTestId="roster-sort-select"
                 value={sortOption}
-                onChange={(e) => setSortOption(e.target.value as RosterSortOption)}
-                className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-              >
-                <option value="name_asc">Name (A–Z)</option>
-                <option value="name_desc">Name (Z–A)</option>
-                <option value="rating_desc">Rating (High–Low)</option>
-                <option value="rating_asc">Rating (Low–High)</option>
-                <option value="games_desc">Most Games</option>
-                <option value="games_asc">Least Games</option>
-              </select>
+                onChange={(val) => setSortOption(val as RosterSortOption)}
+                options={[
+                  { value: "name_asc", label: "Name (A–Z)" },
+                  { value: "name_desc", label: "Name (Z–A)" },
+                  { value: "rating_desc", label: "Rating (High–Low)" },
+                  { value: "rating_asc", label: "Rating (Low–High)" },
+                  { value: "games_desc", label: "Most Games" },
+                  { value: "games_asc", label: "Least Games" },
+                ]}
+                sizeVariant="xs"
+                align="right"
+              />
             </div>
           </div>
 
@@ -849,9 +884,9 @@ export function GroupOrganizersPanel({
       )}
 
       {players.length === 0 ? (
-        <p className="rounded-lg border border-black bg-white px-3 py-3 text-sm font-bold text-neutral-700">No players on the roster yet.</p>
+        <p className="rounded-lg border border-black bg-[#FFFDF7] px-3 py-3 text-sm font-bold text-neutral-700">No players on the roster yet.</p>
       ) : filteredAndSortedPlayers.length === 0 ? (
-        <div className="rounded-xl border-2 border-black bg-white p-4 text-center space-y-2">
+        <div className="rounded-xl border-2 border-black bg-[#FFFDF7] p-4 text-center space-y-2">
           <p className="text-xs font-bold text-neutral-600">
             No players found matching your search or filters.
           </p>

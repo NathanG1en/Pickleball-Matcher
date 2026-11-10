@@ -15,14 +15,16 @@ export function GroupOptionsMenu({
   groupName,
   isAccountOrganizer = false,
   isOrganizer = true,
+  initialMenuOpen = false,
 }: {
   groupId: string;
   groupName: string;
   isAccountOrganizer?: boolean;
   isOrganizer?: boolean;
+  initialMenuOpen?: boolean;
 }) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
   const [openUpward, setOpenUpward] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

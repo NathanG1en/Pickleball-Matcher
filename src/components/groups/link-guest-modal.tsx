@@ -146,7 +146,7 @@ export function LinkGuestModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-white p-6 text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
