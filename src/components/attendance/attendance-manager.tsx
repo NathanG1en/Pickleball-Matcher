@@ -7,7 +7,7 @@ import { SetupCourtIllustration } from "@/components/attendance/setup-court-illu
 import { Button } from "@/components/ui/button";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { RatingSlider } from "@/components/ui/rating-slider";
-import { PinIcon, SearchIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, PinIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
   sortPlayersWithPinned,
@@ -31,6 +31,7 @@ export interface AttendanceManagerProps {
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
   readonly submitLabel?: string;
+  readonly initialAddGuestOpen?: boolean;
   readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[]; stayTogetherPairs: readonly StayTogetherPair[] }) => void;
   readonly onAddGuest?: (name: string, initialRating?: number, gender?: "male" | "female") => void;
 }
@@ -44,6 +45,7 @@ export function AttendanceManager({
   isEditingSession = false,
   isPending = false,
   submitLabel,
+  initialAddGuestOpen = false,
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
@@ -100,6 +102,7 @@ export function AttendanceManager({
   const [guestName, setGuestName] = useState<string>("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState<number>(3.5);
+  const [isAddGuestOpen, setIsAddGuestOpen] = useState(initialAddGuestOpen);
 
   const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
 
@@ -492,50 +495,68 @@ export function AttendanceManager({
         )}
 
         {/* Add Guest / Quick Player Form */}
-        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-2">
-          <label className="block text-xs font-black uppercase tracking-wider text-black">
-            Add Guest Player
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              aria-label="Guest player name"
-              placeholder="Add guest or new player..."
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+        <div className="mt-4 pt-4 border-t-2 border-neutral-100">
+          <button
+            type="button"
+            onClick={() => setIsAddGuestOpen((prev) => !prev)}
+            aria-expanded={isAddGuestOpen}
+            aria-controls="normal-session-add-guest-form"
+            data-testid="toggle-add-guest"
+            className="w-full flex items-center justify-between text-left cursor-pointer group py-1"
+          >
+            <span className="block text-xs font-black uppercase tracking-wider text-black group-hover:text-neutral-700">
+              Add Guest Player
+            </span>
+            <ChevronDownIcon
+              className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
+                isAddGuestOpen ? "rotate-180" : ""
+              }`}
             />
-            <CustomDropdown
-              id="normal-session-guest-gender"
-              ariaLabel="Guest Gender"
-              value={guestGender}
-              onChange={(val) => setGuestGender(val as "male" | "female")}
-              options={[
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
-              ]}
-              sizeVariant="sm"
-              className="shrink-0"
-            />
-            <button
-              type="submit"
-              disabled={!guestName.trim()}
-              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
-            <RatingSlider
-              id="normal-session-guest-rating"
-              dataTestId="normal-session-guest-rating"
-              label="Guest Rating"
-              value={guestRating}
-              onChange={setGuestRating}
-              showDescription={true}
-            />
-          </div>
-        </form>
+          </button>
+          {isAddGuestOpen && (
+            <form id="normal-session-add-guest-form" onSubmit={handleAddGuest} className="mt-3 space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  aria-label="Guest player name"
+                  placeholder="Add guest or new player..."
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                />
+                <CustomDropdown
+                  id="normal-session-guest-gender"
+                  ariaLabel="Guest Gender"
+                  value={guestGender}
+                  onChange={(val) => setGuestGender(val as "male" | "female")}
+                  options={[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                  ]}
+                  sizeVariant="sm"
+                  className="shrink-0"
+                />
+                <button
+                  type="submit"
+                  disabled={!guestName.trim()}
+                  className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+              <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                <RatingSlider
+                  id="normal-session-guest-rating"
+                  dataTestId="normal-session-guest-rating"
+                  label="Guest Rating"
+                  value={guestRating}
+                  onChange={setGuestRating}
+                  showDescription={true}
+                />
+              </div>
+            </form>
+          )}
+        </div>
       </section>
         </div>
       </div>

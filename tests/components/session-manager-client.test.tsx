@@ -662,11 +662,31 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).toContain('data-testid="attendance-present-list"');
     expect(managerHtml).toContain('data-testid="attendance-not-present-list"');
 
-    // Manager can add a guest mid-session through attendance tab
+    // Manager can add a guest mid-session through attendance tab (collapsible, closed by default)
     expect(managerHtml).toContain("Add Guest Player");
-    expect(managerHtml).toContain('id="session-guest-name"');
-    expect(managerHtml).toContain('aria-label="Guest player name"');
-    expect(managerHtml).toContain('data-testid="session-guest-rating"');
+    expect(managerHtml).toContain('data-testid="toggle-session-add-guest"');
+    expect(managerHtml).toContain('aria-expanded="false"');
+    expect(managerHtml).not.toContain('id="session-guest-name"');
+
+    const managerOpenGuestHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={mixedAttendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+        initialAddGuestOpen={true}
+      />
+    );
+    expect(managerOpenGuestHtml).toContain('data-testid="toggle-session-add-guest"');
+    expect(managerOpenGuestHtml).toContain('aria-expanded="true"');
+    expect(managerOpenGuestHtml).toContain('id="session-guest-name"');
+    expect(managerOpenGuestHtml).toContain('aria-label="Guest player name"');
+    expect(managerOpenGuestHtml).toContain('data-testid="session-guest-rating"');
 
     const nonManagerHtml = renderToStaticMarkup(
       <SessionManagerClient

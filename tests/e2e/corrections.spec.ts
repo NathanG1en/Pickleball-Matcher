@@ -161,7 +161,10 @@ test.describe("Corrections and Replay Workflow", () => {
     await charlieRow.locator("button:has-text('Present')").click();
     await expect(charlieRow.getByTestId("attendance-present-Charlie")).toHaveAttribute("aria-pressed", "true");
 
-    // Add guest mid-session through attendance tab
+    // Add guest mid-session through attendance tab (collapsible accordion)
+    const toggleGuestBtn = page.locator("[data-testid='toggle-session-add-guest']");
+    await expect(toggleGuestBtn).toBeVisible();
+    await toggleGuestBtn.click();
     const guestInput = page.locator("#session-guest-name");
     await expect(guestInput).toBeVisible();
     await guestInput.fill("MidSession Guest");

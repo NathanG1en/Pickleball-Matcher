@@ -106,7 +106,7 @@ describe("AttendanceManager Component", () => {
     expect(html).toContain("Continue to Pairings");
   });
 
-  it("renders guest player input with rating slider", () => {
+  it("renders guest player accordion closed by default", () => {
     const html = renderToStaticMarkup(
       <AttendanceManager
         groupId="group-1"
@@ -116,6 +116,25 @@ describe("AttendanceManager Component", () => {
       />
     );
 
+    expect(html).toContain('data-testid="toggle-add-guest"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Add Guest Player");
+    expect(html).not.toContain('aria-label="Guest player name"');
+  });
+
+  it("renders guest player input with rating slider when open", () => {
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={samplePlayers}
+        selectedPlayerIds={["p1", "p2", "p3", "p4"]}
+        courtCount={1}
+        initialAddGuestOpen={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="toggle-add-guest"');
+    expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-label="Guest player name"');
     expect(html).toContain('aria-label="Guest Gender"');
     expect(html).toContain('id="normal-session-guest-gender"');

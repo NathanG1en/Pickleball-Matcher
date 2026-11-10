@@ -31,7 +31,7 @@ import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/com
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
-import { GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import {
   sortPlayersWithPinned,
   togglePinnedPlayer,
@@ -105,6 +105,7 @@ export interface SessionManagerClientProps {
   readonly isFromProfile?: boolean;
   readonly initialOpenSettingsModal?: boolean;
   readonly initialSettingsModalTab?: SessionSettingsTab;
+  readonly initialAddGuestOpen?: boolean;
 }
 
 export function SessionManagerClient({
@@ -125,6 +126,7 @@ export function SessionManagerClient({
   isFromProfile = false,
   initialOpenSettingsModal = false,
   initialSettingsModalTab,
+  initialAddGuestOpen = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const isHydrated = useHydrated();
@@ -139,6 +141,7 @@ export function SessionManagerClient({
   const [guestName, setGuestName] = useState("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState(3.5);
+  const [isAddGuestOpen, setIsAddGuestOpen] = useState(initialAddGuestOpen);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2438,57 +2441,73 @@ export function SessionManagerClient({
                 </p>
 
                 {canManage && (
-                  <form
-                    onSubmit={handleAddMidSessionGuest}
-                    className="p-3.5 bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] space-y-3"
-                  >
-                    <label
-                      htmlFor="session-guest-name"
-                      className="block text-xs font-black uppercase tracking-wider text-black"
+                  <div className="bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddGuestOpen((prev) => !prev)}
+                      aria-expanded={isAddGuestOpen}
+                      aria-controls="session-add-guest-form"
+                      data-testid="toggle-session-add-guest"
+                      className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
                     >
-                      Add Guest Player
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        id="session-guest-name"
-                        type="text"
-                        aria-label="Guest player name"
-                        placeholder="Add guest or new player..."
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                      <span className="block text-xs font-black uppercase tracking-wider text-black">
+                        Add Guest Player
+                      </span>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
+                          isAddGuestOpen ? "rotate-180" : ""
+                        }`}
                       />
-                      <CustomDropdown
-                        id="session-guest-gender"
-                        ariaLabel="Guest Gender"
-                        value={guestGender}
-                        onChange={(val) => setGuestGender(val as "male" | "female")}
-                        options={[
-                          { value: "male", label: "Male" },
-                          { value: "female", label: "Female" },
-                        ]}
-                        sizeVariant="sm"
-                        className="shrink-0"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!guestName.trim() || isAddingGuest}
-                        className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    </button>
+                    {isAddGuestOpen && (
+                      <form
+                        id="session-add-guest-form"
+                        onSubmit={handleAddMidSessionGuest}
+                        className="p-3.5 pt-0 space-y-3"
                       >
-                        {isAddingGuest ? "Adding..." : "Add"}
-                      </button>
-                    </div>
-                    <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
-                      <RatingSlider
-                        id="session-guest-rating"
-                        dataTestId="session-guest-rating"
-                        label="Guest Rating"
-                        value={guestRating}
-                        onChange={setGuestRating}
-                        showDescription={true}
-                      />
-                    </div>
-                  </form>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            id="session-guest-name"
+                            type="text"
+                            aria-label="Guest player name"
+                            placeholder="Add guest or new player..."
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                          />
+                          <CustomDropdown
+                            id="session-guest-gender"
+                            ariaLabel="Guest Gender"
+                            value={guestGender}
+                            onChange={(val) => setGuestGender(val as "male" | "female")}
+                            options={[
+                              { value: "male", label: "Male" },
+                              { value: "female", label: "Female" },
+                            ]}
+                            sizeVariant="sm"
+                            className="shrink-0"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!guestName.trim() || isAddingGuest}
+                            className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                          >
+                            {isAddingGuest ? "Adding..." : "Add"}
+                          </button>
+                        </div>
+                        <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                          <RatingSlider
+                            id="session-guest-rating"
+                            dataTestId="session-guest-rating"
+                            label="Guest Rating"
+                            value={guestRating}
+                            onChange={setGuestRating}
+                            showDescription={true}
+                          />
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 )}
 
                 {sortedPlayers.length > 5 && (
