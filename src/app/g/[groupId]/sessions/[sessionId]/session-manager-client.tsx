@@ -2555,22 +2555,12 @@ export function SessionManagerClient({
                     {shouldShowRebalancePrompt && canManage && (
                       <div
                         data-testid="guided-court-choice-card"
-                        className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000] space-y-3"
+                        className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-base">⚡</span>
-                              <h4 className="font-display text-xs font-black uppercase tracking-wider text-black">
-                                {isOverCapacity ? "Courts Over Capacity" : "Update Court Setup"} ({presentCount} Present)
-                              </h4>
-                            </div>
-                            <p className="text-xs font-bold text-neutral-600 mt-0.5">
-                              {isOverCapacity
-                                ? `Current courts (${configCapacity} players) exceed present players (${presentCount}). Choose a setup:`
-                                : `Attendance changed. Adjust courts for ${presentCount} players:`}
-                            </p>
-                          </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase text-neutral-700 block">
+                            Quick Presets ({presentCount} Present):
+                          </span>
                           {!isOverCapacity && (
                             <button
                               type="button"
@@ -2582,8 +2572,7 @@ export function SessionManagerClient({
                             </button>
                           )}
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {rebalanceChoices.map((choice) => {
                             const isCurrent = isChoiceCurrent(choice);
                             return (
@@ -2593,49 +2582,20 @@ export function SessionManagerClient({
                                 onClick={() => handleApplyCourtChoice(choice)}
                                 disabled={isPending || isCourtConfigPending || isCurrent}
                                 data-testid={`guided-choice-${choice.id}`}
-                                className={`text-left p-3 rounded-xl border-2 border-black transition-all flex flex-col justify-between gap-2 shadow-[2px_2px_0px_0px_#000] ${
+                                className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
                                   isCurrent
-                                    ? "bg-neutral-100 opacity-60 cursor-default"
-                                    : "bg-white hover:bg-[#ccff00]/10 hover:border-black cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                                    ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                                    : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
                                 }`}
                               >
-                                <div>
-                                  <div className="flex items-center justify-between gap-1.5 mb-1">
-                                    <span className="font-display text-xs font-black uppercase text-black">
-                                      {choice.title}
-                                    </span>
-                                    <span
-                                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-black ${
-                                        choice.sitting === 0
-                                          ? "bg-[#ccff00] text-black"
-                                          : "bg-amber-100 text-amber-950"
-                                      }`}
-                                    >
-                                      {choice.badge}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs font-bold text-neutral-700">{choice.summary}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                                  <span className="text-[10px] font-black">{choice.badge}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-200">
-                                  <span>{choice.details}</span>
-                                  <span className="font-black text-black">
-                                    {isCurrent ? "✓ Current" : "Apply →"}
-                                  </span>
-                                </div>
+                                <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
                               </button>
                             );
                           })}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setModalTab("court_config")}
-                            className="text-xs font-black uppercase text-neutral-600 hover:text-black underline cursor-pointer"
-                            data-testid="customize-courts-link"
-                          >
-                            Customize court sizes manually →
-                          </button>
                         </div>
                       </div>
                     )}

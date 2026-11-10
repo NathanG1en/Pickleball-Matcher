@@ -20,11 +20,15 @@ describe("getCourtRebalanceChoices", () => {
     expect(choices.length).toBe(2);
 
     // Choice 1: 1 court of 4, 1 sitting
+    expect(choices[0]?.title).toBe("Only Doubles Matchups");
+    expect(choices[0]?.summary).toBe("1 Court");
     expect(choices[0]?.courtCount).toBe(1);
     expect(choices[0]?.courts).toEqual([4]);
     expect(choices[0]?.sitting).toBe(1);
 
     // Choice 2: 2 courts (3 + 2), 0 sitting
+    expect(choices[1]?.title).toBe("Everyone Plays");
+    expect(choices[1]?.summary).toBe("2 Courts: 1 2v1, 1 singles");
     expect(choices[1]?.courtCount).toBe(2);
     expect(choices[1]?.courts).toEqual([3, 2]);
     expect(choices[1]?.sitting).toBe(0);
@@ -35,11 +39,15 @@ describe("getCourtRebalanceChoices", () => {
     expect(choices.length).toBe(2);
 
     // Choice 1: 1 court of 4, 2 sitting
+    expect(choices[0]?.title).toBe("Only Doubles Matchups");
+    expect(choices[0]?.summary).toBe("1 Court");
     expect(choices[0]?.courtCount).toBe(1);
     expect(choices[0]?.courts).toEqual([4]);
     expect(choices[0]?.sitting).toBe(2);
 
     // Choice 2: 2 courts (4 + 2), 0 sitting
+    expect(choices[1]?.title).toBe("Everyone Plays");
+    expect(choices[1]?.summary).toBe("2 Courts: 1 doubles, 1 singles");
     expect(choices[1]?.courtCount).toBe(2);
     expect(choices[1]?.courts).toEqual([4, 2]);
     expect(choices[1]?.sitting).toBe(0);
@@ -50,11 +58,15 @@ describe("getCourtRebalanceChoices", () => {
     expect(choices.length).toBe(2);
 
     // Choice 1: 1 court of 4, 3 sitting
+    expect(choices[0]?.title).toBe("Only Doubles Matchups");
+    expect(choices[0]?.summary).toBe("1 Court");
     expect(choices[0]?.courtCount).toBe(1);
     expect(choices[0]?.courts).toEqual([4]);
     expect(choices[0]?.sitting).toBe(3);
 
     // Choice 2: 2 courts (4 + 3), 0 sitting
+    expect(choices[1]?.title).toBe("Everyone Plays");
+    expect(choices[1]?.summary).toBe("2 Courts: 1 doubles, 1 2v1");
     expect(choices[1]?.courtCount).toBe(2);
     expect(choices[1]?.courts).toEqual([4, 3]);
     expect(choices[1]?.sitting).toBe(0);

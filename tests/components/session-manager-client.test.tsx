@@ -968,7 +968,7 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain("Courts Need Adjustment (5 Present Players)");
     expect(html).toContain('data-testid="main-guided-choice-doubles_rotate"');
     expect(html).toContain('data-testid="main-guided-choice-all_active"');
-    expect(html).toContain("Full 2v2 Doubles");
+    expect(html).toContain("Only Doubles Matchups");
     expect(html).toContain("Everyone Plays");
   });
 });

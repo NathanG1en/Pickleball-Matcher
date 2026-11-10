@@ -325,7 +325,7 @@ export function AttendanceManager({
             {rebalanceChoices.length > 1 && (
               <div className="mt-4 p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
                 <span className="text-xs font-black uppercase text-neutral-700 block">
-                  {count % 2 !== 0 ? `Odd Count Options (${count} Players):` : `Quick Presets (${count} Players):`}
+                  Quick Presets ({count} Players):
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {rebalanceChoices.map((choice) => (

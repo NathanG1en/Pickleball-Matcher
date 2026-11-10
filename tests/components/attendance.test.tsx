@@ -266,7 +266,7 @@ describe("AttendanceManager Component", () => {
     expect(html).not.toContain("Odd Count Choice");
   });
 
-  it("shows 'Odd Count Options' when player count is odd with multiple choices", () => {
+  it("shows 'Quick Presets' when player count has multiple choices", () => {
     const fivePlayers = Array.from({ length: 5 }, (_, i) => ({
       id: `p${i + 1}`,
       name: `Player ${i + 1}`,
@@ -283,9 +283,12 @@ describe("AttendanceManager Component", () => {
       />
     );
 
-    expect(html).toContain("Odd Count Options (5 Players):");
+    expect(html).toContain("Quick Presets (5 Players):");
+    expect(html).not.toContain("Odd Count");
     expect(html).toContain('data-testid="setup-preset-doubles_rotate"');
     expect(html).toContain('data-testid="setup-preset-all_active"');
+    expect(html).toContain("Only Doubles Matchups");
+    expect(html).toContain("Everyone Plays");
   });
 });
 

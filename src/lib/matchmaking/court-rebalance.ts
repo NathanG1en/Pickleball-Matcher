@@ -34,13 +34,13 @@ export function getCourtRebalanceChoices(
 
   const choice1: CourtChoice = {
     id: "doubles_rotate",
-    title: presentCount >= 4 ? "Full 2v2 Doubles" : "1 Court",
+    title: presentCount >= 4 ? "Only Doubles Matchups" : "1 Court",
     badge: choice1Sitting > 0 ? `${choice1Sitting} Rotating` : "0 Sitting",
     courtCount: choice1Courts.length,
     courts: choice1Courts,
     capacity: choice1Capacity,
     sitting: choice1Sitting,
-    summary: `${choice1Courts.length} ${choice1Courts.length === 1 ? "Court" : "Courts"} (4 players each)`,
+    summary: `${choice1Courts.length} ${choice1Courts.length === 1 ? "Court" : "Courts"}`,
     details: choice1Sitting > 0
       ? `${choice1Sitting} ${choice1Sitting === 1 ? "player rotates" : "players rotate"} each round`
       : "All players active every round",
@@ -90,19 +90,19 @@ export function getCourtRebalanceChoices(
   const singlesCount = choice2Courts.filter((c) => c === 2).length;
 
   const parts: string[] = [];
-  if (doublesCount > 0) parts.push(`${doublesCount} Doubles (2v2)`);
-  if (cutthroatCount > 0) parts.push(`${cutthroatCount} 2v1 (${cutthroatCount === 1 ? "Court" : "Courts"})`);
-  if (singlesCount > 0) parts.push(`${singlesCount} Singles (1v1)`);
+  if (doublesCount > 0) parts.push(`${doublesCount} doubles`);
+  if (cutthroatCount > 0) parts.push(`${cutthroatCount} 2v1`);
+  if (singlesCount > 0) parts.push(`${singlesCount} singles`);
 
   const choice2: CourtChoice = {
     id: "all_active",
-    title: choice2Sitting === 0 ? "Everyone Plays" : "Active Play",
+    title: "Everyone Plays",
     badge: choice2Sitting === 0 ? "0 Sitting" : `${choice2Sitting} Rotating`,
     courtCount: choice2Courts.length,
     courts: choice2Courts,
     capacity: choice2Capacity,
     sitting: choice2Sitting,
-    summary: `${choice2Courts.length} Courts: ${parts.join(" + ")}`,
+    summary: `${choice2Courts.length} ${choice2Courts.length === 1 ? "Court" : "Courts"}: ${parts.join(", ")}`,
     details: choice2Sitting === 0
       ? "All players on court immediately"
       : `${choice2Sitting} rotating while maximizing court play`,
