@@ -6,7 +6,7 @@ test("semifinal corrections clear the final and champion, including after refres
   await createTestGroup(page, `Bracket corrections ${Date.now()}`);
   await page.getByRole("button", { name: "Add Guest", exact: true }).click();
   for (const name of ["Blake", "Casey", "Drew"]) {
-    await page.getByRole("textbox", { name: "Guest Name", exact: true }).fill(name);
+    await page.getByRole("textbox", { name: "Guest player name", exact: true }).fill(name);
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByRole("status")).toContainText(`Guest player "${name}" added`);
   }

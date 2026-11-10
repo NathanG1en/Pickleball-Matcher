@@ -1578,12 +1578,6 @@ export function OpenPlayManagerClient({
               onSubmit={handleAddGuest}
               className="pt-2 border-t-2 border-neutral-200 space-y-3"
             >
-              <label
-                htmlFor="guest-name-input"
-                className="block text-xs font-black uppercase tracking-wider text-black"
-              >
-                Add Guest to Roster
-              </label>
               {!isGuestDescDismissed && (
                 <div
                   data-testid="guest-description-banner"
@@ -1608,10 +1602,11 @@ export function OpenPlayManagerClient({
                 <input
                   id="guest-name-input"
                   type="text"
+                  aria-label="Guest player name"
                   placeholder="Guest player name"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 min-w-0 p-2 rounded-xl border-2 border-black bg-white text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
+                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                 />
                 <div className="flex items-center gap-2 shrink-0">
                   <CustomDropdown
@@ -1637,7 +1632,7 @@ export function OpenPlayManagerClient({
               </div>
 
               {/* Sliding Scale for Rating */}
-              <div className="bg-white border-2 border-black rounded-2xl p-3 shadow-[2px_2px_0px_0px_#000]">
+              <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
                 <RatingSlider
                   id="guest-rating-slider"
                   dataTestId="guest-rating-slider"

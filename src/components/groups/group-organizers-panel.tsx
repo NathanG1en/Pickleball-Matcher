@@ -704,18 +704,18 @@ export function GroupOrganizersPanel({
                   </button>
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   id="guest-player-name"
-                  aria-label="Guest Name"
+                  aria-label="Guest player name"
                   required
                   maxLength={60}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Guest Name"
-                  className="w-full rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none"
+                  placeholder="Guest player name"
+                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <CustomDropdown
                     id="guest-player-gender"
                     ariaLabel="Guest Gender"
@@ -726,26 +726,27 @@ export function GroupOrganizersPanel({
                       { value: "female", label: "Female" },
                     ]}
                     sizeVariant="sm"
-                    className="shrink-0"
-                    buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1.5"
+                    className="flex-1 sm:flex-initial shrink-0"
                   />
                   <button
                     type="submit"
                     disabled={guestSaving || !guestName.trim()}
-                    className="flex-1 rounded-lg border-2 border-black bg-[#ccff00] px-4 py-1.5 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer text-center"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                   >
-                    {guestSaving ? "Adding…" : "Add"}
+                    {guestSaving ? "Adding..." : "Add"}
                   </button>
                 </div>
               </div>
-              <RatingSlider
-                id="guest-player-rating"
-                label="Guest starting skill level"
-                value={guestRating}
-                onChange={setGuestRating}
-                dataTestId="guest-player-rating"
-                showDescription={true}
-              />
+              <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                <RatingSlider
+                  id="guest-player-rating"
+                  label="Guest Rating"
+                  value={guestRating}
+                  onChange={setGuestRating}
+                  dataTestId="guest-player-rating"
+                  showDescription={true}
+                />
+              </div>
             </form>
           )}
 

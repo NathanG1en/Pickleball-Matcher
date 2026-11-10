@@ -496,25 +496,26 @@ export function AttendanceManager({
 
         {/* Add Guest / Quick Player Form */}
         <div className="mt-4 pt-4 border-t-2 border-neutral-100">
-          <button
-            type="button"
-            onClick={() => setIsAddGuestOpen((prev) => !prev)}
-            aria-expanded={isAddGuestOpen}
-            aria-controls="normal-session-add-guest-form"
-            data-testid="toggle-add-guest"
-            className="w-full flex items-center justify-between text-left cursor-pointer group py-1"
-          >
-            <span className="block text-xs font-black uppercase tracking-wider text-black group-hover:text-neutral-700">
-              Add Guest Player
-            </span>
-            <ChevronDownIcon
-              className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
-                isAddGuestOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {isAddGuestOpen && (
-            <form id="normal-session-add-guest-form" onSubmit={handleAddGuest} className="mt-3 space-y-2">
+          <div className="bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsAddGuestOpen((prev) => !prev)}
+              aria-expanded={isAddGuestOpen}
+              aria-controls="normal-session-add-guest-form"
+              data-testid="toggle-add-guest"
+              className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
+            >
+              <span className="block text-xs font-black uppercase tracking-wider text-black">
+                Add Guest Player
+              </span>
+              <ChevronDownIcon
+                className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
+                  isAddGuestOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {isAddGuestOpen && (
+              <form id="normal-session-add-guest-form" onSubmit={handleAddGuest} className="p-3.5 pt-0 space-y-3">
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
@@ -546,7 +547,7 @@ export function AttendanceManager({
                   </button>
                 </div>
               </div>
-              <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+              <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
                 <RatingSlider
                   id="normal-session-guest-rating"
                   dataTestId="normal-session-guest-rating"
@@ -558,6 +559,7 @@ export function AttendanceManager({
               </div>
             </form>
           )}
+          </div>
         </div>
       </section>
         </div>

@@ -454,17 +454,17 @@ export function TeamTournamentCreationForm({
                 type="button"
                 onClick={(e) => void handleAddGuest(e)}
                 disabled={!guestName.trim()}
-                className="bg-[#ccff00] text-black font-black uppercase text-xs px-4 py-2 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all font-display tracking-wider"
+                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
               >
                 Add
               </button>
             </div>
           </div>
-          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+          <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
             <RatingSlider
               id="team-tournament-guest-rating"
               dataTestId="team-tournament-guest-rating"
-              label="Guest Starting Rating"
+              label="Guest Rating"
               value={guestRating}
               onChange={setGuestRating}
               showDescription={true}
