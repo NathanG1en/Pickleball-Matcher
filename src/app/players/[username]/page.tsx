@@ -262,19 +262,20 @@ export default async function PlayerPublicProfilePage({
               ) : (
                 <ul className="space-y-2">
                   {groups.map((group) => (
-                    <li key={group.id} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold">
-                      <div>
-                        <Link href={`/g/${group.id}`} className="block underline">{group.name}</Link>
-                        <span className="text-xs text-neutral-600">{group.playerCount} {group.playerCount === 1 ? "player" : "players"}</span>
-                      </div>
+                    <li key={group.id}>
                       <Link
                         href={`/g/${group.id}`}
                         aria-label={`Go to ${group.name}`}
                         title={`Go to ${group.name}`}
-                        className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
+                        className="group flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
                       >
-                        <span className="sr-only">Go to group</span>
-                        <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate font-black text-black group-hover:underline">{group.name}</span>
+                          <span className="text-xs font-semibold text-neutral-600">{group.playerCount} {group.playerCount === 1 ? "player" : "players"}</span>
+                        </div>
+                        <div className="p-1.5 text-black group-hover:translate-x-0.5 transition-transform shrink-0">
+                          <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                        </div>
                       </Link>
                     </li>
                   ))}

@@ -74,9 +74,12 @@ export function RecentGroupsHome({
             className="p-2.5 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-between gap-2"
           >
             <div className="min-w-0 flex-1">
-              <span className="font-display text-base font-black uppercase text-black block truncate">
+              <Link
+                href={`/g/${group.id}`}
+                className="font-display text-base font-black uppercase text-black block truncate hover:underline"
+              >
                 {group.name}
-              </span>
+              </Link>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <Link

@@ -179,7 +179,7 @@ export function FilterablePlayerSelect({
           id={listboxId}
           role="listbox"
           aria-label={`${ariaLabel} options`}
-          className="absolute left-0 right-0 top-full mt-1.5 z-40 rounded-xl border-2 border-black bg-white p-2 shadow-[4px_4px_0px_0px_#000] space-y-2 animate-in fade-in duration-100"
+          className="absolute left-0 right-0 top-full mt-1.5 z-40 rounded-[20px] border-[2.5px] border-black bg-[#FFFDF6] p-2 space-y-2 dropdown-animate"
         >
           {/* Search Filter Input inside Dropdown */}
           <div className="relative">
@@ -205,7 +205,7 @@ export function FilterablePlayerSelect({
               }}
               aria-label={`Filter ${ariaLabel} options`}
               data-testid="filterable-select-search"
-              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-black text-xs font-bold focus:outline-none bg-neutral-50"
+              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-black text-xs font-semibold focus:outline-none bg-neutral-50"
             />
             {searchQuery && (
               <button
@@ -225,7 +225,7 @@ export function FilterablePlayerSelect({
               <button
                 type="button"
                 onClick={() => handleSelectOption("")}
-                className="w-full text-left px-2 py-1 text-[11px] font-bold text-neutral-500 hover:bg-neutral-100 rounded-lg cursor-pointer"
+                className="w-full text-left px-2 py-1 text-[11px] font-semibold text-neutral-500 hover:bg-[#F0EEE7] rounded-lg cursor-pointer transition-colors"
               >
                 Clear selection
               </button>
@@ -251,12 +251,12 @@ export function FilterablePlayerSelect({
                         handleSelectOption(opt.id);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold text-left transition-colors ${
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
                       opt.disabled
                         ? "opacity-40 cursor-not-allowed bg-neutral-50 text-neutral-400"
                         : isSelected
                         ? "bg-[#ccff00] text-black border border-black cursor-pointer font-black"
-                        : "hover:bg-neutral-100 cursor-pointer text-black"
+                        : "hover:bg-[#F0EEE7] active:bg-[#EAE5D9] cursor-pointer text-black"
                     }`}
                   >
                     <span className="truncate flex items-center gap-1.5">

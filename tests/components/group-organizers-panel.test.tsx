@@ -179,7 +179,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Guest Player (@");
       expect(html).toContain("View profile");
       expect(html).toContain(
-        'class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"'
+        'class="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"'
       );
       expect(html).not.toContain("text-xs font-black uppercase hover:bg-[#ccff00]");
 
@@ -199,8 +199,8 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("0 games");
       expect(html).not.toContain("Rating: 1000");
 
-      // Verify "Remove group organizer" button exists for delegated organizer
-      expect(html).toContain("Remove group organizer");
+      // Verify "Remove organizer" button exists for delegated organizer
+      expect(html).toContain("Remove organizer");
       // Verify "Transfer host" button exists for delegated organizer
       expect(html).toContain("Transfer host");
       // Verify "Make a group organizer" button exists for regular member
@@ -242,7 +242,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Link to public player");
       expect(html).toContain("Edit guest");
       expect(html).not.toContain("Make a group organizer");
-      expect(html).not.toContain("Remove group organizer");
+      expect(html).not.toContain("Remove organizer");
       expect(html).not.toContain("Transfer host");
 
       // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for organizers
@@ -437,7 +437,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain('href="/players/org_user"');
       expect(html).toContain("@org_user");
       expect(html).toContain("View profile");
-      expect(html).not.toContain("Remove group organizer");
+      expect(html).not.toContain("Remove organizer");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Link to public player");
       expect(html).not.toContain("Edit guest");

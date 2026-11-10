@@ -31,6 +31,15 @@ import {
   HandshakeIcon,
   CheckIcon,
   PinIcon,
+  PinOffIcon,
+  UserRoundIcon,
+  ShieldMinusIcon,
+  ShieldPlusIcon,
+  CrownIcon,
+  Trash2Icon,
+  PencilIcon,
+  ArrowLeftRightIcon,
+  LinkIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   XIcon,
@@ -278,6 +287,30 @@ export function GroupOrganizersPanel({
     document.querySelectorAll<HTMLDetailsElement>("details[data-player-menu][open]").forEach((el) => {
       el.removeAttribute("open");
     });
+  };
+
+  const handlePlayerMenuToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+    const details = event.currentTarget;
+    if (details.open) {
+      document.querySelectorAll<HTMLDetailsElement>("details[data-player-menu][open]").forEach((el) => {
+        if (el !== details) {
+          el.removeAttribute("open");
+        }
+      });
+      const menuEl = details.querySelector<HTMLElement>("[data-player-menu-dropdown]");
+      if (menuEl) {
+        const rect = details.getBoundingClientRect();
+        const menuHeight = menuEl.offsetHeight || 260;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < menuHeight + 16 && rect.top > menuHeight) {
+          menuEl.classList.remove("top-full", "mt-1.5", "dropdown-animate");
+          menuEl.classList.add("bottom-full", "mb-1.5", "dropdown-animate-up");
+        } else {
+          menuEl.classList.remove("bottom-full", "mb-1.5", "dropdown-animate-up");
+          menuEl.classList.add("top-full", "mt-1.5", "dropdown-animate");
+        }
+      }
+    }
   };
 
   useEffect(() => {
@@ -907,123 +940,147 @@ export function GroupOrganizersPanel({
                       >
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
                       </button>
-                      <details className="relative" data-player-menu>
+                      <details
+                        className="relative open:z-40"
+                        data-player-menu
+                        onToggle={handlePlayerMenuToggle}
+                      >
                         <summary
                           aria-label={`Options for ${player.name}`}
                           className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black bg-[#FFFDF7] text-black text-sm font-black leading-none shadow-[1.5px_1.5px_0px_0px_#171717] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer list-none select-none shrink-0"
                         >
                           ···
                         </summary>
-                        <div className="absolute right-0 top-9 sm:top-10 z-20 min-w-48 rounded-xl border-2 border-black bg-white p-1.5 shadow-[3px_3px_0px_0px_#171717]">
+                        <div
+                          data-player-menu-dropdown
+                          role="menu"
+                          aria-label={`Options for ${player.name}`}
+                          className="absolute right-0 top-full mt-1.5 z-40 w-[260px] max-w-[calc(100vw-32px)] rounded-[20px] border-[2.5px] border-black bg-[#FFFDF6] p-2 dropdown-animate space-y-0.5"
+                        >
+                          {/* Section 1: Player Actions */}
                           <button
                             type="button"
+                            role="menuitem"
                             onClick={() => {
                               closeAllMenus();
                               togglePinnedPlayer(groupId, player.id);
                             }}
-                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
+                            className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
                           >
-                            {isPinned ? "Unpin player" : "Pin player"}
-                          </button>
-                          <div className="my-1 border-t border-neutral-200" />
-                        {playerUsername && (
-                          <Link
-                            href={`/players/${encodeURIComponent(playerUsername)}`}
-                            onClick={closeAllMenus}
-                            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"
-                          >
-                            View profile
-                          </Link>
-                        )}
-                        {organizer?.isHost ? (
-                          <button
-                            type="button"
-                            disabled
-                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Group host
-                          </button>
-                        ) : (
-                          <>
-                            {isHost && (
-                              <>
-                                {organizer ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      disabled={pendingPlayerId === player.id}
-                                      onClick={() => void removeOrganizer(player.id)}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      {pendingPlayerId === player.id ? "Removing…" : "Remove group organizer"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={pendingPlayerId === player.id}
-                                      onClick={() => {
-                                        closeAllMenus();
-                                        setTransferError(null);
-                                        setTransferTarget(player);
-                                      }}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
-                                    >
-                                      Transfer host
-                                    </button>
-                                    <div className="my-1 border-t border-neutral-200" />
-                                  </>
-                                ) : player.accountId ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      disabled={pendingPlayerId === player.id}
-                                      onClick={() => void makeOrganizer(player.id)}
-                                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      {pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}
-                                    </button>
-                                    <div className="my-1 border-t border-neutral-200" />
-                                  </>
-                                ) : null}
-                              </>
+                            {isPinned ? (
+                              <PinOffIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                            ) : (
+                              <PinIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" filled={false} />
                             )}
-                            {!player.accountId && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    closeAllMenus();
-                                    setEditingGuest(player);
-                                  }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
-                                >
-                                  Edit guest
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    closeAllMenus();
-                                    setMergingGuest(player);
-                                  }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
-                                >
-                                  Merge with another guest player
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    closeAllMenus();
-                                    setLinkingPlayer(player);
-                                  }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase hover:bg-[#ccff00] cursor-pointer"
-                                >
-                                  Link to public player
-                                </button>
-                                <div className="my-1 border-t border-neutral-200" />
-                              </>
-                            )}
-                            {(!organizer || isHost) ? (
+                            <span>{isPinned ? "Unpin player" : "Pin player"}</span>
+                          </button>
+
+                          {playerUsername && (
+                            <Link
+                              href={`/players/${encodeURIComponent(playerUsername)}`}
+                              role="menuitem"
+                              onClick={closeAllMenus}
+                              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+                            >
+                              <UserRoundIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                              <span>View profile</span>
+                            </Link>
+                          )}
+
+                          {!player.accountId && (
+                            <>
                               <button
                                 type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  closeAllMenus();
+                                  setEditingGuest(player);
+                                }}
+                                className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+                              >
+                                <PencilIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                <span>Edit guest</span>
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  closeAllMenus();
+                                  setMergingGuest(player);
+                                }}
+                                className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+                              >
+                                <ArrowLeftRightIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                <span>Merge with another guest player</span>
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  closeAllMenus();
+                                  setLinkingPlayer(player);
+                                }}
+                                className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+                              >
+                                <LinkIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                <span>Link to public player</span>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Section 2: Group Management */}
+                          {!organizer?.isHost && isHost && (organizer || player.accountId) && (
+                            <>
+                              <div className="my-1 border-t border-neutral-300" role="separator" />
+                              {organizer ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    disabled={pendingPlayerId === player.id}
+                                    onClick={() => void removeOrganizer(player.id)}
+                                    className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <ShieldMinusIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                    <span>{pendingPlayerId === player.id ? "Removing…" : "Remove organizer"}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    disabled={pendingPlayerId === player.id}
+                                    onClick={() => {
+                                      closeAllMenus();
+                                      setTransferError(null);
+                                      setTransferTarget(player);
+                                    }}
+                                    className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <CrownIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                    <span>Transfer host</span>
+                                  </button>
+                                </>
+                              ) : player.accountId ? (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  disabled={pendingPlayerId === player.id}
+                                  onClick={() => void makeOrganizer(player.id)}
+                                  className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <ShieldPlusIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+                                  <span>{pendingPlayerId === player.id ? "Adding…" : "Make a group organizer"}</span>
+                                </button>
+                              ) : null}
+                            </>
+                          )}
+
+                          {/* Section 3: Destructive Actions */}
+                          {!organizer?.isHost && (!organizer || isHost) && (
+                            <>
+                              <div className="my-1 border-t border-neutral-300" role="separator" />
+                              <button
+                                type="button"
+                                role="menuitem"
                                 disabled={pendingPlayerId === player.id}
                                 onClick={() => {
                                   if (!player.accountId) {
@@ -1033,23 +1090,15 @@ export function GroupOrganizersPanel({
                                     void removePlayer(player.id);
                                   }
                                 }}
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-[#E32929] hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                {pendingPlayerId === player.id ? "Removing…" : "Remove player"}
+                                <Trash2Icon className="w-[18px] h-[18px] shrink-0 text-[#E32929] stroke-2" />
+                                <span>{pendingPlayerId === player.id ? "Removing…" : "Remove player"}</span>
                               </button>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Group organizer
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </details>
+                            </>
+                          )}
+                        </div>
+                      </details>
                   </>
                 ) : (
                     playerUsername && (

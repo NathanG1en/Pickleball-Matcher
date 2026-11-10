@@ -283,6 +283,40 @@ body {
   }
 }
 
+/* Dropdown entrance animation: subtle fade and scale (100–150ms) */
+@media (prefers-reduced-motion: no-preference) {
+  .dropdown-animate {
+    animation: dropdown-pop 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top right;
+  }
+  .dropdown-animate-up {
+    animation: dropdown-pop-up 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: bottom right;
+  }
+}
+
+@keyframes dropdown-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-pop-up {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

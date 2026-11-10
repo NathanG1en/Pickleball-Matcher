@@ -11,6 +11,12 @@ import {
 } from "@/app/actions/sessions";
 import { formatSessionDate } from "@/lib/utils/date";
 import type { SessionRecord } from "@/lib/domain/types";
+import {
+  PencilIcon,
+  CopyIcon,
+  RotateCcwIcon,
+  Trash2Icon,
+} from "@/components/ui/icons";
 
 export interface SessionOptionsMenuProps {
   readonly groupId: string;
@@ -45,6 +51,7 @@ export function SessionOptionsMenu({
 }: SessionOptionsMenuProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
+  const [openUpward, setOpenUpward] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameInput, setRenameInput] = useState(sessionName ?? "");
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -58,6 +65,20 @@ export function SessionOptionsMenu({
     sessionName?.trim() ||
     (sessionDate ? formatSessionDate(sessionDate) : null);
 
+  const handleToggleMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen((prev) => {
+      const next = !prev;
+      if (next && menuRef.current) {
+        const rect = menuRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const menuHeight = 220;
+        setOpenUpward(spaceBelow < menuHeight + 16 && rect.top > menuHeight);
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (!menuOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,8 +86,17 @@ export function SessionOptionsMenu({
         setMenuOpen(false);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [menuOpen]);
 
   const handleOpenRename = () => {
@@ -186,14 +216,11 @@ export function SessionOptionsMenu({
     <div className="relative inline-block" ref={menuRef}>
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setMenuOpen((prev) => !prev);
-        }}
+        onClick={handleToggleMenu}
         aria-label="Session options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}
-        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 select-none"
+        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 select-none transition-colors"
       >
         ···
       </button>
@@ -202,25 +229,29 @@ export function SessionOptionsMenu({
         <div
           role="menu"
           aria-label="Session actions"
-          className="absolute right-0 top-8 sm:top-11 z-30 min-w-44 rounded-2xl border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000] space-y-1"
+          className={`absolute right-0 ${
+            openUpward ? "bottom-full mb-1.5 dropdown-animate-up" : "top-full mt-1.5 dropdown-animate"
+          } z-40 w-[260px] max-w-[calc(100vw-32px)] rounded-[20px] border-[2.5px] border-black bg-[#FFFDF6] p-2 space-y-0.5`}
         >
           <button
             type="button"
             role="menuitem"
             data-testid="rename-session-menu-item"
             onClick={handleOpenRename}
-            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
+            className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
           >
-            Rename Session
+            <PencilIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+            <span>Rename Session</span>
           </button>
           <button
             type="button"
             role="menuitem"
             data-testid="duplicate-session-menu-item"
             onClick={handleOpenDuplicate}
-            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-neutral-100 cursor-pointer transition-colors"
+            className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
           >
-            Duplicate Session
+            <CopyIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+            <span>Duplicate Session</span>
           </button>
           {onUndoLatestRound && latestRoundNumber ? (
             <button
@@ -231,19 +262,22 @@ export function SessionOptionsMenu({
                 setMenuOpen(false);
                 onUndoLatestRound();
               }}
-              className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-[#ff6b6b] hover:bg-red-50 cursor-pointer transition-colors"
+              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
             >
-              Undo Round {latestRoundNumber}
+              <RotateCcwIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+              <span>Undo Round {latestRoundNumber}</span>
             </button>
           ) : null}
+          <div className="my-1 border-t border-neutral-300" role="separator" />
           <button
             type="button"
             role="menuitem"
             data-testid="delete-session-menu-item"
             onClick={handleOpenDelete}
-            className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium uppercase text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+            className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-[#E32929] hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
           >
-            Delete Session
+            <Trash2Icon className="w-[18px] h-[18px] shrink-0 text-[#E32929] stroke-2" />
+            <span>Delete Session</span>
           </button>
         </div>
       )}
