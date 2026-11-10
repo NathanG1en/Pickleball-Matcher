@@ -95,7 +95,7 @@ export function CustomDropdown({
   };
 
   return (
-    <div ref={containerRef} className={`relative inline-block ${className}`}>
+    <div ref={containerRef} className={`relative inline-block max-w-full ${className}`}>
       {/* Visual trigger button */}
       <button
         ref={triggerRef}
@@ -111,7 +111,7 @@ export function CustomDropdown({
             setIsOpen((prev) => !prev);
           }
         }}
-        className={`inline-flex items-center justify-between font-bold text-black border-2 transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`inline-flex items-center justify-between min-w-0 max-w-full font-bold text-black border-2 transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${
           hasError
             ? "border-red-600 bg-red-50 focus:ring-red-600"
             : "border-black bg-white"

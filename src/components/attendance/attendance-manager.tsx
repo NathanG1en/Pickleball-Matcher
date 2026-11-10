@@ -190,22 +190,23 @@ export function AttendanceManager({
             </div>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {courtPlayerCounts.slice(0, courts).map((size, index) => (
-                <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
+                <div key={index} className="flex items-center justify-between gap-1.5 rounded-xl border-2 border-black p-2 sm:p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
                   <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
                   <CustomDropdown
                     ariaLabel={`Players on court ${index + 1}`}
                     value={String(size)}
                     onChange={(val) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(val) as 2 | 3 | 4 : value))}
+                    align="right"
                     options={[
                       { value: "4", label: "4 players · 2v2" },
                       { value: "3", label: "3 players · 2v1" },
                       { value: "2", label: "2 players · 1v1" },
                     ]}
                     sizeVariant="xs"
-                    className="min-w-0 shrink-0"
-                    buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1"
+                    className="min-w-0 flex-1 max-w-[155px]"
+                    buttonClassName="w-full justify-between rounded-lg shadow-[1px_1px_0px_0px_#000] py-1 px-1.5 text-xs"
                   />
-                </label>
+                </div>
               ))}
             </div>
             {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||

@@ -768,11 +768,14 @@ export function TemporaryGroupClient({
                       ),
                     })
                   }
+                  align="right"
                   options={[4, 3, 2].map((amount) => ({
                     value: String(amount),
                     label: `${amount} players · ${amount === 4 ? "2v2" : amount === 3 ? "2v1" : "1v1"}`,
                   }))}
                   sizeVariant="xs"
+                  className="min-w-0"
+                  buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1 px-2 text-xs"
                 />
               </div>
             ))}
