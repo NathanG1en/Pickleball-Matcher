@@ -21,7 +21,7 @@ export function Toast({
   ...props
 }: ToastProps) {
   const positionClass = fixed
-    ? "fixed top-4 right-4 z-50 max-w-[calc(100vw-2rem)]"
+    ? "fixed top-4 right-4 z-[60] max-w-[calc(100vw-2rem)]"
     : "w-fit max-w-full";
 
   return (

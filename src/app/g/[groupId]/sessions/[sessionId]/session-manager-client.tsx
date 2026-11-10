@@ -270,7 +270,6 @@ export function SessionManagerClient({
         ? [...session.courtPlayerCounts]
         : Array.from({ length: session.courtCount }, () => 4 as const)
   );
-  const [courtConfigMessage, setCourtConfigMessage] = useState<string | null>(null);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -362,7 +361,6 @@ export function SessionManagerClient({
         ? [...currentSession.courtPlayerCounts]
         : Array.from({ length: currentSession.courtCount }, () => 4 as const)
     );
-    setCourtConfigMessage(null);
     setShowSessionSettingsModal(true);
   };
 
@@ -374,7 +372,6 @@ export function SessionManagerClient({
     const capacity = counts.reduce((sum, s) => sum + s, 0);
     setCourtConfigCourts(targetCourts);
     setCourtConfigPlayerCounts(targetPlayerCounts);
-    setCourtConfigMessage(null);
 
     if (capacity > presentCount || targetCourts < 1) {
       return;
@@ -400,7 +397,7 @@ export function SessionManagerClient({
           } else {
             setRegeneratedProposal(null);
           }
-          setCourtConfigMessage("Court configuration updated successfully.");
+          showToast("Court configuration updated successfully.");
         } else {
           setError(res.error);
         }
@@ -465,7 +462,6 @@ export function SessionManagerClient({
     startCourtConfigTransition(async () => {
       setIsPending(true);
       setError(null);
-      setCourtConfigMessage(null);
       try {
         const res = await updateCourtConfigAction({
           groupId,
@@ -486,8 +482,7 @@ export function SessionManagerClient({
             setRegeneratedProposal(null);
           }
           setShowAttendanceRebalancePrompt(false);
-          setCourtConfigMessage("Court configuration updated successfully.");
-          showToast(`Courts updated for ${presentCount} players!`);
+          showToast("Court configuration updated successfully.");
         } else {
           setError(res.error);
         }
@@ -506,7 +501,6 @@ export function SessionManagerClient({
     startCourtConfigTransition(async () => {
       setIsPending(true);
       setError(null);
-      setCourtConfigMessage(null);
       try {
         const res = await updateCourtConfigAction({
           groupId,
@@ -524,7 +518,7 @@ export function SessionManagerClient({
           } else {
             setRegeneratedProposal(null);
           }
-          setCourtConfigMessage("Court configuration updated successfully.");
+          showToast("Court configuration updated successfully.");
         } else {
           setError(res.error);
         }
@@ -2457,17 +2451,6 @@ export function SessionManagerClient({
 
             {/* Scrollable Tab Content */}
             <div className="p-6 pt-4 flex-1 overflow-y-auto space-y-4">
-              {successToast && (
-                <Toast
-                  role="status"
-                  onDismiss={() => {
-                    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
-                    setSuccessToast(null);
-                  }}
-                >
-                  {successToast}
-                </Toast>
-              )}
               {modalTab === "attendance" && (
               <div
                 role="tabpanel"
@@ -2876,12 +2859,6 @@ export function SessionManagerClient({
                 <p className="text-xs font-bold text-neutral-600">
                   Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
                 </p>
-
-                {courtConfigMessage && (
-                  <div className="p-2.5 rounded-xl bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
-                    {courtConfigMessage}
-                  </div>
-                )}
 
                 <div className="flex items-center gap-4">
                   <button
