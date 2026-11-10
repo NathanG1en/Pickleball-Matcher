@@ -36,7 +36,7 @@ export function ConfirmGroupNameModal({
 
   const isConfirmed =
     Boolean(groupName.trim()) &&
-    confirmName.trim().toLowerCase() === groupName.trim().toLowerCase();
+    confirmName.trim() === groupName.trim();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ export function ConfirmGroupNameModal({
     >
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <Label htmlFor="confirm-group-name" className="text-neutral-600">
+          <Label htmlFor="confirm-group-name" className="text-neutral-600 normal-case font-bold">
             Type <span className="text-black font-black select-all">&quot;{groupName}&quot;</span> to confirm
           </Label>
           <Input

@@ -60,7 +60,7 @@ export async function deleteGroupAction(input: unknown): Promise<{ ok: boolean; 
     const repository = getActionRepository();
     const group = await repository.getGroup(parsed.data.groupId);
     if (!group) return { ok: false, error: "Group not found." };
-    if (group.name.trim().toLowerCase() !== parsed.data.confirmationName.trim().toLowerCase()) {
+    if (group.name.trim() !== parsed.data.confirmationName.trim()) {
       return { ok: false, error: "Group name does not match." };
     }
 

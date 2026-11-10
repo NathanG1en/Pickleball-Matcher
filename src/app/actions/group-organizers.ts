@@ -149,7 +149,7 @@ export async function transferGroupHostAction(input: unknown): Promise<{ ok: boo
     if (group.ownerAccountId !== accountId) {
       return { ok: false, error: "Only the host can transfer host privileges." };
     }
-    if (group.name.trim().toLowerCase() !== parsed.data.confirmationName.trim().toLowerCase()) {
+    if (group.name.trim() !== parsed.data.confirmationName.trim()) {
       return { ok: false, error: "Group name does not match." };
     }
     const player = (await repository.listPlayers(group.id)).find(({ id }) => id === parsed.data.playerId);

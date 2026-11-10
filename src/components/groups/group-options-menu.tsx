@@ -70,7 +70,7 @@ export function GroupOptionsMenu({
   }, [menuOpen]);
 
   const handleDelete = async (confirmationName: string) => {
-    if (confirmationName.trim().toLowerCase() !== groupName.trim().toLowerCase()) {
+    if (confirmationName.trim() !== groupName.trim()) {
       setDeleteError("Group name does not match.");
       return;
     }

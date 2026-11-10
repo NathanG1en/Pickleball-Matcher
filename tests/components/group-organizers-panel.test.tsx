@@ -1453,13 +1453,28 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(newHostAddResult.ok).toBe(true);
     });
 
-    it("accepts case-insensitive group name confirmation", async () => {
+    it("rejects case-mismatched group name confirmation", async () => {
       vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
 
       const result = await transferGroupHostAction({
         groupId: "g1",
         playerId: "p2",
-        confirmationName: "test group",
+        confirmationName: "test group", // group name is "Test Group"
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Group name does not match");
+      const group = await repository.getGroup("g1");
+      expect(group?.ownerAccountId).toBe(hostAccountId);
+    });
+
+    it("accepts exact case group name confirmation", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "Test Group",
       });
 
       expect(result.ok).toBe(true);

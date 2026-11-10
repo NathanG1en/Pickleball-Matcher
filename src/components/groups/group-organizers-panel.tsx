@@ -466,6 +466,10 @@ export function GroupOrganizersPanel({
 
   const handleTransferHost = async (confirmationName: string) => {
     if (!transferTarget) return;
+    if (confirmationName.trim() !== groupName.trim()) {
+      setTransferError("Group name does not match.");
+      return;
+    }
     setTransferPending(true);
     setTransferError(null);
     try {

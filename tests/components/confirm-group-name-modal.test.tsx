@@ -34,6 +34,7 @@ describe("ConfirmGroupNameModal component", () => {
     expect(html).toContain("Transfer Host");
     expect(html).toContain("You are about to transfer host privileges.");
     expect(html).toContain("Friday Night Picklers");
+    expect(html).toContain("normal-case");
     expect(html).toContain('placeholder="Friday Night Picklers"');
     expect(html).toContain("Cancel");
   });

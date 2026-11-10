@@ -206,12 +206,26 @@ describe("Group Navigation and Options Menu", () => {
 
       const result = await deleteGroupAction({
         groupId: "g1",
-        confirmationName: "friday night picklers", // Case insensitive match
+        confirmationName: "Friday Night Picklers",
       });
 
       expect(result.ok).toBe(true);
       const group = await repository.getGroup("g1");
       expect(group).toBeNull();
+    });
+
+    it("rejects deletion if the confirmation name case does not match", async () => {
+      currentAccountId = hostAccountId;
+
+      const result = await deleteGroupAction({
+        groupId: "g1",
+        confirmationName: "friday night picklers", // Case mismatch
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Group name does not match");
+      const group = await repository.getGroup("g1");
+      expect(group).not.toBeNull();
     });
 
     it("rejects deletion if the confirmation name does not match", async () => {

@@ -262,6 +262,10 @@ test.describe("Permissions and Security Workflow", () => {
     await input.fill("Wrong Group Name");
     await expect(confirmButton).toBeDisabled();
 
+    // Fill incorrect case (lowercase): stays disabled
+    await input.fill(groupName.toLowerCase());
+    await expect(confirmButton).toBeDisabled();
+
     // Fill exact group name: becomes enabled
     await input.fill(groupName);
     await expect(confirmButton).toBeEnabled();
