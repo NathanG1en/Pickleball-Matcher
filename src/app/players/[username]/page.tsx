@@ -5,7 +5,6 @@ import {
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
 import {
-  PlayerLogoutButton,
   PlayerProfileHeader,
 } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
@@ -101,13 +100,9 @@ export default async function PlayerPublicProfilePage({
     <main className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl space-y-5">
         <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <BackButton fallbackHref="/" />
-            {isOwner && <PlayerLogoutButton />}
-          </div>
-
           {isOwner ? (
             <PlayerProfileHeader
+              backButton={<BackButton fallbackHref="/" />}
               initialName={targetAccount.name}
               initialUsername={targetAccount.username}
               initialGender={targetAccount.gender}
@@ -116,10 +111,14 @@ export default async function PlayerPublicProfilePage({
               initialIsPublic={targetAccount.isPublic ?? true}
             />
           ) : (
-            <div className="min-w-0 flex-1 space-y-2">
-              <h1 className="font-display text-3xl font-black uppercase truncate text-black">
-                {targetAccount.name}
-              </h1>
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <BackButton fallbackHref="/" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <h1 className="font-display text-3xl font-black uppercase truncate text-black">
+                  {targetAccount.name}
+                </h1>
               <p className="text-sm font-bold text-neutral-600">
                 @{targetAccount.username}
               </p>
@@ -140,6 +139,7 @@ export default async function PlayerPublicProfilePage({
                 </p>
               </div>
             </div>
+            </>
           )}
         </header>
 

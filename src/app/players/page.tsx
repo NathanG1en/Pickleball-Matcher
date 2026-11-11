@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActionRepository, getActivePlayerAccountId } from "@/app/actions/action-context";
-import { PlayerLogoutButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
+import { PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { BackButton, StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
@@ -25,11 +25,8 @@ export default async function PlayerProfilePage() {
   return <main className="min-h-screen p-4 sm:p-6 lg:p-8">
     <section className="mx-auto max-w-2xl lg:max-w-6xl xl:max-w-7xl space-y-5">
       <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-7">
-        <div className="mb-4 flex items-center justify-between">
-          <BackButton href="/" />
-          <PlayerLogoutButton />
-        </div>
         <PlayerProfileHeader
+          backButton={<BackButton href="/" />}
           initialName={account.name}
           initialUsername={account.username}
           initialGender={account.gender}

@@ -514,10 +514,12 @@ test.describe("Permissions and Security Workflow", () => {
 
     // Make privateUser private via their profile page
     await privatePage.goto("/players");
+    await privatePage.getByRole("button", { name: "Edit Profile" }).click();
     const privacyBtn = privatePage.getByRole("button", { name: /Account visibility: currently Public/ });
     await expect(privacyBtn).toBeVisible();
     await privacyBtn.click();
-    await expect(privatePage.getByText("Profile is now Private")).toBeVisible();
+    await privatePage.getByRole("button", { name: "Save Changes" }).click();
+    await expect(privatePage.getByText("Profile updated successfully")).toBeVisible();
 
     // 2. In the host page, create a test group with unique name
     const groupName = `Profile Visibility Group ${Date.now()}`;
@@ -839,10 +841,12 @@ test("find players workflow from homepage shows public and private players with 
 
   // Switch User B to private
   await pageB.goto("/players");
+  await pageB.getByRole("button", { name: "Edit Profile" }).click();
   const privacyToggle = pageB.locator("button[title='Click to switch to Private']");
   await expect(privacyToggle).toBeVisible();
   await privacyToggle.click();
-  await expect(pageB.getByText("Profile is now Private")).toBeVisible();
+  await pageB.getByRole("button", { name: "Save Changes" }).click();
+  await expect(pageB.getByText("Profile updated successfully")).toBeVisible();
   await contextB.close();
 
   // 3. User A goes to home page
