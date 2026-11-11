@@ -12,10 +12,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 1. Test Updates & End-to-End (E2E) Guidelines
 
+### Page Documentation
+- Maintain user-facing page and flow documentation in `docs/pages/`, organized by area (for example, `profile.md`, `groups.md`, and `sessions.md`). These docs describe the current UI and user-visible behavior, including important states, actions, navigation, and permissions.
+- Before committing any change that affects a page, component, route, or user flow, update the documentation for every affected page in the same commit. If the relevant page documentation does not exist yet, create it as part of the change.
+- Keep page docs aligned with the shipped behavior; do not use them as a change log. Link to existing feature or architecture docs when they provide deeper implementation context.
+
 ### Mandatory Test Updates Before Running Tests
 **Every time a change is made, you MUST edit and update all necessary tests—including unit, integration, and E2E tests—BEFORE running them.**
 - Never run tests against stale expectations or outdated assertions. Proactively update test files to reflect changes to behavior, UI elements, data models, or user flows before executing any test commands.
 - Whenever user flows, routes, components, or permissions change, inspect and update the corresponding E2E specs and test helpers first so they remain synchronized with the implementation.
+- For every page or user-flow change, review every spec under `tests/e2e/` and `tests/e2e/test-helpers.ts` to find all affected flows, including indirect coverage in acceptance, permissions, resilience, and feature-specific specs. Update all affected tests in the same commit; do not limit the review to the most obvious spec or leave stale expected behavior in another flow. Unaffected specs do not need edits.
 
 ### E2E Test Guidelines
 When making changes to:
@@ -48,5 +54,5 @@ Key E2E specs for reference:
 
 ## 3. Git & Commit Guidelines
 - **Commit Per User Request**: Make a separate Git commit each time the user asks to make a change.
+- **Commit Page Documentation with Behavior**: Every commit that changes a user-facing page or flow must include the updated or newly created documentation for each affected page in `docs/pages/`, along with all affected E2E updates.
 - **Commit Message Style**: Do not add prefixes like `bug(...)`, `fix(...)`, `feat(...)`, etc. Simply explain the change made in plain, descriptive language.
-
