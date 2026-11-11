@@ -8,7 +8,7 @@ import {
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
-import { LeaveGroupButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
+import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -239,7 +239,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(result).toEqual({ ok: true, data: { groupId: "grp_member" } });
   });
 
-  it("renders pencil icons beside display name, username, and gender and removes old display name editor section", async () => {
+  it("renders read-only display name, username, and gender in view mode with centralized Edit Profile button and three-dot menu", async () => {
     const repository = new InMemoryRepositories({
       playerAccounts: [
         {
@@ -264,10 +264,14 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("@active_user");
     expect(html).toContain("Female");
 
-    // Has pencil icons by display name, username, and gender
-    expect(html).toContain('aria-label="Edit display name"');
-    expect(html).toContain('aria-label="Edit username"');
-    expect(html).toContain('aria-label="Edit gender"');
+    // Does NOT have individual pencil icons by display name, username, and gender
+    expect(html).not.toContain('aria-label="Edit display name"');
+    expect(html).not.toContain('aria-label="Edit username"');
+    expect(html).not.toContain('aria-label="Edit gender"');
+
+    // Has centralized Edit Profile button and three-dot account options menu
+    expect(html).toContain("Edit Profile");
+    expect(html).toContain('aria-label="Account options"');
 
     // Has back button
     expect(html).toContain('aria-label="Go back"');
@@ -278,7 +282,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toContain('<label for="profile-name"');
   });
 
-  it("PlayerProfileHeader renders display name, username, and gender with pencil buttons", () => {
+  it("PlayerProfileHeader renders display name, username, and gender in view mode without pencil buttons", () => {
     const html = renderToStaticMarkup(
       <PlayerProfileHeader
         initialName="Jane Doe"
@@ -292,10 +296,23 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Jane Doe");
     expect(html).toContain("@janedoe");
     expect(html).toContain("Male");
-    expect(html).toContain('aria-label="Edit display name"');
-    expect(html).toContain('aria-label="Edit username"');
-    expect(html).toContain('aria-label="Edit gender"');
+    expect(html).not.toContain('aria-label="Edit display name"');
+    expect(html).not.toContain('aria-label="Edit username"');
+    expect(html).not.toContain('aria-label="Edit gender"');
+    expect(html).toContain("Edit Profile");
+    expect(html).toContain('aria-label="Account options"');
     expect(html).toContain("Advanced Intermediate · current rating 3.75");
+  });
+
+  it("AccountOptionsMenu renders three-dot button and dropdown with Log Out when open", () => {
+    const htmlClosed = renderToStaticMarkup(<AccountOptionsMenu initialMenuOpen={false} />);
+    expect(htmlClosed).toContain('aria-label="Account options"');
+    expect(htmlClosed).not.toContain('data-testid="logout-menu-item"');
+
+    const htmlOpen = renderToStaticMarkup(<AccountOptionsMenu initialMenuOpen={true} />);
+    expect(htmlOpen).toContain('aria-label="Account options"');
+    expect(htmlOpen).toContain('data-testid="logout-menu-item"');
+    expect(htmlOpen).toContain("Log Out");
   });
 
   it("renders the player's current rating on their profile instead of their initial rating", async () => {

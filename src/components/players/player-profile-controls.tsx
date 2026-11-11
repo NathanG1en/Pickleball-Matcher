@@ -6,7 +6,6 @@ import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
   playerLogoutAction,
-  updatePlayerGenderAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
@@ -17,10 +16,14 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
-import { PencilIcon, LockIcon, GlobeIcon, InfoIcon } from "@/components/ui/icons";
+import { LockIcon, GlobeIcon, InfoIcon } from "@/components/ui/icons";
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
+import { AccountOptionsMenu } from "@/components/players/account-options-menu";
+
+export { AccountOptionsMenu };
 
 export function PlayerProfileHeader({
+  backButton,
   initialName,
   initialUsername,
   initialGender,
@@ -29,6 +32,7 @@ export function PlayerProfileHeader({
   rating,
   initialIsPublic = true,
 }: {
+  backButton?: React.ReactNode;
   initialName: string;
   initialUsername: string;
   initialGender?: "male" | "female" | null;
@@ -41,32 +45,28 @@ export function PlayerProfileHeader({
   const displayRating = currentRating ?? rating ?? initialRating ?? 1000;
   const router = useRouter();
 
+  const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(initialName);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState(initialName);
-  const [nameSaving, setNameSaving] = useState(false);
-  const [nameError, setNameError] = useState<string | null>(null);
-
   const [username, setUsername] = useState(initialUsername);
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState(initialUsername);
-  const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
-  const [usernameSaving, setUsernameSaving] = useState(false);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-
   const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
-  const [isEditingGender, setIsEditingGender] = useState(false);
-  const [genderInput, setGenderInput] = useState<"male" | "female">(
-    initialGender === "female" ? "female" : "male"
-  );
-  const [genderSaving, setGenderSaving] = useState(false);
-  const [genderError, setGenderError] = useState<string | null>(null);
-
   const [isPublic, setIsPublic] = useState(initialIsPublic);
-  const [privacySaving, setPrivacySaving] = useState(false);
-  const [privacyError, setPrivacyError] = useState<string | null>(null);
-  const [privacyToast, setPrivacyToast] = useState<string | null>(null);
-  const privacyToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Edit form state
+  const [nameInput, setNameInput] = useState(initialName);
+  const [usernameInput, setUsernameInput] = useState(initialUsername);
+  const [genderInput, setGenderInput] = useState<"male" | "female">(
+    initialGender === "female" ? "female" : "male",
+  );
+  const [isPublicInput, setIsPublicInput] = useState(initialIsPublic);
+
+  const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
   const {
     triggerRef: privacyTriggerRef,
@@ -74,40 +74,20 @@ export function PlayerProfileHeader({
     style: privacyTooltipStyle,
   } = useTooltipPosition(showPrivacyTooltip, () => setShowPrivacyTooltip(false));
 
-  const handleTogglePrivacy = async () => {
-    if (privacySaving) return;
-    setPrivacySaving(true);
-    setPrivacyError(null);
-    setPrivacyToast(null);
-    const nextVal = !isPublic;
-    const res = await updatePlayerPrivacyAction({ isPublic: nextVal });
-    if (res.ok) {
-      setIsPublic(nextVal);
-      setPrivacyToast(nextVal ? "Profile is now Public" : "Profile is now Private");
-      router.refresh();
-      if (privacyToastTimeoutRef.current !== null) clearTimeout(privacyToastTimeoutRef.current);
-      privacyToastTimeoutRef.current = setTimeout(() => {
-        setPrivacyToast(null);
-        privacyToastTimeoutRef.current = null;
-      }, 3000);
-    } else {
-      setPrivacyError(res.error ?? "Failed to update privacy");
-    }
-    setPrivacySaving(false);
-  };
-
-  const cleanUsername = usernameInput.replace(/^@/, "").trim().toLowerCase();
+  const cleanUsernameInput = usernameInput.replace(/^@/, "").trim().toLowerCase();
   const isUsernameTaken =
-    isEditingUsername &&
-    Boolean(cleanUsername) &&
-    cleanUsername !== username.toLowerCase() &&
-    availability?.query === cleanUsername &&
+    isEditing &&
+    Boolean(cleanUsernameInput) &&
+    cleanUsernameInput !== username.toLowerCase() &&
+    availability?.query === cleanUsernameInput &&
     !availability.available;
 
   useEffect(() => {
-    if (!isEditingUsername) return;
+    if (!isEditing) return;
     const clean = usernameInput.replace(/^@/, "").trim().toLowerCase();
-    if (!clean || clean === username.toLowerCase()) return;
+    if (!clean || clean === username.toLowerCase()) {
+      return;
+    }
     let cancelled = false;
     checkUsernameAvailabilityAction(clean)
       .then((result) => {
@@ -123,383 +103,495 @@ export function PlayerProfileHeader({
     return () => {
       cancelled = true;
     };
-  }, [usernameInput, isEditingUsername, username]);
+  }, [usernameInput, isEditing, username]);
 
-  const handleStartEditName = () => {
+  const handleEnterEditMode = () => {
     setNameInput(name);
-    setNameError(null);
-    setIsEditingName(true);
+    setUsernameInput(username);
+    setGenderInput(gender === "female" ? "female" : "male");
+    setIsPublicInput(isPublic);
+    setSaveError(null);
+    setAvailability(null);
+    setIsEditing(true);
   };
 
-  const handleCancelEditName = () => {
-    setNameInput(name);
-    setNameError(null);
-    setIsEditingName(false);
+  const handleCancelClick = () => {
+    const hasChanges =
+      nameInput.trim() !== name.trim() ||
+      cleanUsernameInput !== username.toLowerCase() ||
+      genderInput !== (gender ?? "male") ||
+      isPublicInput !== isPublic;
+
+    if (hasChanges) {
+      setShowDiscardConfirm(true);
+    } else {
+      handleDiscard();
+    }
   };
 
-  const handleSaveName = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const trimmed = nameInput.trim();
-    if (!trimmed || nameSaving) return;
-    if (trimmed === name.trim()) {
-      setIsEditingName(false);
+  const handleDiscard = () => {
+    setNameInput(name);
+    setUsernameInput(username);
+    setGenderInput(gender === "female" ? "female" : "male");
+    setIsPublicInput(isPublic);
+    setSaveError(null);
+    setAvailability(null);
+    setShowDiscardConfirm(false);
+    setIsEditing(false);
+  };
+
+  const trimmedName = nameInput.trim();
+  const isFormValid =
+    Boolean(trimmedName) &&
+    trimmedName.length <= 80 &&
+    Boolean(cleanUsernameInput) &&
+    cleanUsernameInput.length >= 3 &&
+    cleanUsernameInput.length <= 24 &&
+    /^[A-Za-z0-9_]+$/.test(cleanUsernameInput) &&
+    !isUsernameTaken;
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (saving) return;
+
+    if (!trimmedName) {
+      setSaveError("Display name is required.");
       return;
     }
-    setNameSaving(true);
-    setNameError(null);
-    const result = await updatePlayerProfileAction({ name: trimmed });
-    if (result.ok) {
-      setName(trimmed);
-      setIsEditingName(false);
-      router.refresh();
-    } else {
-      setNameError(result.error);
-    }
-    setNameSaving(false);
-  };
 
-  const handleStartEditUsername = () => {
-    setUsernameInput(username);
-    setAvailability(null);
-    setUsernameError(null);
-    setIsEditingUsername(true);
-  };
-
-  const handleCancelEditUsername = () => {
-    setUsernameInput(username);
-    setAvailability(null);
-    setUsernameError(null);
-    setIsEditingUsername(false);
-  };
-
-  const handleSaveUsername = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const clean = usernameInput.replace(/^@/, "").trim().toLowerCase();
-    if (!clean || usernameSaving || isUsernameTaken) return;
-    if (clean === username.toLowerCase()) {
-      setIsEditingUsername(false);
+    if (
+      !cleanUsernameInput ||
+      cleanUsernameInput.length < 3 ||
+      cleanUsernameInput.length > 24 ||
+      !/^[A-Za-z0-9_]+$/.test(cleanUsernameInput)
+    ) {
+      setSaveError("Username must be 3 to 24 letters, numbers, or underscores.");
       return;
     }
-    setUsernameSaving(true);
-    setUsernameError(null);
-    const result = await updatePlayerUsernameAction({ username: clean });
-    if (result.ok) {
-      setUsername(clean);
-      setAvailability(null);
-      setIsEditingUsername(false);
-      router.refresh();
-    } else {
-      setUsernameError(result.error);
-      if (result.error.toLowerCase().includes("taken")) {
-        setAvailability({ query: clean, available: false });
+
+    if (isUsernameTaken) {
+      setSaveError("That username is already taken.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      const nameChanged = trimmedName !== name;
+      const genderChanged = genderInput !== gender;
+      if (nameChanged || genderChanged) {
+        const profileRes = await updatePlayerProfileAction({
+          name: trimmedName,
+          gender: genderInput,
+        });
+        if (!profileRes.ok) {
+          setSaveError(profileRes.error ?? "Failed to update profile.");
+          setSaving(false);
+          return;
+        }
       }
-    }
-    setUsernameSaving(false);
-  };
 
-  const handleStartEditGender = () => {
-    setGenderInput(gender === "female" ? "female" : "male");
-    setGenderError(null);
-    setIsEditingGender(true);
-  };
+      const usernameChanged = cleanUsernameInput !== username.toLowerCase();
+      if (usernameChanged) {
+        const usernameRes = await updatePlayerUsernameAction({ username: cleanUsernameInput });
+        if (!usernameRes.ok) {
+          setSaveError(usernameRes.error ?? "Failed to update username.");
+          if (usernameRes.error?.toLowerCase().includes("taken")) {
+            setAvailability({ query: cleanUsernameInput, available: false });
+          }
+          setSaving(false);
+          return;
+        }
+      }
 
-  const handleCancelEditGender = () => {
-    setGenderInput(gender === "female" ? "female" : "male");
-    setGenderError(null);
-    setIsEditingGender(false);
-  };
+      const privacyChanged = isPublicInput !== isPublic;
+      if (privacyChanged) {
+        const privacyRes = await updatePlayerPrivacyAction({ isPublic: isPublicInput });
+        if (!privacyRes.ok) {
+          setSaveError(privacyRes.error ?? "Failed to update privacy setting.");
+          setSaving(false);
+          return;
+        }
+      }
 
-  const handleSaveGender = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (genderSaving) return;
-    if (genderInput === gender) {
-      setIsEditingGender(false);
-      return;
-    }
-    setGenderSaving(true);
-    setGenderError(null);
-    const result = await updatePlayerGenderAction({ gender: genderInput });
-    if (result.ok) {
+      setName(trimmedName);
+      setUsername(cleanUsernameInput);
       setGender(genderInput);
-      setIsEditingGender(false);
-      router.refresh();
-    } else {
-      setGenderError(result.error);
+      setIsPublic(isPublicInput);
+      setIsEditing(false);
+      setToastMessage("Profile updated successfully");
+      if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToastMessage(null);
+        toastTimeoutRef.current = null;
+      }, 3000);
+
+      if (usernameChanged && typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        if (currentPath.includes("/players/")) {
+          router.replace(`/players/${encodeURIComponent(cleanUsernameInput)}`);
+        } else {
+          router.refresh();
+        }
+      } else {
+        router.refresh();
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to update profile.");
+    } finally {
+      setSaving(false);
     }
-    setGenderSaving(false);
   };
 
   return (
-    <div className="min-w-0 flex-1 space-y-2">
-      {/* Display name row */}
-      {isEditingName ? (
-        <form onSubmit={handleSaveName} className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              id="profile-name-input"
-              aria-label="Display name"
-              required
-              maxLength={80}
-              value={nameInput}
-              onChange={(event) => setNameInput(event.target.value)}
-              className="min-w-0 max-w-xs rounded-xl border-2 border-black bg-white px-3 py-1.5 font-bold focus:outline-none"
-              autoFocus
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={nameSaving || !nameInput.trim()}
-              className="font-bold uppercase"
-            >
-              {nameSaving ? "Saving…" : "Save"}
-            </Button>
-            <button
-              type="button"
-              onClick={handleCancelEditName}
-              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
-            >
-              Cancel
-            </button>
-          </div>
-          {nameError && (
-            <p role="alert" className="text-xs font-bold text-red-600">{nameError}</p>
+    <div className="min-w-0 flex-1 space-y-3">
+      {/* Top Header Bar: Back Button & Actions */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">{backButton}</div>
+        <div className="flex items-center gap-2 shrink-0">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelClick}
+                disabled={saving}
+                data-testid="cancel-edit-profile-button"
+                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || !isFormValid}
+                data-testid="save-profile-button"
+                className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+              >
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleEnterEditMode}
+                data-testid="edit-profile-button"
+                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              >
+                Edit Profile
+              </button>
+              <AccountOptionsMenu />
+            </>
           )}
-        </form>
-      ) : (
-        <div className="flex items-center gap-2">
-          <h1 className="font-display text-3xl font-black uppercase truncate">{name}</h1>
-          <button
-            type="button"
-            onClick={handleStartEditName}
-            aria-label="Edit display name"
-            title="Edit display name"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1.5 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            <PencilIcon className="h-2 w-2" />
-          </button>
         </div>
-      )}
+      </div>
 
-      {/* Username row */}
-      {isEditingUsername ? (
-        <form onSubmit={handleSaveUsername} className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-0 flex-1 max-w-xs">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-500">@</span>
+      {isEditing ? (
+        /* Edit Mode View */
+        <form onSubmit={handleSave} className="space-y-4 pt-1">
+          <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
+            <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
+              Editing Profile
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Display Name */}
+            <div className="space-y-1">
+              <label
+                htmlFor="profile-name-input"
+                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+              >
+                Display Name
+              </label>
               <input
-                id="profile-username-input"
-                aria-label="Username"
+                id="profile-name-input"
+                aria-label="Display name"
                 required
-                minLength={3}
-                maxLength={24}
-                value={usernameInput}
-                onChange={(event) => {
-                  const val = event.target.value.replace(/^@/, "");
-                  setUsernameInput(val);
-                }}
-                aria-invalid={isUsernameTaken}
-                className={`w-full rounded-xl pl-7 pr-3 py-1.5 font-bold focus:outline-none ${
-                  isUsernameTaken
-                    ? "border-2 border-red-600 bg-red-50 text-red-900"
-                    : "border-2 border-black bg-white"
-                }`}
+                maxLength={80}
+                value={nameInput}
+                onChange={(event) => setNameInput(event.target.value)}
+                className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
                 autoFocus
               />
             </div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={
-                usernameSaving ||
-                isUsernameTaken ||
-                !usernameInput.replace(/^@/, "").trim() ||
-                usernameInput.replace(/^@/, "").trim().length < 3 ||
-                usernameInput.replace(/^@/, "").trim().length > 24 ||
-                !/^[A-Za-z0-9_]+$/.test(usernameInput.replace(/^@/, "").trim())
-              }
-              className="font-bold uppercase"
-            >
-              {usernameSaving ? "Saving…" : "Save"}
-            </Button>
-            <button
-              type="button"
-              onClick={handleCancelEditUsername}
-              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
-            >
-              Cancel
-            </button>
-          </div>
-          {isUsernameTaken && (
-            <p role="alert" className="text-xs font-bold text-red-600">username taken</p>
-          )}
-          {usernameError && !isUsernameTaken && (
-            <p role="alert" className="text-xs font-bold text-red-600">{usernameError}</p>
-          )}
-        </form>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-bold text-neutral-600">@{username}</p>
-          <button
-            type="button"
-            onClick={handleStartEditUsername}
-            aria-label="Edit username"
-            title="Edit username"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            <PencilIcon className="h-2 w-2" />
-          </button>
-        </div>
-      )}
 
-      {/* Gender row */}
-      {isEditingGender ? (
-        <form onSubmit={handleSaveGender} className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <CustomDropdown
-              id="profile-gender-input"
-              ariaLabel="Gender"
-              value={genderInput}
-              onChange={(val) => setGenderInput(val as "male" | "female")}
-              options={[
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
-              ]}
-              sizeVariant="sm"
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={genderSaving}
-              className="font-bold uppercase"
-            >
-              {genderSaving ? "Saving…" : "Save"}
-            </Button>
-            <button
-              type="button"
-              onClick={handleCancelEditGender}
-              className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
-            >
-              Cancel
-            </button>
-          </div>
-          {genderError && (
-            <p role="alert" className="text-xs font-bold text-red-600">{genderError}</p>
-          )}
-        </form>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-bold text-neutral-600">{gender === "male" ? "Male" : gender === "female" ? "Female" : "Select gender"}</p>
-          <button
-            type="button"
-            onClick={handleStartEditGender}
-            aria-label="Edit gender"
-            title="Edit gender"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            <PencilIcon className="h-2 w-2" />
-          </button>
-        </div>
-      )}
-
-      {/* Visibility control */}
-      <div className="flex flex-col gap-1.5 pt-0.5">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleTogglePrivacy}
-            disabled={privacySaving}
-            aria-label={`Account visibility: currently ${isPublic ? "Public" : "Private"}. Click to switch.`}
-            title={isPublic ? "Click to switch to Private" : "Click to switch to Public"}
-            className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
-          >
-            {privacySaving ? (
-              <span>Saving…</span>
-            ) : isPublic ? (
-              <>
-                <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-                <span>Public</span>
-              </>
-            ) : (
-              <>
-                <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                <span>Private</span>
-              </>
-            )}
-          </button>
-
-          <div
-            className="relative inline-flex items-center"
-            onMouseEnter={() => setShowPrivacyTooltip(true)}
-            onMouseLeave={() => setShowPrivacyTooltip(false)}
-          >
-            <button
-              ref={privacyTriggerRef}
-              type="button"
-              onClick={() => setShowPrivacyTooltip((prev) => !prev)}
-              onFocus={() => setShowPrivacyTooltip(true)}
-              onBlur={() => setShowPrivacyTooltip(false)}
-              aria-label="Account visibility details"
-              title="Account visibility details"
-              className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
-            >
-              <InfoIcon className="h-2.5 w-2.5" />
-            </button>
-
-            {showPrivacyTooltip && (
-              <>
-                <div
-                  className="fixed inset-0 z-40 sm:hidden"
-                  onClick={() => setShowPrivacyTooltip(false)}
-                  aria-hidden="true"
+            {/* Username */}
+            <div className="space-y-1">
+              <label
+                htmlFor="profile-username-input"
+                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+              >
+                Username
+              </label>
+              <div className="relative w-full">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-500">
+                  @
+                </span>
+                <input
+                  id="profile-username-input"
+                  aria-label="Username"
+                  required
+                  minLength={3}
+                  maxLength={24}
+                  value={usernameInput}
+                  onChange={(event) => {
+                    const val = event.target.value.replace(/^@/, "");
+                    setUsernameInput(val);
+                  }}
+                  aria-invalid={isUsernameTaken}
+                  className={`w-full rounded-xl pl-7 pr-3 py-2 text-sm font-bold focus:outline-none ${
+                    isUsernameTaken
+                      ? "border-2 border-red-600 bg-red-50 text-red-900"
+                      : "border-2 border-black bg-white text-black focus:ring-2 focus:ring-black"
+                  }`}
                 />
-                <div
-                  ref={privacyTooltipRef}
-                  role="tooltip"
-                  style={privacyTooltipStyle}
-                  className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
+              </div>
+              {isUsernameTaken && (
+                <p role="alert" className="text-xs font-bold text-red-600">
+                  username taken
+                </p>
+              )}
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-1">
+              <label
+                htmlFor="profile-gender-input"
+                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+              >
+                Gender
+              </label>
+              <CustomDropdown
+                id="profile-gender-input"
+                ariaLabel="Gender"
+                value={genderInput}
+                onChange={(val) => setGenderInput(val as "male" | "female")}
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+                sizeVariant="sm"
+              />
+            </div>
+
+            {/* Visibility */}
+            <div className="space-y-1">
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-700">
+                Account Visibility
+              </label>
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setIsPublicInput(!isPublicInput)}
+                  aria-label={`Account visibility: currently ${isPublicInput ? "Public" : "Private"}. Click to switch.`}
+                  title={isPublicInput ? "Click to switch to Private" : "Click to switch to Public"}
+                  className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
+                    isPublicInput ? "bg-[#ccff00]" : "bg-neutral-200"
+                  } px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] hover:opacity-90 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer`}
                 >
-                  <div className="space-y-1.5 text-xs">
-                    <p className="font-bold leading-snug">
-                      <span className="font-black text-black uppercase">Public:</span>{" "}
-                      <span className="text-neutral-700">Your profile and stats are discoverable by @username search.</span>
-                    </p>
-                    <p className="font-bold leading-snug">
-                      <span className="font-black text-black uppercase">Private:</span>{" "}
-                      <span className="text-neutral-700">Your profile is private; stats are hidden from public search.</span>
-                    </p>
-                  </div>
+                  {isPublicInput ? (
+                    <>
+                      <GlobeIcon className="h-3 w-3 shrink-0" />
+                      <span>Public</span>
+                    </>
+                  ) : (
+                    <>
+                      <LockIcon className="h-3 w-3 shrink-0" />
+                      <span>Private</span>
+                    </>
+                  )}
+                </button>
+
+                <div
+                  className="relative inline-flex items-center"
+                  onMouseEnter={() => setShowPrivacyTooltip(true)}
+                  onMouseLeave={() => setShowPrivacyTooltip(false)}
+                >
+                  <button
+                    ref={privacyTriggerRef}
+                    type="button"
+                    onClick={() => setShowPrivacyTooltip((prev) => !prev)}
+                    onFocus={() => setShowPrivacyTooltip(true)}
+                    onBlur={() => setShowPrivacyTooltip(false)}
+                    aria-label="Account visibility details"
+                    title="Account visibility details"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+                  >
+                    <InfoIcon className="h-2.5 w-2.5" />
+                  </button>
+
+                  {showPrivacyTooltip && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40 sm:hidden"
+                        onClick={() => setShowPrivacyTooltip(false)}
+                        aria-hidden="true"
+                      />
+                      <div
+                        ref={privacyTooltipRef}
+                        role="tooltip"
+                        style={privacyTooltipStyle}
+                        className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
+                      >
+                        <div className="space-y-1.5 text-xs">
+                          <p className="font-bold leading-snug">
+                            <span className="font-black text-black uppercase">Public:</span>{" "}
+                            <span className="text-neutral-700">
+                              Your profile and stats are discoverable by @username search.
+                            </span>
+                          </p>
+                          <p className="font-bold leading-snug">
+                            <span className="font-black text-black uppercase">Private:</span>{" "}
+                            <span className="text-neutral-700">
+                              Your profile is private; stats are hidden from public search.
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
+              </div>
+            </div>
+          </div>
+
+          {saveError && (
+            <div
+              role="alert"
+              className="p-2.5 rounded-lg bg-red-100 border border-red-500 text-red-800 text-xs font-bold"
+            >
+              {saveError}
+            </div>
+          )}
+
+          <div className="pt-2 border-t-2 border-neutral-100">
+            <p className="text-xs font-bold uppercase text-neutral-600">
+              {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
+            </p>
+          </div>
+        </form>
+      ) : (
+        /* View Mode */
+        <div className="space-y-2">
+          <div className="space-y-0.5">
+            <h1 className="font-display text-3xl font-black uppercase truncate text-black">
+              {name}
+            </h1>
+            <p className="text-sm font-bold text-neutral-600">@{username}</p>
+          </div>
+
+          {gender && (
+            <p className="text-xs font-bold uppercase text-neutral-600">
+              {gender === "male" ? "Male" : "Female"}
+            </p>
+          )}
+
+          {/* Visibility indicator */}
+          <div className="flex items-center gap-2 pt-0.5">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
+                isPublic ? "bg-[#ccff00]" : "bg-neutral-200"
+              } px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black`}
+            >
+              {isPublic ? (
+                <>
+                  <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
+                  <span>Public</span>
+                </>
+              ) : (
+                <>
+                  <LockIcon className="h-2.5 w-2.5 shrink-0" />
+                  <span>Private</span>
+                </>
+              )}
+            </span>
+
+            <div
+              className="relative inline-flex items-center"
+              onMouseEnter={() => setShowPrivacyTooltip(true)}
+              onMouseLeave={() => setShowPrivacyTooltip(false)}
+            >
+              <button
+                ref={privacyTriggerRef}
+                type="button"
+                onClick={() => setShowPrivacyTooltip((prev) => !prev)}
+                onFocus={() => setShowPrivacyTooltip(true)}
+                onBlur={() => setShowPrivacyTooltip(false)}
+                aria-label="Account visibility details"
+                title="Account visibility details"
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+              >
+                <InfoIcon className="h-2.5 w-2.5" />
+              </button>
+
+              {showPrivacyTooltip && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40 sm:hidden"
+                    onClick={() => setShowPrivacyTooltip(false)}
+                    aria-hidden="true"
+                  />
+                  <div
+                    ref={privacyTooltipRef}
+                    role="tooltip"
+                    style={privacyTooltipStyle}
+                    className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
+                  >
+                    <div className="space-y-1.5 text-xs">
+                      <p className="font-bold leading-snug">
+                        <span className="font-black text-black uppercase">Public:</span>{" "}
+                        <span className="text-neutral-700">
+                          Your profile and stats are discoverable by @username search.
+                        </span>
+                      </p>
+                      <p className="font-bold leading-snug">
+                        <span className="font-black text-black uppercase">Private:</span>{" "}
+                        <span className="text-neutral-700">
+                          Your profile is private; stats are hidden from public search.
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t-2 border-neutral-100">
+            <p className="text-xs font-bold uppercase text-neutral-600">
+              {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
+            </p>
           </div>
         </div>
+      )}
 
-        {privacyToast && (
-          <Toast
-            role="status"
-            onDismiss={() => {
-              if (privacyToastTimeoutRef.current !== null) clearTimeout(privacyToastTimeoutRef.current);
-              setPrivacyToast(null);
-            }}
-          >
-            <span>{privacyToast}</span>
-          </Toast>
-        )}
-        {privacyError && (
-          <p role="alert" className="text-xs font-bold text-red-600">
-            {privacyError}
-          </p>
-        )}
-      </div>
+      {/* Discard confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={handleDiscard}
+        title="Discard Changes?"
+        description="You have unsaved changes to your profile. Are you sure you want to discard them?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        confirmVariant="danger"
+        confirmDataTestId="confirm-discard-button"
+      />
 
-      <div className="pt-2 border-t-2 border-neutral-100">
-        <p className="text-xs font-bold uppercase text-neutral-600">
-          {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
-        </p>
-      </div>
+      {/* Success Toast */}
+      {toastMessage && (
+        <Toast
+          role="status"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setToastMessage(null);
+          }}
+        >
+          <span>{toastMessage}</span>
+        </Toast>
+      )}
     </div>
   );
 }
@@ -653,11 +745,27 @@ export function PlayerNameEditor({ initialName }: { initialName: string }) {
     if (result.ok) router.refresh();
     setPending(false);
   };
-  return <form onSubmit={save} className="space-y-2">
-    <label htmlFor="profile-name" className="block text-xs font-black uppercase tracking-wider">Display name</label>
-    <div className="flex gap-2"><input id="profile-name" required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 rounded-xl border-2 border-black px-3 py-2 font-bold" /><Button type="submit" variant="primary" disabled={pending || !name.trim()}>{pending ? "Saving…" : "Save"}</Button></div>
-    {message && <p role="status" className="text-xs font-bold text-neutral-600">{message}</p>}
-  </form>;
+  return (
+    <form onSubmit={save} className="space-y-2">
+      <label htmlFor="profile-name" className="block text-xs font-black uppercase tracking-wider">
+        Display name
+      </label>
+      <div className="flex gap-2">
+        <input
+          id="profile-name"
+          required
+          maxLength={80}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          className="min-w-0 flex-1 rounded-xl border-2 border-black px-3 py-2 font-bold"
+        />
+        <Button type="submit" variant="primary" disabled={pending || !name.trim()}>
+          {pending ? "Saving…" : "Save"}
+        </Button>
+      </div>
+      {message && <p role="status" className="text-xs font-bold text-neutral-600">{message}</p>}
+    </form>
+  );
 }
 
 export function PlayerLogoutButton({ className }: { className?: string } = {}) {
