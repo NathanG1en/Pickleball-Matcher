@@ -4,6 +4,9 @@ import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { updateGroupNameAction } from "@/app/actions/group-settings";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
+import { AuthorizationError } from "@/lib/auth/authorize";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import type { GroupOrganizerPermissionKey } from "@/lib/domain/types";
 
 let currentAccountId: string | null = null;
 
@@ -24,6 +27,22 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
   return {
     ...actual,
+    getActivePlayerAccountId: vi.fn(async () => currentAccountId),
+    requirePlayer: vi.fn(async () => {
+      if (!currentAccountId) throw new Error("Not signed in");
+      return currentAccountId;
+    }),
+    requireGroupPermission: vi.fn(async (groupId: string, permission: GroupOrganizerPermissionKey) => {
+      const group = await actual.getActionRepository().getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      const isHost = Boolean(currentAccountId && group.ownerAccountId === currentAccountId);
+      if (isHost) return { group, accountId: currentAccountId, isHost: true };
+      const isOrg = Boolean(currentAccountId && (await actual.getActionRepository().isGroupOrganizer(groupId, currentAccountId)));
+      if (!isOrg) throw new AuthorizationError();
+      const perms = parseGroupOrganizerPermissions(group.organizerPermissions);
+      if (!perms[permission]) throw new AuthorizationError();
+      return { group, accountId: currentAccountId, isHost: false };
+    }),
     requireOrganizer: vi.fn(async (groupId: string) => {
       if (currentAccountId && (await actual.getActionRepository().isGroupOrganizer(groupId, currentAccountId))) {
         return null;
@@ -161,6 +180,25 @@ describe("GroupNameEditor and updateGroupNameAction", () => {
       expect(result.ok).toBe(false);
       const group = await repository.getGroup("g1");
       expect(group?.name).toBe("Original Group Name");
+    });
+
+    it("rejects a delegated organizer from updating the group name when edit_group_name is OFF", async () => {
+      currentAccountId = orgAccountId;
+
+      await repository.updateGroupOrganizerPermissions("g1", {
+        edit_group_name: false,
+        edit_group_privacy: true,
+        manage_organizers: false,
+        delete_group: false,
+      });
+
+      const result = await updateGroupNameAction({
+        groupId: "g1",
+        name: "Unauthorized Rename",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("You do not have permission to edit the group name");
     });
 
     it("rejects duplicate group name taken by another group", async () => {

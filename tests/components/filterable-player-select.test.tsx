@@ -73,8 +73,8 @@ describe("FilterablePlayerSelect component", () => {
         options={options}
       />
     );
-    expect(defaultHtml).toContain("p-2 text-sm");
-    expect(defaultHtml).not.toContain("p-2 text-xs");
+    expect(defaultHtml).toContain("px-3.5 py-2 text-sm");
+    expect(defaultHtml).not.toContain("text-xs");
 
     const smHtml = renderToStaticMarkup(
       <FilterablePlayerSelect
@@ -86,8 +86,8 @@ describe("FilterablePlayerSelect component", () => {
         sizeVariant="sm"
       />
     );
-    expect(smHtml).toContain("p-1.5 text-sm");
-    expect(smHtml).not.toContain("p-1.5 text-xs");
+    expect(smHtml).toContain("px-3 py-1.5 text-sm");
+    expect(smHtml).not.toContain("text-xs");
   });
 
   it("renders black pin icon when selected player is pinned and when dropdown is open", () => {

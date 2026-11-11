@@ -106,7 +106,7 @@ describe("AttendanceManager Component", () => {
     expect(html).toContain("Continue to Pairings");
   });
 
-  it("renders guest player input with rating slider", () => {
+  it("renders guest player accordion closed by default", () => {
     const html = renderToStaticMarkup(
       <AttendanceManager
         groupId="group-1"
@@ -116,13 +116,35 @@ describe("AttendanceManager Component", () => {
       />
     );
 
+    expect(html).toContain('data-testid="toggle-add-guest"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Add Guest Player");
+    expect(html).not.toContain('aria-label="Guest player name"');
+  });
+
+  it("renders guest player input with rating slider when open", () => {
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={samplePlayers}
+        selectedPlayerIds={["p1", "p2", "p3", "p4"]}
+        courtCount={1}
+        initialAddGuestOpen={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="toggle-add-guest"');
+    expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-label="Guest player name"');
+    expect(html).toContain('placeholder="Guest player name"');
     expect(html).toContain('aria-label="Guest Gender"');
+    expect(html).toContain('id="normal-session-guest-gender"');
     expect(html).toContain('aria-label="Guest Rating"');
     expect(html).toContain('data-testid="normal-session-guest-rating"');
     expect(html).toContain("3.50");
     expect(html).toContain("Advanced Intermediate");
     expect(html).toContain('data-testid="rating-tick-2"');
+    expect(html).toContain('bg-[#ccff00]');
   });
 
   it("renders player search filter and pin buttons for each player", () => {
@@ -166,7 +188,7 @@ describe("AttendanceManager Component", () => {
     localStorage.removeItem("pickleball_pinned_players_group-1");
   });
 
-  it("moves selected players to top of pinned tier and above nonpinned in the roster grid", () => {
+  it("preserves alphabetical order in the roster grid without pushing selected players to the top", () => {
     // Pin Alice (p1) and Bob (p2)
     localStorage.setItem("pickleball_pinned_players_group-1", JSON.stringify(["p1", "p2"]));
 
@@ -180,22 +202,95 @@ describe("AttendanceManager Component", () => {
       />
     );
 
-    const bobIndex = html.indexOf('data-testid="player-card-Bob"');
     const aliceIndex = html.indexOf('data-testid="player-card-Alice"');
-    const dianaIndex = html.indexOf('data-testid="player-card-Diana"');
+    const bobIndex = html.indexOf('data-testid="player-card-Bob"');
     const charlieIndex = html.indexOf('data-testid="player-card-Charlie"');
+    const dianaIndex = html.indexOf('data-testid="player-card-Diana"');
     const evanIndex = html.indexOf('data-testid="player-card-Evan"');
 
-    // 1. Bob (pinned & selected) is at the top of pinned
-    expect(bobIndex).toBeLessThan(aliceIndex);
-    // 2. Alice (pinned & unselected) is below selected pinned, but above unpinned
-    expect(aliceIndex).toBeLessThan(dianaIndex);
-    // 3. Diana (unpinned & selected) is above unpinned unselected
-    expect(dianaIndex).toBeLessThan(charlieIndex);
-    // 4. Charlie & Evan (unpinned & unselected, alphabetical)
-    expect(charlieIndex).toBeLessThan(evanIndex);
+    // 1. Pinned tier stays alphabetical: Alice before Bob (even though Bob is selected)
+    expect(aliceIndex).toBeLessThan(bobIndex);
+    // 2. Pinned tier comes before unpinned tier: Bob before Charlie
+    expect(bobIndex).toBeLessThan(charlieIndex);
+    // 3. Unpinned tier stays alphabetical: Charlie before Diana (even though Diana is selected)
+    expect(charlieIndex).toBeLessThan(dianaIndex);
+    // 4. Diana before Evan (alphabetical)
+    expect(dianaIndex).toBeLessThan(evanIndex);
 
     localStorage.removeItem("pickleball_pinned_players_group-1");
   });
+
+  it("automatically adds a court when 10 players are present for 2 courts", () => {
+    const tenPlayers = Array.from({ length: 10 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={tenPlayers}
+        selectedPlayerIds={tenPlayers.map((p) => p.id)}
+        courtCount={2}
+      />
+    );
+
+    // Court count automatically increases to 3 for 10 players (since 10 >= 2 * 4 + 2)
+    expect(html).toContain('aria-label="Court count"');
+    expect(html).toContain(">3</span>");
+    expect(html).toContain("Courts");
+    // Must NOT say "Odd Count Choice" for 10 players
+    expect(html).not.toContain("Odd Count Choice");
+  });
+
+  it("does not show 'Odd Count Choice' when player count is even", () => {
+    const sixPlayers = Array.from({ length: 6 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={sixPlayers}
+        selectedPlayerIds={sixPlayers.map((p) => p.id)}
+        courtCount={1}
+      />
+    );
+
+    // 6 players on 1 court automatically increases to 2 courts (6 >= 1 * 4 + 2)
+    expect(html).toContain(">2</span>");
+    expect(html).not.toContain("Odd Count Choice");
+  });
+
+  it("shows 'Quick Presets' when player count has multiple choices", () => {
+    const fivePlayers = Array.from({ length: 5 }, (_, i) => ({
+      id: `p${i + 1}`,
+      name: `Player ${i + 1}`,
+      active: true,
+      rating: 1000,
+    }));
+
+    const html = renderToStaticMarkup(
+      <AttendanceManager
+        groupId="group-1"
+        players={fivePlayers}
+        selectedPlayerIds={fivePlayers.map((p) => p.id)}
+        courtCount={1}
+      />
+    );
+
+    expect(html).toContain("Quick Presets (5 Players):");
+    expect(html).not.toContain("Odd Count");
+    expect(html).toContain('data-testid="setup-preset-doubles_rotate"');
+    expect(html).toContain('data-testid="setup-preset-all_active"');
+    expect(html).toContain("Only Doubles Matchups");
+    expect(html).toContain("Everyone Plays");
+  });
 });
+
 

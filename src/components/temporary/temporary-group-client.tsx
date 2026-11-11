@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/groups/back-button";
 import { InfoIcon, ShuffleIcon } from "@/components/ui/icons";
-import { useTooltipPosition } from "@/components/ui";
+import { CustomDropdown, useTooltipPosition } from "@/components/ui";
 import { saveTemporaryGroupAction } from "@/app/actions/temporary";
 import { generateRound } from "@/lib/matchmaking/generate-round";
 import type { GeneratedRound } from "@/lib/matchmaking/types";
@@ -278,7 +278,7 @@ export function TemporaryGroupClient({
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-xl mx-auto space-y-6 pb-24 text-black">
-      <header className="rounded-3xl border-[3px] border-black bg-white p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+      <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
         <div className="flex items-center justify-between gap-2">
           <BackButton
             onClick={handleBack}
@@ -405,23 +405,26 @@ export function TemporaryGroupClient({
 
             {accountId && saveDestination === "existing" && userGroups.length > 0 ? (
               <div className="space-y-3">
-                <label className="block text-xs font-black uppercase text-black">
-                  Select Group
-                  <select
+                <div>
+                  <span className="block text-xs font-black uppercase text-black mb-1">
+                    Select Group
+                  </span>
+                  <CustomDropdown
+                    ariaLabel="Select Group"
                     value={selectedGroupId}
-                    onChange={(e) => {
-                      setSelectedGroupId(e.target.value);
+                    onChange={(val) => {
+                      setSelectedGroupId(val);
                       setPlayerMappings({});
                     }}
-                    className="mt-1 w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                  >
-                    {userGroups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    options={userGroups.map((group) => ({
+                      value: group.id,
+                      label: group.name,
+                    }))}
+                    sizeVariant="sm"
+                    className="w-full"
+                    buttonClassName="w-full justify-between"
+                  />
+                </div>
 
                 {unincorporatedNameMatches.length > 0 && (
                   <div
@@ -473,31 +476,34 @@ export function TemporaryGroupClient({
                     {state.players.map((player) => (
                       <div
                         key={player.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border-2 border-black bg-white shadow-[2px_2px_0px_0px_#000]"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border-2 border-black bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]"
                       >
                         <span className="font-display text-xs font-black uppercase text-black truncate max-w-[140px]">
                           {player.name}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-black text-neutral-400">→</span>
-                          <select
-                            aria-label={`Merge ${player.name}`}
+                          <CustomDropdown
+                            ariaLabel={`Merge ${player.name}`}
+                            placeholder="(Create New Guest)"
                             value={playerMappings[player.id] ?? ""}
-                            onChange={(e) =>
+                            onChange={(val) =>
                               setPlayerMappings((prev) => ({
                                 ...prev,
-                                [player.id]: e.target.value,
+                                [player.id]: val,
                               }))
                             }
-                            className="w-full sm:w-52 rounded-lg border-2 border-black bg-neutral-50 px-2 py-1.5 text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                          >
-                            <option value="">(Create New Guest)</option>
-                            {groupRoster.map((rosterPlayer) => (
-                              <option key={rosterPlayer.id} value={rosterPlayer.id}>
-                                Merge into {rosterPlayer.name}
-                              </option>
-                            ))}
-                          </select>
+                            options={[
+                              { value: "", label: "(Create New Guest)" },
+                              ...groupRoster.map((rosterPlayer) => ({
+                                value: rosterPlayer.id,
+                                label: `Merge into ${rosterPlayer.name}`,
+                              })),
+                            ]}
+                            sizeVariant="xs"
+                            className="w-full sm:w-52"
+                            buttonClassName="w-full justify-between"
+                          />
                         </div>
                       </div>
                     ))}
@@ -558,7 +564,7 @@ export function TemporaryGroupClient({
             </p>
           )}
 
-          <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-2xl font-black uppercase">Players</h2>
               <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
@@ -604,7 +610,7 @@ export function TemporaryGroupClient({
 
                 <div className="space-y-3">
                   {state.currentRound.courts.map((court, index) => (
-                    <div key={court.courtNumber} className="rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000] space-y-3">
+                    <div key={court.courtNumber} className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000] space-y-3">
                       <div className="flex items-center justify-between border-b-2 border-neutral-100 pb-2">
                         <span className="font-display text-xl font-black uppercase">Court {court.courtNumber}</span>
                         <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-black bg-[#fef08a]">
@@ -649,7 +655,7 @@ export function TemporaryGroupClient({
                   ))}
                 </div>
 
-                <div className="rounded-xl border-2 border-black bg-white p-3 text-xs font-bold shadow-[2px_2px_0px_0px_#000]">
+                <div className="rounded-xl border-2 border-black bg-[#FFFDF7] p-3 text-xs font-bold shadow-[2px_2px_0px_0px_#000]">
                   Sitting: {state.currentRound.sitting.map((id) => playerName(state.players, id)).join(", ") || "Nobody"}
                 </div>
 
@@ -678,7 +684,7 @@ export function TemporaryGroupClient({
               </button>
             )}
 
-            <section className="space-y-4 rounded-3xl border-[3px] border-black bg-white p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+            <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-2xl font-black uppercase">Completed Rounds</h2>
                 <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
@@ -702,7 +708,7 @@ export function TemporaryGroupClient({
         <form
           onSubmit={begin}
           data-hydrated="true"
-          className="space-y-5 rounded-3xl border-[3px] border-black bg-white p-6 shadow-[6px_6px_0px_0px_#000]"
+          className="space-y-5 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 shadow-[6px_6px_0px_0px_#000]"
         >
           <div className="space-y-1">
             <label className="block text-xs font-black uppercase tracking-wide">
@@ -716,7 +722,7 @@ export function TemporaryGroupClient({
               onChange={(event) => {
                 const value = event.target.value;
                 const count = value.split(/[\n,]/).map((name) => name.trim()).filter(Boolean).length;
-                const courts = count < 2 ? 1 : Math.min(6, Math.max(1, Math.floor(count / 4) + (count % 4 >= 2 ? 1 : 0)));
+                const courts = count < 2 ? 1 : Math.min(32, Math.max(1, Math.floor(count / 4) + (count % 4 >= 2 ? 1 : 0)));
                 updateDraft({ playerNames: value, courtCount: courts, courtSizes: defaultCourtSizes(count, courts) });
               }}
               placeholder="Alex&#10;Jamie&#10;Morgan&#10;Riley"
@@ -728,39 +734,50 @@ export function TemporaryGroupClient({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-black uppercase tracking-wide">
+            <span className="block text-xs font-black uppercase tracking-wide">
               Number of courts
-            </label>
-            <select
-              value={courtCount}
-              aria-label="Number of courts"
-              onChange={(event) => {
-                const count = Number(event.target.value);
+            </span>
+            <CustomDropdown
+              ariaLabel="Number of courts"
+              value={String(courtCount)}
+              onChange={(val) => {
+                const count = Number(val);
                 updateDraft({ courtCount: count, courtSizes: defaultCourtSizes(parsedNames.length, count) });
               }}
-              className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#ccff00] transition-shadow"
-            >
-              {Array.from({ length: Math.max(1, Math.min(6, Math.floor(parsedNames.length / 2))) }, (_, index) => index + 1).map((count) => (
-                <option key={count} value={count}>{count} {count === 1 ? "court" : "courts"}</option>
-              ))}
-            </select>
+              options={Array.from({ length: Math.max(1, Math.min(32, Math.floor(parsedNames.length / 2))) }, (_, index) => index + 1).map((count) => ({
+                value: String(count),
+                label: `${count} ${count === 1 ? "court" : "courts"}`,
+              }))}
+              sizeVariant="md"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
           </div>
 
           <div className="space-y-2">
             {courtSizes.slice(0, courtCount).map((size, index) => (
-              <label key={index} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-neutral-50 p-3 text-sm font-black shadow-[2px_2px_0px_0px_#000]">
+              <div key={index} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-neutral-50 p-3 text-sm font-black shadow-[2px_2px_0px_0px_#000]">
                 <span>Court {index + 1}</span>
-                <select
-                  value={size}
-                  aria-label={`Court ${index + 1}`}
-                  onChange={(event) => updateDraft({ courtSizes: courtSizes.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value) })}
-                  className="rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000]"
-                >
-                  {[4, 3, 2].map((amount) => (
-                    <option key={amount} value={amount}>{amount} players · {amount === 4 ? "2v2" : amount === 3 ? "2v1" : "1v1"}</option>
-                  ))}
-                </select>
-              </label>
+                <CustomDropdown
+                  ariaLabel={`Court ${index + 1}`}
+                  value={String(size)}
+                  onChange={(val) =>
+                    updateDraft({
+                      courtSizes: courtSizes.map((value, item) =>
+                        item === index ? (Number(val) as 2 | 3 | 4) : value
+                      ),
+                    })
+                  }
+                  align="right"
+                  options={[4, 3, 2].map((amount) => ({
+                    value: String(amount),
+                    label: `${amount} players · ${amount === 4 ? "2v2" : amount === 3 ? "2v1" : "1v1"}`,
+                  }))}
+                  sizeVariant="xs"
+                  className="min-w-0"
+                  buttonClassName="rounded-lg shadow-[1px_1px_0px_0px_#000] py-1 px-2 text-xs"
+                />
+              </div>
             ))}
           </div>
 
@@ -843,7 +860,7 @@ function RoundSummary({ round, players }: { round: TemporaryRound; players: Temp
       </div>
       <ul className="space-y-2">
         {round.courts.map((court) => (
-          <li key={court.courtNumber} className="flex items-center justify-between gap-2 text-sm font-bold bg-white p-2.5 rounded-xl border border-black">
+          <li key={court.courtNumber} className="flex items-center justify-between gap-2 text-sm font-bold bg-[#FFFDF7] p-2.5 rounded-xl border border-black">
             <span className="text-xs font-black uppercase text-neutral-600 shrink-0">Court {court.courtNumber}</span>
             <div className="flex items-center gap-2 truncate">
               <span className="truncate">{court.team1.map((id) => playerName(players, id)).join(" & ")}</span>
@@ -868,7 +885,7 @@ export function ExitWarning({ accountId, onStay, onLeave }: { accountId: string 
   const temporaryReturn = encodeURIComponent("/temporary?save=1");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="presentation">
-      <section role="dialog" aria-modal="true" aria-labelledby="temporary-exit-title" className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-white p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]">
+      <section role="dialog" aria-modal="true" aria-labelledby="temporary-exit-title" className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]">
         <div className="space-y-1">
           <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fee2e2] border border-black text-[10px] font-black uppercase tracking-wider text-red-900">
             Unsaved Progress

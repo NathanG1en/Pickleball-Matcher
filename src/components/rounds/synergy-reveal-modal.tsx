@@ -268,7 +268,7 @@ export function SynergyRevealModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_0px_#000] text-black">
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 shadow-[8px_8px_0px_0px_#000] text-black">
         <div className="mb-4 flex items-center justify-between border-b-2 border-neutral-100 pb-3">
           <div>
             <h2 className="font-display text-2xl font-black uppercase flex items-center gap-2">

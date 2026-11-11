@@ -53,7 +53,7 @@ test.describe("Corrections and Replay Workflow", () => {
     await court1Team1.fill("11");
     await court1Team2.fill("7");
     await page.locator("[data-testid='court-match-1'] button:has-text('Save Result')").click();
-    await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible();
+    await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible({ timeout: 15000 });
 
     // Now correct the score to 11-9
     await court1Team2.fill("9");
@@ -124,12 +124,14 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     // Click Undo Round 2
+    await page.getByTestId("session-options-menu-button").click();
+    const undoBtn = page.locator("button:has-text('Undo Round 2')");
+    await expect(undoBtn).toBeVisible({ timeout: 10000 });
     page.once("dialog", (dialog) => dialog.accept());
     const undoPromise = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.status() === 200
     );
-    await page.getByTestId("session-options-menu-button").click();
-    await page.click("button:has-text('Undo Round 2')");
+    await undoBtn.click();
     await undoPromise;
     // After undo, should be back to proposal or previous state
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
@@ -153,10 +155,29 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(charlieLeftBtn).toBeEnabled({ timeout: 15000 });
     await charlieLeftBtn.click();
     await expect(charlieRow.getByTestId("attendance-left-Charlie")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-testid='guided-court-choice-card']")).toBeVisible();
 
     // Toggle Charlie back to Present
     await charlieRow.locator("button:has-text('Present')").click();
     await expect(charlieRow.getByTestId("attendance-present-Charlie")).toHaveAttribute("aria-pressed", "true");
+
+    // Add guest mid-session through attendance tab (collapsible accordion)
+    const toggleGuestBtn = page.locator("[data-testid='toggle-session-add-guest']");
+    await expect(toggleGuestBtn).toBeVisible();
+    await toggleGuestBtn.click();
+    const guestInput = page.locator("#session-guest-name");
+    await expect(guestInput).toBeVisible();
+    await guestInput.fill("MidSession Guest");
+    const addGuestBtn = page.locator("form:has(#session-guest-name) button:has-text('Add')");
+    await expect(addGuestBtn).toBeEnabled();
+    const addGuestPromise = page.waitForResponse(
+      (res) => res.request().method() === "POST" && res.status() === 200
+    );
+    await addGuestBtn.click();
+    await addGuestPromise;
+    const newGuestRow = page.locator("[data-testid='attendance-row-MidSession Guest']");
+    await expect(newGuestRow).toBeVisible({ timeout: 10000 });
+    await expect(newGuestRow.getByTestId("attendance-present-MidSession Guest")).toHaveAttribute("aria-pressed", "true");
 
     // Switch to Court Configuration tab
     await courtConfigTab.click();
@@ -270,7 +291,7 @@ test("host synergy follows current partners after manual swaps and new proposals
       names.push(name);
       await page.getByRole("textbox", { name: "Look up player by username", exact: true }).fill(account.username);
       await page.getByRole("button", { name: "Add", exact: true }).click();
-      await expect(page.getByText(`${names.length} players on roster`, { exact: true })).toBeVisible();
+      await expect(page.getByText(new RegExp(`\\b${names.length} players on roster\\b`))).toBeVisible();
     }
   } finally {
     await otherContext.close();

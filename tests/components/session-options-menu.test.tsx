@@ -139,5 +139,27 @@ describe("SessionOptionsMenu Component", () => {
     expect(html).not.toContain("Refresh Synergy");
     expect(html).not.toContain('data-testid="refresh-chemistry-menu-item"');
   });
+
+  it("renders Rename Session, Duplicate Session, and Delete Session with design spec styling when open", () => {
+    const html = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        initialMenuOpen={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="rename-session-menu-item"');
+    expect(html).toContain("Rename Session");
+    expect(html).toContain('data-testid="duplicate-session-menu-item"');
+    expect(html).toContain("Duplicate Session");
+    expect(html).toContain('data-testid="delete-session-menu-item"');
+    expect(html).toContain("Delete Session");
+    expect(html).toContain("text-[#E32929]");
+    expect(html).toContain('role="separator"');
+    expect(html).toContain("rounded-[20px]");
+    expect(html).toContain("border-[2.5px]");
+    expect(html).toContain("bg-[#FFFDF6]");
+  });
 });
 

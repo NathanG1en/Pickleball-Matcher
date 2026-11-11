@@ -5,6 +5,9 @@ import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { deleteGroupAction } from "@/app/actions/group-settings";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
+import { AuthorizationError } from "@/lib/auth/authorize";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import type { GroupOrganizerPermissionKey } from "@/lib/domain/types";
 
 let currentAccountId: string | null = null;
 
@@ -26,6 +29,22 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
   return {
     ...actual,
+    getActivePlayerAccountId: vi.fn(async () => currentAccountId),
+    requirePlayer: vi.fn(async () => {
+      if (!currentAccountId) throw new Error("Not signed in");
+      return currentAccountId;
+    }),
+    requireGroupPermission: vi.fn(async (groupId: string, permission: GroupOrganizerPermissionKey) => {
+      const group = await actual.getActionRepository().getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      const isHost = Boolean(currentAccountId && group.ownerAccountId === currentAccountId);
+      if (isHost) return { group, accountId: currentAccountId, isHost: true };
+      const isOrg = Boolean(currentAccountId && (await actual.getActionRepository().isGroupOrganizer(groupId, currentAccountId)));
+      if (!isOrg) throw new AuthorizationError();
+      const perms = parseGroupOrganizerPermissions(group.organizerPermissions);
+      if (!perms[permission]) throw new AuthorizationError();
+      return { group, accountId: currentAccountId, isHost: false };
+    }),
     requireOrganizer: vi.fn(async (groupId: string) => {
       if (currentAccountId && (await actual.getActionRepository().isGroupOrganizer(groupId, currentAccountId))) {
         return null;
@@ -147,6 +166,43 @@ describe("Group Navigation and Options Menu", () => {
       expect(html).toContain("···");
       expect(html).toContain('aria-label="Group options"');
     });
+
+    it("renders Group Settings modal with tab navigation when open for host/organizer", () => {
+      const html = renderToStaticMarkup(
+        <GroupOptionsMenu
+          groupId="g1"
+          groupName="Friday Night Picklers"
+          isHost={true}
+          isOrganizer={true}
+          initialMenuOpen={true}
+        />
+      );
+
+      expect(html).toContain("Group Settings");
+      expect(html).toContain('data-testid="settings-tab-general"');
+      expect(html).toContain('data-testid="settings-tab-organizers"');
+      expect(html).toContain('data-testid="settings-tab-permissions"');
+      expect(html).toContain('data-testid="settings-tab-danger"');
+      expect(html).toContain('data-testid="delete-group-menu-item"');
+      expect(html).toContain("Delete Group");
+    });
+
+    it("renders Leave Group option with standard styling for non-organizers when open", () => {
+      const html = renderToStaticMarkup(
+        <GroupOptionsMenu
+          groupId="g1"
+          groupName="Friday Night Picklers"
+          isOrganizer={false}
+          initialMenuOpen={true}
+        />
+      );
+
+      expect(html).toContain('data-testid="leave-group-menu-item"');
+      expect(html).toContain("<span>Leave</span>");
+      expect(html).not.toContain("Delete Group");
+      expect(html).toContain("rounded-[20px]");
+      expect(html).toContain("bg-[#FFFDF6]");
+    });
   });
 
   describe("deleteGroupAction", () => {
@@ -165,17 +221,52 @@ describe("Group Navigation and Options Menu", () => {
       expect(players).toHaveLength(0);
     });
 
-    it("allows a delegated organizer to delete the group when the confirmation name matches", async () => {
+    it("rejects a delegated organizer from deleting the group when delete_group is OFF (default)", async () => {
       currentAccountId = orgAccountId;
 
       const result = await deleteGroupAction({
         groupId: "g1",
-        confirmationName: "friday night picklers", // Case insensitive match
+        confirmationName: "Friday Night Picklers",
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("You do not have permission to delete this group");
+      const group = await repository.getGroup("g1");
+      expect(group).not.toBeNull();
+    });
+
+    it("allows a delegated organizer to delete the group when delete_group is enabled", async () => {
+      currentAccountId = orgAccountId;
+
+      await repository.updateGroupOrganizerPermissions("g1", {
+        edit_group_name: true,
+        edit_group_privacy: true,
+        manage_organizers: false,
+        delete_group: true,
+      });
+
+      const result = await deleteGroupAction({
+        groupId: "g1",
+        confirmationName: "Friday Night Picklers",
       });
 
       expect(result.ok).toBe(true);
       const group = await repository.getGroup("g1");
       expect(group).toBeNull();
+    });
+
+    it("rejects deletion if the confirmation name case does not match", async () => {
+      currentAccountId = hostAccountId;
+
+      const result = await deleteGroupAction({
+        groupId: "g1",
+        confirmationName: "friday night picklers", // Case mismatch
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Group name does not match");
+      const group = await repository.getGroup("g1");
+      expect(group).not.toBeNull();
     });
 
     it("rejects deletion if the confirmation name does not match", async () => {

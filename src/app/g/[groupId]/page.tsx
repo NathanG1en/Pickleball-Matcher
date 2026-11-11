@@ -10,12 +10,9 @@ import {
 import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { Badge } from "@/components/ui/badge";
 import { ClientDate } from "@/components/ui/client-date-time";
-import { GroupVisibilityControl } from "@/components/groups/group-visibility-control";
-import { GroupIdReveal } from "@/components/groups/group-id-reveal";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
-import { GroupNameEditor } from "@/components/groups/group-name-editor";
 import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
@@ -151,43 +148,43 @@ export default async function GroupDashboardPage({
     <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 pb-24 text-black">
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-8">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8">
         <div className="mb-4 flex items-center justify-between">
           <BackButton href={accountId && isMember ? "/players" : "/"} />
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
-            {isOrganizer ? (
+            {isOrganizer || (isMember && accountId && !isHost) ? (
               <GroupOptionsMenu
                 groupId={groupId}
                 groupName={group.name}
+                isPublic={group.isPublic === true}
+                isHost={isHost}
                 isAccountOrganizer={isAccountOrganizer}
-                isOrganizer={true}
-              />
-            ) : isMember && accountId && !isHost ? (
-              <GroupOptionsMenu
-                groupId={groupId}
-                groupName={group.name}
-                isAccountOrganizer={false}
-                isOrganizer={false}
+                isOrganizer={isOrganizer}
+                organizerPermissions={group.organizerPermissions}
+                players={players}
+                organizers={organizers}
               />
             ) : null}
           </div>
         </div>
-        <GroupNameEditor groupId={groupId} initialName={group.name} canEdit={isOrganizer} />
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs font-bold text-neutral-600">
-            {players.length} {players.length === 1 ? "player" : "players"} on roster
-          </p>
+        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight truncate">
+          {group.name}
+        </h1>
+        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant={group.isPublic ? "success" : "default"} data-testid="group-privacy-badge">
+              {group.isPublic ? "Public Group" : "Private Group"}
+            </Badge>
+            <span aria-hidden="true" className="text-xs font-bold text-neutral-400">·</span>
+            <span className="text-xs font-bold text-neutral-600">
+              {players.length} {players.length === 1 ? "player" : "players"} on roster
+            </span>
+          </div>
           {!activeSession && isOrganizer && latestCompletedSession && (
             <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
           )}
         </div>
-        {isOrganizer && (
-          <GroupVisibilityControl groupId={groupId} initialIsPublic={group.isPublic === true} />
-        )}
-
-        {isOrganizer && <GroupIdReveal groupId={groupId} />}
-
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -290,7 +287,7 @@ export default async function GroupDashboardPage({
                             .filter((mp) => mp.matchId === m.id && mp.team === 2)
                             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                           return (
-                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                            <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
@@ -321,7 +318,7 @@ export default async function GroupDashboardPage({
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         return (
-                          <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                          <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
                             <div>
                               <span className="font-black text-black block">Court {m.courtNumber}</span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
@@ -376,7 +373,7 @@ export default async function GroupDashboardPage({
               )}
             </section>
           ) : isOrganizer ? (
-            <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Ready to Play?</h2>
               <p className="text-sm font-bold text-neutral-700 mb-5">
                 Start a session with predetermined matchmaking or open play.
@@ -392,7 +389,7 @@ export default async function GroupDashboardPage({
               </div>
             </section>
           ) : (
-            <section className="bg-white border-[3px] border-black rounded-3xl p-6">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6">
               <h2 className="font-display text-2xl font-black uppercase text-black mb-1">No Active Session</h2>
               <p className="text-sm font-bold text-neutral-700">
                 There are no games in progress right now. Live matchups will appear here when an organizer starts a session.
@@ -401,7 +398,7 @@ export default async function GroupDashboardPage({
           )}
 
           {/* Tournaments Section */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-black uppercase text-black">Tournaments</h2>
               {isOrganizer && (
@@ -421,7 +418,7 @@ export default async function GroupDashboardPage({
           </section>
 
           {/* Past Sessions */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 lg:p-7">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <h2 className="font-display text-xl font-black uppercase text-black mb-4">Past Sessions</h2>
             <PastSessionsList
               groupId={groupId}

@@ -67,7 +67,7 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
   };
 
   return (
-    <section className="rounded-3xl border-[3px] border-black bg-white p-5 shadow-[5px_5px_0px_0px_#000]">
+    <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 shadow-[5px_5px_0px_0px_#000]">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-black uppercase">Find & Add Players</h2>

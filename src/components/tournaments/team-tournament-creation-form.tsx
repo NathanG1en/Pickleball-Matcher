@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { createTeamTournamentAction } from "@/app/actions/tournaments";
 import { createPlayerAction } from "@/app/actions/players";
@@ -127,8 +127,6 @@ export function TeamTournamentCreationForm({
     if (!guestName.trim()) return;
     const ratingToAdd = guestRating;
     const genderToAdd = guestGender;
-    setGuestRating(3.5);
-    setGuestGender("male");
 
     try {
       const res = await createPlayerAction({
@@ -147,6 +145,8 @@ export function TeamTournamentCreationForm({
         setPlayers((prev) => [...prev, newPlayer]);
         setSelectedPlayerIds((prev) => new Set([...prev, newPlayer.id]));
         setGuestName("");
+        setGuestGender("male");
+        setGuestRating(3.5);
       } else {
         setError(res.error);
       }
@@ -434,35 +434,37 @@ export function TeamTournamentCreationForm({
               aria-label="Guest player name"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Add guest player name..."
-              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+              placeholder="Guest player name"
+              className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
             />
-            <select
-              id="team-tournament-guest-gender"
-              aria-label="Guest Gender"
-              value={guestGender}
-              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <Button
-              type="button"
-              onClick={(e) => void handleAddGuest(e)}
-              variant="secondary"
-              size="sm"
-              disabled={!guestName.trim()}
-              className="font-display uppercase tracking-wider shrink-0"
-            >
-              Add
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <CustomDropdown
+                id="team-tournament-guest-gender"
+                ariaLabel="Guest Gender"
+                value={guestGender}
+                onChange={(val) => setGuestGender(val as "male" | "female")}
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+                sizeVariant="sm"
+                className="flex-1 sm:flex-initial shrink-0"
+              />
+              <button
+                type="button"
+                onClick={(e) => void handleAddGuest(e)}
+                disabled={!guestName.trim()}
+                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+              >
+                Add
+              </button>
+            </div>
           </div>
-          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+          <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
             <RatingSlider
               id="team-tournament-guest-rating"
               dataTestId="team-tournament-guest-rating"
-              label="Guest Starting Rating"
+              label="Guest Rating"
               value={guestRating}
               onChange={setGuestRating}
               showDescription={true}
@@ -524,34 +526,42 @@ export function TeamTournamentCreationForm({
             Link Two Players as Doubles Partners
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <select
+            <CustomDropdown
+              ariaLabel="Partner 1"
+              placeholder="Select Partner 1..."
               value={selectedP1}
-              onChange={(e) => setSelectedP1(e.target.value)}
-              className="px-3 py-2 bg-white border-2 border-black rounded-xl text-xs font-bold text-black"
-            >
-              <option value="">Select Partner 1...</option>
-              {unpairedSelectedPlayers
-                .filter((p) => p.id !== selectedP2)
-                .map((p) => (
-                  <option key={`p1-${p.id}`} value={p.id}>
-                    {p.name} ({formatDupr(p.rating)})
-                  </option>
-                ))}
-            </select>
-            <select
+              onChange={(val) => setSelectedP1(val)}
+              options={[
+                { value: "", label: "Select Partner 1..." },
+                ...unpairedSelectedPlayers
+                  .filter((p) => p.id !== selectedP2)
+                  .map((p) => ({
+                    value: p.id,
+                    label: `${p.name} (${formatDupr(p.rating)})`,
+                  })),
+              ]}
+              sizeVariant="sm"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
+            <CustomDropdown
+              ariaLabel="Partner 2"
+              placeholder="Select Partner 2..."
               value={selectedP2}
-              onChange={(e) => setSelectedP2(e.target.value)}
-              className="px-3 py-2 bg-white border-2 border-black rounded-xl text-xs font-bold text-black"
-            >
-              <option value="">Select Partner 2...</option>
-              {unpairedSelectedPlayers
-                .filter((p) => p.id !== selectedP1)
-                .map((p) => (
-                  <option key={`p2-${p.id}`} value={p.id}>
-                    {p.name} ({formatDupr(p.rating)})
-                  </option>
-                ))}
-            </select>
+              onChange={(val) => setSelectedP2(val)}
+              options={[
+                { value: "", label: "Select Partner 2..." },
+                ...unpairedSelectedPlayers
+                  .filter((p) => p.id !== selectedP1)
+                  .map((p) => ({
+                    value: p.id,
+                    label: `${p.name} (${formatDupr(p.rating)})`,
+                  })),
+              ]}
+              sizeVariant="sm"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             <button

@@ -157,8 +157,8 @@ export class SessionService {
       if (session.status !== "active") {
         throw new DomainError("INVALID_STATE", "The session has ended.");
       }
-      if (!Number.isSafeInteger(input.courtCount) || input.courtCount <= 0 || input.courtCount > 6) {
-        throw new DomainError("INVALID_STATE", "Court count must be between 1 and 6.");
+      if (!Number.isSafeInteger(input.courtCount) || input.courtCount <= 0 || input.courtCount > 32) {
+        throw new DomainError("INVALID_STATE", "Court count must be between 1 and 32.");
       }
 
       const [players, attendance, rounds] = await Promise.all([

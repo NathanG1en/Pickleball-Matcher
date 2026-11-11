@@ -662,6 +662,33 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).toContain('data-testid="attendance-present-list"');
     expect(managerHtml).toContain('data-testid="attendance-not-present-list"');
 
+    // Manager can add a guest mid-session through attendance tab (collapsible, closed by default)
+    expect(managerHtml).toContain("Add Guest Player");
+    expect(managerHtml).toContain('data-testid="toggle-session-add-guest"');
+    expect(managerHtml).toContain('aria-expanded="false"');
+    expect(managerHtml).not.toContain('id="session-guest-name"');
+
+    const managerOpenGuestHtml = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={players}
+        attendance={mixedAttendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+        initialAddGuestOpen={true}
+      />
+    );
+    expect(managerOpenGuestHtml).toContain('data-testid="toggle-session-add-guest"');
+    expect(managerOpenGuestHtml).toContain('aria-expanded="true"');
+    expect(managerOpenGuestHtml).toContain('id="session-guest-name"');
+    expect(managerOpenGuestHtml).toContain('aria-label="Guest player name"');
+    expect(managerOpenGuestHtml).toContain('placeholder="Guest player name"');
+    expect(managerOpenGuestHtml).toContain('data-testid="session-guest-rating"');
+
     const nonManagerHtml = renderToStaticMarkup(
       <SessionManagerClient
         groupId={groupId}
@@ -676,9 +703,10 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
-    // Non-manager cannot toggle attendance or pin players; sees read-only status
+    // Non-manager cannot toggle attendance or pin players; sees read-only status and cannot add guest
     expect(nonManagerHtml).not.toContain('data-testid="attendance-toggle-Alice"');
     expect(nonManagerHtml).not.toContain('data-testid="pin-player-Alice"');
+    expect(nonManagerHtml).not.toContain('id="session-guest-name"');
     expect(nonManagerHtml).toContain("Present");
     expect(nonManagerHtml).toContain("Left");
   });
@@ -746,7 +774,7 @@ describe("SessionManagerClient Component", () => {
     expect(managerHtml).not.toContain('id="tab-synergies"');
 
     // Verify modal header & tabs container is static (shrink-0) and tab content container is scrollable (overflow-y-auto flex-1)
-    expect(managerHtml).toContain("shrink-0 space-y-4 bg-white");
+    expect(managerHtml).toContain("shrink-0 space-y-4 bg-[#FFFDF7]");
     expect(managerHtml).toContain("flex-1 overflow-y-auto space-y-4");
 
     // Verify exact ordering in HTML: attendance -> court_config -> partners
@@ -795,8 +823,9 @@ describe("SessionManagerClient Component", () => {
     );
     expect(courtConfigPanelHtml).toContain('id="tabpanel-court-config"');
     expect(courtConfigPanelHtml).toContain("Save Court Configuration");
+    expect(courtConfigPanelHtml).toContain("Changes save automatically.");
     expect(courtConfigPanelHtml).toContain('aria-label="Players on court 1"');
-    expect(courtConfigPanelHtml).toContain("text-xs font-bold text-black");
+    expect(courtConfigPanelHtml).toContain("font-bold text-black");
     expect(courtConfigPanelHtml).toContain("Matchup Confirmation");
     expect(courtConfigPanelHtml).toContain('data-testid="confirm-matchups-toggle"');
 
@@ -895,6 +924,56 @@ describe("SessionManagerClient Component", () => {
     expect(html).toContain('dateTime="2026-10-10T14:05:00.000Z"');
     expect(html).toContain('dateTime="2026-10-10T14:25:00.000Z"');
   });
+
+  it("renders guided court choice card on main screen when session is over capacity", () => {
+    // 5 players present, but session configured for 2 courts with default [4, 4] = 8 capacity
+    const fivePlayers: PlayerRecord[] = [
+      { id: "p1", groupId, name: "Alice", active: true, initialRating: 1200, rating: 1210, ratedGamesPlayed: 1 },
+      { id: "p2", groupId, name: "Bob", active: true, initialRating: 1200, rating: 1210, ratedGamesPlayed: 1 },
+      { id: "p3", groupId, name: "Charlie", active: true, initialRating: 1200, rating: 1190, ratedGamesPlayed: 1 },
+      { id: "p4", groupId, name: "Dave", active: true, initialRating: 1200, rating: 1190, ratedGamesPlayed: 1 },
+      { id: "p5", groupId, name: "Eve", active: true, initialRating: 1200, rating: 1200, ratedGamesPlayed: 1 },
+    ];
+    const fiveAttendance: AttendanceRecord[] = fivePlayers.map((p) => ({
+      sessionId,
+      playerId: p.id,
+      joinedRound: 1,
+      leftRound: null,
+    }));
+    const overCapacitySession: SessionRecord = {
+      id: sessionId,
+      groupId,
+      courtCount: 2,
+      courtPlayerCounts: [4, 4],
+      status: "active",
+      startedAt: new Date("2026-10-10T14:00:00.000Z"),
+      endedAt: null,
+      currentRoundNumber: 1,
+      version: 1,
+    };
+
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        groupName="Downtown Club"
+        session={overCapacitySession}
+        players={fivePlayers}
+        attendance={fiveAttendance}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="main-guided-court-choice-card"');
+    expect(html).toContain("Courts Need Adjustment (5 Present Players)");
+    expect(html).toContain('data-testid="main-guided-choice-doubles_rotate"');
+    expect(html).toContain('data-testid="main-guided-choice-all_active"');
+    expect(html).toContain("Only Doubles Matchups");
+    expect(html).toContain("Everyone Plays");
+  });
 });
+
 
 

@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { PLAYER_SESSION_COOKIE, readPlayerSession } from "@/lib/auth/player-session";
 
-import { requireGroupOrganizer } from "@/lib/auth/authorize";
+import { AuthorizationError, requireGroupOrganizer } from "@/lib/auth/authorize";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
 import {
   getOrganizerSessionSecret,
   ORGANIZER_SESSION_COOKIE,
@@ -15,7 +16,7 @@ import { PostgresRepositories } from "@/lib/db/postgres-repositories";
 import { getDatabase } from "@/lib/db/server-database";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { SessionService } from "@/lib/domain/session-service";
-import type { SessionServiceDependencies } from "@/lib/domain/types";
+import type { GroupRecord, GroupOrganizerPermissionKey, SessionServiceDependencies } from "@/lib/domain/types";
 
 let testRepository: DomainRepository | null = null;
 
@@ -55,6 +56,62 @@ export async function requireOrganizer(groupId: string): Promise<OrganizerSessio
   if (accountId && await getActionRepository().isGroupOrganizer(groupId, accountId)) return null;
   const session = await getActiveOrganizerSession();
   return requireGroupOrganizer(groupId, session);
+}
+
+export async function requireGroupPermission(
+  groupId: string,
+  permission: GroupOrganizerPermissionKey,
+): Promise<{ group: GroupRecord; accountId: string | null; isHost: boolean }> {
+  const repository = getActionRepository();
+  const group = await repository.getGroup(groupId);
+  if (!group) throw new Error("Group not found");
+
+  let accountId: string | null = null;
+  try {
+    accountId = (await getActivePlayerAccountId()) ?? null;
+  } catch {
+    accountId = null;
+  }
+  if (!accountId) {
+    try {
+      accountId = await requirePlayer();
+    } catch {
+      accountId = null;
+    }
+  }
+
+  const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+  if (isHost) {
+    return { group, accountId, isHost: true };
+  }
+
+  const isAccountOrg = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
+  const session = await getActiveOrganizerSession();
+  const isSessionOrg = Boolean(session && session.groupId === groupId);
+
+  if (!isAccountOrg && !isSessionOrg) {
+    throw new AuthorizationError();
+  }
+
+  const perms = parseGroupOrganizerPermissions(group.organizerPermissions);
+  if (!perms[permission]) {
+    throw new AuthorizationError();
+  }
+
+  return { group, accountId, isHost: false };
+}
+
+export async function requireGroupHost(
+  groupId: string,
+): Promise<{ group: GroupRecord; accountId: string }> {
+  const accountId = await requirePlayer();
+  const repository = getActionRepository();
+  const group = await repository.getGroup(groupId);
+  if (!group) throw new Error("Group not found");
+  if (group.ownerAccountId !== accountId) {
+    throw new AuthorizationError();
+  }
+  return { group, accountId };
 }
 
 export async function getActivePlayerAccountId(): Promise<string | null> {

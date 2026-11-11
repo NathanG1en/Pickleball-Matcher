@@ -621,7 +621,9 @@ describe("OpenPlayManagerClient Component", () => {
     // Verify drawer toggle button is rendered inside its own box
     expect(html).toContain('data-testid="checked-in-players-box"');
     expect(html).toContain('data-testid="toggle-players-drawer-button"');
-    expect(html).toContain("Hide Players");
+    expect(html).toContain('aria-label="Hide players checked in"');
+    expect(html).not.toContain("Hide Players");
+    expect(html).not.toContain("Show Players");
     expect(html).toContain('aria-controls="checked-in-players-drawer"');
     expect(html).toContain('data-testid="checked-in-players-drawer"');
     expect(html).toContain('data-testid="open-play-attendees"');

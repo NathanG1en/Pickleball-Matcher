@@ -69,7 +69,7 @@ export function Modal({
       }}
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-3xl border-[3px] border-black bg-white p-6 text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto ${className}`}
+        className={`relative w-full ${sizeClasses[size]} rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto ${className}`}
       >
         {showCloseButton && (
           <button

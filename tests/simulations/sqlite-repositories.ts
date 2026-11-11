@@ -22,7 +22,10 @@ import type {
   SessionType,
   StartedRoundRecord,
   TournamentRecord,
+  GroupOrganizerPermissions,
 } from "@/lib/domain/types";
+import { DEFAULT_GROUP_ORGANIZER_PERMISSIONS } from "@/lib/domain/types";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
@@ -34,6 +37,7 @@ interface GroupRow {
   created_at: string;
   is_public: number;
   owner_account_id: string | null;
+  organizer_permissions?: string | null;
 }
 
 interface PlayerAccountRow {
@@ -168,7 +172,8 @@ export class SqliteDomainRepository implements DomainRepository {
         organizer_pin_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
         is_public INTEGER NOT NULL DEFAULT 0,
-        owner_account_id TEXT REFERENCES player_accounts(id) ON DELETE SET NULL
+        owner_account_id TEXT REFERENCES player_accounts(id) ON DELETE SET NULL,
+        organizer_permissions TEXT
       );
 
       CREATE TABLE IF NOT EXISTS players (
@@ -348,6 +353,7 @@ export class SqliteDomainRepository implements DomainRepository {
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
       ownerAccountId: row.owner_account_id,
+      organizerPermissions: parseGroupOrganizerPermissions(row.organizer_permissions),
     };
   }
 
@@ -362,6 +368,7 @@ export class SqliteDomainRepository implements DomainRepository {
       createdAt: new Date(row.created_at),
       isPublic: Boolean(row.is_public),
       ownerAccountId: row.owner_account_id,
+      organizerPermissions: parseGroupOrganizerPermissions(row.organizer_permissions),
     }));
   }
 
@@ -738,6 +745,10 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE groups SET name = ? WHERE id = ?").run(name, groupId);
   }
 
+  async updateGroupOrganizerPermissions(groupId: string, permissions: GroupOrganizerPermissions): Promise<void> {
+    this.db.prepare("UPDATE groups SET organizer_permissions = ? WHERE id = ?").run(JSON.stringify(permissions), groupId);
+  }
+
   async deleteGroup(groupId: string): Promise<void> {
     this.db.prepare("DELETE FROM groups WHERE id = ?").run(groupId);
     this.db.prepare("DELETE FROM group_organizers WHERE group_id = ?").run(groupId);
@@ -748,7 +759,7 @@ export class SqliteDomainRepository implements DomainRepository {
   async insertGroup(group: GroupRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO groups (id, name, organizer_pin_hash, created_at, is_public, owner_account_id, organizer_permissions) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         group.id,
@@ -757,6 +768,7 @@ export class SqliteDomainRepository implements DomainRepository {
         group.createdAt.toISOString(),
         group.isPublic ? 1 : 0,
         group.ownerAccountId ?? null,
+        JSON.stringify(group.organizerPermissions ?? DEFAULT_GROUP_ORGANIZER_PERMISSIONS),
       );
   }
 

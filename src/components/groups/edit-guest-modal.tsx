@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Input, Label, Modal } from "@/components/ui";
+import { Button, CustomDropdown, Input, Label, Modal } from "@/components/ui";
 import { updatePlayerAction } from "@/app/actions/players";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PlayerRecord } from "@/lib/domain/types";
@@ -137,19 +137,22 @@ function EditGuestModalContent({
 
         <div className="space-y-1.5">
           <Label htmlFor="edit-guest-gender-select">Guest Gender</Label>
-          <select
+          <CustomDropdown
             id="edit-guest-gender-select"
+            ariaLabel="Guest Gender"
             value={gender}
-            autoFocus={initialFocus === "gender"}
-            onChange={(e) => {
-              setGender(e.target.value as "male" | "female");
+            onChange={(val) => {
+              setGender(val as "male" | "female");
               if (error) setError(null);
             }}
-            className="w-full bg-white border-2 border-black rounded-xl px-4 py-2 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow cursor-pointer"
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
+            options={[
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+            ]}
+            sizeVariant="sm"
+            className="w-full"
+            buttonClassName="w-full justify-between"
+          />
         </div>
 
         <div className="flex gap-2 justify-end pt-2">

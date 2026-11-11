@@ -27,6 +27,24 @@ export const createAccountGroupSchema = z.object({
   isPublic: z.boolean().default(false),
 }).strict();
 
+export const groupOrganizerPermissionsSchema = z.object({
+  edit_group_name: z.boolean(),
+  edit_group_privacy: z.boolean(),
+  manage_organizers: z.boolean(),
+  delete_group: z.boolean(),
+}).strict();
+
+export const updateGroupPermissionsSchema = z.object({
+  groupId: entityIdSchema,
+  permissions: groupOrganizerPermissionsSchema,
+}).strict();
+
+export const updateGroupOrganizersSchema = z.object({
+  groupId: entityIdSchema,
+  addAccountIds: z.array(entityIdSchema).default([]),
+  removeAccountIds: z.array(entityIdSchema).default([]),
+}).strict();
+
 export const addGroupOrganizerSchema = z.object({
   groupId: entityIdSchema,
   playerId: entityIdSchema,

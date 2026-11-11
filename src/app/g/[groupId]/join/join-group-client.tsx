@@ -7,6 +7,7 @@ import { joinAsGuestAction, joinGroupViaInviteAction } from "@/app/actions/playe
 import { formatDupr } from "@/lib/domain/rating-display";
 import { saveRecentGroup } from "@/lib/storage/recent-groups";
 import { ZapIcon } from "@/components/ui/icons";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 
 interface AccountSummary {
   id: string;
@@ -94,7 +95,7 @@ export function JoinGroupClient({
   // Case 1: Already a member
   if (isAlreadyInGroup) {
     return (
-      <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-white p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
+      <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
         <Link
           href="/"
           aria-label="Return home"
@@ -139,7 +140,7 @@ export function JoinGroupClient({
   // Case 2: Signed in with an account, but not a member yet
   if (account) {
     return (
-      <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-white p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
+      <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
         <Link
           href="/"
           aria-label="Return home"
@@ -204,7 +205,7 @@ export function JoinGroupClient({
 
   // Case 3: Visitor is NOT signed in on this device
   return (
-    <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-white p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
+    <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-8 text-center shadow-[8px_8px_0px_0px_#000] space-y-5">
       <Link
         href="/"
         aria-label="Return home"
@@ -272,16 +273,20 @@ export function JoinGroupClient({
             <label htmlFor="guest-join-skill" className="block text-[11px] font-black uppercase tracking-wider text-black mb-1">
               Skill Level
             </label>
-            <select
+            <CustomDropdown
               id="guest-join-skill"
+              ariaLabel="Skill Level"
               value={guestSkill}
-              onChange={(e) => setGuestSkill(e.target.value as "beginner" | "intermediate" | "advanced")}
-              className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none"
-            >
-              <option value="beginner">Beginner (2.000 – 2.999)</option>
-              <option value="intermediate">Intermediate (3.000 – 3.999)</option>
-              <option value="advanced">Advanced (4.000+)</option>
-            </select>
+              onChange={(val) => setGuestSkill(val as "beginner" | "intermediate" | "advanced")}
+              options={[
+                { value: "beginner", label: "Beginner (2.000 – 2.999)" },
+                { value: "intermediate", label: "Intermediate (3.000 – 3.999)" },
+                { value: "advanced", label: "Advanced (4.000+)" },
+              ]}
+              sizeVariant="sm"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
           </div>
 
           <button

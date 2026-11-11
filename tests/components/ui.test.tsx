@@ -14,6 +14,8 @@ import {
   Select,
   StatCard,
   Textarea,
+  Toast,
+  CustomDropdown,
 } from "@/components/ui";
 
 vi.mock("next/navigation", () => ({
@@ -258,6 +260,85 @@ describe("Reusable UI Components", () => {
       expect(html).toContain("Advanced Intermediate");
       expect(html).toContain("touch-pan-y");
       expect(html).not.toContain("touch-none");
+    });
+  });
+
+  describe("Toast", () => {
+    it("renders uniform neobrutalist toast styling", () => {
+      const html = renderToStaticMarkup(
+        <Toast>Saved successfully!</Toast>
+      );
+      expect(html).toContain("bg-[#ccff00]");
+      expect(html).toContain("border-2 border-black");
+      expect(html).toContain("rounded-xl");
+      expect(html).toContain("shadow-[3px_3px_0px_0px_#000]");
+      expect(html).toContain("Saved successfully!");
+      expect(html).toContain('role="status"');
+    });
+
+    it("renders unboxed little black x dismiss button when onDismiss provided", () => {
+      const html = renderToStaticMarkup(
+        <Toast onDismiss={() => {}}>Game submitted!</Toast>
+      );
+      expect(html).toContain('aria-label="Dismiss"');
+      expect(html).toContain("bg-transparent");
+      expect(html).toContain("border-0");
+      expect(html).toContain("shadow-none");
+      // Must not have a boxed button around the x
+      expect(html).not.toContain("bg-white rounded px-2");
+      expect(html).not.toContain("border border-black bg-white");
+      expect(html).not.toContain("shadow-[1px_1px_0px_0px_#000]");
+      expect(html).not.toContain("<span>Dismiss</span>");
+    });
+  });
+
+  describe("CustomDropdown", () => {
+    const sampleOptions = [
+      { value: "male", label: "Male" },
+      { value: "female", label: "Female" },
+    ];
+
+    it("renders trigger button with label and chevron with tight spacing", () => {
+      const html = renderToStaticMarkup(
+        <CustomDropdown
+          id="test-gender-dropdown"
+          ariaLabel="Select Gender"
+          value="male"
+          onChange={() => {}}
+          options={sampleOptions}
+          sizeVariant="sm"
+        />
+      );
+
+      // Trigger button
+      expect(html).toContain('aria-haspopup="listbox"');
+      expect(html).toContain('aria-label="Select Gender"');
+      expect(html).toContain("Male");
+      expect(html).toContain("gap-2");
+      expect(html).toContain("border-2");
+      expect(html).toContain("border-black");
+
+      // Underlying select for compatibility
+      expect(html).toContain('id="test-gender-dropdown"');
+      expect(html).toContain('value="male"');
+      expect(html).toContain('value="female"');
+      expect(html).toContain("Female");
+    });
+
+    it("renders compact xs size variant styling", () => {
+      const html = renderToStaticMarkup(
+        <CustomDropdown
+          id="compact-dropdown"
+          value="female"
+          onChange={() => {}}
+          options={sampleOptions}
+          sizeVariant="xs"
+        />
+      );
+
+      expect(html).toContain("gap-1.5");
+      expect(html).toContain("shadow-[1px_1px_0px_0px_#000]");
+      expect(html).toContain("Female");
     });
   });
 });

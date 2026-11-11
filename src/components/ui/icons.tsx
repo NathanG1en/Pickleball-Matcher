@@ -326,4 +326,84 @@ export function ArrowLeftRightIcon({ className = "h-4 w-4", ...props }: IconProp
   );
 }
 
+export function PinOffIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M12 17v5" />
+      <path d="M15 9.34V6h1a1 1 0 0 0 0-2H7.89" />
+      <path d="m2 2 20 20" />
+      <path d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12" />
+    </svg>
+  );
+}
+
+export function UserRoundIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <circle cx="12" cy="8" r="5" />
+      <path d="M20 21a8 8 0 0 0-16 0" />
+    </svg>
+  );
+}
+
+export function ShieldMinusIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
+export function ShieldPlusIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="M9 12h6" />
+      <path d="M12 9v6" />
+    </svg>
+  );
+}
+
+export function Trash2Icon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" x2="10" y1="11" y2="17" />
+      <line x1="14" x2="14" y1="11" y2="17" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+export function RotateCcwIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+    </svg>
+  );
+}
+
+export function LogOutIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" x2="9" y1="12" y2="12" />
+    </svg>
+  );
+}
+
+
 

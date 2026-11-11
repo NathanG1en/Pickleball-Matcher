@@ -17,7 +17,7 @@ const tempCourtSchema = z.object({
 const tempRoundSchema = z.object({
   roundNumber: z.number().int().positive(),
   seed: z.number().int().min(0).max(0xffff_ffff),
-  courts: z.array(tempCourtSchema).min(1).max(6),
+  courts: z.array(tempCourtSchema).min(1).max(32),
   sitting: z.array(z.string().min(1).max(128)),
 }).strict();
 type TemporaryRoundInput = z.infer<typeof tempRoundSchema>;
@@ -41,7 +41,7 @@ function checkRound(round: TemporaryRoundInput, expectedNumber: number, data: { 
 export const saveTemporaryGroupSchema = z.object({
   name: z.string().trim().min(1).max(80),
   isPublic: z.boolean(),
-  courtPlayerCounts: z.array(courtSizeSchema).min(1).max(6),
+  courtPlayerCounts: z.array(courtSizeSchema).min(1).max(32),
   players: z.array(z.object({ id: z.string().min(1).max(128), name: z.string().trim().min(1).max(80), rating: z.number().finite().min(100).max(3_000) }).strict()).min(2).max(128),
   rounds: z.array(tempRoundSchema).max(100),
   currentRound: tempRoundSchema.nullable().optional(),

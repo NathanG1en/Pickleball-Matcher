@@ -10,10 +10,10 @@ import {
 import {
   Alert,
   Button,
+  CustomDropdown,
   FormField,
   Input,
   RatingSlider,
-  Select,
   VisibilityToggle,
 } from "@/components/ui";
 
@@ -122,17 +122,22 @@ export function PlayerSignupForm() {
         label="Gender"
         error={fieldErrors.gender?.[0]}
       >
-        <Select
+        <CustomDropdown
           id="player-gender"
+          name="gender"
           required
+          ariaLabel="Gender"
           value={gender}
-          onChange={(event) => setGender(event.target.value as "male" | "female")}
+          onChange={(val) => setGender(val as "male" | "female")}
           hasError={Boolean(fieldErrors.gender?.length)}
-          aria-describedby={fieldErrors.gender?.length ? "player-gender-error" : undefined}
-        >
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </Select>
+          options={[
+            { value: "male", label: "Male" },
+            { value: "female", label: "Female" },
+          ]}
+          sizeVariant="md"
+          className="w-full"
+          buttonClassName="w-full justify-between"
+        />
       </FormField>
 
       <FormField

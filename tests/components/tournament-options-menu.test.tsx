@@ -62,5 +62,43 @@ describe("TournamentOptionsMenu Component", () => {
 
     expect(html).toContain('data-testid="tournament-options-menu-button"');
   });
+
+  it("renders Finish Tournament and Delete Tournament for active tournament when open", () => {
+    const html = renderToStaticMarkup(
+      <TournamentOptionsMenu
+        groupId={groupId}
+        tournamentId={tournamentId}
+        tournamentName="Club Championship"
+        status="active"
+        initialMenuOpen={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="finish-tournament-menu-item"');
+    expect(html).toContain("Finish Tournament");
+    expect(html).toContain('data-testid="delete-tournament-menu-item"');
+    expect(html).toContain("Delete Tournament");
+    expect(html).toContain("text-[#E32929]");
+    expect(html).toContain("rounded-[20px]");
+    expect(html).toContain("border-[2.5px]");
+    expect(html).toContain("bg-[#FFFDF6]");
+  });
+
+  it("renders Reopen Tournament for completed tournament when open", () => {
+    const html = renderToStaticMarkup(
+      <TournamentOptionsMenu
+        groupId={groupId}
+        tournamentId={tournamentId}
+        tournamentName="Club Championship"
+        status="completed"
+        initialMenuOpen={true}
+      />
+    );
+
+    expect(html).toContain('data-testid="reopen-tournament-menu-item"');
+    expect(html).toContain("Reopen Tournament");
+    expect(html).toContain('data-testid="delete-tournament-menu-item"');
+    expect(html).toContain("Delete Tournament");
+  });
 });
 

@@ -24,7 +24,7 @@ export function SessionHighlights({
   if (!closest) return null;
 
   return (
-    <section aria-labelledby={headingId} data-testid="session-highlights" className="rounded-3xl border-[3px] border-black bg-white p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 text-black">
+    <section aria-labelledby={headingId} data-testid="session-highlights" className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 text-black">
       <div>
         <h2 id={headingId} className="font-display text-xl font-black uppercase tracking-wider">Session highlights</h2>
         <p className="mt-1 text-xs font-bold text-neutral-600">

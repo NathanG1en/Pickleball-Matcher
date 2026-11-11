@@ -2,6 +2,7 @@ import type {
   AttendanceRecord,
   PartnerRequestRecord,
   GroupRecord,
+  GroupOrganizerPermissions,
   GroupOrganizerRecord,
   PublicGroupRecord,
   MatchPlayerRecord,
@@ -55,6 +56,7 @@ export interface DomainRepository {
   leavePublicGroup(accountId: string, groupId: string): Promise<boolean>;
   updateGroupVisibility(groupId: string, isPublic: boolean): Promise<void>;
   updateGroupName(groupId: string, name: string): Promise<void>;
+  updateGroupOrganizerPermissions(groupId: string, permissions: GroupOrganizerPermissions): Promise<void>;
   deleteGroup(groupId: string): Promise<void>;
   listPlayerSessionHistory(accountId: string): Promise<readonly PlayerSessionHistoryRecord[]>;
   insertGroup(group: GroupRecord): Promise<void>;

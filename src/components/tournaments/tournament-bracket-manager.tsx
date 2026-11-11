@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { Modal } from "@/components/ui/modal";
 import { TrophyIcon, ShuffleIcon, CheckIcon, PencilIcon } from "@/components/ui/icons";
 import {
@@ -352,7 +353,7 @@ export function TournamentBracketManager({
       )}
 
       {/* Header Card */}
-      <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-3">
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${tournament.groupId}`}
@@ -486,7 +487,7 @@ export function TournamentBracketManager({
       )}
 
       {/* Division Bracket Toolbar */}
-      <div className="bg-white border-[3px] border-black rounded-2xl p-4 shadow-[4px_4px_0px_0px_#000] flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-4 shadow-[4px_4px_0px_0px_#000] flex flex-wrap items-center justify-between gap-3">
         <div>
           <span className="font-display text-lg font-black uppercase text-black block">
             {TOURNAMENT_DIVISION_LABELS[effectiveActiveDivision]}
@@ -512,7 +513,7 @@ export function TournamentBracketManager({
 
       {/* Bracket Tree / Columns */}
       {roundNumbers.length === 0 ? (
-        <div className="p-8 text-center bg-white border-[3px] border-black rounded-3xl shadow-[4px_4px_0px_0px_#000] space-y-3">
+        <div className="p-8 text-center bg-[#FFFDF7] border-[3px] border-black rounded-3xl shadow-[4px_4px_0px_0px_#000] space-y-3">
           <p className="font-display text-lg font-black uppercase text-neutral-800">
             No matchups in this division yet
           </p>
@@ -561,7 +562,7 @@ export function TournamentBracketManager({
                   return (
                     <div
                       key={m.id}
-                      className={`bracket-match-card rounded-2xl border-[3px] border-black p-4 shadow-[4px_4px_0px_0px_#000] transition-all bg-white relative ${
+                      className={`bracket-match-card rounded-2xl border-[3px] border-black p-4 shadow-[4px_4px_0px_0px_#000] transition-all bg-[#FFFDF7] relative ${
                         isFinals ? "border-black ring-2 ring-black/20" : ""
                       }`}
                     >
@@ -745,18 +746,22 @@ export function TournamentBracketManager({
               <label className="block text-xs font-black uppercase text-black mb-1">
                 Participant 1
               </label>
-              <select
+              <CustomDropdown
+                ariaLabel="Participant 1"
+                placeholder="(None / Empty)"
                 value={slot1Choice}
-                onChange={(e) => setSlot1Choice(e.target.value)}
-                className="w-full bg-white border-2 border-black rounded-xl p-2.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000]"
-              >
-                <option value="">(None / Empty)</option>
-                {sortedParticipants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSlot1Choice(val)}
+                options={[
+                  { value: "", label: "(None / Empty)" },
+                  ...sortedParticipants.map((p) => ({
+                    value: p.id,
+                    label: p.name,
+                  })),
+                ]}
+                sizeVariant="sm"
+                className="w-full"
+                buttonClassName="w-full justify-between"
+              />
             </div>
 
             {/* Slot 2 Selection */}
@@ -764,18 +769,22 @@ export function TournamentBracketManager({
               <label className="block text-xs font-black uppercase text-black mb-1">
                 Participant 2
               </label>
-              <select
+              <CustomDropdown
+                ariaLabel="Participant 2"
+                placeholder="(None / Empty)"
                 value={slot2Choice}
-                onChange={(e) => setSlot2Choice(e.target.value)}
-                className="w-full bg-white border-2 border-black rounded-xl p-2.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000]"
-              >
-                <option value="">(None / Empty)</option>
-                {sortedParticipants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSlot2Choice(val)}
+                options={[
+                  { value: "", label: "(None / Empty)" },
+                  ...sortedParticipants.map((p) => ({
+                    value: p.id,
+                    label: p.name,
+                  })),
+                ]}
+                sizeVariant="sm"
+                className="w-full"
+                buttonClassName="w-full justify-between"
+              />
             </div>
 
             {/* Scores */}

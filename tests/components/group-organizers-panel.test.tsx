@@ -16,7 +16,9 @@ import {
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
-import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import type { GroupOrganizerPermissionKey, GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import { AuthorizationError } from "@/lib/auth/authorize";
+import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -35,11 +37,55 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
   const mockGetActivePlayerAccountId = vi.fn();
   const mockGetActiveOrganizerSession = vi.fn();
+  const mockRequirePlayer = vi.fn();
   return {
     ...actual,
     getActivePlayerAccountId: mockGetActivePlayerAccountId,
     getActiveOrganizerSession: mockGetActiveOrganizerSession,
-    requirePlayer: vi.fn(),
+    requirePlayer: mockRequirePlayer,
+    requireGroupPermission: vi.fn(async (groupId: string, permission: GroupOrganizerPermissionKey) => {
+      const repository = actual.getActionRepository();
+      const group = await repository.getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      let accountId: string | null = null;
+      try {
+        accountId = (await mockRequirePlayer()) ?? null;
+      } catch {
+        accountId = null;
+      }
+      if (!accountId) {
+        try {
+          accountId = (await mockGetActivePlayerAccountId()) ?? null;
+        } catch {
+          accountId = null;
+        }
+      }
+      const isHost = Boolean(accountId && group.ownerAccountId === accountId);
+      if (isHost) return { group, accountId, isHost: true };
+      const isOrg = Boolean(accountId && (await repository.isGroupOrganizer(groupId, accountId)));
+      const session = await mockGetActiveOrganizerSession();
+      const isSessionOrg = Boolean(session && session.groupId === groupId);
+      if (!isOrg && !isSessionOrg) throw new AuthorizationError();
+      const perms = parseGroupOrganizerPermissions(group.organizerPermissions);
+      if (!perms[permission]) throw new AuthorizationError();
+      return { group, accountId, isHost: false };
+    }),
+    requireGroupHost: vi.fn(async (groupId: string) => {
+      let accountId: string | null = null;
+      try {
+        accountId = (await mockRequirePlayer()) ?? (await mockGetActivePlayerAccountId()) ?? null;
+      } catch {
+        accountId = null;
+      }
+      if (!accountId) throw new Error("Not signed in");
+      const repository = actual.getActionRepository();
+      const group = await repository.getGroup(groupId);
+      if (!group) throw new Error("Group not found");
+      if (group.ownerAccountId !== accountId) {
+        throw new AuthorizationError();
+      }
+      return { group, accountId };
+    }),
     requireOrganizer: vi.fn(async (groupId: string) => {
       const accountId = await mockGetActivePlayerAccountId();
       if (accountId && (await actual.getActionRepository().isGroupOrganizer(groupId, accountId))) {
@@ -179,7 +225,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).not.toContain("Guest Player (@");
       expect(html).toContain("View profile");
       expect(html).toContain(
-        'class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium uppercase text-black hover:bg-[#ccff00] cursor-pointer transition-colors"'
+        'class="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"'
       );
       expect(html).not.toContain("text-xs font-black uppercase hover:bg-[#ccff00]");
 
@@ -199,15 +245,21 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("0 games");
       expect(html).not.toContain("Rating: 1000");
 
-      // Verify "Remove group organizer" button exists for delegated organizer
-      expect(html).toContain("Remove group organizer");
+      // Verify "Remove organizer" button exists for delegated organizer
+      expect(html).toContain("Remove organizer");
       // Verify "Transfer host" button exists for delegated organizer
       expect(html).toContain("Transfer host");
       // Verify "Make a group organizer" button exists for regular member
       expect(html).toContain("Make a group organizer");
-      // Verify "Remove player" button exists in the dropdown
+      // Verify "Remove player" button exists in the dropdown with destructive red styling
       expect(html).toContain("Remove player");
+      expect(html).toContain("text-[#E32929]");
       expect(html).toContain("data-player-menu");
+      expect(html).toContain("data-player-menu-dropdown");
+      expect(html).toContain('role="separator"');
+      expect(html).toContain("rounded-[20px]");
+      expect(html).toContain("border-[2.5px]");
+      expect(html).toContain("bg-[#FFFDF6]");
 
       // Verify Link to public player and Edit guest option exists for guest player
       expect(html).toContain("Link to public player");
@@ -242,7 +294,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Link to public player");
       expect(html).toContain("Edit guest");
       expect(html).not.toContain("Make a group organizer");
-      expect(html).not.toContain("Remove group organizer");
+      expect(html).not.toContain("Remove organizer");
       expect(html).not.toContain("Transfer host");
 
       // Verify Find Player, Add Guest, and separate Add Player or Guest section exist for organizers
@@ -347,6 +399,20 @@ describe("GroupOrganizersPanel and Actions", () => {
       }
     });
 
+    it("does not render the legacy alert box inside add player container", () => {
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={samplePlayers}
+          organizers={sampleOrganizers}
+          isHost={true}
+        />
+      );
+
+      expect(html).not.toContain("bg-[#ccff00]/40");
+      expect(html).not.toContain("p-2 rounded-lg border border-black/40");
+    });
+
     it("renders player search without an Add button next to input and without Dismiss in results, formatting results as name (@username)", () => {
       const html = renderToStaticMarkup(
         <GroupOrganizersPanel
@@ -437,7 +503,7 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain('href="/players/org_user"');
       expect(html).toContain("@org_user");
       expect(html).toContain("View profile");
-      expect(html).not.toContain("Remove group organizer");
+      expect(html).not.toContain("Remove organizer");
       expect(html).not.toContain("Make a group organizer");
       expect(html).not.toContain("Link to public player");
       expect(html).not.toContain("Edit guest");
@@ -1433,13 +1499,28 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(newHostAddResult.ok).toBe(true);
     });
 
-    it("accepts case-insensitive group name confirmation", async () => {
+    it("rejects case-mismatched group name confirmation", async () => {
       vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
 
       const result = await transferGroupHostAction({
         groupId: "g1",
         playerId: "p2",
-        confirmationName: "test group",
+        confirmationName: "test group", // group name is "Test Group"
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Group name does not match");
+      const group = await repository.getGroup("g1");
+      expect(group?.ownerAccountId).toBe(hostAccountId);
+    });
+
+    it("accepts exact case group name confirmation", async () => {
+      vi.mocked(actionContext.requirePlayer).mockResolvedValue(hostAccountId);
+
+      const result = await transferGroupHostAction({
+        groupId: "g1",
+        playerId: "p2",
+        confirmationName: "Test Group",
       });
 
       expect(result.ok).toBe(true);

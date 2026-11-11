@@ -74,7 +74,7 @@ export function ShareGroupModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-sm rounded-3xl border-[3px] border-black bg-white p-6 text-center text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4">
+      <div className="relative w-full max-w-sm rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 text-center text-black shadow-[8px_8px_0px_0px_#000] sm:p-7 space-y-4">
         <button
           type="button"
           onClick={onClose}

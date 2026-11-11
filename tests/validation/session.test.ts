@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addSessionGuestSchema,
   deleteSessionSchema,
   manualCourtSchema,
   startRoundSchema,
@@ -166,17 +167,26 @@ describe("updateCourtConfigSchema", () => {
     expect(res.success).toBe(false);
   });
 
-  it("rejects invalid court count outside 1 to 6", () => {
+  it("rejects invalid court count outside 1 to 32", () => {
     expect(
       updateCourtConfigSchema.safeParse({ ...baseInput, courtCount: 0, courtPlayerCounts: [] }).success,
     ).toBe(false);
     expect(
       updateCourtConfigSchema.safeParse({
         ...baseInput,
-        courtCount: 7,
-        courtPlayerCounts: [4, 4, 4, 4, 4, 4, 4],
+        courtCount: 33,
+        courtPlayerCounts: Array.from({ length: 33 }, () => 4),
       }).success,
     ).toBe(false);
+  });
+
+  it("allows more than 6 courts when matching player counts", () => {
+    const res = updateCourtConfigSchema.safeParse({
+      ...baseInput,
+      courtCount: 8,
+      courtPlayerCounts: [4, 4, 4, 4, 4, 4, 4, 4],
+    });
+    expect(res.success).toBe(true);
   });
 
   it("rejects invalid player counts per court (not 2, 3, or 4)", () => {
@@ -314,6 +324,45 @@ describe("startSessionSchema", () => {
       courtCount: 6,
       courtPlayerCounts: [4, 4, 4, 4, 4, 4], // 24 spots
       playerIds: Array.from({ length: 20 }, (_, i) => `player_${i + 1}`), // only 20 players
+    });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("addSessionGuestSchema", () => {
+  it("accepts valid guest input with defaults", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "Charlie Brown",
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.guestName).toBe("Charlie Brown");
+      expect(res.data.gender).toBe("male");
+      expect(res.data.initialRating).toBeGreaterThan(0);
+    }
+  });
+
+  it("accepts custom gender and rating", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "Sally",
+      gender: "female",
+      initialRating: 4.5,
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.gender).toBe("female");
+    }
+  });
+
+  it("rejects empty guest name", () => {
+    const res = addSessionGuestSchema.safeParse({
+      groupId: "grp_1",
+      sessionId: "sess_1",
+      guestName: "   ",
     });
     expect(res.success).toBe(false);
   });

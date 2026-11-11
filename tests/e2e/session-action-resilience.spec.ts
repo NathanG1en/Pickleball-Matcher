@@ -289,7 +289,15 @@ test("shared accounts scoring in two groups retain account, alias, snapshot and 
     await page.goto(`/g/${fixture.shadowGroupId}`);
     await page.getByTestId("start-new-session-button").click();
     await page.getByTestId("select-normal-session-button").click();
-    await page.getByRole("button", { name: "Increase courts", exact: true }).click();
+    const shadowCourtDisplay = page.getByLabel("Court count", { exact: true });
+    while ((await shadowCourtDisplay.textContent()) !== "3") {
+      const current = Number(await shadowCourtDisplay.textContent());
+      if (current < 3) {
+        await page.getByRole("button", { name: "Increase courts", exact: true }).click();
+      } else {
+        await page.getByRole("button", { name: "Decrease courts", exact: true }).click();
+      }
+    }
     await page.getByTestId("continue-to-pairings-button").click();
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await expect(page).toHaveURL(/\/sessions\/session_/);

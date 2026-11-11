@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { entityIdSchema } from "@/lib/validation/group";
+import { normalizeInitialRating } from "@/lib/domain/rating-display";
 
 const aggregateVersionSchema = z.coerce.number().int().positive();
 const idempotencyKeySchema = entityIdSchema;
@@ -14,8 +15,8 @@ export const updateStayTogetherPairsSchema = z.object({
 export const startSessionSchema = z
   .object({
     groupId: entityIdSchema,
-    courtCount: z.coerce.number().int().min(1).max(6),
-    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    courtCount: z.coerce.number().int().min(1).max(32),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(32).optional(),
     playerIds: z.array(entityIdSchema).min(2).max(128),
     stayTogetherPairs: stayTogetherPairsSchema.optional(),
     idempotencyKey: idempotencyKeySchema,
@@ -162,8 +163,8 @@ export const updateCourtConfigSchema = z
     groupId: entityIdSchema,
     sessionId: entityIdSchema,
     sessionVersion: aggregateVersionSchema,
-    courtCount: z.coerce.number().int().min(1).max(6),
-    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(6).optional(),
+    courtCount: z.coerce.number().int().min(1).max(32),
+    courtPlayerCounts: z.array(z.coerce.number().int().min(2).max(4)).max(32).optional(),
     idempotencyKey: idempotencyKeySchema,
   })
   .strict()
@@ -201,7 +202,25 @@ export const submitSessionPickupGameSchema = z
       message: "A player cannot be selected more than once in the same game.",
     },
   );
-
 export type SubmitSessionPickupGameInput = z.infer<typeof submitSessionPickupGameSchema>;
+
+export const addSessionGuestSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+    guestName: z.string().trim().min(1, "Guest name is required").max(60, "Guest name must be 60 characters or fewer"),
+    gender: z.enum(["male", "female"]).default("male"),
+    initialRating: z.coerce
+      .number()
+      .finite()
+      .refine((val) => (val >= 2.0 && val <= 8.0) || (val >= 100 && val <= 3_000), {
+        message: "Initial rating must be between 2.000 and 8.000.",
+      })
+      .default(3.5)
+      .transform(normalizeInitialRating),
+  })
+  .strict();
+
+export type AddSessionGuestInput = z.infer<typeof addSessionGuestSchema>;
 
 

@@ -1,11 +1,13 @@
 "use client";
 
 import type { StayTogetherPair } from "@/lib/matchmaking/types";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
 import { SetupCourtIllustration } from "@/components/attendance/setup-court-illustration";
 import { Button } from "@/components/ui/button";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { RatingSlider } from "@/components/ui/rating-slider";
-import { PinIcon, SearchIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, PinIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDupr } from "@/lib/domain/rating-display";
 import {
   sortPlayersWithPinned,
@@ -29,6 +31,7 @@ export interface AttendanceManagerProps {
   readonly isEditingSession?: boolean;
   readonly isPending?: boolean;
   readonly submitLabel?: string;
+  readonly initialAddGuestOpen?: boolean;
   readonly onSubmit?: (data: { courtCount: number; courtPlayerCounts: (2 | 3 | 4)[]; selectedPlayerIds: string[]; stayTogetherPairs: readonly StayTogetherPair[] }) => void;
   readonly onAddGuest?: (name: string, initialRating?: number, gender?: "male" | "female") => void;
 }
@@ -37,11 +40,12 @@ export function AttendanceManager({
   groupId,
   players,
   selectedPlayerIds: initialSelected = [],
-  courtCount: initialCourts = 2,
-  maxCourts = 6,
+  courtCount: initialCourts,
+  maxCourts = 32,
   isEditingSession = false,
   isPending = false,
   submitLabel,
+  initialAddGuestOpen = false,
   onSubmit,
   onAddGuest,
 }: AttendanceManagerProps) {
@@ -52,8 +56,8 @@ export function AttendanceManager({
   );
 
   const sortedPlayers = useMemo(
-    () => sortPlayersWithPinned(players, pinnedPlayerIds, selectedIds),
-    [players, pinnedPlayerIds, selectedIds],
+    () => sortPlayersWithPinned(players, pinnedPlayerIds),
+    [players, pinnedPlayerIds],
   );
 
   const displayedPlayers = useMemo(() => {
@@ -67,12 +71,30 @@ export function AttendanceManager({
     [players, pinnedPlayerIds],
   );
   const initialSelectedCount = initialSelected.length || players.length;
-  const defaultCourtCount = Math.min(initialCourts, Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0)));
+  const initialIdealCourts = Math.min(
+    maxCourts,
+    Math.max(1, Math.floor(initialSelectedCount / 4) + (initialSelectedCount % 4 >= 2 ? 1 : 0))
+  );
+  const defaultCourtCount = (() => {
+    if (initialCourts !== undefined) {
+      if (initialSelectedCount >= initialCourts * 4 + 2) {
+        return Math.min(maxCourts, Math.max(initialCourts + 1, initialIdealCourts));
+      }
+      return Math.min(maxCourts, Math.max(1, initialCourts));
+    }
+    return initialIdealCourts;
+  })();
+
   const [courts, setCourts] = useState<number>(defaultCourtCount);
   const [courtPlayerCounts, setCourtPlayerCounts] = useState<(2 | 3 | 4)[]>(() => {
     let remaining = initialSelectedCount;
-    return Array.from({ length: defaultCourtCount }, () => {
-      const size = Math.min(4, Math.max(2, remaining)) as 2 | 3 | 4;
+    return Array.from({ length: defaultCourtCount }, (_, idx) => {
+      const courtsLeft = defaultCourtCount - idx - 1;
+      const minNeededLater = courtsLeft * 2;
+      const maxPossibleLater = courtsLeft * 4;
+      const minThis = Math.max(2, remaining - maxPossibleLater);
+      const maxThis = Math.min(4, remaining - minNeededLater);
+      const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
       remaining -= size;
       return size;
     });
@@ -80,20 +102,88 @@ export function AttendanceManager({
   const [guestName, setGuestName] = useState<string>("");
   const [guestGender, setGuestGender] = useState<"male" | "female">("male");
   const [guestRating, setGuestRating] = useState<number>(3.5);
+  const [isAddGuestOpen, setIsAddGuestOpen] = useState(initialAddGuestOpen);
 
   const [stayTogetherPairs, setStayTogetherPairs] = useState<readonly StayTogetherPair[]>([]);
+
+  const handlePlayerCountChange = (newSelectedIds: Set<string>) => {
+    const newCount = newSelectedIds.size;
+    setSelectedIds(newSelectedIds);
+
+    // Automatically add court if there are at least 2 more people than the current courts allow
+    if (newCount >= courts * 4 + 2 && courts < Math.min(maxCourts, Math.floor(newCount / 2))) {
+      const ideal = Math.floor(newCount / 4) + (newCount % 4 >= 2 ? 1 : 0);
+      const targetCourts = Math.min(
+        Math.min(maxCourts, Math.floor(newCount / 2)),
+        Math.max(courts + 1, ideal)
+      );
+      setCourts(targetCourts);
+      setCourtPlayerCounts(() => {
+        let remaining = newCount;
+        return Array.from({ length: targetCourts }, (_, idx) => {
+          const courtsLeft = targetCourts - idx - 1;
+          const minNeededLater = courtsLeft * 2;
+          const maxPossibleLater = courtsLeft * 4;
+          const minThis = Math.max(2, remaining - maxPossibleLater);
+          const maxThis = Math.min(4, remaining - minNeededLater);
+          const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
+          remaining -= size;
+          return size;
+        });
+      });
+    } else if (courts > Math.max(1, Math.floor(newCount / 2))) {
+      const targetCourts = Math.max(1, Math.floor(newCount / 2));
+      setCourts(targetCourts);
+      setCourtPlayerCounts((prev) => prev.slice(0, targetCourts));
+    }
+  };
+
+  const prevPlayersRef = useRef(players);
+  useEffect(() => {
+    if (players.length > prevPlayersRef.current.length) {
+      const prevIds = new Set(prevPlayersRef.current.map((p) => p.id));
+      const newPlayerIds = players.filter((p) => !prevIds.has(p.id)).map((p) => p.id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of newPlayerIds) next.add(id);
+        const newCount = next.size;
+        if (newCount >= courts * 4 + 2 && courts < Math.min(maxCourts, Math.floor(newCount / 2))) {
+          const ideal = Math.floor(newCount / 4) + (newCount % 4 >= 2 ? 1 : 0);
+          const targetCourts = Math.min(
+            Math.min(maxCourts, Math.floor(newCount / 2)),
+            Math.max(courts + 1, ideal)
+          );
+          setCourts(targetCourts);
+          setCourtPlayerCounts(() => {
+            let remaining = newCount;
+            return Array.from({ length: targetCourts }, (_, idx) => {
+              const courtsLeft = targetCourts - idx - 1;
+              const minNeededLater = courtsLeft * 2;
+              const maxPossibleLater = courtsLeft * 4;
+              const minThis = Math.max(2, remaining - maxPossibleLater);
+              const maxThis = Math.min(4, remaining - minNeededLater);
+              const size = Math.min(4, Math.max(2, Math.max(minThis, Math.min(4, maxThis)))) as 2 | 3 | 4;
+              remaining -= size;
+              return size;
+            });
+          });
+        }
+        return next;
+      });
+    }
+    prevPlayersRef.current = players;
+  }, [players, courts, maxCourts]);
+
   const togglePlayer = (id: string) => {
-    if (selectedIds.has(id)) setStayTogetherPairs(pairs => pairs.filter(pair => !pair.includes(id)));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    if (selectedIds.has(id)) setStayTogetherPairs((pairs) => pairs.filter((pair) => !pair.includes(id)));
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    handlePlayerCountChange(next);
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(players.map((p) => p.id)));
+    handlePlayerCountChange(new Set(players.map((p) => p.id)));
   };
 
   const clearAll = () => {
@@ -102,26 +192,41 @@ export function AttendanceManager({
   };
 
   const decreaseCourts = () => {
-    if (courts > 1) setCourts((c) => c - 1);
+    if (courts > 1) {
+      const nextCourts = courts - 1;
+      setCourts(nextCourts);
+      setCourtPlayerCounts((previous) => {
+        if (nextCourts * 4 <= count) {
+          return Array.from({ length: nextCourts }, () => 4 as const);
+        }
+        return previous.slice(0, nextCourts);
+      });
+    }
   };
 
   const increaseCourts = () => {
     if (courts < Math.min(maxCourts, Math.floor(count / 2))) {
-      const nextSize: 2 | 3 | 4 = count >= (courts + 1) * 4 ? 4 : count >= (courts + 1) * 3 ? 3 : 2;
-      setCourts((c) => c + 1);
-      setCourtPlayerCounts((previous) => [...previous.slice(0, courts), nextSize]);
+      const nextCourts = courts + 1;
+      setCourts(nextCourts);
+      setCourtPlayerCounts((previous) => {
+        const currentCapacity = previous.slice(0, courts).reduce((sum, s) => sum + s, 0);
+        const rem = count - currentCapacity;
+        const nextSize: 2 | 3 | 4 = rem >= 4 ? 4 : rem >= 3 ? 3 : 2;
+        return [...previous.slice(0, courts), nextSize];
+      });
     }
   };
 
   const handleAddGuest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (guestName.trim() && onAddGuest) {
+    const nameToAdd = guestName.trim();
+    if (nameToAdd && onAddGuest) {
       const ratingToAdd = guestRating;
       const genderToAdd = guestGender;
-      setGuestRating(3.5);
-      setGuestGender("male");
       setGuestName("");
-      onAddGuest(guestName.trim(), ratingToAdd, genderToAdd);
+      setGuestGender("male");
+      setGuestRating(3.5);
+      onAddGuest(nameToAdd, ratingToAdd, genderToAdd);
     }
   };
 
@@ -140,12 +245,22 @@ export function AttendanceManager({
   const capacity = courtPlayerCounts.slice(0, courts).reduce((sum, size) => sum + size, 0);
   const sittingCount = Math.max(0, count - capacity);
 
+  const rebalanceChoices = useMemo(() => {
+    return getCourtRebalanceChoices(count, courts, maxCourts);
+  }, [count, courts, maxCourts]);
+
+  const currentCourts = courtPlayerCounts.slice(0, courts);
+  const isChoiceCurrent = (choice: CourtChoice) =>
+    choice.courtCount === courts &&
+    choice.courts.length === currentCourts.length &&
+    choice.courts.every((s, i) => s === currentCourts[i]);
+
   return (
     <div className="attendance-manager space-y-6 pb-28 text-black">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Court Count Card (Left column on desktop) */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-6">
-          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="mb-1 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
               {!isEditingSession && <SetupCourtIllustration />}
@@ -159,7 +274,7 @@ export function AttendanceManager({
                 type="button"
                 aria-label="Decrease courts"
                 disabled={courts <= 1}
-                onClick={() => { decreaseCourts(); setCourtPlayerCounts((previous) => previous.slice(0, -1)); }}
+                onClick={decreaseCourts}
                 className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
               >
                 -
@@ -188,60 +303,54 @@ export function AttendanceManager({
             </div>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {courtPlayerCounts.slice(0, courts).map((size, index) => (
-                <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                <div key={index} className="flex items-center justify-between gap-1.5 rounded-xl border-2 border-black p-2 sm:p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
                   <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
-                  <select
-                    aria-label={`Players on court ${index + 1}`}
-                    value={size}
-                    onChange={(event) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(event.target.value) as 2 | 3 | 4 : value))}
-                    className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
-                  >
-                    {[4, 3, 2].map((playersOnCourt) => <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">{playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}</option>)}
-                  </select>
-                </label>
+                  <CustomDropdown
+                    ariaLabel={`Players on court ${index + 1}`}
+                    value={String(size)}
+                    onChange={(val) => setCourtPlayerCounts((previous) => previous.map((value, item) => item === index ? Number(val) as 2 | 3 | 4 : value))}
+                    align="right"
+                    options={[
+                      { value: "4", label: "4 players · 2v2" },
+                      { value: "3", label: "3 players · 2v1" },
+                      { value: "2", label: "2 players · 1v1" },
+                    ]}
+                    sizeVariant="xs"
+                    className="min-w-0 flex-1 max-w-[155px]"
+                    buttonClassName="w-full justify-between rounded-lg shadow-[1px_1px_0px_0px_#000] py-1 px-1.5 text-xs"
+                  />
+                </div>
               ))}
             </div>
-            {(courtPlayerCounts.slice(0, courts).some((s) => s === 3) ||
-              (courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity)) && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
-                <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCourtPlayerCounts((prev) => {
-                      let converted = false;
-                      return prev.map((s, idx) => {
-                        if (idx < courts && s === 2 && !converted) {
-                          converted = true;
-                          return 3;
-                        }
-                        return s;
-                      });
-                    })
-                  }
-                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                    courtPlayerCounts.slice(0, courts).some((s) => s === 3)
-                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  2v1 Match (No Sitters)
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCourtPlayerCounts((prev) =>
-                      prev.map((s, idx) => (idx < courts && s === 3 ? 2 : s))
-                    )
-                  }
-                  className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                    courtPlayerCounts.slice(0, courts).some((s) => s === 2) && count > capacity
-                      ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  1v1 Singles (1 Sitter)
-                </button>
+            {rebalanceChoices.length > 1 && (
+              <div className="mt-4 p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
+                <span className="text-xs font-black uppercase text-neutral-700 block">
+                  Quick Presets ({count} Players):
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {rebalanceChoices.map((choice) => (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      onClick={() => {
+                        setCourts(choice.courtCount);
+                        setCourtPlayerCounts(choice.courts);
+                      }}
+                      data-testid={`setup-preset-${choice.id}`}
+                      className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
+                        isChoiceCurrent(choice)
+                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                          : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                        <span className="text-[10px] font-black">{choice.badge}</span>
+                      </div>
+                      <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {sittingCount > 0 && <p className="mt-3 rounded-lg border border-amber-800 bg-amber-100 px-3 py-2 text-sm font-bold text-amber-950">{sittingCount} {sittingCount === 1 ? "player" : "players"} will sit out each round.</p>}
@@ -250,7 +359,7 @@ export function AttendanceManager({
 
         {/* Players Section (Right column on desktop) */}
         <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-          <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
@@ -343,7 +452,7 @@ export function AttendanceManager({
                   className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                     isSelected
                       ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                      : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
+                      : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
                   }`}
                 >
                   <input
@@ -386,50 +495,78 @@ export function AttendanceManager({
         )}
 
         {/* Add Guest / Quick Player Form */}
-        <form onSubmit={handleAddGuest} className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-2">
-          <label className="block text-xs font-black uppercase tracking-wider text-black">
-            Add Guest Player
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              aria-label="Guest player name"
-              placeholder="Add guest or new player..."
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              className="flex-1 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
-            />
-            <select
-              id="normal-session-guest-gender"
-              aria-label="Guest Gender"
-              value={guestGender}
-              onChange={(e) => setGuestGender(e.target.value as "male" | "female")}
-              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-black font-bold text-xs shadow-[2px_2px_0px_0px_#000] focus:outline-none cursor-pointer"
+        <div className="mt-4 pt-4 border-t-2 border-neutral-100">
+          <div className="bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsAddGuestOpen((prev) => !prev)}
+              aria-expanded={isAddGuestOpen}
+              aria-controls="normal-session-add-guest-form"
+              data-testid="toggle-add-guest"
+              className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
             >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <Button type="submit" variant="secondary" size="sm" disabled={!guestName.trim()} className="font-display uppercase tracking-wider shrink-0">
-              Add
-            </Button>
+              <span className="block text-xs font-black uppercase tracking-wider text-black">
+                Add Guest Player
+              </span>
+              <ChevronDownIcon
+                className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
+                  isAddGuestOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {isAddGuestOpen && (
+              <form id="normal-session-add-guest-form" onSubmit={handleAddGuest} className="p-3.5 pt-0 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  aria-label="Guest player name"
+                  placeholder="Guest player name"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                />
+                <div className="flex items-center gap-2 shrink-0">
+                  <CustomDropdown
+                    id="normal-session-guest-gender"
+                    ariaLabel="Guest Gender"
+                    value={guestGender}
+                    onChange={(val) => setGuestGender(val as "male" | "female")}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                    ]}
+                    sizeVariant="sm"
+                    className="flex-1 sm:flex-initial shrink-0"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!guestName.trim()}
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+              <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                <RatingSlider
+                  id="normal-session-guest-rating"
+                  dataTestId="normal-session-guest-rating"
+                  label="Guest Rating"
+                  value={guestRating}
+                  onChange={setGuestRating}
+                  showDescription={true}
+                />
+              </div>
+            </form>
+          )}
           </div>
-          <div className="bg-neutral-50 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
-            <RatingSlider
-              id="normal-session-guest-rating"
-              dataTestId="normal-session-guest-rating"
-              label="Guest Rating"
-              value={guestRating}
-              onChange={setGuestRating}
-              showDescription={true}
-            />
-          </div>
-        </form>
+        </div>
       </section>
         </div>
       </div>
 
       {/* Sticky Mobile Action Bar */}
-      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
+      <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-[#FFFDF7]/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
             <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>

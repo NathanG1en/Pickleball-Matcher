@@ -1,6 +1,26 @@
 import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import type { GeneratedRound, ScoreBreakdown } from "@/lib/matchmaking/types";
 
+export type GroupOrganizerPermissionKey =
+  | "edit_group_name"
+  | "edit_group_privacy"
+  | "manage_organizers"
+  | "delete_group";
+
+export interface GroupOrganizerPermissions {
+  readonly edit_group_name: boolean;
+  readonly edit_group_privacy: boolean;
+  readonly manage_organizers: boolean;
+  readonly delete_group: boolean;
+}
+
+export const DEFAULT_GROUP_ORGANIZER_PERMISSIONS: GroupOrganizerPermissions = {
+  edit_group_name: true,
+  edit_group_privacy: true,
+  manage_organizers: false,
+  delete_group: false,
+};
+
 export interface GroupRecord {
   readonly id: string;
   readonly name: string;
@@ -8,6 +28,7 @@ export interface GroupRecord {
   readonly createdAt: Date;
   readonly isPublic?: boolean;
   readonly ownerAccountId?: string | null;
+  readonly organizerPermissions?: GroupOrganizerPermissions;
 }
 
 export type PlayerSkillLevel = "beginner" | "intermediate" | "advanced";

@@ -1,10 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getActionRepository, requireOrganizer } from "@/app/actions/action-context";
+import {
+  getActionRepository,
+  requireGroupPermission,
+  requireGroupHost,
+} from "@/app/actions/action-context";
 import {
   deleteGroupSchema,
   updateGroupNameSchema,
+  updateGroupPermissionsSchema,
   updateGroupVisibilitySchema,
 } from "@/lib/validation/group";
 
@@ -12,12 +17,15 @@ export async function updateGroupVisibilityAction(input: unknown): Promise<{ ok:
   const parsed = updateGroupVisibilitySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Choose a valid group visibility setting." };
   try {
-    await requireOrganizer(parsed.data.groupId);
+    await requireGroupPermission(parsed.data.groupId, "edit_group_privacy");
     await getActionRepository().updateGroupVisibility(parsed.data.groupId, parsed.data.isPublic);
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath("/players/groups");
     return { ok: true };
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "You do not have permission to edit group privacy." };
+    }
     return { ok: false, error: "Unable to update group visibility." };
   }
 }
@@ -28,10 +36,8 @@ export async function updateGroupNameAction(input: unknown): Promise<{ ok: boole
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a valid group name." };
   }
   try {
-    await requireOrganizer(parsed.data.groupId);
+    const { group } = await requireGroupPermission(parsed.data.groupId, "edit_group_name");
     const repository = getActionRepository();
-    const group = await repository.getGroup(parsed.data.groupId);
-    if (!group) return { ok: false, error: "Group not found." };
     const trimmed = parsed.data.name.trim();
     if (trimmed === group.name.trim()) return { ok: true };
 
@@ -45,8 +51,32 @@ export async function updateGroupNameAction(input: unknown): Promise<{ ok: boole
     revalidatePath("/players");
     revalidatePath("/players/groups");
     return { ok: true };
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "You do not have permission to edit the group name." };
+    }
     return { ok: false, error: "Unable to update group name." };
+  }
+}
+
+export async function updateGroupPermissionsAction(input: unknown): Promise<{ ok: boolean; error?: string }> {
+  const parsed = updateGroupPermissionsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid permissions data." };
+  }
+  try {
+    await requireGroupHost(parsed.data.groupId);
+    await getActionRepository().updateGroupOrganizerPermissions(
+      parsed.data.groupId,
+      parsed.data.permissions,
+    );
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    return { ok: true };
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "Only the host can configure organizer permissions." };
+    }
+    return { ok: false, error: "Unable to update organizer permissions." };
   }
 }
 
@@ -56,11 +86,9 @@ export async function deleteGroupAction(input: unknown): Promise<{ ok: boolean; 
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter the group name to confirm." };
   }
   try {
-    await requireOrganizer(parsed.data.groupId);
+    const { group } = await requireGroupPermission(parsed.data.groupId, "delete_group");
     const repository = getActionRepository();
-    const group = await repository.getGroup(parsed.data.groupId);
-    if (!group) return { ok: false, error: "Group not found." };
-    if (group.name.trim().toLowerCase() !== parsed.data.confirmationName.trim().toLowerCase()) {
+    if (group.name.trim() !== parsed.data.confirmationName.trim()) {
       return { ok: false, error: "Group name does not match." };
     }
 
@@ -69,7 +97,10 @@ export async function deleteGroupAction(input: unknown): Promise<{ ok: boolean; 
     revalidatePath("/players/groups");
     revalidatePath("/");
     return { ok: true };
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthorizationError") {
+      return { ok: false, error: "You do not have permission to delete this group." };
+    }
     return { ok: false, error: "Unable to delete group." };
   }
 }

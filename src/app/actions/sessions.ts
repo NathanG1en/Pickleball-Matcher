@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import {
   defaultDependencies,
@@ -14,6 +15,7 @@ import type {
   AttendanceRecord,
   MatchPlayerRecord,
   MatchRecord,
+  PlayerRecord,
   RoundProposal,
   RoundRecord,
   SessionRecord,
@@ -21,6 +23,7 @@ import type {
 } from "@/lib/domain/types";
 import { replayRatingsAndSynergies, replaySynergies } from "@/lib/domain/synergy-replay";
 import {
+  addSessionGuestSchema,
   changeAttendanceSchema,
   completeRoundSchema,
   deleteSessionSchema,
@@ -121,6 +124,58 @@ export async function changeAttendanceAction(input: unknown): Promise<ActionResu
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Failed to change attendance",
+    };
+  }
+}
+
+export async function addSessionGuestAction(
+  input: unknown,
+): Promise<ActionResult<PlayerRecord>> {
+  const parsed = addSessionGuestSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const session = await requireSessionOrganizer(parsed.data.groupId, parsed.data.sessionId);
+    if (session.status !== "active") {
+      return { ok: false, error: "Cannot add guest to an inactive session." };
+    }
+
+    const repository = getActionRepository();
+    const playerId = `p_${randomUUID().slice(0, 10)}`;
+    const guestPlayer: PlayerRecord = {
+      id: playerId,
+      groupId: parsed.data.groupId,
+      name: parsed.data.guestName,
+      gender: parsed.data.gender,
+      initialRating: parsed.data.initialRating,
+      rating: parsed.data.initialRating,
+      ratedGamesPlayed: 0,
+      active: true,
+    };
+
+    await repository.createPlayer(guestPlayer);
+    await repository.saveAttendance({
+      sessionId: session.id,
+      playerId: guestPlayer.id,
+      joinedRound: session.currentRoundNumber + 1,
+      leftRound: null,
+    });
+
+    revalidatePath(`/g/${parsed.data.groupId}`);
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${session.id}`);
+    revalidatePath("/players");
+    revalidatePath("/players/groups");
+    return { ok: true, data: guestPlayer };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to add guest to session",
     };
   }
 }

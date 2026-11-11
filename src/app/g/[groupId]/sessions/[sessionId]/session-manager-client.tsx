@@ -8,6 +8,7 @@ import type { StayTogetherPair } from "@/lib/matchmaking/types";
 import { useRouter } from "next/navigation";
 
 import {
+  addSessionGuestAction,
   changeAttendanceAction,
   completeRoundAction,
   endSessionAction,
@@ -19,19 +20,18 @@ import {
   updateCourtConfigAction,
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
+import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
 import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Modal } from "@/components/ui/modal";
+import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr } from "@/lib/domain/rating-display";
-import { GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import {
   sortPlayersWithPinned,
   togglePinnedPlayer,
@@ -105,6 +105,7 @@ export interface SessionManagerClientProps {
   readonly isFromProfile?: boolean;
   readonly initialOpenSettingsModal?: boolean;
   readonly initialSettingsModalTab?: SessionSettingsTab;
+  readonly initialAddGuestOpen?: boolean;
 }
 
 export function SessionManagerClient({
@@ -125,9 +126,40 @@ export function SessionManagerClient({
   isFromProfile = false,
   initialOpenSettingsModal = false,
   initialSettingsModalTab,
+  initialAddGuestOpen = false,
 }: SessionManagerClientProps) {
   const router = useRouter();
   const isHydrated = useHydrated();
+
+  const [prevPlayers, setPrevPlayers] = useState(players);
+  const [sessionPlayers, setSessionPlayers] = useState(players);
+  if (players !== prevPlayers) {
+    setPrevPlayers(players);
+    setSessionPlayers(players);
+  }
+
+  const [guestName, setGuestName] = useState("");
+  const [guestGender, setGuestGender] = useState<"male" | "female">("male");
+  const [guestRating, setGuestRating] = useState(3.5);
+  const [isAddGuestOpen, setIsAddGuestOpen] = useState(initialAddGuestOpen);
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string) => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    setSuccessToast(msg);
+    toastTimeoutRef.current = setTimeout(() => {
+      setSuccessToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   const pinnedPlayerIds = usePinnedPlayerIds(groupId);
   const [attendanceSearchQuery, setAttendanceSearchQuery] = useState("");
@@ -135,10 +167,10 @@ export function SessionManagerClient({
   const sortedPlayers = useMemo(
     () =>
       sortPlayersWithPinned(
-        players.filter((p) => p.active),
+        sessionPlayers.filter((p) => p.active),
         pinnedPlayerIds,
       ),
-    [players, pinnedPlayerIds],
+    [sessionPlayers, pinnedPlayerIds],
   );
 
   const displayedAttendancePlayers = useMemo(() => {
@@ -238,7 +270,6 @@ export function SessionManagerClient({
         ? [...session.courtPlayerCounts]
         : Array.from({ length: session.courtCount }, () => 4 as const)
   );
-  const [courtConfigMessage, setCourtConfigMessage] = useState<string | null>(null);
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -330,46 +361,138 @@ export function SessionManagerClient({
         ? [...currentSession.courtPlayerCounts]
         : Array.from({ length: currentSession.courtCount }, () => 4 as const)
     );
-    setCourtConfigMessage(null);
     setShowSessionSettingsModal(true);
   };
 
   const presentAttendance = currentAttendance.filter((a) => a.leftRound === null);
   const presentCount = presentAttendance.length;
 
+  const saveCourtConfig = (targetCourts: number, targetPlayerCounts: (2 | 3 | 4)[]) => {
+    const counts = targetPlayerCounts.slice(0, targetCourts);
+    const capacity = counts.reduce((sum, s) => sum + s, 0);
+    setCourtConfigCourts(targetCourts);
+    setCourtConfigPlayerCounts(targetPlayerCounts);
+
+    if (capacity > presentCount || targetCourts < 1) {
+      return;
+    }
+
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: targetCourts,
+          courtPlayerCounts: counts,
+          idempotencyKey: createIdempotencyKey("court_cfg"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          showToast("Court configuration updated successfully.");
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
+      }
+    });
+  };
+
   const decreaseCourts = () => {
     if (courtConfigCourts > 1) {
-      setCourtConfigCourts((c) => c - 1);
-      setCourtConfigPlayerCounts((prev) => prev.slice(0, courtConfigCourts - 1));
-      setCourtConfigMessage(null);
+      const nextCourts = courtConfigCourts - 1;
+      const nextCounts = courtConfigPlayerCounts.slice(0, nextCourts);
+      saveCourtConfig(nextCourts, nextCounts);
     }
   };
 
   const increaseCourts = () => {
-    const maxCourts = Math.min(6, Math.max(1, Math.floor(presentCount / 2)));
+    const maxCourts = Math.min(32, Math.max(1, Math.floor(presentCount / 2)));
     if (courtConfigCourts < maxCourts) {
       const nextCourtIndex = courtConfigCourts;
       const currentCapacity = courtConfigPlayerCounts.slice(0, nextCourtIndex).reduce((sum, s) => sum + s, 0);
       const remainingPlayers = presentCount - currentCapacity;
       const nextSize: 2 | 3 | 4 = remainingPlayers >= 4 ? 4 : remainingPlayers >= 3 ? 3 : 2;
-      setCourtConfigCourts((c) => c + 1);
-      setCourtConfigPlayerCounts((prev) => [...prev.slice(0, nextCourtIndex), nextSize]);
-      setCourtConfigMessage(null);
+      const nextCourts = courtConfigCourts + 1;
+      const nextCounts = [...courtConfigPlayerCounts.slice(0, nextCourtIndex), nextSize];
+      saveCourtConfig(nextCourts, nextCounts);
     }
   };
 
   const handleCourtSizeChange = (index: number, size: 2 | 3 | 4) => {
-    setCourtConfigPlayerCounts((prev) => {
-      const next = [...prev];
-      next[index] = size;
-      return next;
-    });
-    setCourtConfigMessage(null);
+    const next = [...courtConfigPlayerCounts];
+    next[index] = size;
+    saveCourtConfig(courtConfigCourts, next);
   };
 
   const configCapacity = courtConfigPlayerCounts.slice(0, courtConfigCourts).reduce((sum, s) => sum + s, 0);
   const configSitting = Math.max(0, presentCount - configCapacity);
   const isOverCapacity = configCapacity > presentCount;
+
+  const [showAttendanceRebalancePrompt, setShowAttendanceRebalancePrompt] = useState(false);
+
+  const baseCourtCount = Math.max(1, currentSession.courtCount);
+  const rebalanceChoices = useMemo(() => {
+    return getCourtRebalanceChoices(presentCount, baseCourtCount, 6);
+  }, [presentCount, baseCourtCount]);
+
+  const currentCourts = courtConfigPlayerCounts.slice(0, courtConfigCourts);
+  const isChoiceCurrent = (choice: CourtChoice) =>
+    choice.courtCount === courtConfigCourts &&
+    choice.courts.length === currentCourts.length &&
+    choice.courts.every((s, i) => s === currentCourts[i]);
+
+  const shouldShowRebalancePrompt =
+    (isOverCapacity || showAttendanceRebalancePrompt) &&
+    rebalanceChoices.length > 0 &&
+    (!rebalanceChoices.every((c) => isChoiceCurrent(c)) || isOverCapacity);
+
+  const handleApplyCourtChoice = (choice: CourtChoice) => {
+    startCourtConfigTransition(async () => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const res = await updateCourtConfigAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          courtCount: choice.courtCount,
+          courtPlayerCounts: choice.courts,
+          idempotencyKey: createIdempotencyKey("court_rebal"),
+        });
+        if (res.ok) {
+          setCurrentSession(res.data.session);
+          setCourtConfigCourts(choice.courtCount);
+          setCourtConfigPlayerCounts(choice.courts);
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          if (res.data.proposal) {
+            setRegeneratedProposal(res.data.proposal);
+          } else {
+            setRegeneratedProposal(null);
+          }
+          setShowAttendanceRebalancePrompt(false);
+          showToast("Court configuration updated successfully.");
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to update court configuration.");
+      } finally {
+        setIsPending(false);
+      }
+    });
+  };
 
   const handleSaveCourtConfig = () => {
     // The action result and its revalidated server tree can commit separately.
@@ -378,7 +501,6 @@ export function SessionManagerClient({
     startCourtConfigTransition(async () => {
       setIsPending(true);
       setError(null);
-      setCourtConfigMessage(null);
       try {
         const res = await updateCourtConfigAction({
           groupId,
@@ -396,7 +518,7 @@ export function SessionManagerClient({
           } else {
             setRegeneratedProposal(null);
           }
-          setCourtConfigMessage("Court configuration updated successfully.");
+          showToast("Court configuration updated successfully.");
         } else {
           setError(res.error);
         }
@@ -422,12 +544,12 @@ export function SessionManagerClient({
   const { playerNames, playerAccounts } = useMemo(() => {
     const names: Record<string, string> = {};
     const accounts: Record<string, string | null> = {};
-    for (const p of players) {
+    for (const p of sessionPlayers) {
       names[p.id] = p.name;
       accounts[p.id] = p.accountId ?? null;
     }
     return { playerNames: names, playerAccounts: accounts };
-  }, [players]);
+  }, [sessionPlayers]);
 
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
@@ -440,7 +562,7 @@ export function SessionManagerClient({
       return proposeRoundFromSnapshot(
         {
           session: currentSession,
-          players,
+          players: sessionPlayers,
           attendance: currentAttendance,
           rounds: localStartedRounds,
         },
@@ -450,7 +572,7 @@ export function SessionManagerClient({
     } catch {
       return null;
     }
-  }, [currentSession, players, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
+  }, [currentSession, sessionPlayers, currentAttendance, localStartedRounds, latestStarted, matchmakingVariety]);
 
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
@@ -1199,6 +1321,7 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey(`att_${playerId}`),
       });
       if (res.ok) {
+        setShowAttendanceRebalancePrompt(true);
         setCurrentAttendance((prev) => {
           const exists = prev.find((a) => a.playerId === playerId);
           if (!exists) {
@@ -1228,6 +1351,49 @@ export function SessionManagerClient({
       setError("Failed to update attendance.");
     } finally {
       setIsPending(false);
+    }
+  };
+
+  const handleAddMidSessionGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = guestName.trim();
+    if (!trimmed || isAddingGuest) return;
+
+    setIsAddingGuest(true);
+    setError(null);
+    try {
+      const res = await addSessionGuestAction({
+        groupId,
+        sessionId: currentSession.id,
+        guestName: trimmed,
+        gender: guestGender,
+        initialRating: guestRating,
+      });
+
+      if (res.ok) {
+        setShowAttendanceRebalancePrompt(true);
+        const newPlayer = res.data;
+        setSessionPlayers((prev) => [...prev, newPlayer]);
+        setCurrentAttendance((prev) => [
+          ...prev,
+          {
+            sessionId: currentSession.id,
+            playerId: newPlayer.id,
+            joinedRound: currentSession.currentRoundNumber + 1,
+            leftRound: null,
+          },
+        ]);
+        setGuestName("");
+        setGuestGender("male");
+        setGuestRating(3.5);
+        showToast(`Added ${newPlayer.name} to session!`);
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Failed to add guest player.");
+    } finally {
+      setIsAddingGuest(false);
     }
   };
 
@@ -1363,7 +1529,7 @@ export function SessionManagerClient({
   // Calculate participating player statistics for the session
   const attendeePlayerIds = new Set<string>();
   for (const att of currentAttendance) {
-    const player = players.find((p) => p.id === att.playerId);
+    const player = sessionPlayers.find((p) => p.id === att.playerId);
     if (player && !player.active) continue;
     attendeePlayerIds.add(att.playerId);
   }
@@ -1378,7 +1544,7 @@ export function SessionManagerClient({
 
   const sessionPlayerStats = Array.from(attendeePlayerIds)
     .map((pId) => {
-      const player = players.find((p) => p.id === pId);
+      const player = sessionPlayers.find((p) => p.id === pId);
       let gamesPlayed = 0;
       let wins = 0;
       let losses = 0;
@@ -1419,7 +1585,7 @@ export function SessionManagerClient({
   const viewerSessionStats = currentViewerPlayerId
     ? sessionPlayerStats.find((stat) => stat.id === currentViewerPlayerId) ?? {
         id: currentViewerPlayerId,
-        name: players.find((p) => p.id === currentViewerPlayerId)?.name ?? playerNames[currentViewerPlayerId] ?? "You",
+        name: sessionPlayers.find((p) => p.id === currentViewerPlayerId)?.name ?? playerNames[currentViewerPlayerId] ?? "You",
         gamesPlayed: 0,
         wins: 0,
         losses: 0,
@@ -1446,6 +1612,19 @@ export function SessionManagerClient({
 
   return (
     <div className="space-y-6 text-black">
+      {/* Toast Notification */}
+      {successToast && (
+        <Toast
+          role="status"
+          onDismiss={() => {
+            if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
+            setSuccessToast(null);
+          }}
+        >
+          {successToast}
+        </Toast>
+      )}
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -1520,7 +1699,7 @@ export function SessionManagerClient({
 
       {/* Active Session Header Card */}
       {!isCompletedSession && (
-        <header className="bg-white border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
+        <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
               <SessionNameEditor
@@ -1560,7 +1739,75 @@ export function SessionManagerClient({
         </header>
       )}
 
-      {!activeProposal && initialProposalError && !error && <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>}
+      {!activeProposal && initialProposalError && !error && !isOverCapacity && (
+        <p role="alert" className="rounded-xl border-2 border-black bg-amber-50 p-4 font-bold">{initialProposalError}</p>
+      )}
+      {isOverCapacity && canManage && rebalanceChoices.length > 0 && (
+        <div
+          data-testid="main-guided-court-choice-card"
+          className="rounded-2xl border-2 border-black bg-amber-50 p-4 sm:p-5 shadow-[4px_4px_0px_0px_#000] space-y-3.5"
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <h4 className="font-display text-sm sm:text-base font-black uppercase tracking-wider text-black">
+                Courts Need Adjustment ({presentCount} Present Players)
+              </h4>
+            </div>
+            <p className="text-xs sm:text-sm font-bold text-amber-950 mt-1">
+              Your court configuration ({configCapacity} spots) exceeds the {presentCount} currently present players. Pick a setup to continue:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {rebalanceChoices.map((choice) => (
+              <button
+                key={choice.id}
+                type="button"
+                onClick={() => handleApplyCourtChoice(choice)}
+                disabled={isPending || isCourtConfigPending}
+                data-testid={`main-guided-choice-${choice.id}`}
+                className="text-left p-3.5 rounded-xl border-2 border-black bg-white hover:bg-[#ccff00]/20 hover:border-black transition-all flex flex-col justify-between gap-2.5 cursor-pointer shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                    <span className="font-display text-sm font-black uppercase text-black">
+                      {choice.title}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-black ${
+                        choice.sitting === 0
+                          ? "bg-[#ccff00] text-black"
+                          : "bg-amber-100 text-amber-950"
+                      }`}
+                    >
+                      {choice.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-neutral-800">{choice.summary}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-600 pt-2 border-t border-neutral-200">
+                  <span>{choice.details}</span>
+                  <span className="font-black text-black">Apply &amp; Generate →</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setModalTab("court_config");
+                setShowSessionSettingsModal(true);
+              }}
+              className="text-xs font-black uppercase text-neutral-800 hover:text-black underline cursor-pointer"
+            >
+              Customize court sizes manually →
+            </button>
+          </div>
+        </div>
+      )}
       {activeProposal?.sitting.length === 1 && (currentSession.stayTogetherPairs ?? []).some(pair => pair.includes(activeProposal.sitting[0]) && pair.every(id => currentAttendance.some(a => a.playerId === id && a.leftRound === null))) && <p role="status" className="rounded-xl border-2 border-black bg-amber-50 p-3 text-sm font-bold">{playerNames[activeProposal.sitting[0]]} is sitting this round to rotate playing time. Their Stay Together pairing is saved for later rounds.</p>}
       {error && (
         <div role="alert" className="p-4 rounded-xl bg-[#ff6b6b] border-2 border-black shadow-[3px_3px_0px_0px_#000] text-black font-black text-sm">
@@ -1572,7 +1819,7 @@ export function SessionManagerClient({
       {isCompletedSession ? (
         <div className="space-y-6" data-testid="completed-session-full-view">
           {/* Completed Session Overview Card */}
-          <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+          <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {groupName && (
@@ -1689,11 +1936,11 @@ export function SessionManagerClient({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
             {/* Sidebar Column (Right on desktop, first in mobile flow: Highlights & Standings) */}
             <div className="lg:col-span-5 xl:col-span-4 space-y-6 order-1 lg:order-2">
-              <SessionHighlights rounds={localStartedRounds} players={players} />
+              <SessionHighlights rounds={localStartedRounds} players={sessionPlayers} />
 
               {/* Session Player Leaderboard / Roster */}
               {sessionPlayerStats.length > 0 && (
-                <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
                   <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
                     Player Summary
                   </h2>
@@ -1726,7 +1973,7 @@ export function SessionManagerClient({
             {/* Primary Column (Left on desktop: All Rounds & Matchups) */}
             <div className="lg:col-span-7 xl:col-span-8 space-y-6 order-2 lg:order-1">
               {/* Categorized Rounds & Games */}
-              <section className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
+              <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
                 <h2 className="font-display text-xl font-black uppercase tracking-wider text-black">
                   All Rounds & Matchups
                 </h2>
@@ -2001,7 +2248,7 @@ export function SessionManagerClient({
 
           {/* Past Rounds Accordion / List */}
           {pastRounds.length > 0 && (
-            <section className="bg-white border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000] -mt-2">
+            <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 space-y-4 shadow-[6px_6px_0px_0px_#000] -mt-2">
               <h3 className="font-display text-xl font-black uppercase tracking-wider text-black">
                 Past Rounds
               </h3>
@@ -2023,7 +2270,7 @@ export function SessionManagerClient({
                         const isEditing = editingHistoricalMatchId === m.id;
 
                         return (
-                          <div key={m.id} className="p-3 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
+                          <div key={m.id} className="p-3 rounded-lg bg-[#FFFDF7] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-xs space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="font-black text-black">Court {m.courtNumber}</span>
                               <span className="font-display text-sm font-black text-black">
@@ -2132,9 +2379,9 @@ export function SessionManagerClient({
       {/* Session Settings Modal */}
       {showSessionSettingsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-[3px] border-black rounded-3xl max-w-lg w-full shadow-[8px_8px_0px_0px_#000] max-h-[85vh] flex flex-col overflow-hidden text-black">
+          <div className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl max-w-lg w-full shadow-[8px_8px_0px_0px_#000] max-h-[85vh] flex flex-col overflow-hidden text-black">
             {/* Modal Header & Tabs (Static to box) */}
-            <div className="p-6 pb-3 border-b-2 border-neutral-200 shrink-0 space-y-4 bg-white">
+            <div className="p-6 pb-3 border-b-2 border-neutral-200 shrink-0 space-y-4 bg-[#FFFDF7]">
               <div className="flex items-center justify-between pb-2 border-b-2 border-neutral-100">
                 <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">
                   <GearIcon className="h-6 w-6 text-black shrink-0" />
@@ -2217,6 +2464,78 @@ export function SessionManagerClient({
                     : "Session player attendance roster."}
                 </p>
 
+                {canManage && (
+                  <div className="bg-neutral-50 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddGuestOpen((prev) => !prev)}
+                      aria-expanded={isAddGuestOpen}
+                      aria-controls="session-add-guest-form"
+                      data-testid="toggle-session-add-guest"
+                      className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
+                    >
+                      <span className="block text-xs font-black uppercase tracking-wider text-black">
+                        Add Guest Player
+                      </span>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-black transform transition-transform duration-200 shrink-0 ${
+                          isAddGuestOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {isAddGuestOpen && (
+                      <form
+                        id="session-add-guest-form"
+                        onSubmit={handleAddMidSessionGuest}
+                        className="p-3.5 pt-0 space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            id="session-guest-name"
+                            type="text"
+                            aria-label="Guest player name"
+                            placeholder="Guest player name"
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                          />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <CustomDropdown
+                              id="session-guest-gender"
+                              ariaLabel="Guest Gender"
+                              value={guestGender}
+                              onChange={(val) => setGuestGender(val as "male" | "female")}
+                              options={[
+                                { value: "male", label: "Male" },
+                                { value: "female", label: "Female" },
+                              ]}
+                              sizeVariant="sm"
+                              className="flex-1 sm:flex-initial shrink-0"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!guestName.trim() || isAddingGuest}
+                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                            >
+                              {isAddingGuest ? "Adding..." : "Add"}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000]">
+                          <RatingSlider
+                            id="session-guest-rating"
+                            dataTestId="session-guest-rating"
+                            label="Guest Rating"
+                            value={guestRating}
+                            onChange={setGuestRating}
+                            showDescription={true}
+                          />
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 {sortedPlayers.length > 5 && (
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
@@ -2259,6 +2578,53 @@ export function SessionManagerClient({
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {shouldShowRebalancePrompt && canManage && (
+                      <div
+                        data-testid="guided-court-choice-card"
+                        className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase text-neutral-700 block">
+                            Quick Presets ({presentCount} Present):
+                          </span>
+                          {!isOverCapacity && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAttendanceRebalancePrompt(false)}
+                              className="text-neutral-400 hover:text-black font-black text-xs p-1 cursor-pointer"
+                              aria-label="Dismiss court recommendation"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {rebalanceChoices.map((choice) => {
+                            const isCurrent = isChoiceCurrent(choice);
+                            return (
+                              <button
+                                key={choice.id}
+                                type="button"
+                                onClick={() => handleApplyCourtChoice(choice)}
+                                disabled={isPending || isCourtConfigPending || isCurrent}
+                                data-testid={`guided-choice-${choice.id}`}
+                                className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
+                                  isCurrent
+                                    ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                                    : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                                  <span className="text-[10px] font-black">{choice.badge}</span>
+                                </div>
+                                <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     {/* Present Section */}
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between pb-1.5 border-b-2 border-black">
@@ -2287,7 +2653,7 @@ export function SessionManagerClient({
                               <div
                                 key={p.id}
                                 data-testid={`attendance-row-${p.name}`}
-                                className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+                                className="flex items-center justify-between p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]"
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   {canManage && (
@@ -2494,12 +2860,6 @@ export function SessionManagerClient({
                   Choose each court&apos;s size. 3-player courts play 2v1 and keep scores without affecting ratings; a 2-player court also keeps scores without affecting ratings.
                 </p>
 
-                {courtConfigMessage && (
-                  <div className="p-2.5 rounded-xl bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
-                    {courtConfigMessage}
-                  </div>
-                )}
-
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
@@ -2524,7 +2884,7 @@ export function SessionManagerClient({
                   <button
                     type="button"
                     aria-label="Increase courts"
-                    disabled={courtConfigCourts >= Math.min(6, Math.max(1, Math.floor(presentCount / 2))) || isPending}
+                    disabled={courtConfigCourts >= Math.min(32, Math.max(1, Math.floor(presentCount / 2))) || isPending}
                     onClick={increaseCourts}
                     className="w-12 h-12 rounded-xl bg-white hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed text-2xl font-black text-black flex items-center justify-center border-2 border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
                   >
@@ -2534,70 +2894,56 @@ export function SessionManagerClient({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {courtConfigPlayerCounts.slice(0, courtConfigCourts).map((size, index) => (
-                    <label key={index} className="flex items-center justify-between gap-2 rounded-xl border-2 border-black p-2.5 font-bold bg-white shadow-[2px_2px_0px_0px_#000]">
+                    <div key={index} className="flex items-center justify-between gap-1.5 rounded-xl border-2 border-black p-2 sm:p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
                       <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
-                      <select
-                        aria-label={`Players on court ${index + 1}`}
-                        value={size}
-                        onChange={(event) =>
-                          handleCourtSizeChange(index, Number(event.target.value) as 2 | 3 | 4)
+                      <CustomDropdown
+                        ariaLabel={`Players on court ${index + 1}`}
+                        value={String(size)}
+                        onChange={(val) =>
+                          handleCourtSizeChange(index, Number(val) as 2 | 3 | 4)
                         }
                         disabled={isPending}
-                        className="rounded-lg border-2 border-black px-2 py-1 bg-white text-xs font-bold text-black cursor-pointer focus:outline-none focus:ring-1 focus:ring-black min-w-0"
-                      >
-                        {[4, 3, 2].map((playersOnCourt) => (
-                          <option key={playersOnCourt} value={playersOnCourt} className="text-xs font-bold">
-                            {playersOnCourt} players{playersOnCourt === 4 ? " · 2v2" : playersOnCourt === 3 ? " · 2v1" : " · 1v1"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        align="right"
+                        options={[
+                          { value: "4", label: "4 players · 2v2" },
+                          { value: "3", label: "3 players · 2v1" },
+                          { value: "2", label: "2 players · 1v1" },
+                        ]}
+                        sizeVariant="xs"
+                        className="min-w-0 flex-1 max-w-[155px]"
+                        buttonClassName="w-full justify-between rounded-lg shadow-[1px_1px_0px_0px_#000] py-1 px-1.5 text-xs"
+                      />
+                    </div>
                   ))}
                 </div>
 
-                {(courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3) ||
-                  (courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity)) && (
-                  <div className="flex flex-wrap items-center gap-2 p-3 bg-neutral-100 rounded-xl border-2 border-black">
-                    <span className="text-xs font-black uppercase text-neutral-700 mr-1">Odd Count Choice:</span>
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() =>
-                        setCourtConfigPlayerCounts((prev) => {
-                          let converted = false;
-                          return prev.map((s, idx) => {
-                            if (idx < courtConfigCourts && s === 2 && !converted) {
-                              converted = true;
-                              return 3;
-                            }
-                            return s;
-                          });
-                        })
-                      }
-                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 3)
-                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                          : "bg-white text-neutral-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      2v1 Match (No Sitters)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() =>
-                        setCourtConfigPlayerCounts((prev) =>
-                          prev.map((s, idx) => (idx < courtConfigCourts && s === 3 ? 2 : s))
-                        )
-                      }
-                      className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black cursor-pointer transition-all ${
-                        courtConfigPlayerCounts.slice(0, courtConfigCourts).some((s) => s === 2) && presentCount > configCapacity
-                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                          : "bg-white text-neutral-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      1v1 Singles (1 Sitter)
-                    </button>
+                {rebalanceChoices.length > 0 && (
+                  <div className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
+                    <span className="text-xs font-black uppercase text-neutral-700 block">
+                      Quick Presets ({presentCount} Present):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {rebalanceChoices.map((choice) => (
+                        <button
+                          key={choice.id}
+                          type="button"
+                          disabled={isPending || isCourtConfigPending}
+                          onClick={() => handleApplyCourtChoice(choice)}
+                          data-testid={`preset-choice-${choice.id}`}
+                          className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
+                            isChoiceCurrent(choice)
+                              ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                              : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                            <span className="text-[10px] font-black">{choice.badge}</span>
+                          </div>
+                          <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -2640,14 +2986,19 @@ export function SessionManagerClient({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  onClick={handleSaveCourtConfig}
-                  disabled={isPending || isOverCapacity || courtConfigCourts < 1}
-                  className="w-full font-display text-sm uppercase"
-                >
-                  {isPending ? "Saving..." : "Save Court Configuration"}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <p className="text-[11px] font-bold text-neutral-500 text-center">
+                    Changes save automatically.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleSaveCourtConfig}
+                    disabled={isPending || isOverCapacity || courtConfigCourts < 1}
+                    className="w-full font-display text-sm uppercase"
+                  >
+                    {isPending ? "Saving..." : "Save Court Configuration"}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -2696,9 +3047,9 @@ export function SessionManagerClient({
               >
                 {Boolean(currentSession.status === "active" || (currentSession.stayTogetherPairs?.length ?? 0) > 0) && (
                   <StayTogetherEditor
-                    players={players}
+                    players={sessionPlayers}
                     pairs={currentSession.stayTogetherPairs ?? []}
-                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                    eligibleIds={currentAttendance.filter(a => a.leftRound === null && sessionPlayers.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
                     onChange={canManage && currentSession.status === "active" ? handleSavePairs : undefined}
                     disabled={isPending}
                     pending={isActionPending}
@@ -2707,8 +3058,8 @@ export function SessionManagerClient({
                 <PartnerRequests
                   groupId={groupId}
                   session={currentSession}
-                  players={players}
-                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && players.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
+                  players={sessionPlayers}
+                  presentPlayerIds={currentAttendance.filter(a => a.leftRound === null && a.joinedRound <= currentSession.currentRoundNumber + 1 && sessionPlayers.some(p => p.id === a.playerId && p.active)).map(a => a.playerId)}
                   currentViewerPlayerId={currentViewerPlayerId}
                   canManage={canManage}
                   initialRequests={partnerRequests}
@@ -2804,7 +3155,7 @@ export function SessionManagerClient({
           onClose={() => setShowAddPickupModal(false)}
           groupId={groupId}
           sessionId={currentSession.id}
-          players={players}
+          players={sessionPlayers}
           attendance={currentAttendance}
           activeRound={latestStarted}
           activeProposal={activeProposal}

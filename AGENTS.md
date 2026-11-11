@@ -46,3 +46,7 @@ Key E2E specs for reference:
   - `npm run test:simulation` (When rating or matchmaking algorithms are modified)
   - `npm run test:e2e` (Optional / on-demand only; update relevant tests before running, and do not run automatically every time)
 
+## 3. Git & Commit Guidelines
+- **Commit Per User Request**: Make a separate Git commit each time the user asks to make a change.
+- **Commit Message Style**: Do not add prefixes like `bug(...)`, `fix(...)`, `feat(...)`, etc. Simply explain the change made in plain, descriptive language.
+

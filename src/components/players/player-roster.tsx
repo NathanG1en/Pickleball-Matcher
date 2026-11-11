@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { Button, ConfirmDialog, Input, Label } from "@/components/ui";
+import { Button, ConfirmDialog, Input, Label, CustomDropdown } from "@/components/ui";
 import { formatDupr, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
 import { PinIcon, ChevronRightIcon } from "@/components/ui/icons";
@@ -128,7 +128,7 @@ export function PlayerRoster({
     <div className="player-roster space-y-6">
       {/* Add Player Form */}
       {showAddForm && (
-        <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black">
+        <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black">
           <h2 className="font-display text-2xl font-black uppercase text-black mb-1">Add Player</h2>
           <p className="text-xs font-bold text-neutral-600 mb-4">
             Add a regular player to your group&apos;s roster.
@@ -153,38 +153,46 @@ export function PlayerRoster({
             <label htmlFor="player-gender-select" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Gender
             </label>
-            <select
+            <CustomDropdown
               id="player-gender-select"
+              ariaLabel="Gender"
               value={gender}
-              onChange={(e) => setGender(e.target.value as "male" | "female")}
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow cursor-pointer"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+              onChange={(val) => setGender(val as "male" | "female")}
+              options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+              sizeVariant="md"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
           </div>
 
           <div>
             <label htmlFor="player-rating-select" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
               Initial Skill Level
             </label>
-            <select
+            <CustomDropdown
               id="player-rating-select"
+              ariaLabel="Initial Skill Level"
               value={selectedPreset}
               disabled={customRating}
-              onChange={(e) => {
-                setSelectedPreset(e.target.value);
-                if (!customRating) setCustomRatingInput(e.target.value);
+              onChange={(val) => {
+                setSelectedPreset(val);
+                if (!customRating) setCustomRatingInput(val);
               }}
-              className="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-black font-bold shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000] focus:outline-none transition-shadow disabled:opacity-60"
-            >
-              <option value="2.0">Beginner Level (2.0 – 2.499)</option>
-              <option value="2.5">Advanced Beginner Level (2.5 – 2.999)</option>
-              <option value="3.0">Intermediate Level (3.0 – 3.499)</option>
-              <option value="3.5">Advanced Intermediate Level (3.5 – 3.999)</option>
-              <option value="4.0">Competitive Level (4.0 – 4.499)</option>
-              <option value="4.5">Advanced Competitive Level (4.5 – 4.999)</option>
-            </select>
+              options={[
+                { value: "2.0", label: "Beginner Level (2.0 – 2.499)" },
+                { value: "2.5", label: "Advanced Beginner Level (2.5 – 2.999)" },
+                { value: "3.0", label: "Intermediate Level (3.0 – 3.499)" },
+                { value: "3.5", label: "Advanced Intermediate Level (3.5 – 3.999)" },
+                { value: "4.0", label: "Competitive Level (4.0 – 4.499)" },
+                { value: "4.5", label: "Advanced Competitive Level (4.5 – 4.999)" },
+              ]}
+              sizeVariant="md"
+              className="w-full"
+              buttonClassName="w-full justify-between"
+            />
 
             <label className="flex items-center gap-2 text-xs font-bold text-black mt-2">
               <input
@@ -223,7 +231,7 @@ export function PlayerRoster({
       )}
 
       {/* Roster List */}
-      <section className="bg-white border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black space-y-4">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] text-black space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-black uppercase text-black">Group Roster ({players.length})</h2>
         </div>
@@ -253,61 +261,65 @@ export function PlayerRoster({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <div className="flex items-center gap-1.5">
                 <label htmlFor="player-roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Filter:
                 </label>
-                <select
+                <CustomDropdown
                   id="player-roster-filter"
-                  aria-label="Filter roster"
+                  ariaLabel="Filter roster"
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as PlayerRosterFilterType)}
-                  className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All ({players.length})</option>
-                  <option value="pinned">Pinned ({pinnedCount})</option>
-                  <option value="members">Members ({memberCount})</option>
-                  <option value="guests">Guests ({guestCount})</option>
-                </select>
+                  onChange={(val) => setFilterType(val as PlayerRosterFilterType)}
+                  options={[
+                    { value: "all", label: `All (${players.length})` },
+                    { value: "pinned", label: `Pinned (${pinnedCount})` },
+                    { value: "members", label: `Members (${memberCount})` },
+                    { value: "guests", label: `Guests (${guestCount})` },
+                  ]}
+                  sizeVariant="xs"
+                />
               </div>
 
               {hasGenderData && (
-                <div className="flex items-center gap-1.5 min-w-[95px]">
+                <div className="flex items-center gap-1.5">
                   <label htmlFor="player-roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                     Gender:
                   </label>
-                  <select
+                  <CustomDropdown
                     id="player-roster-gender-filter"
-                    aria-label="Filter by gender"
+                    ariaLabel="Filter by gender"
                     value={filterGender}
-                    onChange={(e) => setFilterGender(e.target.value as PlayerRosterFilterGender)}
-                    className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Genders</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
+                    onChange={(val) => setFilterGender(val as PlayerRosterFilterGender)}
+                    options={[
+                      { value: "all", label: "All Genders" },
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                    ]}
+                    sizeVariant="xs"
+                  />
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+              <div className="flex items-center gap-1.5">
                 <label htmlFor="player-roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
                   Sort:
                 </label>
-                <select
+                <CustomDropdown
                   id="player-roster-sort"
-                  aria-label="Sort roster"
+                  ariaLabel="Sort roster"
                   value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value as PlayerRosterSortOption)}
-                  className="w-full rounded-lg border-2 border-black bg-white px-2 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] focus:outline-none cursor-pointer"
-                >
-                  <option value="name_asc">Name (A–Z)</option>
-                  <option value="name_desc">Name (Z–A)</option>
-                  <option value="rating_desc">Rating (High–Low)</option>
-                  <option value="rating_asc">Rating (Low–High)</option>
-                  <option value="games_desc">Most Games</option>
-                  <option value="games_asc">Least Games</option>
-                </select>
+                  onChange={(val) => setSortOption(val as PlayerRosterSortOption)}
+                  options={[
+                    { value: "name_asc", label: "Name (A–Z)" },
+                    { value: "name_desc", label: "Name (Z–A)" },
+                    { value: "rating_desc", label: "Rating (High–Low)" },
+                    { value: "rating_asc", label: "Rating (Low–High)" },
+                    { value: "games_desc", label: "Most Games" },
+                    { value: "games_asc", label: "Least Games" },
+                  ]}
+                  sizeVariant="xs"
+                  align="right"
+                />
               </div>
             </div>
 
