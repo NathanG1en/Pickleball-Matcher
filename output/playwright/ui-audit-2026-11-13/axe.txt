@@ -1,0 +1,19 @@
+### Result
+[
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": [
+      {
+        "target": [
+          ".text-\\[\\#ff6b6b\\]"
+        ],
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.63 (foreground color: #ff6b6b, background color: #ecfdf5, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  }
+]
+### Ran Playwright code
+```js
+await page.evaluate('async()=> (await axe.run(document.querySelector("main"))).violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}))');
+```
