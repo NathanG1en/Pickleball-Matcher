@@ -1,5 +1,7 @@
 # UI audit — player and organizer journeys
 
+> All six findings below were addressed. See [2026-11-13-ui-fixes.md](2026-11-13-ui-fixes.md) for the before/after screenshots.
+
 Audited November 13, 2026, at commit 94c5aae using Impeccable 4.9.0 and headed Chromium driven through Playwright CLI. Local Next.js development server on port 3100 used the separate TEST_DATABASE_URL. Browser interactions used visible links, fields, and buttons. Primary viewport was 390 × 844, with a 1440 × 900 scoring check. Screenshots are under `output/playwright/ui-audit-2026-11-13/`.
 
 ## Implementation integrity

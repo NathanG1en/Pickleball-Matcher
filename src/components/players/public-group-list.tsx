@@ -9,7 +9,19 @@ import { saveRecentGroup } from "@/lib/storage/recent-groups";
 import { Alert, EmptyState } from "@/components/ui";
 import { LeaveGroupButton } from "@/components/players/player-profile-controls";
 
-export function PublicGroupList({ groups, isSignedIn }: { groups: readonly PublicGroupRecord[]; isSignedIn: boolean }) {
+const emptyActionClass =
+  "inline-flex min-h-11 items-center rounded-xl border-2 border-black px-4 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all";
+
+export function PublicGroupList({
+  groups,
+  isSignedIn,
+  query = "",
+}: {
+  groups: readonly PublicGroupRecord[];
+  isSignedIn: boolean;
+  query?: string;
+}) {
+  const trimmedQuery = query.trim();
   const router = useRouter();
   const [pendingGroup, setPendingGroup] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +43,32 @@ export function PublicGroupList({ groups, isSignedIn }: { groups: readonly Publi
     <div className="space-y-4">
       {error && <Alert variant="danger">{error}</Alert>}
       {groups.length === 0 ? (
-        <EmptyState description="No public groups match that search." />
+        trimmedQuery ? (
+          <EmptyState
+            data-testid="public-groups-no-results"
+            title={`No groups match “${trimmedQuery}”`}
+            description="Check the spelling or try part of the name. Private groups never appear in search."
+            action={
+              <Link href="/players/groups" className={`${emptyActionClass} bg-white hover:bg-neutral-100`}>
+                Clear search
+              </Link>
+            }
+          />
+        ) : (
+          <EmptyState
+            data-testid="public-groups-empty"
+            title="No public groups yet"
+            description="Most groups are private. Ask your organizer for an invite link, or start a group of your own."
+            action={
+              <Link
+                href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
+                className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+              >
+                {isSignedIn ? "Create a group" : "Create an account"}
+              </Link>
+            }
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {groups.map((group) => (

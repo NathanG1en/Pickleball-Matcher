@@ -55,6 +55,16 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.locator("[data-testid='court-match-1'] button:has-text('Save Result')").click();
     await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible({ timeout: 15000 });
 
+    // Cancel match stays legible and tappable on the final (green) result card.
+    const finalCancel = page.getByTestId("court-match-1").getByRole("button", { name: "Cancel match", exact: true });
+    const finalCancelBox = await finalCancel.boundingBox();
+    expect(finalCancelBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+    const finalCardContrast = await new AxeBuilder({ page })
+      .include("[data-testid='court-match-1']")
+      .withRules(["color-contrast"])
+      .analyze();
+    expect(finalCardContrast.violations).toEqual([]);
+
     // Now correct the score to 11-9
     await court1Team2.fill("9");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();

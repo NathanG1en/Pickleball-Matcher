@@ -741,6 +741,12 @@ test("non-host member can leave a group from find groups page with confirmation 
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
   await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
+  // A search with no hits names the query and offers a way back to the full directory.
+  const missingQuery = `zz-no-such-group-${Date.now()}`;
+  await playerPage.goto(`/players/groups?q=${missingQuery}`);
+  await expect(playerPage.getByTestId("public-groups-no-results")).toContainText(`No groups match “${missingQuery}”`);
+  await expect(playerPage.getByRole("link", { name: "Clear search" })).toHaveAttribute("href", "/players/groups");
+
   // Navigate to Find Groups page
   await playerPage.goto(`/players/groups?q=${encodeURIComponent(groupName)}`);
   await expect(playerPage.getByRole("heading", { name: "Find a group" })).toBeVisible();

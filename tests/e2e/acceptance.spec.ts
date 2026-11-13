@@ -48,9 +48,13 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     // 4. Start new session
     await page.click("a[href*='/sessions/new']");
     await expect(page).toHaveURL(/\/sessions\/new/);
+    // The total is unknown until a format is chosen, so step 1 must not promise one.
+    await expect(page.getByText("Step 1 · Format", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Step 1 of \d/)).toHaveCount(0);
 
     // Select Normal Session format
     await page.click("button[data-testid='select-normal-session-button']");
+    await expect(page.getByText("Step 2 of 3", { exact: true })).toBeVisible();
 
     // Adjust courts to 3
     const courtDisplay = page.locator("span[aria-label='Court count']");
@@ -557,4 +561,22 @@ test("session setup court respects reduced motion and allows manual replay with 
   expect(await court.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
   await checkAnimationReplay(page, court, "Replay court animation", "courtSettles", { touch: Boolean(testInfo.project.use.hasTouch) });
   await expect(page.getByRole("heading", { name: "Available Courts", exact: true })).toBeVisible();
+});
+
+test("mobile group dashboard puts Start New Session above the roster", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await createTestGroup(page, `Mobile Start League ${Date.now()}`);
+
+  const startButton = page.getByTestId("start-new-session-button");
+  const rosterHeading = page.getByRole("heading", { name: /Roster \(/ });
+  await expect(startButton).toBeVisible();
+  await expect(rosterHeading).toBeVisible();
+
+  const startBox = await startButton.boundingBox();
+  const rosterBox = await rosterHeading.boundingBox();
+  expect(startBox).not.toBeNull();
+  expect(rosterBox).not.toBeNull();
+  // Reachable without scrolling and ahead of the roster on a phone.
+  expect(startBox!.y + startBox!.height).toBeLessThanOrEqual(844);
+  expect(startBox!.y).toBeLessThan(rosterBox!.y);
 });

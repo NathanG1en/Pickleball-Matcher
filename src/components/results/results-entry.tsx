@@ -360,7 +360,7 @@ export function ResultsEntryView({
                       type="button"
                       onClick={() => onCancelMatch(match.id)}
                       disabled={isMatchSaving}
-                      className="text-xs font-black uppercase text-[#ff6b6b] hover:text-black hover:underline cursor-pointer disabled:opacity-40"
+                      className="-ml-3 inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-black uppercase text-[#b91c1c] hover:bg-[#fee2e2] hover:text-[#7f1d1d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       Cancel match
                     </button>

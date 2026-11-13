@@ -43,6 +43,26 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain('aria-label="Court 1 Team 2 score"');
   });
 
+  it("renders a readable, thumb-sized Cancel match control on result cards", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        onCancelMatch={() => {}}
+      />
+    );
+
+    const cancelButton = html.match(/<button[^>]*>Cancel match<\/button>/)?.[0] ?? "";
+    expect(cancelButton).not.toBe("");
+    // #b91c1c keeps 4.5:1+ contrast on both the open (#FFFDF7) and final (#ecfdf5) card backgrounds.
+    expect(cancelButton).toContain("text-[#b91c1c]");
+    expect(cancelButton).not.toContain("text-[#ff6b6b]");
+    // 44px minimum touch target for courtside use.
+    expect(cancelButton).toContain("min-h-11");
+  });
+
   it("renders cancelled match state clearly", () => {
     const html = renderToStaticMarkup(
       <ResultsEntryView

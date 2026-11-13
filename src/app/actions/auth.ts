@@ -39,7 +39,11 @@ export async function createAccountGroupAction(input: unknown): Promise<ActionRe
     if (error && typeof error === "object" && "code" in error && (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")) {
       return { ok: false, error: "A group with this exact name already exists.", fieldErrors: { name: ["This group name is already taken."] } };
     }
-    return { ok: false, error: error instanceof Error ? error.message : "Unable to create group." };
+    if (error instanceof Error && error.message === "Not signed in") {
+      return { ok: false, error: "Sign in to your player account to create a group." };
+    }
+    console.error("createAccountGroupAction failed", error);
+    return { ok: false, error: "We couldn't create your group right now. Your details are still here, so try again in a moment." };
   }
 }
 

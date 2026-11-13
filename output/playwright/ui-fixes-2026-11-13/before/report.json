@@ -1,0 +1,13 @@
+{
+  "startSessionTop": 1619,
+  "cancelTarget": "90.8 x 16.0",
+  "axe": [
+    {
+      "id": "color-contrast",
+      "nodes": [
+        "Fix any of the following:\n  Element has insufficient color contrast of 2.63 (foreground color: #ff6b6b, background color: #ecfdf5, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+      ]
+    }
+  ],
+  "groupUrl": "http://localhost:3100/g/grp_6095a8ea-7"
+}

@@ -187,26 +187,16 @@ export default async function GroupDashboardPage({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Organizers and Roster panel: appears first on mobile stack, right column on desktop */}
-        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:order-2">
-          <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
-          {/* Mobile Add to Home Screen Tip */}
-          <HomeScreenTip />
-        </div>
-
-        {/* Primary Action and Sessions column: appears after roster on mobile, left column on desktop */}
-        <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:order-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 items-start">
+        {/* Primary action: first on mobile so organizers can start or resume play without scrolling past the roster */}
+        <div className="lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-1">
           {!isPartOfGroup ? (
             <GroupJoinCard
               groupId={groupId}
               groupName={group.name}
               isSignedIn={Boolean(accountId)}
             />
-          ) : (
-            <>
-              {/* Primary Action Card */}
-              {activeSession ? (
+          ) : activeSession ? (
                 <section
                   data-testid="active-session-card"
                   className="relative bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 lg:p-7 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
@@ -396,7 +386,17 @@ export default async function GroupDashboardPage({
               </p>
             </section>
           )}
+        </div>
 
+        {/* Organizers and Roster panel: after the primary action on mobile, right column on desktop */}
+        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:col-start-8 xl:col-start-9 lg:row-start-1 lg:row-span-2">
+          <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+          {/* Mobile Add to Home Screen Tip */}
+          <HomeScreenTip />
+        </div>
+
+        {isPartOfGroup && (
+          <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-2">
           {/* Tournaments Section */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">
@@ -426,9 +426,8 @@ export default async function GroupDashboardPage({
               isOrganizer={Boolean(isOrganizer || isHost)}
             />
           </section>
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );
