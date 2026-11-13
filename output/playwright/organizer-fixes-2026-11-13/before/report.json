@@ -1,0 +1,22 @@
+{
+  "proposalStableAcrossReloads": false,
+  "upNextStableAcrossReload": false,
+  "courtsInRound1": 3,
+  "previewLineup": [
+    "1: Casey & Drew vs Ellis & Olivia Host",
+    "2: Alex & Jamie vs Blake & Finley",
+    "3: Glenn vs Harper"
+  ],
+  "actualRound2Lineup": [
+    "1: Casey & Drew vs Ellis & Olivia Host",
+    "2: Alex & Jamie vs Blake & Finley",
+    "3: Glenn vs Harper"
+  ],
+  "upNextMatchedRound2": true,
+  "finalCancelledAfterOneTap": true,
+  "cancelAsksFirst": false,
+  "dashboardEndAsksFirst": false,
+  "sessionStillLiveAfterDashboardTap": false,
+  "womensSinglesLabel": "Women's Singles 10 ENTRANTS 1v1 · Female players",
+  "divisionsPreselected": 5
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ResultsEntryView, getViewerRoundState } from "@/components/results/results-entry";
+import { ResultsEntryView, cancelMatchWarning, getViewerRoundState } from "@/components/results/results-entry";
 
 const sampleMatches = [
   {
@@ -625,5 +625,12 @@ describe("ResultsEntryView Component", () => {
       expect(html).not.toContain('data-testid="viewer-round-card"');
       expect(html).toContain('data-viewer-team="true"');
     });
+  });
+
+  it("warns that cancelling a final throws away its score and rating changes", () => {
+    expect(cancelMatchWarning({ status: "completed", team1Score: 11, team2Score: 8 })).toBe(
+      "This removes the 11–8 result and the rating changes from it. It can't be undone.",
+    );
+    expect(cancelMatchWarning({ status: "pending", team1Score: null, team2Score: null })).toContain("Nobody on this court gets a result");
   });
 });

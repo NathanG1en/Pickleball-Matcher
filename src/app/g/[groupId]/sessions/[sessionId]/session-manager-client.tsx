@@ -26,7 +26,8 @@ import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } fr
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
-import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
+import { ResultsEntryView, cancelMatchWarning, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
@@ -53,6 +54,14 @@ import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { AddPickupGameModal } from "@/components/sessions/add-pickup-game-modal";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
+import {
+  clearLineupChoice,
+  defaultLineupSeed,
+  parseLineupChoice,
+  readLineupChoiceSnapshot,
+  saveLineupChoice,
+  subscribeLineupChoice,
+} from "@/lib/rounds/lineup-seed";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
@@ -211,7 +220,6 @@ export function SessionManagerClient({
     setRegeneratedProposal(null);
   }
 
-  const activeProposal = regeneratedProposal ?? initialProposal;
   const [savingMatchIds, setSavingMatchIds] = useState<Set<string>>(() => new Set());
   const [prevAttendance, setPrevAttendance] = useState(attendance);
   const [currentAttendance, setCurrentAttendance] = useState(attendance);
@@ -284,6 +292,7 @@ export function SessionManagerClient({
         : Array.from({ length: session.courtCount }, () => 4 as const)
   );
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
+  const [matchPendingCancel, setMatchPendingCancel] = useState<MatchScoreEntry | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
     (cb) => subscribeConfirmMatchups(groupId, cb),
@@ -567,7 +576,34 @@ export function SessionManagerClient({
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
+  // The next round's lineup. Its default seed is fixed per session and round, so
+  // reloads and other organizer devices agree. A Reshuffle or variety change made
+  // on this device is remembered until that round starts.
+  const proposalRoundNumber = (latestStarted?.round.roundNumber ?? 0) + (isRoundInProgress ? 0 : 1);
+  const storedLineupChoiceRaw = useSyncExternalStore(
+    subscribeLineupChoice,
+    () => readLineupChoiceSnapshot(session.id),
+    () => "",
+  );
+  const storedLineupChoice = parseLineupChoice(storedLineupChoiceRaw, proposalRoundNumber, currentSession.version);
+  const storedChoiceProposal = useMemo(() => {
+    if (!storedLineupChoice || isRoundInProgress || !canManage) return null;
+    try {
+      return proposeRoundFromSnapshot(
+        { session: currentSession, players: sessionPlayers, attendance: currentAttendance, rounds: localStartedRounds },
+        storedLineupChoice.seed,
+        storedLineupChoice.temperature,
+      );
+    } catch {
+      return null;
+    }
+    // storedLineupChoice is re-parsed every render; its raw string is the stable dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedLineupChoiceRaw, proposalRoundNumber, isRoundInProgress, canManage, currentSession, sessionPlayers, currentAttendance, localStartedRounds]);
+  const activeProposal = regeneratedProposal ?? storedChoiceProposal ?? initialProposal;
+
+  const [varietyOverride, setMatchmakingVariety] = useState<number | null>(null);
+  const matchmakingVariety = varietyOverride ?? storedLineupChoice?.temperature ?? 0;
 
   const preGeneratedProposal = useMemo(() => {
     if (!latestStarted || latestStarted.round.status !== "started") return null;
@@ -579,7 +615,7 @@ export function SessionManagerClient({
           attendance: currentAttendance,
           rounds: localStartedRounds,
         },
-        undefined,
+        defaultLineupSeed(currentSession.id, latestStarted.round.roundNumber + 1),
         matchmakingVariety,
       );
     } catch {
@@ -590,9 +626,16 @@ export function SessionManagerClient({
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
     clearLineupDraft(lineupDraftKey(updated.id));
+    clearLineupChoice(updated.id);
     setRegeneratedProposal(null);
     if (canManage && updated.status === "active" && !isRoundInProgress) {
-      const generated = await proposeRoundAction({ groupId, sessionId: updated.id, sessionVersion: updated.version, temperature: matchmakingVariety });
+      const generated = await proposeRoundAction({
+        groupId,
+        sessionId: updated.id,
+        sessionVersion: updated.version,
+        seed: defaultLineupSeed(updated.id, proposalRoundNumber),
+        temperature: matchmakingVariety,
+      });
       if (generated.ok) setRegeneratedProposal(generated.data);
       else setError(generated.error);
     }
@@ -633,6 +676,12 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: proposalRoundNumber,
+            sessionVersion: currentSession.version,
+            seed: nextSeed,
+            temperature: variety,
+          });
           setRegeneratedProposal(res.data);
         } else {
           setError(res.error);
@@ -671,6 +720,12 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: latestStarted.round.roundNumber,
+            sessionVersion: currentSession.version + 1,
+            seed: res.data.seed,
+            temperature: matchmakingVariety,
+          });
           startGeneratingRound(() => {
             setRegeneratedProposal(res.data);
             setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
@@ -715,6 +770,7 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          clearLineupChoice(currentSession.id);
           startGeneratingRound(() => {
             setRegeneratedProposal(null);
             setCurrentSession((prev) => ({
@@ -890,6 +946,7 @@ export function SessionManagerClient({
                 groupId,
                 sessionId: currentSession.id,
                 sessionVersion: currentSession.version,
+                seed: defaultLineupSeed(currentSession.id, latestStarted.round.roundNumber + 1),
                 temperature: matchmakingVariety,
               });
               if (generated.ok) {
@@ -1642,6 +1699,21 @@ export function SessionManagerClient({
         </Toast>
       )}
 
+      <ConfirmDialog
+        isOpen={matchPendingCancel !== null}
+        onClose={() => setMatchPendingCancel(null)}
+        onConfirm={() => {
+          const matchId = matchPendingCancel?.id;
+          setMatchPendingCancel(null);
+          if (matchId) void handleCancelMatch(matchId);
+        }}
+        title={matchPendingCancel ? `Cancel the Court ${matchPendingCancel.courtNumber} game?` : "Cancel this game?"}
+        description={matchPendingCancel ? cancelMatchWarning(matchPendingCancel) : ""}
+        confirmText="Cancel match"
+        cancelText="Keep match"
+        confirmDataTestId="confirm-cancel-match"
+      />
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -2196,7 +2268,7 @@ export function SessionManagerClient({
               isPending={isPending}
               savingMatchIds={savingMatchIds}
               onSubmitResult={canManage ? handleSaveResult : undefined}
-              onCancelMatch={canManage ? handleCancelMatch : undefined}
+              onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
               onNextRound={canManage ? handleNextRound : undefined}
               onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
               isGeneratingRound={isGeneratingRound}

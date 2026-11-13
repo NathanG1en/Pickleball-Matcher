@@ -6,12 +6,25 @@ import { endSessionAction } from "@/app/actions/sessions";
 import { endOpenPlaySessionAction } from "@/app/actions/open-play";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import { markSessionEnded } from "@/lib/animations/session-signoff";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export interface EndSessionNowButtonProps {
   readonly groupId: string;
   readonly sessionId: string;
   readonly sessionType?: string | null;
   readonly sessionVersion?: number;
+  /** Games in the current round that have no result yet; named in the confirmation. */
+  readonly gamesInProgress?: number;
+}
+
+export function endSessionWarning(sessionType: string | null | undefined, gamesInProgress: number): string {
+  const irreversible = "A session can't be reopened after it ends.";
+  if (sessionType === "open_play") return `Players won't be able to log more games. ${irreversible}`;
+  if (gamesInProgress > 0) {
+    const games = gamesInProgress === 1 ? "1 game is" : `${gamesInProgress} games are`;
+    return `${games} still in progress and won't be recorded. ${irreversible}`;
+  }
+  return irreversible;
 }
 
 export function EndSessionNowButton({
@@ -19,12 +32,15 @@ export function EndSessionNowButton({
   sessionId,
   sessionType,
   sessionVersion = 1,
+  gamesInProgress = 0,
 }: EndSessionNowButtonProps) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleEndSession = async () => {
+    setIsConfirmOpen(false);
     setIsPending(true);
     setError(null);
     try {
@@ -55,7 +71,7 @@ export function EndSessionNowButton({
     <div className="h-full flex flex-col justify-stretch">
       <button
         type="button"
-        onClick={handleEndSession}
+        onClick={() => setIsConfirmOpen(true)}
         disabled={isPending}
         data-testid="end-session-now-button"
         aria-label="End session"
@@ -70,6 +86,16 @@ export function EndSessionNowButton({
           </>
         )}
       </button>
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleEndSession}
+        title="End this session?"
+        description={endSessionWarning(sessionType, gamesInProgress)}
+        confirmText="End Session"
+        cancelText="Keep playing"
+        confirmDataTestId="confirm-end-session-now"
+      />
       {error && (
         <p role="alert" className="text-[10px] font-bold text-red-600 mt-1 text-center">
           {error}

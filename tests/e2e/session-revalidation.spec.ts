@@ -46,7 +46,9 @@ test("session mutations render fresh state in the action response without an ext
     await measure("start", () => page.getByRole("button", { name: "Start Round", exact: true }).click(),
       () => expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible());
     const court = (number: number) => page.getByTestId(`court-match-${number}`);
-    await measure("cancel", () => court(2).getByRole("button", { name: "Cancel match", exact: true }).click(),
+    // Cancel asks first; the measured action is the confirmation.
+    await court(2).getByRole("button", { name: "Cancel match", exact: true }).click();
+    await measure("cancel", () => page.getByTestId("confirm-cancel-match").click(),
       () => expect(court(2).getByText("Cancelled", { exact: true })).toBeVisible());
     await page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true }).fill("11");
     await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("7");

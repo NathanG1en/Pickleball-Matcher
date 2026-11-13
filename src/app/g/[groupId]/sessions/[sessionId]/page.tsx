@@ -12,6 +12,7 @@ import { SessionManagerClient } from "./session-manager-client";
 import { OpenPlayManagerClient } from "./open-play-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
 import { buildPairSynergies } from "@/lib/synergy/lineup";
+import { defaultLineupSeed } from "@/lib/rounds/lineup-seed";
 
 export default async function ActiveSessionPage({
   params,
@@ -105,9 +106,12 @@ export default async function ActiveSessionPage({
   if (sessionRecord.status !== "completed" && !isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
-      initialProposal = sessionService.proposeRoundFromSnapshot({
-        session: sessionRecord, players, attendance, rounds: startedRounds,
-      });
+      // Same seed on every load (and every organizer device) until the inputs change.
+      const nextRoundNumber = (startedRounds.at(-1)?.round.roundNumber ?? 0) + 1;
+      initialProposal = sessionService.proposeRoundFromSnapshot(
+        { session: sessionRecord, players, attendance, rounds: startedRounds },
+        defaultLineupSeed(sessionRecord.id, nextRoundNumber),
+      );
     } catch (error) {
       if (error instanceof DomainError) initialProposalError = error.message;
       // In case not enough players or state error, proposal will remain null

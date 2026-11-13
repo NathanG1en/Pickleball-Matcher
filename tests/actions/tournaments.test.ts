@@ -74,6 +74,17 @@ describe("Tournament Server Actions", () => {
     expect(mensBracket.matches.length).toBe(1); // 1 match (Finals)
   });
 
+  it("refuses a gendered division that has no eligible players instead of filling it from the roster", async () => {
+    const result = await createTournamentAction({
+      groupId: "g1",
+      name: "Men only night",
+      divisions: ["mens_singles", "womens_singles"],
+      playerIds: ["p2", "p3"],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("Women's Singles needs at least 2 eligible entrants");
+  });
+
   it("updates match score and advances winner to downstream match", async () => {
     const createRes = await createTournamentAction({
       groupId: "g1",

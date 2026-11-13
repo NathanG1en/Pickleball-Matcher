@@ -33,11 +33,20 @@ Players (members who are not organizers) get a read-only view of the session.
   - **Not in this round:** for example, a player who arrived late and isn't checked in. No card is shown.
 - **Team highlight:** the viewer's team on its court card is highlighted lime and tagged **You**. Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
 
+### Proposed lineup (organizers)
+
+Before each round, organizers review a proposed lineup and then tap **Start Round**.
+
+- **Stable:** the default lineup for a round is the same on every load. Reloading, the phone locking, a second tab, or a co-organizer's phone all show the same courts and sitters. It changes only when its inputs change: attendance, Stay Together pairs, court settings, or results.
+- **Reshuffle and variety:** **Reshuffle** and the Balanced/Varied/Wild setting pick a new lineup. That choice is remembered on this device until the round starts or the session changes, so a reload keeps the lineup that was read out. Other devices keep showing the default lineup.
+- **Manual edits:** moving players by hand is saved on the device, as before.
+
 ### Session scoring (organizers)
 
 Each court is a card (`court-match-N`) with both teams and a score input for each team (“Court N Team M score”).
 
 - **Card states:** open cards are cream. Once a result is saved the card turns pale green and shows a **Final** badge with start and finish times. Cancelled cards are greyed out and labelled Cancelled.
 - **Save Result / Update Score:** the button is disabled while either score is blank, while a save is in progress, and when a saved score hasn't changed. Validation errors, such as a tied score, appear inside the card and keep the scores the organizer typed.
-- **Cancel match:** organizers can cancel any match that isn't already cancelled. It is a dark red text button with a 44 px-high tap area, and it is readable on both the open and final card colours.
+- **Cancel match:** organizers can cancel any match that isn't already cancelled. It first asks "Cancel the Court N game?" and spells out what is lost: for a finished game, its score and the rating changes from it; for an unfinished game, that nobody on the court gets a result this round. **Keep match** backs out; **Cancel match** confirms. It is a dark red text button with a 44 px-high tap area, and it is readable on both the open and final card colours.
+- **Up Next preview** (organizers, while a round is in play): a collapsible preview of the next round's courts and sitters. It notes that **Save & Start** uses this exact lineup and that it only changes when scores, attendance, or settings change. A reload shows the same preview.
 - **Bottom action bar** (organizers): save all, or start the next round. These actions are blocked while score changes are unsaved.

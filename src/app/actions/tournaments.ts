@@ -15,7 +15,9 @@ import type {
   TournamentBracket,
   TournamentRecord,
 } from "@/lib/domain/types";
+import { TOURNAMENT_DIVISION_LABELS } from "@/lib/domain/types";
 import {
+  MIN_DIVISION_ENTRANTS,
   createParticipantsForDivision,
   generateBracket,
   reshuffleBracketMatchups,
@@ -79,6 +81,12 @@ export async function createTournamentAction(
     const brackets: Record<string, TournamentBracket> = {};
     for (const div of divisions) {
       const participants = createParticipantsForDivision(div, selectedPlayers);
+      if (participants.length < MIN_DIVISION_ENTRANTS) {
+        return {
+          ok: false,
+          error: `${TOURNAMENT_DIVISION_LABELS[div]} needs at least ${MIN_DIVISION_ENTRANTS} eligible entrants. Set player genders on the roster or remove that division.`,
+        };
+      }
       brackets[div] = generateBracket(div, participants, { randomize: true });
     }
 

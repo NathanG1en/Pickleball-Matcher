@@ -47,167 +47,65 @@ export function getRoundNames(totalRounds: number): string[] {
 /**
  * Pairs players into participants for a tournament division.
  */
+function pairIntoTeams(players: readonly PlayerRecord[]): TournamentParticipant[] {
+  const shuffled = shuffleArray(players);
+  const teams: TournamentParticipant[] = [];
+  for (let i = 0; i < shuffled.length; i += 2) {
+    const p1 = shuffled[i]!;
+    const p2 = shuffled[i + 1];
+    teams.push(
+      p2
+        ? { id: `team_${p1.id}_${p2.id}`, name: `${p1.name} & ${p2.name}`, playerIds: [p1.id, p2.id], seed: teams.length + 1 }
+        : { id: p1.id, name: p1.name, playerIds: [p1.id], seed: teams.length + 1 },
+    );
+  }
+  return teams;
+}
+
+/**
+ * Entrants for one division. Gendered divisions only ever contain players of that
+ * gender, and mixed doubles only pairs a man with a woman: a division without
+ * enough eligible players comes back short (or empty) rather than borrowing
+ * players from the rest of the roster. Players with no gender set are left out
+ * of all three gendered formats until the organizer sets one.
+ */
 export function createParticipantsForDivision(
   division: TournamentDivision,
   players: readonly PlayerRecord[],
 ): TournamentParticipant[] {
-  if (players.length === 0) return [];
+  const men = players.filter((p) => p.gender === "male");
+  const women = players.filter((p) => p.gender === "female");
 
-  if (division === "mens_singles") {
-    const maleOnly = players.filter((p) => p.gender === "male");
-    const nonFemale = players.filter((p) => p.gender !== "female");
-    const eligible =
-      maleOnly.length >= 2 ? maleOnly : nonFemale.length >= 2 ? nonFemale : players;
-    return eligible.map((p, idx) => ({
-      id: p.id,
-      name: p.name,
-      playerIds: [p.id],
-      seed: idx + 1,
-    }));
-  }
-
-  if (division === "womens_singles") {
-    const femaleOnly = players.filter((p) => p.gender === "female");
-    const nonMale = players.filter((p) => p.gender !== "male");
-    const eligible =
-      femaleOnly.length >= 2 ? femaleOnly : nonMale.length >= 2 ? nonMale : players;
-    return eligible.map((p, idx) => ({
-      id: p.id,
-      name: p.name,
-      playerIds: [p.id],
-      seed: idx + 1,
-    }));
-  }
-
-  if (division === "mens_doubles") {
-    const maleOnly = players.filter((p) => p.gender === "male");
-    const nonFemale = players.filter((p) => p.gender !== "female");
-    const eligible =
-      maleOnly.length >= 2 ? maleOnly : nonFemale.length >= 2 ? nonFemale : players;
-    const shuffled = shuffleArray(eligible);
-    const teams: TournamentParticipant[] = [];
-    for (let i = 0; i < shuffled.length; i += 2) {
-      const p1 = shuffled[i]!;
-      const p2 = shuffled[i + 1];
-      if (p2) {
-        teams.push({
-          id: `team_${p1.id}_${p2.id}`,
-          name: `${p1.name} & ${p2.name}`,
-          playerIds: [p1.id, p2.id],
-          seed: teams.length + 1,
-        });
-      } else {
-        teams.push({
-          id: p1.id,
-          name: p1.name,
-          playerIds: [p1.id],
-          seed: teams.length + 1,
-        });
-      }
-    }
-    return teams;
-  }
-
-  if (division === "womens_doubles") {
-    const femaleOnly = players.filter((p) => p.gender === "female");
-    const nonMale = players.filter((p) => p.gender !== "male");
-    const eligible =
-      femaleOnly.length >= 2 ? femaleOnly : nonMale.length >= 2 ? nonMale : players;
-    const shuffled = shuffleArray(eligible);
-    const teams: TournamentParticipant[] = [];
-    for (let i = 0; i < shuffled.length; i += 2) {
-      const p1 = shuffled[i]!;
-      const p2 = shuffled[i + 1];
-      if (p2) {
-        teams.push({
-          id: `team_${p1.id}_${p2.id}`,
-          name: `${p1.name} & ${p2.name}`,
-          playerIds: [p1.id, p2.id],
-          seed: teams.length + 1,
-        });
-      } else {
-        teams.push({
-          id: p1.id,
-          name: p1.name,
-          playerIds: [p1.id],
-          seed: teams.length + 1,
-        });
-      }
-    }
-    return teams;
-  }
-
-  if (division === "mixed_doubles") {
-    const males = shuffleArray(players.filter((p) => p.gender === "male"));
-    const females = shuffleArray(players.filter((p) => p.gender === "female"));
-    const unassigned = shuffleArray(players.filter((p) => !p.gender));
-
-    // Distribute unassigned players to balance males and females
-    for (const p of unassigned) {
-      if (males.length <= females.length) {
-        males.push(p);
-      } else {
-        females.push(p);
-      }
-    }
-
-    const teams: TournamentParticipant[] = [];
-    const minPairs = Math.min(males.length, females.length);
-
-    for (let i = 0; i < minPairs; i++) {
-      const m = males[i]!;
-      const f = females[i]!;
-      teams.push({
-        id: `team_${m.id}_${f.id}`,
-        name: `${m.name} & ${f.name}`,
-        playerIds: [m.id, f.id],
-        seed: teams.length + 1,
+  switch (division) {
+    case "mens_singles":
+    case "womens_singles":
+      return (division === "mens_singles" ? men : women).map((p, idx) => ({
+        id: p.id,
+        name: p.name,
+        playerIds: [p.id],
+        seed: idx + 1,
+      }));
+    case "mens_doubles":
+      return pairIntoTeams(men);
+    case "womens_doubles":
+      return pairIntoTeams(women);
+    case "mixed_doubles": {
+      const shuffledMen = shuffleArray(men);
+      const shuffledWomen = shuffleArray(women);
+      const pairs = Math.min(shuffledMen.length, shuffledWomen.length);
+      return Array.from({ length: pairs }, (_, i) => {
+        const m = shuffledMen[i]!;
+        const f = shuffledWomen[i]!;
+        return { id: `team_${m.id}_${f.id}`, name: `${m.name} & ${f.name}`, playerIds: [m.id, f.id], seed: i + 1 };
       });
     }
-
-    // Any remaining players paired together
-    const remaining = [...males.slice(minPairs), ...females.slice(minPairs)];
-    for (let i = 0; i < remaining.length; i += 2) {
-      const p1 = remaining[i]!;
-      const p2 = remaining[i + 1];
-      if (p2) {
-        teams.push({
-          id: `team_${p1.id}_${p2.id}`,
-          name: `${p1.name} & ${p2.name}`,
-          playerIds: [p1.id, p2.id],
-          seed: teams.length + 1,
-        });
-      } else {
-        teams.push({
-          id: p1.id,
-          name: p1.name,
-          playerIds: [p1.id],
-          seed: teams.length + 1,
-        });
-      }
-    }
-
-    if (teams.length === 0 && players.length >= 2) {
-      const shuffled = shuffleArray(players);
-      for (let i = 0; i < shuffled.length; i += 2) {
-        const p1 = shuffled[i]!;
-        const p2 = shuffled[i + 1];
-        if (p2) {
-          teams.push({
-            id: `team_${p1.id}_${p2.id}`,
-            name: `${p1.name} & ${p2.name}`,
-            playerIds: [p1.id, p2.id],
-            seed: teams.length + 1,
-          });
-        }
-      }
-    }
-
-    return teams;
+    default:
+      return [];
   }
-
-  return [];
 }
+
+/** Fewest entrants a division needs before a bracket makes sense. */
+export const MIN_DIVISION_ENTRANTS = 2;
 
 /**
  * Generates single-elimination bracket with randomized matchups and automatic byes.

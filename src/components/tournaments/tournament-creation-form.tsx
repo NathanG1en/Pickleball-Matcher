@@ -13,7 +13,7 @@ import {
 } from "@/lib/domain/types";
 import { createTournamentAction } from "@/app/actions/tournaments";
 import { createPlayerAction } from "@/app/actions/players";
-import { createParticipantsForDivision } from "@/lib/tournament/bracket";
+import { MIN_DIVISION_ENTRANTS, createParticipantsForDivision } from "@/lib/tournament/bracket";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import { RatingSlider } from "@/components/ui/rating-slider";
@@ -39,9 +39,8 @@ export function TournamentCreationForm({
     [players],
   );
   const [name, setName] = useState<string>(`${groupName} Championship`);
-  const [selectedDivisions, setSelectedDivisions] = useState<Set<TournamentDivision>>(
-    new Set(TOURNAMENT_DIVISIONS),
-  );
+  // Nothing is pre-selected: the organizer picks the brackets they actually want to run.
+  const [selectedDivisions, setSelectedDivisions] = useState<Set<TournamentDivision>>(() => new Set());
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(
     new Set(initialPlayers.map((p) => p.id)),
   );
@@ -50,6 +49,11 @@ export function TournamentCreationForm({
   const [guestRating, setGuestRating] = useState<number>(3.5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getEntrantCount = (division: TournamentDivision) => {
+    const selected = players.filter((p) => selectedPlayerIds.has(p.id));
+    return createParticipantsForDivision(division, selected).length;
+  };
 
   // Division selection handlers
   const toggleDivision = (division: TournamentDivision) => {
@@ -62,7 +66,7 @@ export function TournamentCreationForm({
   };
 
   const selectAllDivisions = () => {
-    setSelectedDivisions(new Set(TOURNAMENT_DIVISIONS));
+    setSelectedDivisions(new Set(TOURNAMENT_DIVISIONS.filter((division) => getEntrantCount(division) >= MIN_DIVISION_ENTRANTS)));
   };
 
   const clearAllDivisions = () => {
@@ -139,6 +143,12 @@ export function TournamentCreationForm({
       return;
     }
 
+    const shortDivision = Array.from(selectedDivisions).find((division) => getEntrantCount(division) < MIN_DIVISION_ENTRANTS);
+    if (shortDivision) {
+      setError(`${TOURNAMENT_DIVISION_LABELS[shortDivision]} needs at least ${MIN_DIVISION_ENTRANTS} eligible entrants. Set player genders on the roster or remove that division.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const playerGenders: Record<string, "male" | "female" | null> = {};
@@ -167,10 +177,6 @@ export function TournamentCreationForm({
     }
   };
 
-  const getEntrantCount = (division: TournamentDivision) => {
-    const selected = players.filter((p) => selectedPlayerIds.has(p.id));
-    return createParticipantsForDivision(division, selected).length;
-  };
 
   const divisionsCount = selectedDivisions.size;
   const playersCount = selectedPlayerIds.size;
@@ -243,20 +249,25 @@ export function TournamentCreationForm({
           {TOURNAMENT_DIVISIONS.map((division) => {
             const isSelected = selectedDivisions.has(division);
             const entrantCount = getEntrantCount(division);
+            const isShort = entrantCount < MIN_DIVISION_ENTRANTS;
             return (
               <label
                 key={division}
                 htmlFor={`division-check-${division}`}
-                className={`flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                className={`flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all select-none ${
                   isSelected
-                    ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
-                    : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
+                    ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000] cursor-pointer"
+                    : isShort
+                      ? "bg-neutral-100 border-dashed border-neutral-400 text-neutral-700 cursor-not-allowed"
+                      : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black cursor-pointer"
                 }`}
               >
                 <input
                   id={`division-check-${division}`}
                   type="checkbox"
                   checked={isSelected}
+                  disabled={isShort && !isSelected}
+                  aria-describedby={isShort ? `division-short-${division}` : undefined}
                   onChange={() => toggleDivision(division)}
                   className="w-5 h-5 rounded border-2 border-black accent-black cursor-pointer mt-0.5"
                 />
@@ -270,6 +281,11 @@ export function TournamentCreationForm({
                   <span className="text-xs font-bold text-neutral-600 block mt-0.5">
                     {TOURNAMENT_DIVISION_DESCRIPTIONS[division]}
                   </span>
+                  {isShort && (
+                    <span id={`division-short-${division}`} className="text-xs font-black text-black block mt-1">
+                      Needs {MIN_DIVISION_ENTRANTS}+ eligible players
+                    </span>
+                  )}
                 </div>
               </label>
             );

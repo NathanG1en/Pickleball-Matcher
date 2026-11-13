@@ -358,6 +358,7 @@ export default async function GroupDashboardPage({
                       sessionId={activeSession.id}
                       sessionType={activeSession.type}
                       sessionVersion={activeSession.version}
+                      gamesInProgress={currentRoundMatches.filter((m) => m.status === "pending").length}
                     />
                   </div>
                   <Link

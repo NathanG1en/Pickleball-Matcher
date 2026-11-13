@@ -59,6 +59,14 @@ export interface ResultsEntryViewProps {
   readonly sittingPlayerIds?: readonly string[];
 }
 
+/** What cancelling this match throws away, for the confirmation dialog. */
+export function cancelMatchWarning(match: Pick<MatchScoreEntry, "status" | "team1Score" | "team2Score">): string {
+  if (match.status === "completed" && match.team1Score !== null && match.team2Score !== null) {
+    return `This removes the ${match.team1Score}–${match.team2Score} result and the rating changes from it. It can't be undone.`;
+  }
+  return "Nobody on this court gets a result this round. It can't be undone.";
+}
+
 type ViewerRoundState =
   | { kind: "playing"; match: MatchScoreEntry; team: 1 | 2; partners: readonly string[]; opponents: readonly string[] }
   | { kind: "sitting" }
@@ -278,6 +286,9 @@ export function ResultsEntryView({
               <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
+              <p className="text-xs font-bold text-neutral-700">
+                Save &amp; Start uses this exact lineup. It only changes when scores, attendance, or settings change.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {upcomingProposal.courts.map((c) => (
                   <div key={c.courtNumber} className="p-2.5 rounded-xl bg-[#FFFDF7] border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
