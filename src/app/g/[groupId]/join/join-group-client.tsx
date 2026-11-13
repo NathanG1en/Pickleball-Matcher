@@ -265,8 +265,12 @@ export function JoinGroupClient({
               placeholder="e.g. Alex"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
+              aria-describedby="guest-join-name-hint"
               className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none"
             />
+            <p id="guest-join-name-hint" className="mt-1.5 text-xs font-bold text-neutral-700">
+              Already on the roster? Use the name your organizer added and you&apos;ll take that spot.
+            </p>
           </div>
 
           <div>

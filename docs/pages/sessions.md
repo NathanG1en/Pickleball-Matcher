@@ -19,7 +19,21 @@ Open Play has one more step after the format:
 
 If starting fails, an error appears and the organizer stays on the current step.
 
-## Session scoring — `/g/[groupId]/sessions/[sessionId]`
+## Live session — `/g/[groupId]/sessions/[sessionId]`
+
+### What players see
+
+Players (members who are not organizers) get a read-only view of the session.
+
+- **Before a round starts:** "Waiting for Next Round".
+- **Live updates:** while the tab is visible, the page checks every 5 seconds whether the session has changed. It also checks straight away when the tab comes back into view, the window regains focus, or the device reconnects. If something changed (a round started or finished, a score was saved or a match cancelled, the round number moved on, or the session ended), the page refreshes itself. No manual reload is needed.
+- **"You" card:** once a round is running, a card above the courts shows the viewer's own assignment:
+  - **Playing:** "You're on Court N", with their partner (or "Singles") and their opponents. When the game ends it shows the result from their side, for example "Final · You won 11–8". If the organizer cancels the game, it says so.
+  - **Sitting out:** "You're sitting out", with a note that they'll have priority when the next round is made.
+  - **Not in this round:** for example, a player who arrived late and isn't checked in. No card is shown.
+- **Team highlight:** the viewer's team on its court card is highlighted lime and tagged **You**. Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
+
+### Session scoring (organizers)
 
 Each court is a card (`court-match-N`) with both teams and a score input for each team (“Court N Team M score”).
 

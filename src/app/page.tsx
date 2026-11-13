@@ -1,34 +1,71 @@
 import Link from "next/link";
 import { HomePickleball } from "@/components/home/home-pickleball";
 import { getActiveOrganizerSession, getActivePlayerAccountId, getActionRepository } from "@/app/actions/action-context";
-import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
+import { LiveSessionsHome, YourGroupsHome, type HomeGroupSummary } from "@/components/home/your-groups-home";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
+import type { DomainRepository } from "@/lib/domain/repositories";
 import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
+
+async function getGuestGroups(): Promise<Record<string, string>> {
+  try {
+    const { getGuestGroupPlayerIds } = await import("@/lib/auth/guest-session");
+    return await getGuestGroupPlayerIds();
+  } catch {
+    return {};
+  }
+}
+
+/** Groups this device belongs to, from the player account and any guest joins, with their live session. */
+async function loadHomeGroups(
+  repo: DomainRepository,
+  playerAccountId: string | null,
+  excludeGroupId: string | undefined,
+): Promise<HomeGroupSummary[]> {
+  const byId = new Map<string, string>();
+  if (playerAccountId) {
+    for (const group of await repo.listAccountGroups(playerAccountId)) byId.set(group.id, group.name);
+  }
+  const guestGroups = await getGuestGroups();
+  await Promise.all(
+    Object.entries(guestGroups).map(async ([groupId, playerId]) => {
+      if (byId.has(groupId)) return;
+      const [group, players] = await Promise.all([repo.getGroup(groupId), repo.listPlayers(groupId)]);
+      if (group && players.some((player) => player.id === playerId && player.active)) byId.set(group.id, group.name);
+    }),
+  );
+  if (excludeGroupId) byId.delete(excludeGroupId);
+
+  const groups = await Promise.all(
+    [...byId].map(async ([id, name]): Promise<HomeGroupSummary> => {
+      const active = (await repo.listSessions(id)).find((session) => session.status === "active");
+      return {
+        id,
+        name,
+        liveSession: active
+          ? { id: active.id, roundNumber: active.currentRoundNumber, type: active.type === "open_play" ? "open_play" : "regular" }
+          : null,
+      };
+    }),
+  );
+  // Live groups first, then alphabetical.
+  return groups.sort((a, b) => Number(Boolean(b.liveSession)) - Number(Boolean(a.liveSession)) || a.name.localeCompare(b.name));
+}
 
 export default async function HomePage() {
   const session = await getActiveOrganizerSession();
   const playerAccountId = await getActivePlayerAccountId();
   let activeGroup: GroupRecord | null = null;
   let playerAccount: PlayerAccountRecord | null = null;
-  let memberGroupIds: string[] | undefined = undefined;
+  let homeGroups: HomeGroupSummary[] = [];
 
-  if (session?.groupId || playerAccountId) {
-    try {
-      const repo = getActionRepository();
-      if (session?.groupId) activeGroup = await repo.getGroup(session.groupId);
-      if (playerAccountId) {
-        playerAccount = await repo.getPlayerAccount(playerAccountId);
-        const accountGroups = await repo.listAccountGroups(playerAccountId);
-        const ids = new Set(accountGroups.map((g) => g.id));
-        if (session?.groupId) {
-          ids.add(session.groupId);
-        }
-        memberGroupIds = Array.from(ids);
-      }
-    } catch {
-      // Fallback in non-db environments
-    }
+  try {
+    const repo = getActionRepository();
+    if (session?.groupId) activeGroup = await repo.getGroup(session.groupId);
+    if (playerAccountId) playerAccount = await repo.getPlayerAccount(playerAccountId);
+    homeGroups = await loadHomeGroups(repo, playerAccount ? playerAccountId : null, activeGroup?.id);
+  } catch {
+    // Fallback in non-db environments
   }
   return (
     <main className="min-h-screen p-4 sm:p-8 flex items-center justify-center relative overflow-hidden">
@@ -46,6 +83,8 @@ export default async function HomePage() {
         className="relative max-w-lg w-full bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-7 sm:p-10 text-center space-y-7 z-10"
         aria-labelledby="home-title"
       >
+        <LiveSessionsHome groups={homeGroups} />
+
         {/* Eyebrow badge */}
         <div className="flex items-center justify-center">
           <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black">
@@ -108,12 +147,7 @@ export default async function HomePage() {
             </div>
           )}
 
-          {playerAccount && (
-            <RecentGroupsHome
-              excludeGroupId={activeGroup?.id}
-              memberGroupIds={memberGroupIds}
-            />
-          )}
+          <YourGroupsHome groups={homeGroups} />
 
           {playerAccount ? (
             <>

@@ -263,8 +263,8 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).toContain("Session In Progress");
       expect(html).toContain("Current Matchups");
       expect(html).toContain('data-testid="current-matchups"');
-      expect(html).toContain("max-h-[136px]");
-      expect(html).toContain("overflow-y-auto");
+      // Every court is listed in full; no clipped inner scroll box
+      expect(html).not.toMatch(/data-testid="current-matchups" class="[^"]*max-h-/);
       expect(html).toContain("Court 1");
       expect(html).toContain("Host Pro vs Member Joe");
       expect(html).toContain("View Live Session →");
@@ -272,7 +272,7 @@ describe("Player View for Groups and Sessions", () => {
       expect(html).not.toContain("End Session");
     });
 
-    it("renders scrollable current matchups and recent games with z-20 so they remain scrollable above the card overlay link", async () => {
+    it("renders current matchups above the card overlay link and marks the viewer's own court", async () => {
       const repo = createTestRepository({ activeSession: true, activeRound: true });
       setActionRepository(repo);
 
@@ -281,8 +281,10 @@ describe("Player View for Groups and Sessions", () => {
 
       expect(html).toContain('data-testid="active-session-overlay-link"');
       expect(html).toContain('data-testid="current-matchups"');
-      // Verify current matchups wrapper has relative z-20 to stay scrollable above the z-10 overlay link
-      expect(html).toMatch(/class="[^"]*relative z-20[^"]*"[^>]*>\s*<h3[^>]*>Current Matchups<\/h3>\s*<div data-testid="current-matchups" class="max-h-\[136px\] overflow-y-auto/);
+      // The matchups wrapper sits at z-20, above the z-10 overlay link
+      expect(html).toMatch(/class="[^"]*relative z-20[^"]*"[^>]*>\s*<h3[^>]*>Current Matchups<\/h3>\s*<div data-testid="current-matchups"/);
+      // The signed-in member is playing on Court 1, so that court is tagged for them
+      expect(html).toMatch(/data-viewer-match="true"[^>]*>.*?Court 1.*?You&#x27;re here/);
     });
 
     it("allows organizers to see 'End Session' button for active normal session", async () => {

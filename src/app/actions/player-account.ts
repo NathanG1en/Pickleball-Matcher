@@ -260,7 +260,13 @@ export async function joinGroupViaInviteAction(input: unknown): Promise<PlayerAc
   }
 }
 
-export async function joinAsGuestAction(input: unknown): Promise<PlayerActionResult<{ playerId: string; groupId: string }>> {
+function normalizeGuestName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+export async function joinAsGuestAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ playerId: string; groupId: string; rejoined: boolean }>> {
   const parsed = joinAsGuestSchema.safeParse(input);
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
@@ -270,6 +276,20 @@ export async function joinAsGuestAction(input: unknown): Promise<PlayerActionRes
     const repository = getActionRepository();
     const group = await repository.getGroup(parsed.data.groupId);
     if (!group) return { ok: false, error: "This group does not exist." };
+
+    // Organizers often pre-add regulars as guests before sharing the invite link.
+    // A guest who joins under the same name is that person: reuse their roster
+    // spot instead of creating a twin who would be scheduled on two courts.
+    const wantedName = normalizeGuestName(parsed.data.name);
+    const roster = await repository.listPlayers(parsed.data.groupId);
+    const existingGuest = roster.find(
+      (player) => player.active && !player.accountId && normalizeGuestName(player.name) === wantedName,
+    );
+    if (existingGuest) {
+      await recordGuestPlayer(parsed.data.groupId, existingGuest.id);
+      revalidatePath(`/g/${parsed.data.groupId}`);
+      return { ok: true, data: { playerId: existingGuest.id, groupId: parsed.data.groupId, rejoined: true } };
+    }
 
     const initialRating = parsed.data.initialRating ?? DEFAULT_RATING[parsed.data.skillLevel ?? "intermediate"];
     const playerId = `ply_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -288,8 +308,9 @@ export async function joinAsGuestAction(input: unknown): Promise<PlayerActionRes
     revalidatePath(`/g/${parsed.data.groupId}`);
     revalidatePath(`/g/${parsed.data.groupId}/join`);
     revalidatePath(`/g/${parsed.data.groupId}/players`);
-    return { ok: true, data: { playerId, groupId: parsed.data.groupId } };
+    return { ok: true, data: { playerId, groupId: parsed.data.groupId, rejoined: false } };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Unable to join as a guest." };
+    console.error("joinAsGuestAction failed", error);
+    return { ok: false, error: "We couldn't add you to this group right now. Please try again in a moment." };
   }
 }

@@ -206,6 +206,37 @@ describe("Share Group and Join Feature", () => {
       expect(guestPlayer?.initialRating).toBe(1000);
     });
 
+    it("reuses an organizer-added guest with the same name instead of creating a duplicate", async () => {
+      const first = await joinAsGuestAction({ groupId: "grp_private1", name: "Alice Ace" });
+      expect(first.ok).toBe(true);
+      const before = (await repository.listPlayers("grp_private1")).length;
+
+      const again = await joinAsGuestAction({ groupId: "grp_private1", name: "  alice   ACE " });
+
+      expect(again.ok).toBe(true);
+      if (first.ok && again.ok) {
+        expect(again.data.playerId).toBe(first.data.playerId);
+        expect(again.data.rejoined).toBe(true);
+      }
+      const after = await repository.listPlayers("grp_private1");
+      expect(after).toHaveLength(before);
+      expect(after.filter((p) => p.name === "Alice Ace")).toHaveLength(1);
+    });
+
+    it("does not hand a guest the roster spot of an account player with the same name", async () => {
+      mockAccountId = userAccountId;
+      await joinGroupViaInviteAction({ groupId: "grp_private1" });
+      mockAccountId = null;
+
+      const result = await joinAsGuestAction({ groupId: "grp_private1", name: "Invited Player" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.data.rejoined).toBe(false);
+      const namesakes = (await repository.listPlayers("grp_private1")).filter((p) => p.name === "Invited Player");
+      expect(namesakes).toHaveLength(2);
+      expect(namesakes.filter((p) => p.accountId === null)).toHaveLength(1);
+    });
+
     it("rejects guest join with empty name", async () => {
       const result = await joinAsGuestAction({
         groupId: "grp_private1",

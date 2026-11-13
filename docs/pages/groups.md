@@ -33,9 +33,23 @@ Requires a signed-in player account. The creator becomes the host and is added t
 - **Header:** Back button, **Share**, and a **Group options** menu. The options menu is shown to organizers and to signed-in members who aren't the host. Below these sit the group name, a Public/Private badge, and the roster count, which includes the host. After a session ends, organizers also see the session sign-off control here.
 - **Primary session card:** this comes first on phones, right under the header. On desktop it sits at the top of the left column. What it shows depends on the viewer:
   - **Not part of the group:** the join card.
-  - **A session is running:** a lime card with the round number, start date, and court count, plus current matchups (or recent games for open play). Organizers get **End Session** (shortened to “End” on phones) and **Resume Session** (or **Manage Open Play**). Players get **View Live Session** (or **View Open Play**).
+  - **A session is running:** a lime card with the round number, start date, and court count, plus current matchups (or recent games for open play). Every court is listed; the list doesn't scroll inside the card. If the viewer is playing this round, their court is listed first and tagged **You're here**. Organizers get **End Session** (shortened to “End” on phones) and **Resume Session** (or **Manage Open Play**). Players get **View Live Session** (or **View Open Play**).
   - **No session, organizer:** “Ready to Play?” with **Start New Session**, which opens `/g/[groupId]/sessions/new`.
   - **No session, player:** “No Active Session” with an explanation.
 - **Organizers and roster:** on phones this follows the session card. On desktop it fills the right-hand column. Organizers can find players by username or add guests here. The roster supports search, filter, and sort.
 - **Add to Home Screen tip:** a dismissible hint shown below the roster.
 - **Tournaments and Past Sessions:** shown only to members. On phones they come last; on desktop they sit in the left column below the session card. Organizers get **+ Create Tournament**.
+
+## Join a group — `/g/[groupId]/join`
+
+This is the page the share/invite link opens.
+
+- **Already a member:** a confirmation, with a way back to the group.
+- **Signed in:** **Join Group Now** shows which account will join and its starting rating.
+- **Signed out:**
+  - **Join as Guest:** enter a name and skill level. The page explains: "Already on the roster? Use the name your organizer added and you'll take that spot."
+    - If an active guest with the same name is already on the roster, the device takes over that guest's spot. The name match ignores case and extra spaces. No duplicate is created, so the player keeps their history.
+    - An account player with the same name is never taken over; a new guest is created instead.
+  - **Sign in / Create account:** after signing in, the player comes back to this page.
+- Unexpected failures show a general "try again" message; the technical details go to the server logs.
+

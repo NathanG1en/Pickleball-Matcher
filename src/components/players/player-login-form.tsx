@@ -26,7 +26,7 @@ export function PlayerLoginForm() {
     setError(null);
     const result = await playerLoginAction({ username, password });
     if (result.ok) {
-      router.push(getReturnPath() ?? "/players");
+      router.push(getReturnPath() ?? "/");
       router.refresh();
       return;
     }

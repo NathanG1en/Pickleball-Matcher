@@ -57,6 +57,8 @@ import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
+import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
+import { useLiveSessionSync } from "@/lib/sessions/use-live-session-sync";
 
 export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together" | "preferences";
 
@@ -160,6 +162,17 @@ export function SessionManagerClient({
       if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
     };
   }, []);
+
+  // Players watching a live session follow the organizer's round changes, scores,
+  // and session end without reloading. Organizers already refresh after their own
+  // actions, and polling under them could disturb score drafts mid-entry.
+  const liveStamp = useMemo(() => buildSessionLiveStamp(session, startedRounds), [session, startedRounds]);
+  useLiveSessionSync({
+    enabled: !canManage && session.status === "active",
+    groupId,
+    sessionId: session.id,
+    stamp: liveStamp,
+  });
 
   const pinnedPlayerIds = usePinnedPlayerIds(groupId);
   const [attendanceSearchQuery, setAttendanceSearchQuery] = useState("");
@@ -1477,18 +1490,22 @@ export function SessionManagerClient({
   // Convert started round matches to MatchScoreEntry
   const scoreEntries: MatchScoreEntry[] = latestStarted
     ? latestStarted.matches.map((match) => {
-        const team1Players = (latestStarted.matchPlayers ?? [])
+        const team1Ids = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 1)
-          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-        const team2Players = (latestStarted.matchPlayers ?? [])
+          .map((mp) => mp.playerId);
+        const team2Ids = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 2)
-          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+          .map((mp) => mp.playerId);
+        const team1Players = team1Ids.map((id) => playerNames[id] ?? id);
+        const team2Players = team2Ids.map((id) => playerNames[id] ?? id);
 
         return {
           id: match.id,
           courtNumber: match.courtNumber,
           team1Names: team1Players.length > 0 ? team1Players : ["Player 1"],
           team2Names: team2Players.length > 0 ? team2Players : ["Player 2"],
+          team1PlayerIds: team1Ids,
+          team2PlayerIds: team2Ids,
           team1Score: match.team1Score,
           team2Score: match.team2Score,
           status: match.status,
@@ -2172,6 +2189,8 @@ export function SessionManagerClient({
               roundNumber={latestStarted.round.roundNumber}
               courtCount={currentSession.courtCount}
               sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
+              sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
+              viewerPlayerId={currentViewerPlayerId}
               matches={scoreEntries}
               fieldErrors={fieldErrors}
               isPending={isPending}

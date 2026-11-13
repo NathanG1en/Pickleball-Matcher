@@ -23,6 +23,11 @@ vi.mock("@/app/actions/action-context", async (importOriginal) => {
   };
 });
 
+const mockGuestGroups = vi.fn<() => Promise<Record<string, string>>>();
+vi.mock("@/lib/auth/guest-session", () => ({
+  getGuestGroupPlayerIds: () => mockGuestGroups(),
+}));
+
 const mockStorage: Record<string, string> = {};
 const storageMock: Storage = {
   getItem: (key: string) => mockStorage[key] || null,
@@ -63,6 +68,7 @@ describe("HomePage authentication states", () => {
     });
     vi.mocked(actionContext.getActiveOrganizerSession).mockResolvedValue(null);
     vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
+    mockGuestGroups.mockResolvedValue({});
   });
 
   afterEach(() => {
@@ -98,7 +104,7 @@ describe("HomePage authentication states", () => {
     expect(html).not.toContain("Log Out");
   });
 
-  it("renders logged-in home page with member groups in recent groups, logout button, and hides temporary group option", async () => {
+  it("renders logged-in home page with the account's groups, logout button, and hides temporary group option", async () => {
     saveRecentGroup({ id: "grp-1", name: "Sunset Pickleballers" });
     const repo = new InMemoryRepositories({
       groups: [
@@ -128,9 +134,11 @@ describe("HomePage authentication states", () => {
     const jsx = await HomePage();
     const html = renderToStaticMarkup(jsx);
 
-    // Groups user is part of saved on device SHOULD be visible when logged in
+    // The account's groups come from the server, not this device's history
     expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Recent Group");
+    expect(html).toContain("Your groups");
+    expect(html).toContain('href="/g/grp-1"');
+    expect(html).not.toContain("Live now");
 
     // Action buttons when logged in
     expect(html).toContain("Create A Group");
@@ -194,7 +202,53 @@ describe("HomePage authentication states", () => {
     const html = renderToStaticMarkup(jsx);
 
     expect(html).not.toContain("Other Pickleballers");
-    expect(html).not.toContain("Your Recent Groups");
+    expect(html).not.toContain("Your groups");
+  });
+
+  it("puts a live session first with a one-tap link to the player's court", async () => {
+    const repo = new InMemoryRepositories({
+      groups: [
+        { id: "grp-1", name: "Sunset Pickleballers", organizerPinHash: "pin-hash", createdAt: new Date(), ownerAccountId: "usr-1" },
+      ],
+      playerAccounts: [
+        { id: "usr-1", username: "player1", name: "Player One", passwordHash: "hash", skillLevel: "intermediate", initialRating: 1000, createdAt: new Date() },
+      ],
+      sessions: [
+        { id: "ses-1", groupId: "grp-1", courtCount: 2, status: "active", currentRoundNumber: 3, startedAt: new Date(), endedAt: null, version: 4 },
+      ],
+    });
+    actionContext.setActionRepository(repo);
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("usr-1");
+
+    const html = renderToStaticMarkup(await HomePage());
+
+    expect(html).toContain("Live now · Round 3 in play");
+    expect(html).toContain('href="/g/grp-1/sessions/ses-1"');
+    expect(html).toContain("See my court");
+    expect(html.indexOf("Live now")).toBeLessThan(html.indexOf("FAIR ROUNDS"));
+  });
+
+  it("shows signed-out guests the groups they joined on this device", async () => {
+    const repo = new InMemoryRepositories({
+      groups: [
+        { id: "grp-1", name: "Sunset Pickleballers", organizerPinHash: "pin-hash", createdAt: new Date(), ownerAccountId: "usr-1" },
+        { id: "grp-2", name: "Left Behind", organizerPinHash: "pin-hash", createdAt: new Date(), ownerAccountId: "usr-1" },
+      ],
+      players: [
+        { id: "ply-guest", groupId: "grp-1", name: "Alice", initialRating: 1000, rating: 1000, ratedGamesPlayed: 0, active: true, accountId: null },
+        { id: "ply-gone", groupId: "grp-2", name: "Alice", initialRating: 1000, rating: 1000, ratedGamesPlayed: 0, active: false, accountId: null },
+      ],
+    });
+    actionContext.setActionRepository(repo);
+    mockGuestGroups.mockResolvedValue({ "grp-1": "ply-guest", "grp-2": "ply-gone" });
+
+    const html = renderToStaticMarkup(await HomePage());
+
+    expect(html).toContain("Your groups");
+    expect(html).toContain("Sunset Pickleballers");
+    // A guest removed from a roster no longer sees that group
+    expect(html).not.toContain("Left Behind");
+    expect(html).toContain("Sign In to Play");
   });
 });
 

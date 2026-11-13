@@ -611,7 +611,7 @@ test.describe("Permissions and Security Workflow", () => {
   await expect(page.getByText(/current rating 3.75/)).toBeVisible();
 });
 
-test("does not include groups in recent groups if player is not part of them even after looking at them", async ({
+test("home lists only groups the player has joined, not ones they only looked at", async ({
   page,
   browser,
 }) => {
@@ -648,20 +648,20 @@ test("does not include groups in recent groups if player is not part of them eve
   await expect(playerPage.locator("h1")).toContainText(groupName);
   await expect(playerPage.getByRole("button", { name: "Join Group Now" })).toBeVisible();
 
-  // Go to homepage: group must NOT be in recent groups
+  // Go to homepage: a group the player only looked at must NOT be listed
   await playerPage.goto("/");
   await expect(playerPage.getByRole("heading", { name: /FAIR ROUNDS/ })).toBeVisible();
   await expect(playerPage.getByText(groupName)).not.toBeVisible();
-  await expect(playerPage.getByText(/Your Recent Groups/)).not.toBeVisible();
+  await expect(playerPage.getByRole("heading", { name: "Your groups" })).not.toBeVisible();
 
   // Now join the group
   await playerPage.goto(`/g/${groupId}`);
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
   await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
-  // Return to homepage: group MUST now appear in recent groups
+  // Return to homepage: group MUST now appear under Your groups
   await playerPage.goto("/");
-  await expect(playerPage.getByText(/Your Recent Groups/)).toBeVisible();
+  await expect(playerPage.getByRole("heading", { name: "Your groups" })).toBeVisible();
   await expect(playerPage.getByText(groupName)).toBeVisible();
 
   await playerContext.close();

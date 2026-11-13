@@ -223,4 +223,7 @@ export const addSessionGuestSchema = z
 
 export type AddSessionGuestInput = z.infer<typeof addSessionGuestSchema>;
 
-
+export const sessionLiveStampSchema = z.object({
+  groupId: entityIdSchema,
+  sessionId: entityIdSchema,
+});

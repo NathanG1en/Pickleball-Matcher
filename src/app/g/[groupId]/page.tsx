@@ -58,6 +58,11 @@ export default async function GroupDashboardPage({
   const isGuestMember = Boolean(guestPlayerId && players.some((p) => p.id === guestPlayerId && p.active));
   const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
   const isPartOfGroup = isOrganizer || isMember;
+  const viewerPlayerId = accountId
+    ? players.find((player) => player.accountId === accountId && player.active)?.id ?? null
+    : isGuestMember
+      ? guestPlayerId
+      : null;
 
   if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
@@ -299,18 +304,37 @@ export default async function GroupDashboardPage({
                 currentRoundMatches.length > 0 && (
                   <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                     <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-                    <div data-testid="current-matchups" className="max-h-[136px] overflow-y-auto lg:max-h-72 space-y-2 pr-1">
-                      {currentRoundMatches.map((m) => {
+                    <div data-testid="current-matchups" className="space-y-2">
+                      {[...currentRoundMatches]
+                        .sort((a, b) => {
+                          // The viewer's own court comes first so a glance answers "where am I?"
+                          const isViewerIn = (matchId: string) =>
+                            Boolean(viewerPlayerId && currentMatchPlayers.some((mp) => mp.matchId === matchId && mp.playerId === viewerPlayerId));
+                          return Number(isViewerIn(b.id)) - Number(isViewerIn(a.id)) || a.courtNumber - b.courtNumber;
+                        })
+                        .map((m) => {
                         const t1 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         const t2 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                        const isViewerMatch = Boolean(
+                          viewerPlayerId && currentMatchPlayers.some((mp) => mp.matchId === m.id && mp.playerId === viewerPlayerId),
+                        );
                         return (
-                          <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                          <div
+                            key={m.id}
+                            data-viewer-match={isViewerMatch ? "true" : undefined}
+                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-white shadow-[2px_2px_0px_0px_#000]" : "bg-[#FFFDF7]"}`}
+                          >
                             <div>
-                              <span className="font-black text-black block">Court {m.courtNumber}</span>
+                              <span className="font-black text-black flex items-center gap-2">
+                                Court {m.courtNumber}
+                                {isViewerMatch && (
+                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase">You&apos;re here</span>
+                                )}
+                              </span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                             </div>
                             {m.status === "completed" && (

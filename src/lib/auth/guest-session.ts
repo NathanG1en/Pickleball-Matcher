@@ -87,3 +87,14 @@ export async function getGuestPlayerIdForGroup(groupId: string): Promise<string 
   }
 }
 
+
+/** Every group this device joined as a guest, mapped to its guest player id. */
+export async function getGuestGroupPlayerIds(): Promise<Record<string, string>> {
+  try {
+    const cookieStore = await cookies();
+    const session = await readGuestSession(cookieStore.get(GUEST_SESSION_COOKIE)?.value);
+    return session?.guests ?? {};
+  } catch {
+    return {};
+  }
+}

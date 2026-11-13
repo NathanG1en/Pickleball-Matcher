@@ -16,6 +16,9 @@ export interface MatchScoreEntry {
   readonly courtNumber: number;
   readonly team1Names: readonly string[];
   readonly team2Names: readonly string[];
+  /** Player ids in the same order as team1Names / team2Names, used to find the viewer. */
+  readonly team1PlayerIds?: readonly string[];
+  readonly team2PlayerIds?: readonly string[];
   readonly team1Score: number | null;
   readonly team2Score: number | null;
   readonly status: "pending" | "completed" | "cancelled";
@@ -51,6 +54,86 @@ export interface ResultsEntryViewProps {
   readonly upcomingProposal?: RoundProposal | null;
   readonly playerNames?: Readonly<Record<string, string>>;
   readonly confirmMatchups?: boolean;
+  /** The roster player using this device, when they are on the session roster. */
+  readonly viewerPlayerId?: string | null;
+  readonly sittingPlayerIds?: readonly string[];
+}
+
+type ViewerRoundState =
+  | { kind: "playing"; match: MatchScoreEntry; team: 1 | 2; partners: readonly string[]; opponents: readonly string[] }
+  | { kind: "sitting" }
+  | null;
+
+export function getViewerRoundState(
+  matches: readonly MatchScoreEntry[],
+  viewerPlayerId: string | null | undefined,
+  sittingPlayerIds: readonly string[] = [],
+): ViewerRoundState {
+  if (!viewerPlayerId) return null;
+  for (const match of matches) {
+    const index1 = match.team1PlayerIds?.indexOf(viewerPlayerId) ?? -1;
+    const index2 = match.team2PlayerIds?.indexOf(viewerPlayerId) ?? -1;
+    if (index1 >= 0 || index2 >= 0) {
+      const team: 1 | 2 = index1 >= 0 ? 1 : 2;
+      const ownNames = team === 1 ? match.team1Names : match.team2Names;
+      const ownIndex = team === 1 ? index1 : index2;
+      return {
+        kind: "playing",
+        match,
+        team,
+        partners: ownNames.filter((_, i) => i !== ownIndex),
+        opponents: team === 1 ? match.team2Names : match.team1Names,
+      };
+    }
+  }
+  return sittingPlayerIds.includes(viewerPlayerId) ? { kind: "sitting" } : null;
+}
+
+function ViewerRoundCard({ state }: { state: NonNullable<ViewerRoundState> }) {
+  if (state.kind === "sitting") {
+    return (
+      <section
+        data-testid="viewer-round-card"
+        aria-live="polite"
+        className="rounded-2xl border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_#000]"
+      >
+        <h2 className="font-display text-3xl font-black uppercase leading-none text-black">You&apos;re sitting out</h2>
+        <p className="mt-2 text-sm font-bold text-neutral-800">
+          Take a breather. You&apos;ll have priority when the next round is made.
+        </p>
+      </section>
+    );
+  }
+
+  const { match, team, partners, opponents } = state;
+  const ownScore = team === 1 ? match.team1Score : match.team2Score;
+  const otherScore = team === 1 ? match.team2Score : match.team1Score;
+  const isFinal = match.status === "completed" && ownScore !== null && otherScore !== null;
+
+  return (
+    <section
+      data-testid="viewer-round-card"
+      aria-live="polite"
+      className="rounded-2xl border-[3px] border-black bg-[#ccff00] p-4 shadow-[4px_4px_0px_0px_#000]"
+    >
+      <h2 className="font-display text-3xl font-black uppercase leading-none text-black">
+        You&apos;re on Court {match.courtNumber}
+      </h2>
+      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+        <dt className="font-black uppercase text-black/70">With</dt>
+        <dd className="font-black text-black">{partners.length > 0 ? partners.join(" & ") : "Singles"}</dd>
+        <dt className="font-black uppercase text-black/70">Vs</dt>
+        <dd className="font-black text-black">{opponents.join(" & ")}</dd>
+      </dl>
+      {match.status === "cancelled" ? (
+        <p className="mt-3 text-sm font-bold text-black">This game was cancelled by the organizer.</p>
+      ) : isFinal ? (
+        <p className="mt-3 text-sm font-black text-black">
+          Final · You {ownScore > otherScore ? "won" : "lost"} {ownScore}–{otherScore}
+        </p>
+      ) : null}
+    </section>
+  );
 }
 
 export function ResultsEntryView({
@@ -77,7 +160,10 @@ export function ResultsEntryView({
   upcomingProposal,
   playerNames = {},
   confirmMatchups = false,
+  viewerPlayerId = null,
+  sittingPlayerIds = [],
 }: ResultsEntryViewProps) {
+  const viewerState = getViewerRoundState(matches, viewerPlayerId, sittingPlayerIds);
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
     team1: match.team1Score !== null ? String(match.team1Score) : "",
     team2: match.team2Score !== null ? String(match.team2Score) : "",
@@ -169,6 +255,9 @@ export function ResultsEntryView({
         )}
       </div>
 
+      {/* The viewer's own assignment, pinned above the courts for players */}
+      {!canManage && viewerState && <ViewerRoundCard key={`${roundNumber}-${viewerState.kind}`} state={viewerState} />}
+
       {/* Sitting Out Action Bar */}
       {sittingNames && sittingNames.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
@@ -221,6 +310,8 @@ export function ResultsEntryView({
           const isPickup = courtCount !== undefined && match.courtNumber > courtCount;
 
           const isSingles = match.team1Names.length === 1 && match.team2Names.length === 1;
+          const isViewerTeam1 = Boolean(viewerPlayerId && match.team1PlayerIds?.includes(viewerPlayerId));
+          const isViewerTeam2 = Boolean(viewerPlayerId && match.team2PlayerIds?.includes(viewerPlayerId));
 
           return (
             <div
@@ -259,9 +350,15 @@ export function ResultsEntryView({
               {/* Match Score Input Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 {/* Team 1 */}
-                <div className="space-y-2 p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                  <div className="text-sm font-black text-black">
-                    {match.team1Names.join(" & ")}
+                <div
+                  data-viewer-team={isViewerTeam1 ? "true" : undefined}
+                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
+                    <span>{match.team1Names.join(" & ")}</span>
+                    {isViewerTeam1 && (
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {canManage ? (
@@ -293,9 +390,15 @@ export function ResultsEntryView({
                 </div>
 
                 {/* Team 2 */}
-                <div className="space-y-2 p-3 bg-[#FFFDF7] rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                  <div className="text-sm font-black text-black">
-                    {match.team2Names.join(" & ")}
+                <div
+                  data-viewer-team={isViewerTeam2 ? "true" : undefined}
+                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
+                    <span>{match.team2Names.join(" & ")}</span>
+                    {isViewerTeam2 && (
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {canManage ? (

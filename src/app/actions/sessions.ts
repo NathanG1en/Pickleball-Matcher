@@ -39,7 +39,9 @@ import {
   undoLatestRoundSchema,
   updateCourtConfigSchema,
   updateSessionNameSchema,
+  sessionLiveStampSchema,
 } from "@/lib/validation/session";
+import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
 
 async function requireSessionOrganizer(groupId: string, sessionId: string, roundId?: string): Promise<SessionRecord> {
   const repository = getActionRepository();
@@ -878,5 +880,23 @@ export async function submitSessionPickupGameAction(
   }
 }
 
-
-
+/**
+ * Lightweight poll target for viewers of a live session. Returns only an opaque
+ * fingerprint, so watching devices can tell when to refresh without downloading
+ * the whole session on every tick.
+ */
+export async function getSessionLiveStampAction(input: unknown): Promise<ActionResult<{ stamp: string }>> {
+  const parsed = sessionLiveStampSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid parameters" };
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+    const startedRounds = await repository.listStartedRounds(session.id);
+    return { ok: true, data: { stamp: buildSessionLiveStamp(session, startedRounds) } };
+  } catch {
+    return { ok: false, error: "Unable to check for session updates." };
+  }
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ResultsEntryView } from "@/components/results/results-entry";
+import { ResultsEntryView, getViewerRoundState } from "@/components/results/results-entry";
 
 const sampleMatches = [
   {
@@ -547,6 +547,83 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain(`dateTime="${startedAt}"`);
     expect(html).toContain(`dateTime="${completedAt}"`);
   });
+
+  describe("viewer's own assignment", () => {
+    const liveMatches = [
+      {
+        id: "m1",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"],
+        team2Names: ["Charlie", "Diana"],
+        team1PlayerIds: ["p-alice", "p-bob"],
+        team2PlayerIds: ["p-charlie", "p-diana"],
+        team1Score: null,
+        team2Score: null,
+        status: "pending" as const,
+        version: 1,
+      },
+      {
+        id: "m2",
+        courtNumber: 2,
+        team1Names: ["Evan", "Frank"],
+        team2Names: ["Grace", "Hank"],
+        team1PlayerIds: ["p-evan", "p-frank"],
+        team2PlayerIds: ["p-grace", "p-hank"],
+        team1Score: 8,
+        team2Score: 11,
+        status: "completed" as const,
+        version: 2,
+      },
+    ];
+
+    it("tells a player their court, partner and opponents above the courts", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage={false} viewerPlayerId="p-diana" />
+      );
+      expect(html).toContain('data-testid="viewer-round-card"');
+      expect(html).toContain("You&#x27;re on Court 1");
+      expect(html).toContain("Charlie");
+      expect(html).toContain("Alice &amp; Bob");
+      expect(html.indexOf("viewer-round-card")).toBeLessThan(html.indexOf('data-testid="court-match-1"'));
+      // The viewer's team is marked on the court card too
+      expect(html.match(/data-viewer-team="true"/g)).toHaveLength(1);
+    });
+
+    it("shows the final result from the viewer's side", () => {
+      const state = getViewerRoundState(liveMatches, "p-evan");
+      expect(state?.kind).toBe("playing");
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage={false} viewerPlayerId="p-evan" />
+      );
+      expect(html).toContain("Final · You lost 8–11");
+    });
+
+    it("tells a sitting player they are out this round", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView
+          roundId="r1"
+          roundNumber={2}
+          matches={liveMatches}
+          canManage={false}
+          viewerPlayerId="p-ivy"
+          sittingPlayerIds={["p-ivy"]}
+          sittingNames={["Ivy"]}
+        />
+      );
+      expect(html).toContain("You&#x27;re sitting out");
+    });
+
+    it("shows nothing extra when the viewer is not in this round or no viewer is known", () => {
+      expect(getViewerRoundState(liveMatches, "p-nobody")).toBeNull();
+      expect(getViewerRoundState(liveMatches, null)).toBeNull();
+    });
+
+    it("keeps the organizer's score screen free of the player card but still marks their team", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage viewerPlayerId="p-alice" />
+      );
+      expect(html).not.toContain('data-testid="viewer-round-card"');
+      expect(html).toContain('data-viewer-team="true"');
+    });
+  });
 });
-
-
