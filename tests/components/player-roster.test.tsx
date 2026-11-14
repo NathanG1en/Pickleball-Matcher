@@ -100,4 +100,157 @@ describe("PlayerRoster Component", () => {
     expect(html).toContain('data-testid="pin-player-Jordan Smith"');
     expect(html).toContain('data-testid="pin-player-Taylor Swift"');
   });
+
+  it("masks rating, gender, and games played with a Private badge for a private player when viewed by another user", () => {
+    const privatePlayer: PlayerRecord = {
+      id: "p_priv",
+      groupId: "g1",
+      name: "Secret Player",
+      username: "secret_p",
+      accountId: "acc_secret",
+      gender: "female",
+      initialRating: 1000,
+      rating: 1250,
+      ratedGamesPlayed: 8,
+      active: true,
+      isPublic: false,
+      visibilitySettings: {
+        profile: "only_you",
+        activities: "only_you",
+        ratingStats: "only_you",
+        chemistry: "only_you",
+        groups: "only_you",
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={[privatePlayer]}
+        canManage={false}
+        currentAccountId="acc_other"
+      />
+    );
+
+    expect(html).toContain("Secret Player");
+    expect(html).toContain("@secret_p");
+    expect(html).toContain("Private");
+    expect(html).not.toContain("Rating:");
+    expect(html).not.toContain("female");
+    expect(html).not.toContain("8 games");
+  });
+
+  it("shows rating, gender, and games played for private player when viewed by that player themselves", () => {
+    const privatePlayer: PlayerRecord = {
+      id: "p_priv",
+      groupId: "g1",
+      name: "Secret Player",
+      username: "secret_p",
+      accountId: "acc_secret",
+      gender: "female",
+      initialRating: 1000,
+      rating: 1250,
+      ratedGamesPlayed: 8,
+      active: true,
+      isPublic: false,
+      visibilitySettings: {
+        profile: "only_you",
+        activities: "only_you",
+        ratingStats: "only_you",
+        chemistry: "only_you",
+        groups: "only_you",
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={[privatePlayer]}
+        canManage={false}
+        currentAccountId="acc_secret"
+      />
+    );
+
+    expect(html).toContain("Secret Player");
+    expect(html).toContain("Rating:");
+    expect(html).toContain("female");
+    expect(html).toContain("8 games");
+    expect(html).not.toContain("Private");
+  });
+
+  it("masks details for group_members visibility when viewed by a non-group member", () => {
+    const groupMemberOnlyPlayer: PlayerRecord = {
+      id: "p_grp",
+      groupId: "g1",
+      name: "Club Member",
+      username: "club_m",
+      accountId: "acc_club",
+      gender: "male",
+      initialRating: 1000,
+      rating: 1150,
+      ratedGamesPlayed: 4,
+      active: true,
+      isPublic: true,
+      visibilitySettings: {
+        profile: "group_members",
+        activities: "group_members",
+        ratingStats: "group_members",
+        chemistry: "group_members",
+        groups: "group_members",
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={[groupMemberOnlyPlayer]}
+        canManage={false}
+        currentAccountId="acc_stranger"
+        isGroupMember={false}
+      />
+    );
+
+    expect(html).toContain("Club Member");
+    expect(html).toContain("Private");
+    expect(html).not.toContain("Rating:");
+    expect(html).not.toContain("male");
+  });
+
+  it("shows details for group_members visibility when viewed by a group member", () => {
+    const groupMemberOnlyPlayer: PlayerRecord = {
+      id: "p_grp",
+      groupId: "g1",
+      name: "Club Member",
+      username: "club_m",
+      accountId: "acc_club",
+      gender: "male",
+      initialRating: 1000,
+      rating: 1150,
+      ratedGamesPlayed: 4,
+      active: true,
+      isPublic: true,
+      visibilitySettings: {
+        profile: "group_members",
+        activities: "group_members",
+        ratingStats: "group_members",
+        chemistry: "group_members",
+        groups: "group_members",
+      },
+    };
+
+    const html = renderToStaticMarkup(
+      <PlayerRoster
+        groupId="g1"
+        players={[groupMemberOnlyPlayer]}
+        canManage={false}
+        currentAccountId="acc_teammate"
+        isGroupMember={true}
+      />
+    );
+
+    expect(html).toContain("Club Member");
+    expect(html).toContain("Rating:");
+    expect(html).toContain("male");
+    expect(html).not.toContain("Private");
+  });
 });

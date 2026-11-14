@@ -115,6 +115,8 @@ export interface PlayerRecord {
   readonly accountId?: string | null;
   readonly username?: string | null;
   gender?: PlayerGender | null;
+  readonly isPublic?: boolean;
+  readonly visibilitySettings?: ProfileVisibilitySettings;
 }
 
 export type SessionType = "regular" | "open_play";

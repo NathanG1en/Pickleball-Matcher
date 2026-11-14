@@ -66,6 +66,8 @@ interface PlayerRow {
   active: number;
   account_id: string | null;
   username?: string | null;
+  is_public?: number | null;
+  visibility_settings?: string | null;
 }
 
 interface SessionRow {
@@ -685,6 +687,7 @@ export class SqliteDomainRepository implements DomainRepository {
       active: Boolean(row.active),
       accountId: row.account_id,
       username: row.username ?? null,
+      isPublic: row.is_public !== undefined && row.is_public !== null ? Boolean(row.is_public) : true,
     };
   }
 

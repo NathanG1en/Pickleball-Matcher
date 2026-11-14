@@ -91,6 +91,8 @@ type PlayerRow = {
   active: boolean;
   account_id: string | null;
   username?: string | null;
+  is_public?: boolean | null;
+  visibility_settings?: unknown;
 };
 
 type PlayerAccountRow = {
@@ -244,6 +246,10 @@ const mapPlayer = (row: PlayerRow): PlayerRecord => ({
   accountId: row.account_id,
   username: row.username ?? null,
   gender: row.gender ?? null,
+  isPublic: row.is_public ?? true,
+  visibilitySettings: row.visibility_settings
+    ? parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true)
+    : undefined,
 });
 
 const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
@@ -1356,7 +1362,9 @@ export class PostgresRepositories implements DomainRepository {
                  coalesce(a.rating, p.rating) as rating,
                  coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
                  p.active, p.account_id,
-                 a.username as username
+                 a.username as username,
+                 a.is_public as is_public,
+                 a.visibility_settings as visibility_settings
           from players p
           left join player_accounts a on a.id = p.account_id
           where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`1=1`}
@@ -1367,7 +1375,9 @@ export class PostgresRepositories implements DomainRepository {
                  coalesce(a.rating, p.rating) as rating,
                  coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
                  p.active, p.account_id,
-                 a.username as username
+                 a.username as username,
+                 a.is_public as is_public,
+                 a.visibility_settings as visibility_settings
           from players p
           left join player_accounts a on a.id = p.account_id
           where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`1=1`}

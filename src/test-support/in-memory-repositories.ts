@@ -249,6 +249,8 @@ export class InMemoryRepositories implements DomainRepository {
       accountId,
       username: account.username,
       gender: account.gender ?? null,
+      isPublic: account.isPublic ?? true,
+      visibilitySettings: account.visibilitySettings,
     };
     this.state.players.push(player);
     return player;
@@ -734,6 +736,8 @@ export class InMemoryRepositories implements DomainRepository {
               rating: account.rating ?? player.rating,
               ratedGamesPlayed: account.ratedGamesPlayed ?? player.ratedGamesPlayed,
               gender: player.gender ?? account.gender ?? null,
+              isPublic: account.isPublic ?? true,
+              visibilitySettings: account.visibilitySettings,
             };
           }
         }

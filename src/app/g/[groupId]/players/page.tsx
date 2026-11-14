@@ -65,7 +65,13 @@ export default async function GroupPlayersPage({
         </p>
       </header>
 
-      <PlayersClient groupId={groupId} initialPlayers={players} canManage={isOrganizer} />
+      <PlayersClient
+        groupId={groupId}
+        initialPlayers={players}
+        canManage={isOrganizer}
+        currentAccountId={accountId}
+        isGroupMember={isPartOfGroup}
+      />
     </main>
   );
 }

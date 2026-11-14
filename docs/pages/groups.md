@@ -53,3 +53,26 @@ This is the page the share/invite link opens.
   - **Sign in / Create account:** after signing in, the player comes back to this page.
 - Unexpected failures show a general "try again" message; the technical details go to the server logs.
 
+## Group Roster — `/g/[groupId]/players`
+
+Displays the regular players and skill ratings for the group.
+
+- **Header:** Back button returning to the Group Dashboard, a "Roster" badge, group title, and role-appropriate description.
+- **Organizer controls:**
+  - When viewed by an organizer, a player search drawer allows searching registered accounts by name or `@username` to add them to the roster.
+  - Initial player addition form for creating local guest players with custom or preset skill ratings.
+  - Pin controls to pin important regular players to the top of the roster list.
+  - Delete action to remove a player from the roster (with confirmation modal).
+- **Roster list controls:**
+  - **Search:** Search players by name or `@username`.
+  - **Filter:** Filter by pinned players, account members, or guests, as well as by gender (Male/Female).
+  - **Sort:** Sort by Name (A–Z / Z–A), Rating (High–Low / Low–High), or Games Played (Most–Least / Least–Most).
+- **Privacy and details visibility:**
+  - Unlinked guest players show their rating, gender, and games played.
+  - For account players:
+    - Players viewing their own entry on the roster can always see their own rating, gender, and games played.
+    - If a player sets their profile or rating stats visibility to **Only You** (or private), their rating, gender, and games played are masked with a **Private** badge for all other viewers. They are also sorted to the bottom when sorting by rating or games played to prevent rank inference.
+    - If a player sets their visibility to **Group Members**, group members can view their details, while non-members/public visitors see the **Private** badge.
+    - Linked player usernames provide clickable links to their profile page (`/players/[username]`). For non-organizers, a right chevron also links to the profile.
+
+
