@@ -693,22 +693,22 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
-    const rows = await this.query<PlayerRow[]>`
+    await this.query`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join player_accounts a
       where g.id = ${groupId} and a.id = ${accountId}
       on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
-      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
-    if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
       select p.id, p.group_id, coalesce(a.name, p.name) as name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
              coalesce(a.rating, p.rating) as rating,
              coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
-             p.active, p.account_id, a.username
+             p.active, p.account_id, a.username,
+             a.is_public as is_public,
+             a.visibility_settings as visibility_settings
       from players p
       left join player_accounts a on a.id = p.account_id
       where p.account_id = ${accountId} and p.group_id = ${groupId}
@@ -884,28 +884,30 @@ export class PostgresRepositories implements DomainRepository {
       return {
         ...mapPlayer(updatedRows[0]),
         username: account.username,
+        isPublic: account.isPublic,
+        visibilitySettings: account.visibilitySettings,
       };
     })) ?? null;
   }
 
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
-    const rows = await this.query<PlayerRow[]>`
+    await this.query`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join player_accounts a
       where g.id = ${groupId} and (g.is_public = true or g.owner_account_id = ${accountId}) and a.id = ${accountId}
       on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
-      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
-    if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
       select p.id, p.group_id, coalesce(a.name, p.name) as name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
              coalesce(a.rating, p.rating) as rating,
              coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
-             p.active, p.account_id, a.username
+             p.active, p.account_id, a.username,
+             a.is_public as is_public,
+             a.visibility_settings as visibility_settings
       from players p
       left join player_accounts a on a.id = p.account_id
       where p.account_id = ${accountId} and p.group_id = ${groupId}

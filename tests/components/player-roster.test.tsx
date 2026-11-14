@@ -101,7 +101,7 @@ describe("PlayerRoster Component", () => {
     expect(html).toContain('data-testid="pin-player-Taylor Swift"');
   });
 
-  it("masks rating, gender, and games played with a Private badge for a private player when viewed by another user", () => {
+  it("masks rating and gender for a private player when viewed by another user and only shows games played", () => {
     const privatePlayer: PlayerRecord = {
       id: "p_priv",
       groupId: "g1",
@@ -134,10 +134,9 @@ describe("PlayerRoster Component", () => {
 
     expect(html).toContain("Secret Player");
     expect(html).toContain("@secret_p");
-    expect(html).toContain("Private");
+    expect(html).toContain("8 games");
     expect(html).not.toContain("Rating:");
     expect(html).not.toContain("female");
-    expect(html).not.toContain("8 games");
   });
 
   it("shows rating, gender, and games played for private player when viewed by that player themselves", () => {
@@ -175,7 +174,6 @@ describe("PlayerRoster Component", () => {
     expect(html).toContain("Rating:");
     expect(html).toContain("female");
     expect(html).toContain("8 games");
-    expect(html).not.toContain("Private");
   });
 
   it("masks details for group_members visibility when viewed by a non-group member", () => {
@@ -211,7 +209,7 @@ describe("PlayerRoster Component", () => {
     );
 
     expect(html).toContain("Club Member");
-    expect(html).toContain("Private");
+    expect(html).toContain("4 games");
     expect(html).not.toContain("Rating:");
     expect(html).not.toContain("male");
   });

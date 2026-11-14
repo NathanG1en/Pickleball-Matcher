@@ -67,12 +67,13 @@ Displays the regular players and skill ratings for the group.
   - **Search:** Search players by name or `@username`.
   - **Filter:** Filter by pinned players, account members, or guests, as well as by gender (Male/Female).
   - **Sort:** Sort by Name (A–Z / Z–A), Rating (High–Low / Low–High), or Games Played (Most–Least / Least–Most).
-- **Privacy and details visibility:**
+- **Privacy and details visibility (Dashboard Roster & Dedicated Roster):**
   - Unlinked guest players show their rating, gender, and games played.
   - For account players:
     - Players viewing their own entry on the roster can always see their own rating, gender, and games played.
-    - If a player sets their profile or rating stats visibility to **Only You** (or private), their rating, gender, and games played are masked with a **Private** badge for all other viewers. They are also sorted to the bottom when sorting by rating or games played to prevent rank inference.
-    - If a player sets their visibility to **Group Members**, group members can view their details, while non-members/public visitors see the **Private** badge.
-    - Linked player usernames provide clickable links to their profile page (`/players/[username]`). For non-organizers, a right chevron also links to the profile.
+    - If a player sets their profile or rating stats visibility to **Only You** (or private), their rating and gender are masked from all other viewers. Only the number of games they have played in that group (e.g. "X games") is shown. They are also sorted to the bottom when sorting by rating or games played to prevent rank inference.
+    - If a player sets their visibility to **Group Members**, fellow group members can view their details, while non-members/public visitors only see their games played with rating and gender hidden.
+    - Linked player usernames provide clickable links to their profile page (`/players/[username]`). For non-organizers, a right chevron or dropdown item also links to the profile.
+
 
 

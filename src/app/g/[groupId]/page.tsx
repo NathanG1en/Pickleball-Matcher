@@ -415,7 +415,16 @@ export default async function GroupDashboardPage({
 
         {/* Organizers and Roster panel: after the primary action on mobile, right column on desktop */}
         <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:col-start-8 xl:col-start-9 lg:row-start-1 lg:row-span-2">
-          <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
+          <GroupOrganizersPanel
+            groupId={groupId}
+            groupName={group.name}
+            players={players}
+            organizers={organizers}
+            isHost={isHost}
+            isOrganizer={isOrganizer}
+            currentAccountId={accountId}
+            isGroupMember={isPartOfGroup}
+          />
           {/* Mobile Add to Home Screen Tip */}
           <HomeScreenTip />
         </div>

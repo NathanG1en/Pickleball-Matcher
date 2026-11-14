@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, ConfirmDialog, Input, Label, CustomDropdown } from "@/components/ui";
 import { formatDupr, duprToElo } from "@/lib/domain/rating-display";
 import type { PlayerRecord } from "@/lib/domain/types";
-import { PinIcon, ChevronRightIcon, LockIcon } from "@/components/ui/icons";
+import { PinIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import {
   usePinnedPlayerIds,
@@ -452,9 +452,8 @@ export function PlayerRoster({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 flex-wrap mt-1">
-                        <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black">
-                          <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                          <span>Private</span>
+                        <span>
+                          {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
                         </span>
                       </div>
                     )}
