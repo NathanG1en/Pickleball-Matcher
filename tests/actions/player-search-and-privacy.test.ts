@@ -156,6 +156,27 @@ describe("searchPlayersByUsernameAction and updatePlayerPrivacyAction", () => {
       }
     });
 
+    it("updates granular visibility settings when given visibilitySettings object", async () => {
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
+
+      const res = await updatePlayerPrivacyAction({
+        isPublic: true,
+        visibilitySettings: {
+          profile: "everyone",
+          activities: "only_you",
+          ratingStats: "group_members",
+          chemistry: "only_you",
+          groups: "group_members",
+        },
+      });
+      expect(res.ok).toBe(true);
+
+      const updated = await repository.getPlayerAccount("acc_pub");
+      expect(updated?.isPublic).toBe(true);
+      expect(updated?.visibilitySettings?.activities).toBe("only_you");
+      expect(updated?.visibilitySettings?.ratingStats).toBe("group_members");
+    });
+
     it("rejects invalid privacy inputs", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("acc_pub");
 

@@ -2,6 +2,7 @@ import type postgres from "postgres";
 
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import {
   type AttendanceRecord,
   type PartnerRequestRecord,
@@ -15,6 +16,7 @@ import {
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
+  ProfileVisibilitySettings,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
   PairMatchSynergyResult,
@@ -97,6 +99,7 @@ type PlayerAccountRow = {
   name: string;
   gender?: "male" | "female" | null;
   is_public?: boolean;
+  visibility_settings?: unknown;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
@@ -249,6 +252,7 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   name: row.name,
   gender: (row.gender as PlayerGender) ?? undefined,
   isPublic: row.is_public ?? true,
+  visibilitySettings: parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true),
   passwordHash: row.password_hash,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
@@ -466,7 +470,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts where id = ${accountId}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -474,16 +478,17 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts where username = ${username.trim().toLowerCase()}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
   }
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
+    const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     await this.query`
-      insert into player_accounts (id, username, name, gender, is_public, initial_rating, rating, rated_games_played, password_hash, skill_level, created_at)
-      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+      insert into player_accounts (id, username, name, gender, is_public, visibility_settings, initial_rating, rating, rated_games_played, password_hash, skill_level, created_at)
+      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
     `;
   }
 
@@ -510,11 +515,20 @@ export class PostgresRepositories implements DomainRepository {
     });
   }
 
-  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
-    await this.query`
-      update player_accounts set is_public = ${isPublic}
-      where id = ${accountId}
-    `;
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void> {
+    if (visibilitySettings) {
+      await this.query`
+        update player_accounts
+        set is_public = ${isPublic},
+            visibility_settings = ${JSON.stringify(visibilitySettings)}::jsonb
+        where id = ${accountId}
+      `;
+    } else {
+      await this.query`
+        update player_accounts set is_public = ${isPublic}
+        where id = ${accountId}
+      `;
+    }
   }
 
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
@@ -650,7 +664,7 @@ export class PostgresRepositories implements DomainRepository {
     if (!trimmed) return [];
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts
       where (username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (username = ${trimmed}) desc, username asc
@@ -663,7 +677,7 @@ export class PostgresRepositories implements DomainRepository {
     const trimmed = search.trim().toLowerCase().replace(/^@/, "");
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts
       where (${trimmed} = '' or username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (${trimmed} != '' and username = ${trimmed}) desc, name asc, username asc
@@ -701,7 +715,7 @@ export class PostgresRepositories implements DomainRepository {
       const txRepo = tx as PostgresRepositories;
       // Keep the baseline stable through linking/replay, including maintenance corrections.
       const accountRows = await txRepo.query<PlayerAccountRow[]>`
-        select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+        select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
         from player_accounts
         where id = ${accountId}
         for update

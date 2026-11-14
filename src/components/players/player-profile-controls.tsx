@@ -16,11 +16,55 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
-import { LockIcon, GlobeIcon, InfoIcon } from "@/components/ui/icons";
+import { LockIcon, GlobeIcon, InfoIcon, UsersIcon } from "@/components/ui/icons";
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 import { AccountOptionsMenu } from "@/components/players/account-options-menu";
+import type { ProfileVisibilityLevel, ProfileVisibilitySettings } from "@/lib/domain/types";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 
 export { AccountOptionsMenu };
+
+const PORTION_CONFIGS: {
+  key: keyof ProfileVisibilitySettings;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "profile",
+    label: "Profile Page",
+    description: "Controls your general profile page and discoverability in search.",
+  },
+  {
+    key: "activities",
+    label: "Activities & Past Sessions",
+    description: "Controls who can see your past session history and match results.",
+  },
+  {
+    key: "ratingStats",
+    label: "Rating & Stats",
+    description: "Controls who can see your DUPR rating, skill tier, win/loss record, and rating chart.",
+  },
+  {
+    key: "chemistry",
+    label: "Chemistry Spotlight",
+    description: "Controls who can see your best partner chemistry and synergy scores.",
+  },
+  {
+    key: "groups",
+    label: "Groups",
+    description: "Controls who can see the groups and clubs you have joined.",
+  },
+];
+
+const VISIBILITY_LEVEL_OPTIONS: {
+  value: ProfileVisibilityLevel;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { value: "everyone", label: "Everyone", icon: GlobeIcon },
+  { value: "group_members", label: "Group Members", icon: UsersIcon },
+  { value: "only_you", label: "Only You", icon: LockIcon },
+];
 
 export function PlayerProfileHeader({
   backButton,
@@ -31,6 +75,7 @@ export function PlayerProfileHeader({
   currentRating,
   rating,
   initialIsPublic = true,
+  initialVisibilitySettings,
 }: {
   backButton?: React.ReactNode;
   initialName: string;
@@ -41,6 +86,7 @@ export function PlayerProfileHeader({
   currentRating?: number;
   rating?: number;
   initialIsPublic?: boolean;
+  initialVisibilitySettings?: ProfileVisibilitySettings;
 }) {
   const displayRating = currentRating ?? rating ?? initialRating ?? 1000;
   const router = useRouter();
@@ -50,6 +96,9 @@ export function PlayerProfileHeader({
   const [username, setUsername] = useState(initialUsername);
   const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [visibilitySettings, setVisibilitySettings] = useState<ProfileVisibilitySettings>(
+    () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
+  );
 
   // Edit form state
   const [nameInput, setNameInput] = useState(initialName);
@@ -58,6 +107,9 @@ export function PlayerProfileHeader({
     initialGender === "female" ? "female" : "male",
   );
   const [isPublicInput, setIsPublicInput] = useState(initialIsPublic);
+  const [visibilityInput, setVisibilityInput] = useState<ProfileVisibilitySettings>(
+    () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
+  );
 
   const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -110,6 +162,7 @@ export function PlayerProfileHeader({
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
     setIsPublicInput(isPublic);
+    setVisibilityInput(visibilitySettings);
     setSaveError(null);
     setAvailability(null);
     setIsEditing(true);
@@ -120,7 +173,12 @@ export function PlayerProfileHeader({
       nameInput.trim() !== name.trim() ||
       cleanUsernameInput !== username.toLowerCase() ||
       genderInput !== (gender ?? "male") ||
-      isPublicInput !== isPublic;
+      isPublicInput !== isPublic ||
+      visibilityInput.profile !== visibilitySettings.profile ||
+      visibilityInput.activities !== visibilitySettings.activities ||
+      visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
+      visibilityInput.chemistry !== visibilitySettings.chemistry ||
+      visibilityInput.groups !== visibilitySettings.groups;
 
     if (hasChanges) {
       setShowDiscardConfirm(true);
@@ -134,6 +192,7 @@ export function PlayerProfileHeader({
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
     setIsPublicInput(isPublic);
+    setVisibilityInput(visibilitySettings);
     setSaveError(null);
     setAvailability(null);
     setShowDiscardConfirm(false);
@@ -205,9 +264,20 @@ export function PlayerProfileHeader({
         }
       }
 
-      const privacyChanged = isPublicInput !== isPublic;
-      if (privacyChanged) {
-        const privacyRes = await updatePlayerPrivacyAction({ isPublic: isPublicInput });
+      const visibilityChanged =
+        isPublicInput !== isPublic ||
+        visibilityInput.profile !== visibilitySettings.profile ||
+        visibilityInput.activities !== visibilitySettings.activities ||
+        visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
+        visibilityInput.chemistry !== visibilitySettings.chemistry ||
+        visibilityInput.groups !== visibilitySettings.groups;
+
+      if (visibilityChanged) {
+        const targetIsPublic = visibilityInput.profile !== "only_you";
+        const privacyRes = await updatePlayerPrivacyAction({
+          isPublic: targetIsPublic,
+          visibilitySettings: visibilityInput,
+        });
         if (!privacyRes.ok) {
           setSaveError(privacyRes.error ?? "Failed to update privacy setting.");
           setSaving(false);
@@ -218,7 +288,8 @@ export function PlayerProfileHeader({
       setName(trimmedName);
       setUsername(cleanUsernameInput);
       setGender(genderInput);
-      setIsPublic(isPublicInput);
+      setIsPublic(visibilityInput.profile !== "only_you");
+      setVisibilitySettings(visibilityInput);
       setIsEditing(false);
       setToastMessage("Profile updated successfully");
       if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
@@ -384,7 +455,14 @@ export function PlayerProfileHeader({
               <div className="flex items-center gap-2 pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setIsPublicInput(!isPublicInput)}
+                  onClick={() => {
+                    const nextVal = !isPublicInput;
+                    setIsPublicInput(nextVal);
+                    setVisibilityInput((prev) => ({
+                      ...prev,
+                      profile: nextVal ? "everyone" : "only_you",
+                    }));
+                  }}
                   aria-label={`Account visibility: currently ${isPublicInput ? "Public" : "Private"}. Click to switch.`}
                   title={isPublicInput ? "Click to switch to Private" : "Click to switch to Public"}
                   className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
@@ -457,6 +535,74 @@ export function PlayerProfileHeader({
             </div>
           </div>
 
+          {/* Privacy Controls · Strava-modeled portion visibility options */}
+          <div className="pt-3 border-t-2 border-neutral-200 space-y-3" data-testid="privacy-controls-section">
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">
+                Privacy Controls · Portion Visibility
+              </h3>
+              <p className="mt-0.5 text-[11px] font-semibold text-neutral-600">
+                Choose who can see different portions of your profile (Everyone, Group Members, or Only You), modeled after Strava&apos;s privacy controls.
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {PORTION_CONFIGS.map((portion) => (
+                <div
+                  key={portion.key}
+                  data-testid={`portion-visibility-${portion.key}`}
+                  className="rounded-2xl border-2 border-black bg-white p-3 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="block text-xs font-black uppercase text-black">
+                        {portion.label}
+                      </span>
+                      <p className="text-[11px] font-semibold text-neutral-600">
+                        {portion.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="flex flex-wrap gap-1.5"
+                    role="radiogroup"
+                    aria-label={`${portion.label} visibility`}
+                  >
+                    {VISIBILITY_LEVEL_OPTIONS.map((opt) => {
+                      const isSelected = visibilityInput[portion.key] === opt.value;
+                      const Icon = opt.icon;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          aria-label={`${portion.label}: ${opt.label}`}
+                          data-testid={`${portion.key}-visibility-${opt.value}`}
+                          onClick={() => {
+                            const next = { ...visibilityInput, [portion.key]: opt.value };
+                            setVisibilityInput(next);
+                            if (portion.key === "profile") {
+                              setIsPublicInput(opt.value !== "only_you");
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-black px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000]"
+                              : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+                          }`}
+                        >
+                          <Icon className="h-3 w-3 shrink-0" />
+                          <span>{opt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {saveError && (
             <div
               role="alert"
@@ -507,6 +653,15 @@ export function PlayerProfileHeader({
                 </>
               )}
             </span>
+
+            {Object.entries(visibilitySettings).some(([, val]) => val !== "everyone") && (
+              <span
+                data-testid="custom-visibility-badge"
+                className="inline-flex items-center gap-1 rounded-full border-2 border-black bg-[#fde047] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black"
+              >
+                Custom Controls
+              </span>
+            )}
 
             <div
               className="relative inline-flex items-center"

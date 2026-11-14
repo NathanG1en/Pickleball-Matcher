@@ -34,12 +34,31 @@ export interface GroupRecord {
 export type PlayerSkillLevel = "beginner" | "intermediate" | "advanced";
 export type PlayerGender = "male" | "female";
 
+export type ProfileVisibilityLevel = "everyone" | "group_members" | "only_you";
+
+export interface ProfileVisibilitySettings {
+  readonly profile: ProfileVisibilityLevel;
+  readonly activities: ProfileVisibilityLevel;
+  readonly ratingStats: ProfileVisibilityLevel;
+  readonly chemistry: ProfileVisibilityLevel;
+  readonly groups: ProfileVisibilityLevel;
+}
+
+export const DEFAULT_PROFILE_VISIBILITY_SETTINGS: ProfileVisibilitySettings = {
+  profile: "everyone",
+  activities: "everyone",
+  ratingStats: "everyone",
+  chemistry: "everyone",
+  groups: "everyone",
+};
+
 export interface PlayerAccountRecord {
   readonly id: string;
   readonly username: string;
   name: string;
   gender?: PlayerGender;
   readonly isPublic?: boolean;
+  readonly visibilitySettings?: ProfileVisibilitySettings;
   readonly passwordHash: string;
   readonly skillLevel: PlayerSkillLevel;
   readonly initialRating: number;

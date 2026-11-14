@@ -883,6 +883,75 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(groupsIndex).toBeGreaterThan(sessionsIndex);
     expect(pastSessionsIndex).toBeGreaterThan(groupsIndex);
   });
+
+  it("PlayerProfileHeader renders Custom Controls badge when portion privacy is customized", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Custom User"
+        initialUsername="custom_user"
+        initialGender="female"
+        initialIsPublic={true}
+        initialVisibilitySettings={{
+          profile: "everyone",
+          activities: "only_you",
+          ratingStats: "group_members",
+          chemistry: "only_you",
+          groups: "everyone",
+        }}
+      />
+    );
+
+    expect(html).toContain("Custom Controls");
+    expect(html).toContain('data-testid="custom-visibility-badge"');
+  });
+
+  it("PlayerProfileHeader does not render Custom Controls badge when all portions are public default", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Default User"
+        initialUsername="default_user"
+        initialGender="male"
+        initialIsPublic={true}
+      />
+    );
+
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
+  });
+
+  it("renders PlayerProfilePage with customized visibility settings gracefully", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "strava_user",
+          name: "Strava User",
+          passwordHash: "hash",
+          skillLevel: "advanced",
+          initialRating: 1200,
+          visibilitySettings: {
+            profile: "everyone",
+            activities: "only_you",
+            ratingStats: "group_members",
+            chemistry: "only_you",
+            groups: "everyone",
+          },
+          createdAt: new Date(),
+        },
+      ],
+      groups: [],
+      players: [],
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    expect(html).toContain("Strava User");
+    expect(html).toContain("@strava_user");
+    expect(html).toContain("Custom Controls");
+  });
 });
+
 
 

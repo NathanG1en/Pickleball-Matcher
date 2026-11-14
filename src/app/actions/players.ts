@@ -11,7 +11,7 @@ import {
   requireOrganizer,
 } from "@/app/actions/action-context";
 import type { ActionResult } from "@/app/actions/auth";
-import type { PlayerRecord } from "@/lib/domain/types";
+import type { PlayerRecord, ProfileVisibilitySettings } from "@/lib/domain/types";
 import { replayRatings } from "@/lib/domain/rating-replay";
 import { resolveProfileVisibility, type SanitizedProfileView } from "@/lib/privacy/profile-visibility";
 import {
@@ -31,10 +31,56 @@ const searchPlayersSchema = z.object({
   groupId: z.string(),
 });
 
+const visibilityLevelSchema = z.enum(["everyone", "group_members", "only_you"]);
+
+const visibilitySettingsSchema = z.object({
+  profile: visibilityLevelSchema.default("everyone"),
+  activities: visibilityLevelSchema.default("everyone"),
+  ratingStats: visibilityLevelSchema.default("everyone"),
+  chemistry: visibilityLevelSchema.default("everyone"),
+  groups: visibilityLevelSchema.default("everyone"),
+});
+
 const updatePrivacySchema = z.union([
-  z.boolean().transform((isPublic) => ({ isPublic })),
+  z.boolean().transform((isPublic) => ({
+    isPublic,
+    visibilitySettings: {
+      profile: isPublic ? "everyone" : "only_you",
+      activities: isPublic ? "everyone" : "only_you",
+      ratingStats: isPublic ? "everyone" : "only_you",
+      chemistry: isPublic ? "everyone" : "only_you",
+      groups: isPublic ? "everyone" : "only_you",
+    } as ProfileVisibilitySettings,
+  })),
   z.object({
-    isPublic: z.boolean(),
+    isPublic: z.boolean().optional(),
+    visibilitySettings: visibilitySettingsSchema.optional(),
+  }).refine((data) => data.isPublic !== undefined || data.visibilitySettings !== undefined, {
+    message: "Either isPublic or visibilitySettings must be provided",
+  }).transform((data) => {
+    let visibilitySettings: ProfileVisibilitySettings | undefined;
+    let isPublic = data.isPublic;
+
+    if (data.visibilitySettings) {
+      visibilitySettings = data.visibilitySettings as ProfileVisibilitySettings;
+      if (isPublic === undefined) {
+        isPublic = visibilitySettings.profile !== "only_you";
+      }
+    } else if (isPublic !== undefined) {
+      const level = isPublic ? "everyone" : "only_you";
+      visibilitySettings = {
+        profile: level,
+        activities: level,
+        ratingStats: level,
+        chemistry: level,
+        groups: level,
+      };
+    }
+
+    return {
+      isPublic: isPublic ?? true,
+      visibilitySettings,
+    };
   }),
 ]);
 
@@ -176,14 +222,22 @@ export async function searchPlayersByUsernameAction(
             : Promise.resolve(null),
         ]);
 
-        const sanitized = resolveProfileVisibility(viewerAccountId, account, {
-          bestPartner,
-          viewerSynergyScore: pairSynergy?.synergyScore ?? null,
-        });
+        const inGroup = groupAccountIds.has(account.id);
+        const sanitized = resolveProfileVisibility(
+          viewerAccountId,
+          account,
+          {
+            bestPartner,
+            viewerSynergyScore: pairSynergy?.synergyScore ?? null,
+          },
+          {
+            isGroupMember: inGroup,
+          },
+        );
 
         return {
           ...sanitized,
-          alreadyInGroup: groupAccountIds.has(account.id),
+          alreadyInGroup: inGroup,
         };
       }),
     );
@@ -213,7 +267,11 @@ export async function updatePlayerPrivacyAction(
       return { ok: false, error: "You must be signed in to change privacy settings." };
     }
     const repository = getActionRepository();
-    await repository.updatePlayerPrivacy(accountId, parsed.data.isPublic);
+    await repository.updatePlayerPrivacy(
+      accountId,
+      parsed.data.isPublic,
+      parsed.data.visibilitySettings,
+    );
     try {
       revalidatePath("/players");
     } catch {

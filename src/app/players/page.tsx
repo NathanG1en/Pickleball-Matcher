@@ -33,6 +33,7 @@ export default async function PlayerProfilePage() {
           skillLevel={account.skillLevel}
           currentRating={account.rating ?? account.initialRating}
           initialIsPublic={account.isPublic ?? true}
+          initialVisibilitySettings={account.visibilitySettings}
         />
       </header>
 

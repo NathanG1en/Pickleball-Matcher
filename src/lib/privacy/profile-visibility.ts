@@ -1,4 +1,8 @@
-import type { PlayerAccountRecord } from "@/lib/domain/types";
+import type {
+  PlayerAccountRecord,
+  ProfileVisibilityLevel,
+  ProfileVisibilitySettings,
+} from "@/lib/domain/types";
 
 export interface BestPartnerData {
   readonly partnerAccountId: string;
@@ -17,6 +21,79 @@ export interface SanitizedProfileView {
   readonly rating?: number;
   readonly bestPartner?: BestPartnerData | null;
   readonly viewerSynergyScore?: number | null;
+  readonly visibilitySettings?: ProfileVisibilitySettings;
+}
+
+export function parseProfileVisibilitySettings(
+  raw: unknown,
+  fallbackIsPublic: boolean = true,
+): ProfileVisibilitySettings {
+  const defaultLevel: ProfileVisibilityLevel = fallbackIsPublic ? "everyone" : "only_you";
+  const defaults: ProfileVisibilitySettings = {
+    profile: defaultLevel,
+    activities: defaultLevel,
+    ratingStats: defaultLevel,
+    chemistry: defaultLevel,
+    groups: defaultLevel,
+  };
+
+  if (!raw || typeof raw !== "object") {
+    return defaults;
+  }
+
+  const data = raw as Record<string, unknown>;
+  const validLevel = (lvl: unknown, fallback: ProfileVisibilityLevel): ProfileVisibilityLevel => {
+    if (lvl === "everyone" || lvl === "group_members" || lvl === "only_you") return lvl;
+    return fallback;
+  };
+
+  return {
+    profile: validLevel(data.profile, defaults.profile),
+    activities: validLevel(data.activities, defaults.activities),
+    ratingStats: validLevel(data.ratingStats ?? data.rating_stats, defaults.ratingStats),
+    chemistry: validLevel(data.chemistry, defaults.chemistry),
+    groups: validLevel(data.groups, defaults.groups),
+  };
+}
+
+export function canViewPortion({
+  portion,
+  viewerAccountId,
+  targetAccount,
+  isGroupMember = false,
+}: {
+  portion: keyof ProfileVisibilitySettings;
+  viewerAccountId: string | null;
+  targetAccount: PlayerAccountRecord;
+  isGroupMember?: boolean;
+}): boolean {
+  // Account owners can always view all portions of their own profile
+  if (viewerAccountId && viewerAccountId === targetAccount.id) {
+    return true;
+  }
+
+  const settings = parseProfileVisibilitySettings(
+    targetAccount.visibilitySettings,
+    targetAccount.isPublic ?? true,
+  );
+
+  // Overall account privacy check
+  if (targetAccount.isPublic === false || settings.profile === "only_you") {
+    return false;
+  }
+  if (settings.profile === "group_members" && !isGroupMember) {
+    return false;
+  }
+
+  // Portion-specific privacy check
+  const portionLevel = settings[portion];
+  if (portionLevel === "everyone") {
+    return true;
+  }
+  if (portionLevel === "group_members") {
+    return Boolean(isGroupMember);
+  }
+  return false;
 }
 
 export function resolveProfileVisibility(
@@ -25,30 +102,60 @@ export function resolveProfileVisibility(
   stats: {
     bestPartner: BestPartnerData | null;
     viewerSynergyScore: number | null;
-  }
+  },
+  options?: {
+    isGroupMember?: boolean;
+  },
 ): SanitizedProfileView {
-  const isOwner = viewerAccountId === targetAccount.id;
-  const isRestricted = !targetAccount.isPublic && !isOwner;
+  const isOwner = Boolean(viewerAccountId && viewerAccountId === targetAccount.id);
+  const isGroupMember = Boolean(options?.isGroupMember);
+  const settings = parseProfileVisibilitySettings(
+    targetAccount.visibilitySettings,
+    targetAccount.isPublic ?? true,
+  );
 
-  if (isRestricted) {
+  const canViewOverall = isOwner || canViewPortion({
+    portion: "profile",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  if (!canViewOverall) {
     return {
       accountId: targetAccount.id,
       username: targetAccount.username,
       name: targetAccount.name,
       isPublic: false,
       isRestricted: true,
+      visibilitySettings: isOwner ? settings : undefined,
     };
   }
+
+  const canViewRatingStats = isOwner || canViewPortion({
+    portion: "ratingStats",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  const canViewChemistry = isOwner || canViewPortion({
+    portion: "chemistry",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
 
   return {
     accountId: targetAccount.id,
     username: targetAccount.username,
     name: targetAccount.name,
-    isPublic: targetAccount.isPublic ?? true,
+    isPublic: targetAccount.isPublic ?? (settings.profile !== "only_you"),
     isRestricted: false,
-    skillLevel: targetAccount.skillLevel,
-    rating: targetAccount.rating ?? targetAccount.initialRating,
-    bestPartner: stats.bestPartner,
-    viewerSynergyScore: stats.viewerSynergyScore,
+    skillLevel: canViewRatingStats ? targetAccount.skillLevel : undefined,
+    rating: canViewRatingStats ? (targetAccount.rating ?? targetAccount.initialRating) : undefined,
+    bestPartner: canViewChemistry ? stats.bestPartner : null,
+    viewerSynergyScore: canViewChemistry ? stats.viewerSynergyScore : null,
+    visibilitySettings: isOwner ? settings : undefined,
   };
 }

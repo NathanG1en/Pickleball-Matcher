@@ -7,6 +7,7 @@ import type {
   GroupOrganizerRecord,
   PlayerAccountRecord,
   PlayerGender,
+  ProfileVisibilitySettings,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
   PairMatchSynergyResult,
@@ -980,10 +981,13 @@ export class InMemoryRepositories implements DomainRepository {
     this.writeCount += 1;
   }
 
-  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void> {
     const account = this.state.playerAccounts.find((a) => a.id === accountId);
     if (account) {
       (account as { isPublic?: boolean }).isPublic = isPublic;
+      if (visibilitySettings) {
+        (account as { visibilitySettings?: ProfileVisibilitySettings }).visibilitySettings = visibilitySettings;
+      }
       this.writeCount += 1;
     }
   }

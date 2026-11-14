@@ -13,6 +13,7 @@ import { BackButton, StatCard } from "@/components/ui";
 import { GlobeIcon, LockIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { ClientDate } from "@/components/ui/client-date-time";
+import { canViewPortion, parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 
 export async function generateMetadata({
   params,
@@ -43,9 +44,36 @@ export default async function PlayerPublicProfilePage({
 
   const viewerAccountId = await getActivePlayerAccountId();
   const isOwner = Boolean(viewerAccountId && viewerAccountId === targetAccount.id);
-  const isPrivate = targetAccount.isPublic === false && !isOwner;
 
-  if (isPrivate) {
+  const [history, groups, bestPartner, viewerSynergy, viewerGroups] = await Promise.all([
+    repository.listPlayerSessionHistory(targetAccount.id),
+    repository.listAccountGroups(targetAccount.id),
+    repository.getBestPartner(targetAccount.id),
+    viewerAccountId && viewerAccountId !== targetAccount.id
+      ? repository.getPairSynergy(viewerAccountId, targetAccount.id)
+      : Promise.resolve(null),
+    viewerAccountId && viewerAccountId !== targetAccount.id
+      ? repository.listAccountGroups(viewerAccountId)
+      : Promise.resolve([]),
+  ]);
+
+  const targetGroupIds = new Set(groups.map((g) => g.id));
+  const isGroupMember = Boolean(viewerGroups?.some((g) => targetGroupIds.has(g.id)));
+
+  const visibilitySettings = parseProfileVisibilitySettings(
+    targetAccount.visibilitySettings,
+    targetAccount.isPublic ?? true,
+  );
+
+  const canViewProfile = isOwner || canViewPortion({
+    portion: "profile",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  if (!canViewProfile) {
+    const isRestrictedByGroup = visibilitySettings.profile === "group_members" && targetAccount.isPublic !== false;
     return (
       <main className="min-h-screen p-4 sm:p-6 lg:p-8">
         <section className="mx-auto max-w-xl md:max-w-2xl space-y-5">
@@ -64,7 +92,7 @@ export default async function PlayerPublicProfilePage({
             <div className="mt-3 flex items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-200 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
                 <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                <span>Private</span>
+                <span>{isRestrictedByGroup ? "Restricted" : "Private"}</span>
               </span>
             </div>
           </header>
@@ -73,9 +101,13 @@ export default async function PlayerPublicProfilePage({
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-neutral-100">
               <LockIcon className="h-6 w-6 text-neutral-700" />
             </div>
-            <h2 className="font-display text-xl font-black uppercase text-black">This Profile is Private</h2>
+            <h2 className="font-display text-xl font-black uppercase text-black">
+              {isRestrictedByGroup ? "This Profile is Restricted" : "This Profile is Private"}
+            </h2>
             <p className="mt-1 text-xs font-bold text-neutral-600 max-w-sm mx-auto">
-              @{targetAccount.username} has chosen to keep their stats, match history, and rating private.
+              {isRestrictedByGroup
+                ? `@${targetAccount.username} only shares their profile with members of their groups.`
+                : `@${targetAccount.username} has chosen to keep their stats, match history, and rating private.`}
             </p>
           </section>
         </section>
@@ -83,14 +115,33 @@ export default async function PlayerPublicProfilePage({
     );
   }
 
-  const [history, groups, bestPartner, viewerSynergy] = await Promise.all([
-    repository.listPlayerSessionHistory(targetAccount.id),
-    repository.listAccountGroups(targetAccount.id),
-    repository.getBestPartner(targetAccount.id),
-    viewerAccountId && viewerAccountId !== targetAccount.id
-      ? repository.getPairSynergy(viewerAccountId, targetAccount.id)
-      : Promise.resolve(null),
-  ]);
+  const canViewRatingStats = isOwner || canViewPortion({
+    portion: "ratingStats",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  const canViewChemistry = isOwner || canViewPortion({
+    portion: "chemistry",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  const canViewGroupMemberships = isOwner || canViewPortion({
+    portion: "groups",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
+
+  const canViewActivities = isOwner || canViewPortion({
+    portion: "activities",
+    viewerAccountId,
+    targetAccount,
+    isGroupMember,
+  });
 
   const wins = history.reduce((total, session) => total + session.wins, 0);
   const losses = history.reduce((total, session) => total + session.losses, 0);
@@ -109,6 +160,7 @@ export default async function PlayerPublicProfilePage({
               skillLevel={targetAccount.skillLevel}
               currentRating={currentRating}
               initialIsPublic={targetAccount.isPublic ?? true}
+              initialVisibilitySettings={visibilitySettings}
             />
           ) : (
             <>
@@ -134,9 +186,16 @@ export default async function PlayerPublicProfilePage({
                 </span>
               </div>
               <div className="pt-2 border-t-2 border-neutral-100">
-                <p className="text-xs font-bold uppercase text-neutral-600">
-                  {getSkillTier(eloToDupr(currentRating)).name} · current rating {formatDupr(currentRating)}
-                </p>
+                {canViewRatingStats ? (
+                  <p className="text-xs font-bold uppercase text-neutral-600">
+                    {getSkillTier(eloToDupr(currentRating)).name} · current rating {formatDupr(currentRating)}
+                  </p>
+                ) : (
+                  <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase text-neutral-500">
+                    <LockIcon className="h-3 w-3" />
+                    <span>Rating &amp; stats are private</span>
+                  </p>
+                )}
               </div>
             </div>
             </>
@@ -147,7 +206,20 @@ export default async function PlayerPublicProfilePage({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Chemistry Spotlight & Mutual Chemistry */}
           <div className="space-y-4 lg:col-span-7 xl:col-span-8 flex flex-col justify-center">
-            {bestPartner ? (
+            {!canViewChemistry ? (
+              <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                    <LockIcon className="h-3 w-3 text-neutral-500" />
+                  </div>
+                  <h2 className="font-display text-xl font-black uppercase text-neutral-800">Chemistry Private</h2>
+                  <p className="mt-1 text-xs font-bold text-neutral-600">
+                    @{targetAccount.username} has chosen to keep their partner chemistry private.
+                  </p>
+                </div>
+              </section>
+            ) : bestPartner ? (
               <section className="h-full rounded-3xl border-[3px] border-black bg-gradient-to-br from-[#ccff00] to-[#fde047] p-5 flex flex-col justify-center">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -205,7 +277,7 @@ export default async function PlayerPublicProfilePage({
               </section>
             )}
 
-            {viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
+            {canViewChemistry && viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -231,11 +303,19 @@ export default async function PlayerPublicProfilePage({
 
           {/* Sessions / Wins / Losses */}
           <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-center">
-            <section className="grid grid-cols-3 gap-3 text-center h-full items-stretch">
-              <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} className="flex flex-col justify-center" />
-              <StatCard label="Wins" value={wins} className="flex flex-col justify-center" />
-              <StatCard label="Losses" value={losses} className="flex flex-col justify-center" />
-            </section>
+            {canViewRatingStats ? (
+              <section className="grid grid-cols-3 gap-3 text-center h-full items-stretch">
+                <StatCard label="Sessions" value={new Set(history.map((item) => item.sessionId)).size} className="flex flex-col justify-center" />
+                <StatCard label="Wins" value={wins} className="flex flex-col justify-center" />
+                <StatCard label="Losses" value={losses} className="flex flex-col justify-center" />
+              </section>
+            ) : (
+              <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 text-center flex flex-col justify-center h-full items-center">
+                <LockIcon className="h-5 w-5 text-neutral-500 mb-1" />
+                <h2 className="font-display text-lg font-black uppercase text-neutral-800">Stats Private</h2>
+                <p className="text-xs font-bold text-neutral-600">Performance stats are hidden by player.</p>
+              </section>
+            )}
           </div>
         </div>
 
@@ -243,93 +323,119 @@ export default async function PlayerPublicProfilePage({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Groups: 1st on mobile, right column (4-5 cols) on desktop */}
           <div className="space-y-5 lg:col-span-5 xl:col-span-4 order-1 lg:order-2">
-            <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="font-display text-2xl font-black uppercase">
-                  {isOwner ? "My Groups" : "Groups"}
-                </h2>
-                {isOwner && (
-                  <div className="flex gap-2">
-                    <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
-                    <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
-                  </div>
-                )}
-              </div>
-              {groups.length === 0 ? (
-                <p className="text-sm font-bold">
-                  {isOwner ? "You haven't joined any groups yet." : "No groups joined yet."}
+            {!canViewGroupMemberships ? (
+              <section className="rounded-3xl border-[3px] border-black bg-neutral-100 p-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <LockIcon className="h-4 w-4 text-neutral-500" />
+                  <h2 className="font-display text-2xl font-black uppercase text-neutral-800">Groups</h2>
+                </div>
+                <p className="text-sm font-bold text-neutral-600">
+                  @{targetAccount.username} has chosen to keep their group memberships private.
                 </p>
-              ) : (
-                <ul className="space-y-2">
-                  {groups.map((group) => (
-                    <li key={group.id}>
-                      <Link
-                        href={`/g/${group.id}`}
-                        aria-label={`Go to ${group.name}`}
-                        title={`Go to ${group.name}`}
-                        className="group flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <span className="block truncate font-black text-black group-hover:underline">{group.name}</span>
-                          <span className="text-xs font-semibold text-neutral-600">{group.playerCount} {group.playerCount === 1 ? "player" : "players"}</span>
-                        </div>
-                        <div className="p-1.5 text-black group-hover:translate-x-0.5 transition-transform shrink-0">
-                          <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+              </section>
+            ) : (
+              <section className="rounded-3xl border-[3px] border-black bg-[#ccff00] p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="font-display text-2xl font-black uppercase">
+                    {isOwner ? "My Groups" : "Groups"}
+                  </h2>
+                  {isOwner && (
+                    <div className="flex gap-2">
+                      <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
+                      <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
+                    </div>
+                  )}
+                </div>
+                {groups.length === 0 ? (
+                  <p className="text-sm font-bold">
+                    {isOwner ? "You haven't joined any groups yet." : "No groups joined yet."}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {groups.map((group) => (
+                      <li key={group.id}>
+                        <Link
+                          href={`/g/${group.id}`}
+                          aria-label={`Go to ${group.name}`}
+                          title={`Go to ${group.name}`}
+                          className="group flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate font-black text-black group-hover:underline">{group.name}</span>
+                            <span className="text-xs font-semibold text-neutral-600">{group.playerCount} {group.playerCount === 1 ? "player" : "players"}</span>
+                          </div>
+                          <div className="p-1.5 text-black group-hover:translate-x-0.5 transition-transform shrink-0">
+                            <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
           </div>
 
           {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
           <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
-            <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
-              <ScoreHistoryChart history={history} />
-            </section>
+            {canViewRatingStats && (
+              <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
+                <ScoreHistoryChart history={history} />
+              </section>
+            )}
 
-            <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
-              <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
-              {history.length === 0 ? (
-                <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
-              ) : (
-                history.map((item) => {
-                  return (
-                    <article
-                      key={`${item.groupId}-${item.sessionId}`}
-                      data-testid={`player-session-${item.sessionId}`}
-                      className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
-                    >
-                      <div>
-                        <h3 className="font-black text-black">
-                          {item.sessionName ? `${item.sessionName} · ` : null}
-                          <ClientDate date={item.startedAt} options={{ month: "short", day: "numeric", year: "numeric" }} />
-                        </h3>
-                        <p className="text-xs font-bold text-neutral-600">
-                          {item.groupName}
-                          {item.type === "open_play" ? " (Open Play)" : ""}
-                          {" · "}
-                          {item.wins}W – {item.losses}L
-                        </p>
-                      </div>
-                      {isOwner && (
-                        <Link
-                          href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
-                          aria-label="Go to session"
-                          title="Go to session"
-                          className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
-                        >
-                          <span className="sr-only">Go to session</span>
-                          <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
-                        </Link>
-                      )}
-                    </article>
-                  );
-                })
-              )}
-            </section>
+            {!canViewActivities ? (
+              <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
+                <div className="flex items-center gap-2">
+                  <LockIcon className="h-4 w-4 text-neutral-500" />
+                  <h2 className="font-display text-2xl font-black uppercase text-neutral-800">Past Sessions</h2>
+                </div>
+                <p className="text-sm font-bold text-neutral-600">
+                  @{targetAccount.username} has chosen to keep their session history private.
+                </p>
+              </section>
+            ) : (
+              <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
+                <h2 className="font-display text-2xl font-black uppercase">Past Sessions</h2>
+                {history.length === 0 ? (
+                  <p className="text-sm font-bold text-neutral-600">No sessions played yet.</p>
+                ) : (
+                  history.map((item) => {
+                    return (
+                      <article
+                        key={`${item.groupId}-${item.sessionId}`}
+                        data-testid={`player-session-${item.sessionId}`}
+                        className="flex items-center justify-between gap-3 border-t-2 border-neutral-100 py-3"
+                      >
+                        <div>
+                          <h3 className="font-black text-black">
+                            {item.sessionName ? `${item.sessionName} · ` : null}
+                            <ClientDate date={item.startedAt} options={{ month: "short", day: "numeric", year: "numeric" }} />
+                          </h3>
+                          <p className="text-xs font-bold text-neutral-600">
+                            {item.groupName}
+                            {item.type === "open_play" ? " (Open Play)" : ""}
+                            {" · "}
+                            {item.wins}W – {item.losses}L
+                          </p>
+                        </div>
+                        {isOwner && (
+                          <Link
+                            href={`/g/${item.groupId}/sessions/${item.sessionId}?from=profile`}
+                            aria-label="Go to session"
+                            title="Go to session"
+                            className="p-1.5 text-black hover:translate-x-0.5 transition-transform cursor-pointer shrink-0"
+                          >
+                            <span className="sr-only">Go to session</span>
+                            <ChevronRightIcon className="w-5 h-5 stroke-[2.5]" />
+                          </Link>
+                        )}
+                      </article>
+                    );
+                  })
+                )}
+              </section>
+            )}
           </div>
         </div>
       </div>
