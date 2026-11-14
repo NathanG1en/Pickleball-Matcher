@@ -44,6 +44,7 @@ Clicking the **Edit Profile** button switches the header into edit mode:
   - **Gender**: Dropdown to select Male or Female.
 - **Privacy Controls**: Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
   - Can be collapsed or expanded using the "Privacy Controls" chevron header toggle.
+  - Inside each drawer, options are presented as a clean list of choices (`Everyone`, `Group Members`, `Only You`) with a bold label, a lighter-weight and smaller description of that choice, and a radio button on the right that turns green (`#ccff00`) when selected.
   - **Profile Page (Account Baseline & Visibility Ceiling)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). This acts as a strict ceiling for all child portions:
     - Setting Profile Page to `Only You` automatically clamps all other portions to `Only You` and disables higher options.
     - Setting Profile Page to `Group Members` caps child options to `Group Members` (disabling `Everyone`).
@@ -57,7 +58,7 @@ Clicking the **Edit Profile** button switches the header into edit mode:
 - **Everyone**: Visible to all players and public visitors.
 - **Group Members**: Visible only to players who share at least one group with the player (and the player themselves).
 - **Only You**: Visible only to the player themselves.
-- **The Ceiling Rule**: No individual portion of a profile can be configured to be more visible than the overall Profile Page. Setting the Profile Page to `Only You` locks the entire profile and all of its contents to private.
+- **The Ceiling Rule**: No individual portion of a profile can be configured to be more visible than the overall Profile Page. Setting the Profile Page to `Only You` locks the entire profile and all of its contents to private. Each option row displays a green radio button when selected.
 
 ## Restricted & Private Profile States
 

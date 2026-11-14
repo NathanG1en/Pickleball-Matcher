@@ -1007,11 +1007,14 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    // Profile drawer is open with description and radiogroup
+    // Profile drawer is open with option descriptions and radio buttons
     expect(htmlOpen).toContain('data-testid="profile-visibility-everyone"');
     expect(htmlOpen).toContain('data-testid="profile-visibility-group_members"');
     expect(htmlOpen).toContain('data-testid="profile-visibility-only_you"');
-    expect(htmlOpen).toContain("Controls your general profile page and discoverability in search.");
+    expect(htmlOpen).toContain("Anyone can search for your profile and view your profile page.");
+    expect(htmlOpen).not.toContain("Controls your general profile page and discoverability in search.");
+    // Selected radio button turns green
+    expect(htmlOpen).toContain("bg-[#ccff00]");
 
     // Other drawers remain closed
     expect(htmlOpen).not.toContain('data-testid="activities-visibility-everyone"');

@@ -31,32 +31,52 @@ export { AccountOptionsMenu };
 const PORTION_CONFIGS: {
   key: keyof ProfileVisibilitySettings;
   label: string;
-  description: string;
+  optionDescriptions: Record<ProfileVisibilityLevel, string>;
 }[] = [
   {
     key: "profile",
     label: "Profile Page",
-    description: "Controls your general profile page and discoverability in search.",
+    optionDescriptions: {
+      everyone: "Anyone can search for your profile and view your profile page.",
+      group_members: "Only athletes in your shared groups can view your profile page.",
+      only_you: "Your profile is completely private and hidden from search.",
+    },
   },
   {
     key: "activities",
     label: "Activities & Past Sessions",
-    description: "Controls who can see your past session history and match results.",
+    optionDescriptions: {
+      everyone: "Anyone viewing your profile can see your past session and match history.",
+      group_members: "Only athletes in your shared groups can see your past session history.",
+      only_you: "Only you can see your past session and match history.",
+    },
   },
   {
     key: "ratingStats",
     label: "Rating & Stats",
-    description: "Controls who can see your DUPR rating, skill tier, win/loss record, and rating chart.",
+    optionDescriptions: {
+      everyone: "Anyone can view your DUPR rating, skill tier, win/loss stats, and rating chart.",
+      group_members: "Only athletes in your shared groups can view your rating and stats.",
+      only_you: "Only you can view your rating and stats.",
+    },
   },
   {
     key: "chemistry",
     label: "Chemistry Spotlight",
-    description: "Controls who can see your best partner chemistry and synergy scores.",
+    optionDescriptions: {
+      everyone: "Anyone can view your best partner synergy and chemistry scores.",
+      group_members: "Only athletes in your shared groups can view your partner synergy scores.",
+      only_you: "Only you can view your partner synergy scores.",
+    },
   },
   {
     key: "groups",
     label: "Groups",
-    description: "Controls who can see the groups and clubs you have joined.",
+    optionDescriptions: {
+      everyone: "Anyone can view the groups and clubs you have joined.",
+      group_members: "Only athletes in your shared groups can view your joined groups.",
+      only_you: "Only you can view your joined groups.",
+    },
   },
 ];
 
@@ -538,18 +558,15 @@ export function PlayerProfileHeader({
                       {isOpen && (
                         <div
                           id={`drawer-content-${portion.key}`}
-                          className="border-t-2 border-neutral-100 bg-neutral-50/60 p-3 space-y-2.5"
+                          className="border-t-2 border-neutral-100 bg-neutral-50/60 p-3 space-y-2"
                         >
-                          <p className="text-[11px] font-semibold text-neutral-600">
-                            {portion.description}
-                          </p>
                           {isCapped && (
-                            <p className="text-[10px] font-bold text-neutral-500">
+                            <p className="text-[10px] font-bold text-neutral-500 mb-1">
                               Visibility ceiling: {currentCeiling === "only_you" ? "Only You" : "Group Members"} (from Profile Page)
                             </p>
                           )}
                           <div
-                            className="flex flex-wrap gap-1.5"
+                            className="space-y-1.5"
                             role="radiogroup"
                             aria-label={`${portion.label} visibility`}
                           >
@@ -560,6 +577,7 @@ export function PlayerProfileHeader({
                                 portion.key !== "profile" &&
                                 PROFILE_VISIBILITY_RANKS[opt.value] >
                                   PROFILE_VISIBILITY_RANKS[currentCeiling];
+                              const optionDesc = portion.optionDescriptions[opt.value];
 
                               return (
                                 <button
@@ -567,7 +585,7 @@ export function PlayerProfileHeader({
                                   type="button"
                                   role="radio"
                                   aria-checked={isSelected}
-                                  aria-label={`${portion.label}: ${opt.label}`}
+                                  aria-label={`${portion.label}: ${opt.label}. ${optionDesc}`}
                                   aria-disabled={isExceedingCeiling}
                                   disabled={isExceedingCeiling}
                                   title={
@@ -610,16 +628,40 @@ export function PlayerProfileHeader({
                                       });
                                     }
                                   }}
-                                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-2.5 py-1 text-xs font-bold uppercase transition-all ${
+                                  className={`flex w-full items-center justify-between gap-3 rounded-xl border-2 p-2.5 text-left transition-all ${
                                     isExceedingCeiling
-                                      ? "border-neutral-300 bg-neutral-100 text-neutral-400 opacity-40 cursor-not-allowed"
+                                      ? "border-neutral-200 bg-neutral-100/60 opacity-40 cursor-not-allowed"
                                       : isSelected
-                                      ? "border-black bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer"
-                                      : "border-black bg-white text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+                                      ? "border-black bg-white shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer"
+                                      : "border-neutral-200 bg-white hover:border-black/50 hover:bg-neutral-50 cursor-pointer"
                                   }`}
                                 >
-                                  <Icon className="h-3 w-3 shrink-0" />
-                                  <span>{opt.label}</span>
+                                  {/* Left: Option Label & Description */}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <Icon className="h-3.5 w-3.5 shrink-0 text-black" />
+                                      <span className="text-xs font-black uppercase text-black">
+                                        {opt.label}
+                                      </span>
+                                    </div>
+                                    <p className="mt-0.5 text-[11px] font-normal text-neutral-600 leading-snug">
+                                      {optionDesc}
+                                    </p>
+                                  </div>
+
+                                  {/* Right: Radio Button (turns green when selected) */}
+                                  <div
+                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                                      isSelected
+                                        ? "border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]"
+                                        : "border-neutral-400 bg-white"
+                                    }`}
+                                    aria-hidden="true"
+                                  >
+                                    {isSelected && (
+                                      <div className="h-2 w-2 rounded-full bg-black" />
+                                    )}
+                                  </div>
                                 </button>
                               );
                             })}
