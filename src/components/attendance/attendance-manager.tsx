@@ -262,7 +262,7 @@ export function AttendanceManager({
         <div className="lg:col-span-5 xl:col-span-5 space-y-6">
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="mb-1 flex items-center justify-between gap-3">
-              <h2 className="font-display text-2xl font-black uppercase text-black">Available Courts</h2>
+              <h2 className="font-display text-xl sm:text-2xl font-black text-black">Available Courts</h2>
               {!isEditingSession && <SetupCourtIllustration />}
             </div>
             <p className="text-sm font-bold text-neutral-600 mb-4">
@@ -362,7 +362,7 @@ export function AttendanceManager({
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-2xl p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-display text-2xl font-black uppercase text-black">Who is Playing Today?</h2>
+                <h2 className="font-display text-xl sm:text-2xl font-black text-black">Who is Playing Today?</h2>
             <p className="text-sm font-black text-black mt-1">
               <span className="bg-[#ccff00] px-2.5 py-0.5 border border-black rounded-md shadow-[1px_1px_0px_0px_#000]">
                 {count} players selected

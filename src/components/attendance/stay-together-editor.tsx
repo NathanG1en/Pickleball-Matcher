@@ -19,7 +19,7 @@ export function StayTogetherEditor({ players, pairs, onChange, disabled = false,
   const available = players.filter(p => !used.has(p.id) && (!eligibleIds || eligibleIds.includes(p.id)));
   const options = available.slice().sort((a, b) => a.name.localeCompare(b.name));
   return <section className="rounded-2xl border-[3px] border-black bg-[#FFFDF7] p-5 space-y-3 shadow-[4px_4px_0px_0px_#000]" data-testid="stay-together-settings">
-    <h2 className="font-display text-2xl font-black uppercase">Stay Together <span className="text-sm font-sans font-bold normal-case">(optional)</span></h2>
+    <h2 className="font-display text-xl sm:text-2xl font-black text-black">Stay Together <span className="text-sm font-sans font-bold normal-case text-neutral-600">(optional)</span></h2>
     <p className="text-sm text-neutral-600">Friends play and sit together. With one bench spot, everyone takes turns sitting and the other friend gets a temporary teammate.</p>
     {pairs.length ? <ul className="space-y-2">{pairs.map(([a, b]) => <li key={JSON.stringify([a, b])} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#ccff00]/20 px-3 py-2">
       <span className="font-bold text-sm">{names.get(a) ?? "Unavailable player"} &amp; {names.get(b) ?? "Unavailable player"}</span>

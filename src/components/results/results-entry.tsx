@@ -311,7 +311,16 @@ export function ResultsEntryView({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Courts scoring grid: adapts to court count so 1-court and 2-court layouts feel intentional without excessive stretching */}
+      <div
+        className={
+          matches.length === 1
+            ? "grid grid-cols-1 max-w-2xl lg:max-w-3xl mx-auto gap-4"
+            : matches.length === 2
+            ? "grid grid-cols-1 md:grid-cols-2 max-w-5xl xl:max-w-6xl mx-auto gap-4 lg:gap-6"
+            : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5"
+        }
+      >
         {matches.map((match) => {
           const matchScores = getScores(match);
           const err = fieldErrors[match.id];

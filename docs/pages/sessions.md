@@ -4,7 +4,7 @@ For how ratings and pairings are calculated, see [elo-rating-system.md](../elo-r
 
 ## Start a session — `/g/[groupId]/sessions/new`
 
-A short wizard for organizers. A badge in the top-right shows progress. The total number of steps depends on the format, so it isn't shown until a format is chosen.
+A short wizard for organizers with calm, readable typography. Headings and cards use natural casing and balanced density so titles do not compete with controls or content. A badge in the top-right shows progress. The total number of steps depends on the format, so it isn't shown until a format is chosen.
 
 1. **Choose Session Format.** Badge: “Step 1 · Format”. Two cards:
    - **Normal Session** (`select-normal-session-button`): algorithmic pairings, balanced court assignments with sit-out rotation, and synchronized rounds.
@@ -43,7 +43,11 @@ Before each round, organizers review a proposed lineup and then tap **Start Roun
 
 ### Session scoring (organizers)
 
-Each court is a card (`court-match-N`) with both teams and a score input for each team (“Court N Team M score”).
+Each court is a card (`court-match-N`) with both teams and a score input for each team (“Court N Team M score”). The court grid adapts intentionally to court count and viewport width:
+- **1 court:** centered with a focused, readable width rather than leaving an empty right column.
+- **2 courts:** balanced 2-column grid with comfortable proportions on wide desktop displays.
+- **3+ courts:** responsive 2-to-3 column grid that takes advantage of desktop width without stretching cards excessively.
+- **Mobile view:** single-column layout with accessible touch targets and full usability.
 
 - **Card states:** open cards are cream. Once a result is saved the card turns pale green and shows a **Final** badge with start and finish times. Cancelled cards are greyed out and labelled Cancelled.
 - **Save Result / Update Score:** the button is disabled while either score is blank, while a save is in progress, and when a saved score hasn't changed. Validation errors, such as a tied score, appear inside the card and keep the scores the organizer typed.

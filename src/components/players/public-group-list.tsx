@@ -47,11 +47,19 @@ export function PublicGroupList({
           <EmptyState
             data-testid="public-groups-no-results"
             title={`No groups match “${trimmedQuery}”`}
-            description="Check the spelling or try part of the name. Private groups never appear in search."
+            description="Check the spelling, try another name, or clear the search. Private groups never appear in search."
             action={
-              <Link href="/players/groups" className={`${emptyActionClass} bg-white hover:bg-neutral-100`}>
-                Clear search
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <Link href="/players/groups" className={`${emptyActionClass} bg-white hover:bg-neutral-100`}>
+                  Clear search
+                </Link>
+                <Link
+                  href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
+                  className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+                >
+                  {isSignedIn ? "Create a group" : "Create an account"}
+                </Link>
+              </div>
             }
           />
         ) : (
