@@ -23,6 +23,11 @@ import { GroupTournamentsList } from "@/components/tournaments/group-tournaments
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
+/** Request-time check used to surface a session summary shortly after it ends. */
+function endedWithinHours(endedAt: Date | null, hours: number): boolean {
+  return endedAt !== null && Date.now() - endedAt.getTime() < hours * 60 * 60 * 1000;
+}
+
 export default async function GroupDashboardPage({
   params,
 }: {
@@ -83,6 +88,9 @@ export default async function GroupDashboardPage({
   const latestCompletedSession = sessions.filter(s => s.status === "completed")
     .sort((a, b) => (b.endedAt ?? b.startedAt).getTime() - (a.endedAt ?? a.startedAt).getTime())[0];
 
+  // Right after a session ends, the dashboard points straight at its summary.
+  const showRecentSummaryLink = !activeSession && endedWithinHours(latestCompletedSession?.endedAt ?? null, 12);
+
   let currentRoundMatches: readonly MatchRecord[] = [];
   let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
   if (activeSession) {
@@ -93,6 +101,15 @@ export default async function GroupDashboardPage({
       currentMatchPlayers = latestStarted.matchPlayers;
     }
   }
+
+  const viewerCourt = viewerPlayerId
+    ? currentRoundMatches.find((m) => currentMatchPlayers.some((mp) => mp.matchId === m.id && mp.playerId === viewerPlayerId))?.courtNumber
+    : undefined;
+  const viewerLiveSessionWarning = activeSession
+    ? viewerCourt !== undefined
+      ? `A session is running and you're playing on Court ${viewerCourt} right now.`
+      : "A session is running right now."
+    : null;
 
   const pastSessionsData = await Promise.all(
     pastSessions.map(async (s) => {
@@ -169,6 +186,7 @@ export default async function GroupDashboardPage({
                 organizerPermissions={group.organizerPermissions}
                 players={players}
                 organizers={organizers}
+                liveSessionWarning={viewerLiveSessionWarning}
               />
             ) : null}
           </div>
@@ -188,6 +206,15 @@ export default async function GroupDashboardPage({
           </div>
           {!activeSession && isOrganizer && latestCompletedSession && (
             <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
+          )}
+          {showRecentSummaryLink && latestCompletedSession && (
+            <Link
+              href={`/g/${groupId}/sessions/${latestCompletedSession.id}`}
+              data-testid="session-summary-link"
+              className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+            >
+              See the session summary →
+            </Link>
           )}
         </div>
       </header>

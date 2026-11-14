@@ -137,7 +137,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
     const html = renderToStaticMarkup(PageElement);
 
     expect(html).toContain("No Partner Yet");
-    expect(html).toContain("Play matches with other people to unlock");
+    expect(html).toContain("Chemistry tracks partners who have player accounts");
     expect(html).toContain("Chemistry Spotlight");
   });
 
@@ -228,7 +228,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       const html = renderToStaticMarkup(PageElement);
 
       expect(html).toContain("No Partner Yet");
-      expect(html).toContain("Must play matches with other people to unlock");
+      expect(html).toContain("Chemistry shows up after doubles games with partners who have player accounts");
     });
 
     it("renders only display name and username when target is private and viewer is another user", async () => {

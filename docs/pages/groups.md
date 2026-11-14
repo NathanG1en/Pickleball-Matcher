@@ -37,6 +37,8 @@ Requires a signed-in player account. The creator becomes the host and is added t
   - **No session, organizer:** “Ready to Play?” with **Start New Session**, which opens `/g/[groupId]/sessions/new`.
   - **No session, player:** “No Active Session” with an explanation.
 - **Organizers and roster:** on phones this follows the session card. On desktop it fills the right-hand column. Organizers can find players by username or add guests here. The roster supports search, filter, and sort.
+- **After a session ends:** for 12 hours, the header shows a **See the session summary** link to that session. Organizers also see the sign-off animation.
+- **Leaving the group:** members open the ⋯ menu and choose **Leave Group**, which asks for confirmation. While a session is running, the dialog warns about it, including the court if they're playing right now. It points them to "I'm leaving after this round" on the session page, since leaving the group takes them off its roster.
 - **Add to Home Screen tip:** a dismissible hint shown below the roster.
 - **Tournaments and Past Sessions:** shown only to members. On phones they come last; on desktop they sit in the left column below the session card. Organizers get **+ Create Tournament**.
 
@@ -46,6 +48,7 @@ This is the page the share/invite link opens.
 
 - **Already a member:** a confirmation, with a way back to the group.
 - **Signed in:** **Join Group Now** shows which account will join and its starting rating.
+- **Continuing to a shared link:** when the page is opened with `?next=` pointing inside this group (a shared session link, for example), joining continues there. The sign-in and sign-up links carry it along. Members see **Continue →** instead of **Go to Group Dashboard →**. Links outside the group are ignored.
 - **Signed out:**
   - **Join as Guest:** enter a name and skill level. The page explains: "Already on the roster? Use the name your organizer added and you'll take that spot."
     - If an active guest with the same name is already on the roster, the device takes over that guest's spot. The name match ignores case and extra spaces. No duplicate is created, so the player keeps their history.

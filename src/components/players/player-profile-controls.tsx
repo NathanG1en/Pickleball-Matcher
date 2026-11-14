@@ -748,7 +748,7 @@ export function PlayerProfileHeader({
                 onBlur={() => setShowPrivacyTooltip(false)}
                 aria-label="Account visibility details"
                 title="Account visibility details"
-                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+                className="relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer before:absolute before:-inset-3.5 before:content-['']"
               >
                 <InfoIcon className="h-2.5 w-2.5" />
               </button>
@@ -904,7 +904,7 @@ export function PlayerVisibilityControl({
             onBlur={() => setShowTooltip(false)}
             aria-label="Account visibility details"
             title="Account visibility details"
-            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
+            className="relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer before:absolute before:-inset-3.5 before:content-['']"
           >
             <InfoIcon className="h-2.5 w-2.5" />
           </button>

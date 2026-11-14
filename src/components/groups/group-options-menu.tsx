@@ -24,6 +24,8 @@ export interface GroupOptionsMenuProps {
   players?: readonly PlayerRecord[];
   organizers?: readonly GroupOrganizerRecord[];
   initialMenuOpen?: boolean;
+  /** Shown in the leave confirmation while a session is running, e.g. "You're on Court 2 right now." */
+  liveSessionWarning?: string | null;
 }
 
 export function GroupOptionsMenu({
@@ -37,6 +39,7 @@ export function GroupOptionsMenu({
   players = [],
   organizers = [],
   initialMenuOpen = false,
+  liveSessionWarning = null,
 }: GroupOptionsMenuProps) {
   const router = useRouter();
 
@@ -179,6 +182,11 @@ export function GroupOptionsMenu({
             <p>
               Are you sure you want to leave {groupName ? `"${groupName}"` : "this group"}?
             </p>
+            {liveSessionWarning && (
+              <p data-testid="leave-group-live-warning" className="rounded-lg border-2 border-black bg-[#fde047] p-2.5 text-xs font-bold text-black">
+                {liveSessionWarning} Heading home for the night? Use &ldquo;I&apos;m leaving after this round&rdquo; on the session page instead. Leaving the group takes you off its roster.
+              </p>
+            )}
             {leaveError && (
               <div
                 role="alert"

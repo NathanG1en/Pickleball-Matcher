@@ -504,7 +504,7 @@ describe("Player View for Groups and Sessions", () => {
       });
     });
 
-    it("redirects unauthorized users", async () => {
+    it("sends signed-in non-members to the join page, then on to the shared session", async () => {
       vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(nonMemberAccountId);
       const repo = createTestRepository({ activeSession: true });
       setActionRepository(repo);
@@ -513,7 +513,7 @@ describe("Player View for Groups and Sessions", () => {
         ActiveSessionPage({
           params: Promise.resolve({ groupId, sessionId: activeSessionId }),
         })
-      ).rejects.toThrow("REDIRECT:/players");
+      ).rejects.toThrow(`REDIRECT:/g/${groupId}/join?next=${encodeURIComponent(`/g/${groupId}/sessions/${activeSessionId}`)}`);
     });
 
     it("allows members to view completed sessions with full page info and back button", async () => {

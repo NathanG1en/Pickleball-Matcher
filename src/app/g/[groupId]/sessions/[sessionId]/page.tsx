@@ -52,10 +52,13 @@ export default async function ActiveSessionPage({
     : (guestPlayerId ? players.find((p) => p.id === guestPlayerId) : undefined);
 
   if (!isOrganizer && !isMember) {
+    const sessionPath = `/g/${groupId}/sessions/${sessionId}`;
     if (!accountId) {
-      redirect(`/player-login?next=%2Fg%2F${groupId}%2Fsessions%2F${sessionId}`);
+      // Members sign in and land straight on the session; the sign-in page offers joining too.
+      redirect(`/player-login?next=${encodeURIComponent(sessionPath)}`);
     }
-    redirect("/players");
+    // Signed in but not in the group: offer to join, then continue to the shared session.
+    redirect(`/g/${groupId}/join?next=${encodeURIComponent(sessionPath)}`);
   }
 
   const isHost = Boolean(accountId && group.ownerAccountId === accountId);

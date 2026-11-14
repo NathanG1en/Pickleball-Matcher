@@ -425,7 +425,7 @@ function CurrentRoundEditor({
               onClick={() => setShowVarietyInfo(true)}
               aria-label="What is Matchmaking Variety?"
               title="What is Matchmaking Variety?"
-              className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-black bg-neutral-100 text-[10px] font-black text-black hover:bg-[#ccff00] cursor-pointer"
+              className="relative inline-flex items-center justify-center w-4 h-4 rounded-full border border-black bg-neutral-100 text-[10px] font-black text-black hover:bg-[#ccff00] cursor-pointer before:absolute before:-inset-3.5 before:content-['']"
             >
               i
             </button>
@@ -896,7 +896,7 @@ function CurrentRoundEditor({
                 moveToSitting(selectedPlayerId);
                 setSelectedPlayerId(null);
               }}
-              className="px-3 py-1.5 rounded-xl bg-[#fde047] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] animate-bounce"
+              className="min-h-11 px-3 py-1.5 rounded-xl bg-[#fde047] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] motion-safe:animate-bounce"
             >
               Move {nameFor(selectedPlayerId)} to Sitting
             </button>

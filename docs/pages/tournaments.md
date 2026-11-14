@@ -15,3 +15,12 @@ Organizers choose a format first, then build the tournament in step 2.
   - The form blocks creating with no divisions or fewer than 2 players.
   - If a ticked division drops below 2 entrants because players were unticked, the form names that division and suggests setting player genders on the roster or removing the division.
   - The server checks the same rule.
+
+## Tournament bracket — `/g/[groupId]/tournaments/[tournamentId]`
+
+Each match card shows its state:
+- **Done:** a winner is recorded.
+- **Skipped:** a bye.
+- **In Play:** both sides are known and there's no result yet.
+- **Waiting:** one or both sides are still to be decided by earlier matches. Undecided sides read "TBD".
+

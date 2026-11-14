@@ -19,7 +19,15 @@ it("rejects custom lineups splitting active friends and missing participants", a
   const session = await service.startSession({ groupId: "g", courtCount: 1, playerIds: ["0", "1", "2", "3"], stayTogetherPairs: [["0", "1"]] });
   const proposal = await service.proposeRound(session.id);
   await expect(service.startRound(session.id, { ...proposal, courts: [{ courtNumber: 1, team1: ["0", "2"], team2: ["1", "3"] }] })).rejects.toThrow(/same team/i);
-  await expect(service.startRound(session.id, { ...proposal, courts: [{ courtNumber: 1, team1: ["0", "1"], team2: ["2"] }] })).rejects.toThrow(/court|player/i);
+  await expect(service.startRound(session.id, { ...proposal, courts: [{ courtNumber: 1, team1: ["0", "1"], team2: ["2"] }] })).rejects.toThrow(/out of date: .+ isn't in it/i);
+});
+it("names players who left before a stale lineup could start", async () => {
+  const { service } = make();
+  const session = await service.startSession({ groupId: "g", courtCount: 1, playerIds: ["0", "1", "2", "3", "4"] });
+  const proposal = await service.proposeRound(session.id);
+  const leaver = proposal.courts[0]!.team1[0]!;
+  await service.changeAttendance({ sessionId: session.id, playerId: leaver, present: false });
+  await expect(service.startRound(session.id, proposal)).rejects.toThrow(/out of date: .+ left/i);
 });
 it("allows organizer settings changes for future rounds with version checks", async () => {
   const { repository, service } = make();

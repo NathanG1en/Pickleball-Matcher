@@ -277,6 +277,24 @@ describe("Share Group and Join Feature", () => {
   });
 
   describe("JoinGroupClient UI States", () => {
+    it("carries a shared session link through sign-in and continues there for members", () => {
+      const next = "/g/grp_private1/sessions/ses_1";
+      const visitor = renderToStaticMarkup(
+        <JoinGroupClient groupId="grp_private1" groupName="Secret Picklers" isPublic={false} activePlayerCount={1}
+          account={null} isOrganizer={false} isAccountMember={false} guestPlayer={null} continueTo={next} />
+      );
+      const joinWithNext = encodeURIComponent(`/g/grp_private1/join?next=${encodeURIComponent(next)}`);
+      expect(visitor).toContain(`/player-login?next=${joinWithNext}`);
+      expect(visitor).toContain(`/player-signup?next=${joinWithNext}`);
+
+      const member = renderToStaticMarkup(
+        <JoinGroupClient groupId="grp_private1" groupName="Secret Picklers" isPublic={false} activePlayerCount={1}
+          account={null} isOrganizer={false} isAccountMember={false} guestPlayer={{ id: "ply_g", name: "Alice" }} continueTo={next} />
+      );
+      expect(member).toContain(`href="${next}"`);
+      expect(member).toContain("Continue →");
+    });
+
     it("renders quick guest form and account options for visitors who are not logged in", () => {
       const html = renderToStaticMarkup(
         <JoinGroupClient

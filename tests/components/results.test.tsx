@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ResultsEntryView, cancelMatchWarning, getViewerRoundState } from "@/components/results/results-entry";
+import { ResultsEntryView, cancelMatchWarning, getViewerRoundState, saveAndStartBlocker, type MatchScoreEntry } from "@/components/results/results-entry";
 
 const sampleMatches = [
   {
@@ -632,5 +632,19 @@ describe("ResultsEntryView Component", () => {
       "This removes the 11–8 result and the rating changes from it. It can't be undone.",
     );
     expect(cancelMatchWarning({ status: "pending", team1Score: null, team2Score: null })).toContain("Nobody on this court gets a result");
+  });
+
+  it("explains why Save & Start is disabled, naming the courts that still need scores", () => {
+    const entries = [
+      { id: "a", courtNumber: 1, team1Names: ["A"], team2Names: ["B"], team1Score: 11, team2Score: 4, status: "completed" as const, version: 1 },
+      { id: "b", courtNumber: 2, team1Names: ["C"], team2Names: ["D"], team1Score: null, team2Score: null, status: "pending" as const, version: 1 },
+      { id: "c", courtNumber: 3, team1Names: ["E"], team2Names: ["F"], team1Score: null, team2Score: null, status: "pending" as const, version: 1 },
+      { id: "d", courtNumber: 4, team1Names: ["G"], team2Names: ["H"], team1Score: null, team2Score: null, status: "cancelled" as const, version: 1 },
+    ];
+    const scores = (m: MatchScoreEntry) => ({ team1: m.team1Score === null ? "" : String(m.team1Score), team2: m.team2Score === null ? "" : String(m.team2Score) });
+    expect(saveAndStartBlocker(entries, scores, false)).toBe("Courts 2 and 3 need scores. Enter them, or cancel those games, to start the next round.");
+    expect(saveAndStartBlocker(entries.slice(0, 2), scores, false)).toBe("Court 2 needs a score. Enter it, or cancel that game, to start the next round.");
+    expect(saveAndStartBlocker([entries[0]!], scores, false)).toBeNull();
+    expect(saveAndStartBlocker(entries, scores, true)).toBe("Fix the score errors above to continue.");
   });
 });
