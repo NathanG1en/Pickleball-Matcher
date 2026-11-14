@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/players";
 import { Alert, Button, Input } from "@/components/ui";
 import { formatDupr, eloToDupr, getSkillTier } from "@/lib/domain/rating-display";
-import { LockIcon, HandshakeIcon, ZapIcon, CheckIcon } from "@/components/ui/icons";
+import { LockIcon, HandshakeIcon, ZapIcon, CheckIcon, UsersIcon } from "@/components/ui/icons";
 
 interface PlayerSearchDrawerProps {
   readonly groupId: string;
@@ -123,12 +123,17 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                     <span className="text-xs font-semibold text-neutral-500 shrink-0">
                       (@{player.username})
                     </span>
-                    {player.isRestricted && (
+                    {player.visibilitySettings?.profile === "group_members" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-[#e0e7ff] px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+                        <UsersIcon className="h-3 w-3 shrink-0" />
+                        <span>Group Members Only</span>
+                      </span>
+                    ) : player.isRestricted ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
                         <LockIcon className="h-3 w-3 shrink-0" />
-                        <span>Private Profile</span>
+                        <span>Private</span>
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {!player.isRestricted && (

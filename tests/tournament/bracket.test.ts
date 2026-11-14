@@ -42,6 +42,30 @@ describe("Tournament Bracket Utilities", () => {
     expect(mixedDoubles.some((p) => p.name.includes("&"))).toBe(true);
   });
 
+  it("never fills a gendered division with players of another gender", () => {
+    const men = dummyPlayers.filter((p) => p.gender === "male");
+    expect(createParticipantsForDivision("womens_singles", men)).toEqual([]);
+    expect(createParticipantsForDivision("womens_doubles", men)).toEqual([]);
+    expect(createParticipantsForDivision("mixed_doubles", men)).toEqual([]);
+    const women = dummyPlayers.filter((p) => p.gender === "female");
+    expect(createParticipantsForDivision("mens_singles", women)).toEqual([]);
+  });
+
+  it("pairs mixed doubles only as one man and one woman, leaving extras out", () => {
+    const teams = createParticipantsForDivision("mixed_doubles", dummyPlayers);
+    expect(teams).toHaveLength(2);
+    const genderOf = (id: string) => dummyPlayers.find((p) => p.id === id)!.gender;
+    for (const team of teams) {
+      expect(team.playerIds.map(genderOf).sort()).toEqual(["female", "male"]);
+    }
+  });
+
+  it("leaves players with no gender set out of gendered divisions", () => {
+    const unknown = { ...dummyPlayers[1]!, id: "p9", name: "Sam", gender: undefined };
+    const entrants = createParticipantsForDivision("mens_singles", [...dummyPlayers, unknown]);
+    expect(entrants.map((e) => e.id)).not.toContain("p9");
+  });
+
   it("generates a 4-player bracket correctly with 2 rounds", () => {
     const participants: TournamentParticipant[] = [
       { id: "team1", name: "Team 1", playerIds: ["p1"] },

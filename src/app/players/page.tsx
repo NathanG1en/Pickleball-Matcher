@@ -33,6 +33,7 @@ export default async function PlayerProfilePage() {
           skillLevel={account.skillLevel}
           currentRating={account.rating ?? account.initialRating}
           initialIsPublic={account.isPublic ?? true}
+          initialVisibilitySettings={account.visibilitySettings}
         />
       </header>
 
@@ -83,7 +84,7 @@ export default async function PlayerProfilePage() {
                 </div>
                 <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
                 <p className="mt-1 text-xs font-bold text-neutral-600">
-                  Play matches with other people to unlock.
+                  Chemistry tracks partners who have player accounts. Play doubles with them to see who you click with.
                 </p>
               </div>
             </section>
@@ -142,7 +143,7 @@ export default async function PlayerProfilePage() {
         {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
         <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
           <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
-            <ScoreHistoryChart history={history} />
+            <ScoreHistoryChart history={history} startingRating={account.initialRating} />
           </section>
 
           <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">

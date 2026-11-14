@@ -13,10 +13,14 @@ export function PlayersClient({
   groupId,
   initialPlayers,
   canManage = true,
+  currentAccountId,
+  isGroupMember = true,
 }: {
   groupId: string;
   initialPlayers: readonly PlayerRecord[];
   canManage?: boolean;
+  currentAccountId?: string | null;
+  isGroupMember?: boolean;
 }) {
   const router = useRouter();
   const [prevInitialPlayers, setPrevInitialPlayers] = useState(initialPlayers);
@@ -103,6 +107,8 @@ export function PlayersClient({
         onAddPlayer={canManage ? handleAddPlayer : undefined}
         onDeletePlayer={canManage ? handleDeletePlayer : undefined}
         canManage={canManage}
+        currentAccountId={currentAccountId}
+        isGroupMember={isGroupMember}
       />
     </div>
   );

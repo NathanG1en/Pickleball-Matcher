@@ -44,7 +44,14 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.locator("h1")).toContainText("Round 1");
 
     // 5. Test cancelling a match on Court 2
+    // Cancelling asks first and names what is lost; "Keep match" backs out.
     await page.locator("[data-testid='court-match-2'] button:has-text('Cancel match')").click();
+    const cancelDialog = page.getByRole("alertdialog");
+    await expect(cancelDialog).toContainText("Cancel the Court 2 game?");
+    await cancelDialog.getByRole("button", { name: "Keep match" }).click();
+    await expect(page.locator("[data-testid='court-match-2'] >> text=Cancelled")).toHaveCount(0);
+    await page.locator("[data-testid='court-match-2'] button:has-text('Cancel match')").click();
+    await page.getByTestId("confirm-cancel-match").click();
     await expect(page.locator("[data-testid='court-match-2'] >> text=Cancelled")).toBeVisible();
 
     // 6. Record and then correct Court 1 score
@@ -55,11 +62,21 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.locator("[data-testid='court-match-1'] button:has-text('Save Result')").click();
     await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible({ timeout: 15000 });
 
+    // Cancel match stays legible and tappable on the final (green) result card.
+    const finalCancel = page.getByTestId("court-match-1").getByRole("button", { name: "Cancel match", exact: true });
+    const finalCancelBox = await finalCancel.boundingBox();
+    expect(finalCancelBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+    const finalCardContrast = await new AxeBuilder({ page })
+      .include("[data-testid='court-match-1']")
+      .withRules(["color-contrast"])
+      .analyze();
+    expect(finalCardContrast.violations).toEqual([]);
+
     // Now correct the score to 11-9
     await court1Team2.fill("9");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await expect(page.getByTestId("end-session-button")).toBeDisabled();
-    await expect(page.getByRole("status")).toContainText("Save or revert your score changes before continuing.");
+    await expect(page.getByRole("status").filter({ hasText: "Save or revert" })).toContainText("Save or revert your score changes before continuing.");
 
     // Reverting to the stored score clears the guard without a save.
     await court1Team2.fill("7");
@@ -69,6 +86,8 @@ test.describe("Corrections and Replay Workflow", () => {
     // Blank and rejected corrections must keep the guard and the draft.
     await court1Team2.fill("");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
+    // The disabled button says why, naming the court that still needs a score.
+    await expect(page.getByTestId("save-start-blocked-reason")).toContainText("Court 1 needs a score");
     await court1Team2.fill("11");
     await page.getByRole("button", { name: "Update Score", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
@@ -230,6 +249,7 @@ test.describe("Corrections and Replay Workflow", () => {
 
     // 4. Cancel match on Court 2
     await page.locator("[data-testid='court-match-2'] button:has-text('Cancel match')").click();
+    await page.getByTestId("confirm-cancel-match").click();
     await expect(page.locator("[data-testid='court-match-2'] >> text=Cancelled")).toBeVisible();
 
     // 5. Try ending session while Court 1 is in progress (Court 2 is cancelled)
@@ -583,8 +603,14 @@ test("organizer can end an active session (normal or open play) directly from gr
     expect(resumeBox.width).toBeGreaterThan(endBox.width * 2);
   }
 
-  // Click End Session
+  // Ending from the dashboard asks first; backing out keeps the session live
   await endNowBtn.click();
+  const endDialog = page.getByRole("alertdialog");
+  await expect(endDialog).toContainText("End this session?");
+  await endDialog.getByRole("button", { name: "Keep playing" }).click();
+  await expect(page.locator("text=Session In Progress")).toBeVisible();
+  await endNowBtn.click();
+  await page.getByTestId("confirm-end-session-now").click();
 
   // Verify session is ended on group page
   await expect(page.locator("text=Session In Progress")).not.toBeVisible();
@@ -618,8 +644,10 @@ test("organizer can end an active session (normal or open play) directly from gr
     expect(manageBox.width).toBeGreaterThan(openPlayEndBox.width * 2);
   }
 
-  // Click End Session Now
+  // Click End Session Now, then confirm
   await openPlayEndNowBtn.click();
+  await expect(page.getByRole("alertdialog")).toContainText("won't be able to log more games");
+  await page.getByTestId("confirm-end-session-now").click();
 
   // Verify open play session is ended
   await expect(page.locator("text=Open Play In Progress")).not.toBeVisible();

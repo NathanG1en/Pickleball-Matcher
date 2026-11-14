@@ -145,7 +145,7 @@ export function NewSessionClient({
             ← Back to Group
           </Link>
           <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-            Step 1 of 2
+            Step 1 · Format
           </span>
         </div>
 

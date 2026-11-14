@@ -206,6 +206,37 @@ describe("Share Group and Join Feature", () => {
       expect(guestPlayer?.initialRating).toBe(1000);
     });
 
+    it("reuses an organizer-added guest with the same name instead of creating a duplicate", async () => {
+      const first = await joinAsGuestAction({ groupId: "grp_private1", name: "Alice Ace" });
+      expect(first.ok).toBe(true);
+      const before = (await repository.listPlayers("grp_private1")).length;
+
+      const again = await joinAsGuestAction({ groupId: "grp_private1", name: "  alice   ACE " });
+
+      expect(again.ok).toBe(true);
+      if (first.ok && again.ok) {
+        expect(again.data.playerId).toBe(first.data.playerId);
+        expect(again.data.rejoined).toBe(true);
+      }
+      const after = await repository.listPlayers("grp_private1");
+      expect(after).toHaveLength(before);
+      expect(after.filter((p) => p.name === "Alice Ace")).toHaveLength(1);
+    });
+
+    it("does not hand a guest the roster spot of an account player with the same name", async () => {
+      mockAccountId = userAccountId;
+      await joinGroupViaInviteAction({ groupId: "grp_private1" });
+      mockAccountId = null;
+
+      const result = await joinAsGuestAction({ groupId: "grp_private1", name: "Invited Player" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.data.rejoined).toBe(false);
+      const namesakes = (await repository.listPlayers("grp_private1")).filter((p) => p.name === "Invited Player");
+      expect(namesakes).toHaveLength(2);
+      expect(namesakes.filter((p) => p.accountId === null)).toHaveLength(1);
+    });
+
     it("rejects guest join with empty name", async () => {
       const result = await joinAsGuestAction({
         groupId: "grp_private1",
@@ -246,6 +277,24 @@ describe("Share Group and Join Feature", () => {
   });
 
   describe("JoinGroupClient UI States", () => {
+    it("carries a shared session link through sign-in and continues there for members", () => {
+      const next = "/g/grp_private1/sessions/ses_1";
+      const visitor = renderToStaticMarkup(
+        <JoinGroupClient groupId="grp_private1" groupName="Secret Picklers" isPublic={false} activePlayerCount={1}
+          account={null} isOrganizer={false} isAccountMember={false} guestPlayer={null} continueTo={next} />
+      );
+      const joinWithNext = encodeURIComponent(`/g/grp_private1/join?next=${encodeURIComponent(next)}`);
+      expect(visitor).toContain(`/player-login?next=${joinWithNext}`);
+      expect(visitor).toContain(`/player-signup?next=${joinWithNext}`);
+
+      const member = renderToStaticMarkup(
+        <JoinGroupClient groupId="grp_private1" groupName="Secret Picklers" isPublic={false} activePlayerCount={1}
+          account={null} isOrganizer={false} isAccountMember={false} guestPlayer={{ id: "ply_g", name: "Alice" }} continueTo={next} />
+      );
+      expect(member).toContain(`href="${next}"`);
+      expect(member).toContain("Continue →");
+    });
+
     it("renders quick guest form and account options for visitors who are not logged in", () => {
       const html = renderToStaticMarkup(
         <JoinGroupClient

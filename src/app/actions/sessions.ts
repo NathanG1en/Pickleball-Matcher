@@ -39,7 +39,10 @@ import {
   undoLatestRoundSchema,
   updateCourtConfigSchema,
   updateSessionNameSchema,
+  sessionLiveStampSchema,
+  setMyAttendanceSchema,
 } from "@/lib/validation/session";
+import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
 
 async function requireSessionOrganizer(groupId: string, sessionId: string, roundId?: string): Promise<SessionRecord> {
   const repository = getActionRepository();
@@ -878,5 +881,66 @@ export async function submitSessionPickupGameAction(
   }
 }
 
+/**
+ * Lightweight poll target for viewers of a live session. Returns only an opaque
+ * fingerprint, so watching devices can tell when to refresh without downloading
+ * the whole session on every tick.
+ */
+export async function getSessionLiveStampAction(input: unknown): Promise<ActionResult<{ stamp: string }>> {
+  const parsed = sessionLiveStampSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid parameters" };
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) {
+      return { ok: false, error: "Session not found." };
+    }
+    const startedRounds = await repository.listStartedRounds(session.id);
+    return { ok: true, data: { stamp: buildSessionLiveStamp(session, startedRounds) } };
+  } catch {
+    return { ok: false, error: "Unable to check for session updates." };
+  }
+}
 
+/**
+ * A player marking themselves as leaving after the current round, or staying
+ * after all. Works for account members and for guests on the device they joined
+ * from; the player id is never taken from the client.
+ */
+export async function setMyAttendanceAction(input: unknown): Promise<ActionResult<{ leftRound: number | null }>> {
+  const parsed = setMyAttendanceSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid attendance request" };
+  try {
+    const repository = getActionRepository();
+    const session = await repository.getSession(parsed.data.sessionId);
+    if (!session || session.groupId !== parsed.data.groupId) return { ok: false, error: "Session not found." };
+    if (session.status !== "active") return { ok: false, error: "This session has ended." };
 
+    const accountId = await getActivePlayerAccountId();
+    const players = await repository.listPlayers(session.groupId);
+    let playerId: string | null = null;
+    if (accountId) {
+      playerId = players.find((p) => p.accountId === accountId && p.active)?.id ?? null;
+    } else {
+      const { getGuestPlayerIdForGroup } = await import("@/lib/auth/guest-session");
+      const guestId = await getGuestPlayerIdForGroup(session.groupId);
+      playerId = players.find((p) => p.id === guestId && p.active)?.id ?? null;
+    }
+    if (!playerId) return { ok: false, error: "You're not on this group's roster." };
+
+    const attendance = await repository.listAttendance(session.id);
+    if (!attendance.some((record) => record.playerId === playerId)) {
+      return { ok: false, error: "You're not checked in to this session. Ask the organizer to add you." };
+    }
+    const updated = await getActionSessionService().changeAttendance({
+      sessionId: session.id,
+      playerId,
+      present: parsed.data.present,
+    });
+    revalidatePath(`/g/${parsed.data.groupId}/sessions/${parsed.data.sessionId}`);
+    return { ok: true, data: { leftRound: updated.leftRound } };
+  } catch (err) {
+    console.error("setMyAttendanceAction failed", err);
+    return { ok: false, error: "Couldn't update your attendance. Please try again." };
+  }
+}

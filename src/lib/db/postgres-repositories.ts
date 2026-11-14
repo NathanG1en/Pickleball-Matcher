@@ -2,6 +2,7 @@ import type postgres from "postgres";
 
 import type { DomainRepository } from "@/lib/domain/repositories";
 import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import {
   type AttendanceRecord,
   type PartnerRequestRecord,
@@ -15,6 +16,7 @@ import {
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
+  ProfileVisibilitySettings,
   PlayerSessionHistoryRecord,
   PlayerSynergyRecord,
   PairMatchSynergyResult,
@@ -89,6 +91,8 @@ type PlayerRow = {
   active: boolean;
   account_id: string | null;
   username?: string | null;
+  is_public?: boolean | null;
+  visibility_settings?: unknown;
 };
 
 type PlayerAccountRow = {
@@ -97,6 +101,7 @@ type PlayerAccountRow = {
   name: string;
   gender?: "male" | "female" | null;
   is_public?: boolean;
+  visibility_settings?: unknown;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
@@ -241,6 +246,10 @@ const mapPlayer = (row: PlayerRow): PlayerRecord => ({
   accountId: row.account_id,
   username: row.username ?? null,
   gender: row.gender ?? null,
+  isPublic: row.is_public ?? true,
+  visibilitySettings: row.visibility_settings
+    ? parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true)
+    : undefined,
 });
 
 const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
@@ -249,6 +258,7 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   name: row.name,
   gender: (row.gender as PlayerGender) ?? undefined,
   isPublic: row.is_public ?? true,
+  visibilitySettings: parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true),
   passwordHash: row.password_hash,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
@@ -466,7 +476,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts where id = ${accountId}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -474,16 +484,17 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts where username = ${username.trim().toLowerCase()}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
   }
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
+    const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     await this.query`
-      insert into player_accounts (id, username, name, gender, is_public, initial_rating, rating, rated_games_played, password_hash, skill_level, created_at)
-      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+      insert into player_accounts (id, username, name, gender, is_public, visibility_settings, initial_rating, rating, rated_games_played, password_hash, skill_level, created_at)
+      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
     `;
   }
 
@@ -510,11 +521,20 @@ export class PostgresRepositories implements DomainRepository {
     });
   }
 
-  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
-    await this.query`
-      update player_accounts set is_public = ${isPublic}
-      where id = ${accountId}
-    `;
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void> {
+    if (visibilitySettings) {
+      await this.query`
+        update player_accounts
+        set is_public = ${isPublic},
+            visibility_settings = ${JSON.stringify(visibilitySettings)}::jsonb
+        where id = ${accountId}
+      `;
+    } else {
+      await this.query`
+        update player_accounts set is_public = ${isPublic}
+        where id = ${accountId}
+      `;
+    }
   }
 
   async listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]> {
@@ -650,7 +670,7 @@ export class PostgresRepositories implements DomainRepository {
     if (!trimmed) return [];
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts
       where (username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (username = ${trimmed}) desc, username asc
@@ -663,7 +683,7 @@ export class PostgresRepositories implements DomainRepository {
     const trimmed = search.trim().toLowerCase().replace(/^@/, "");
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       from player_accounts
       where (${trimmed} = '' or username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (${trimmed} != '' and username = ${trimmed}) desc, name asc, username asc
@@ -673,22 +693,22 @@ export class PostgresRepositories implements DomainRepository {
   }
 
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
-    const rows = await this.query<PlayerRow[]>`
+    await this.query`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join player_accounts a
       where g.id = ${groupId} and a.id = ${accountId}
       on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
-      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
-    if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
       select p.id, p.group_id, coalesce(a.name, p.name) as name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
              coalesce(a.rating, p.rating) as rating,
              coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
-             p.active, p.account_id, a.username
+             p.active, p.account_id, a.username,
+             a.is_public as is_public,
+             a.visibility_settings as visibility_settings
       from players p
       left join player_accounts a on a.id = p.account_id
       where p.account_id = ${accountId} and p.group_id = ${groupId}
@@ -701,7 +721,7 @@ export class PostgresRepositories implements DomainRepository {
       const txRepo = tx as PostgresRepositories;
       // Keep the baseline stable through linking/replay, including maintenance corrections.
       const accountRows = await txRepo.query<PlayerAccountRow[]>`
-        select id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+        select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
         from player_accounts
         where id = ${accountId}
         for update
@@ -864,28 +884,30 @@ export class PostgresRepositories implements DomainRepository {
       return {
         ...mapPlayer(updatedRows[0]),
         username: account.username,
+        isPublic: account.isPublic,
+        visibilitySettings: account.visibilitySettings,
       };
     })) ?? null;
   }
 
 
   async joinPublicGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
-    const rows = await this.query<PlayerRow[]>`
+    await this.query`
       insert into players (id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id)
       select 'ply_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12),
              g.id, a.name, a.gender, a.initial_rating, a.rating, a.rated_games_played, true, a.id
       from groups g cross join player_accounts a
       where g.id = ${groupId} and (g.is_public = true or g.owner_account_id = ${accountId}) and a.id = ${accountId}
       on conflict (group_id, account_id) where account_id is not null do update set active = true, rating = excluded.rating, rated_games_played = excluded.rated_games_played
-      returning id, group_id, name, gender, initial_rating, rating, rated_games_played, active, account_id
     `;
-    if (rows[0]) return mapPlayer(rows[0]);
 
     const existing = await this.query<PlayerRow[]>`
       select p.id, p.group_id, coalesce(a.name, p.name) as name, coalesce(p.gender, a.gender) as gender, p.initial_rating,
              coalesce(a.rating, p.rating) as rating,
              coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
-             p.active, p.account_id, a.username
+             p.active, p.account_id, a.username,
+             a.is_public as is_public,
+             a.visibility_settings as visibility_settings
       from players p
       left join player_accounts a on a.id = p.account_id
       where p.account_id = ${accountId} and p.group_id = ${groupId}
@@ -1342,7 +1364,9 @@ export class PostgresRepositories implements DomainRepository {
                  coalesce(a.rating, p.rating) as rating,
                  coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
                  p.active, p.account_id,
-                 a.username as username
+                 a.username as username,
+                 a.is_public as is_public,
+                 a.visibility_settings as visibility_settings
           from players p
           left join player_accounts a on a.id = p.account_id
           where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`1=1`}
@@ -1353,7 +1377,9 @@ export class PostgresRepositories implements DomainRepository {
                  coalesce(a.rating, p.rating) as rating,
                  coalesce(a.rated_games_played, p.rated_games_played) as rated_games_played,
                  p.active, p.account_id,
-                 a.username as username
+                 a.username as username,
+                 a.is_public as is_public,
+                 a.visibility_settings as visibility_settings
           from players p
           left join player_accounts a on a.id = p.account_id
           where ${groupId ? this.query`p.group_id = ${groupId}` : this.query`1=1`}

@@ -1,7 +1,7 @@
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { EndSessionNowButton } from "@/components/groups/end-session-now-button";
+import { EndSessionNowButton, endSessionWarning } from "@/components/groups/end-session-now-button";
 
 const mockRefresh = vi.fn();
 
@@ -63,5 +63,14 @@ describe("EndSessionNowButton Component", () => {
     expect(html).toContain('data-testid="end-session-now-button"');
     expect(html).toContain("End Session");
     expect(html).toContain("bg-[#ff6b6b]");
+  });
+
+  it("does not end anything on render; the confirmation names what will be lost", () => {
+    const html = renderToStaticMarkup(<EndSessionNowButton groupId={groupId} sessionId={sessionId} gamesInProgress={2} />);
+    expect(html).not.toContain("End this session?");
+    expect(endSessionWarning("regular", 2)).toBe("2 games are still in progress and won't be recorded. A session can't be reopened after it ends.");
+    expect(endSessionWarning("regular", 1)).toContain("1 game is still in progress");
+    expect(endSessionWarning("regular", 0)).toBe("A session can't be reopened after it ends.");
+    expect(endSessionWarning("open_play", 3)).toContain("won't be able to log more games");
   });
 });

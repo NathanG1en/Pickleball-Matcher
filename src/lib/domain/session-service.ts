@@ -266,6 +266,14 @@ export class SessionService {
     const [roster, attendance, rounds] = await Promise.all([repository.listPlayers(session.groupId), repository.listAttendance(session.id), repository.listStartedRounds(session.id)]);
     const present = matchmakingPlayers(roster, attendance, rounds, session.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)).map(p => p.id);
     const all = [...proposal.courts.flatMap(c => [...c.team1, ...c.team2]), ...proposal.sitting];
+    // A lineup built before someone arrived or left (another device, a player leaving
+    // from their phone) names who changed instead of failing with a generic shape error.
+    const nameOf = (id: string) => roster.find(p => p.id === id)?.name ?? "A player";
+    const departed = all.filter(id => !present.includes(id)).map(id => `${nameOf(id)} left`);
+    const missing = present.filter(id => !all.includes(id)).map(id => `${nameOf(id)} isn't in it`);
+    if (departed.length > 0 || missing.length > 0) {
+      throw new DomainError("INVALID_STATE", `The lineup is out of date: ${[...departed, ...missing].join(", ")}. Refresh the lineup before starting.`);
+    }
     const doubles = Math.min(Math.floor(present.length / 4), session.courtCount);
     const sizes = session.courtPlayerCounts ?? [...Array<number>(doubles).fill(4), ...(session.courtCount > doubles && present.length - doubles * 4 >= 2 ? [2] : [])];
     if (all.length !== present.length || new Set(all).size !== all.length || all.some(id => !present.includes(id)) || proposal.courts.length !== sizes.length || proposal.courts.some((c, i) => c.courtNumber !== i + 1 || c.team1.length + c.team2.length !== sizes[i] || c.team1.length < 1 || c.team2.length < 1 || c.team1.length > 2 || c.team2.length > 2)) {
@@ -282,9 +290,8 @@ export class SessionService {
         throw new DomainError("INVALID_STATE", "The session has ended.");
       }
       if (expectedVersion !== undefined && session.version !== expectedVersion) throw new DomainError("INVALID_STATE", "The session changed. Refresh the lineup before starting.");
-      if (session.stayTogetherPairs?.length) {
-        await this.validateSuppliedLineup(repository, session, proposal);
-      }
+      // Always check: a lineup can be stale after a player leaves or arrives elsewhere.
+      await this.validateSuppliedLineup(repository, session, proposal);
       const now = this.dependencies.now();
       const round: RoundRecord = {
         id: this.dependencies.nextId("round"),

@@ -274,6 +274,84 @@ describe("GroupOrganizersPanel and Actions", () => {
       expect(html).toContain("Find player by username");
     });
 
+    it("masks rating and gender for a private player on group roster and only shows games played when viewed by another user", () => {
+      const privatePlayer: PlayerRecord = {
+        id: "p_priv",
+        groupId: "g1",
+        name: "Private Member",
+        initialRating: 1000,
+        rating: 1250,
+        ratedGamesPlayed: 7,
+        active: true,
+        accountId: "acc_priv",
+        username: "priv_user",
+        gender: "female",
+        isPublic: false,
+        visibilitySettings: {
+          profile: "only_you",
+          activities: "only_you",
+          ratingStats: "only_you",
+          chemistry: "only_you",
+          groups: "only_you",
+        },
+      };
+
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={[privatePlayer]}
+          organizers={sampleOrganizers}
+          isHost={true}
+          currentAccountId="acc_viewer"
+        />
+      );
+
+      expect(html).toContain("Private Member");
+      expect(html).toContain("@priv_user");
+      expect(html).toContain("7 games");
+      expect(html).not.toContain("Rating:");
+      expect(html).not.toContain("female");
+    });
+
+    it("shows rating and gender for a private player on group roster when viewed by that player themselves", () => {
+      const privatePlayer: PlayerRecord = {
+        id: "p_priv",
+        groupId: "g1",
+        name: "Private Member",
+        initialRating: 1000,
+        rating: 1250,
+        ratedGamesPlayed: 7,
+        active: true,
+        accountId: "acc_priv",
+        username: "priv_user",
+        gender: "female",
+        isPublic: false,
+        visibilitySettings: {
+          profile: "only_you",
+          activities: "only_you",
+          ratingStats: "only_you",
+          chemistry: "only_you",
+          groups: "only_you",
+        },
+      };
+
+      const html = renderToStaticMarkup(
+        <GroupOrganizersPanel
+          groupId="g1"
+          players={[privatePlayer]}
+          organizers={sampleOrganizers}
+          isHost={false}
+          currentAccountId="acc_priv"
+        />
+      );
+
+      expect(html).toContain("Private Member");
+      expect(html).toContain("@priv_user");
+      expect(html).toContain("Rating:");
+      expect(html).toContain("female");
+      expect(html).toContain("7 games");
+    });
+
     it("renders add player/guest, link guest, and remove player options for group organizers, but not make organizer", () => {
       const html = renderToStaticMarkup(
         <GroupOrganizersPanel

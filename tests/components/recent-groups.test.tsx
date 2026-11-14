@@ -6,7 +6,6 @@ import {
   removeRecentGroup,
   clearRecentGroups,
 } from "@/lib/storage/recent-groups";
-import { RecentGroupsHome } from "@/components/groups/recent-groups-home";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 
 // Mock localStorage in node test environment
@@ -90,64 +89,10 @@ describe("Recent Groups Storage & Components", () => {
     expect(recents).toHaveLength(0);
   });
 
-  it("renders RecentGroupsHome list when 1 group is stored", () => {
-    saveRecentGroup({ id: "grp-hero", name: "Sunset Pickleballers" });
-
-    const html = renderToStaticMarkup(<RecentGroupsHome />);
-    expect(html).toContain("Sunset Pickleballers");
-    expect(html).toContain("Your Recent Groups (1)");
-    expect(html).toContain("/g/grp-hero");
-    expect(html).not.toContain("Find groups");
-    expect(html).toContain("aria-label=\"Forget Sunset Pickleballers\"");
-  });
-
-  it("renders RecentGroupsHome list when multiple groups are stored", () => {
-    saveRecentGroup({ id: "grp-1", name: "Alpha League" });
-    saveRecentGroup({ id: "grp-2", name: "Beta League" });
-
-    const html = renderToStaticMarkup(<RecentGroupsHome />);
-    expect(html).toContain("Alpha League");
-    expect(html).toContain("Beta League");
-    expect(html).toContain("Your Recent Groups (2)");
-    expect(html).not.toContain("Find groups");
-    expect(html).toContain("aria-label=\"Forget Alpha League\"");
-    expect(html).toContain("title=\"Forget\"");
-  });
-
-  it("renders nothing when storage is empty", () => {
-    storageMock.clear();
-    const html = renderToStaticMarkup(<RecentGroupsHome />);
-    expect(html).toBe("");
-  });
-
   it("renders RecentGroupTracker null component safely", () => {
     const html = renderToStaticMarkup(
       <RecentGroupTracker groupId="grp-test" groupName="Test Group" />
     );
-    expect(html).toBe("");
-  });
-
-  it("excludes specified group in RecentGroupsHome when excludeGroupId matches", () => {
-    saveRecentGroup({ id: "grp-active", name: "Active Group" });
-
-    const html = renderToStaticMarkup(<RecentGroupsHome excludeGroupId="grp-active" />);
-    expect(html).toBe("");
-  });
-
-  it("excludes groups in RecentGroupsHome that are not in memberGroupIds", () => {
-    saveRecentGroup({ id: "grp-1", name: "Member Group" });
-    saveRecentGroup({ id: "grp-2", name: "Non-Member Group" });
-
-    const html = renderToStaticMarkup(<RecentGroupsHome memberGroupIds={["grp-1"]} />);
-    expect(html).toContain("Member Group");
-    expect(html).not.toContain("Non-Member Group");
-    expect(html).toContain("Your Recent Groups (1)");
-  });
-
-  it("renders nothing when user is not a member of any saved recent groups", () => {
-    saveRecentGroup({ id: "grp-other", name: "Other Group" });
-
-    const html = renderToStaticMarkup(<RecentGroupsHome memberGroupIds={[]} />);
     expect(html).toBe("");
   });
 

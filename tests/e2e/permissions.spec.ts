@@ -515,9 +515,12 @@ test.describe("Permissions and Security Workflow", () => {
     // Make privateUser private via their profile page
     await privatePage.goto("/players");
     await privatePage.getByRole("button", { name: "Edit Profile" }).click();
-    const privacyBtn = privatePage.getByRole("button", { name: /Account visibility: currently Public/ });
-    await expect(privacyBtn).toBeVisible();
-    await privacyBtn.click();
+    const profileDrawer = privatePage.locator("[data-testid='toggle-drawer-profile']");
+    await expect(profileDrawer).toBeVisible();
+    await profileDrawer.click();
+    const onlyYouOption = privatePage.locator("[data-testid='profile-visibility-only_you']");
+    await expect(onlyYouOption).toBeVisible();
+    await onlyYouOption.click();
     await privatePage.getByRole("button", { name: "Save Changes" }).click();
     await expect(privatePage.getByText("Profile updated successfully")).toBeVisible();
 
@@ -556,7 +559,7 @@ test.describe("Permissions and Security Workflow", () => {
     await page.waitForURL(new RegExp(`/players/${publicUser.username}`));
     await expect(page.locator("h1")).toContainText(publicUser.name);
     await expect(page.getByText(`@${publicUser.username}`, { exact: true })).toBeVisible();
-    await expect(page.getByText("Public", { exact: true })).toBeVisible();
+    await expect(page.getByText("Everyone", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Rating over time" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Past Sessions" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Go to session" })).not.toBeVisible();
@@ -611,7 +614,7 @@ test.describe("Permissions and Security Workflow", () => {
   await expect(page.getByText(/current rating 3.75/)).toBeVisible();
 });
 
-test("does not include groups in recent groups if player is not part of them even after looking at them", async ({
+test("home lists only groups the player has joined, not ones they only looked at", async ({
   page,
   browser,
 }) => {
@@ -648,20 +651,20 @@ test("does not include groups in recent groups if player is not part of them eve
   await expect(playerPage.locator("h1")).toContainText(groupName);
   await expect(playerPage.getByRole("button", { name: "Join Group Now" })).toBeVisible();
 
-  // Go to homepage: group must NOT be in recent groups
+  // Go to homepage: a group the player only looked at must NOT be listed
   await playerPage.goto("/");
   await expect(playerPage.getByRole("heading", { name: /FAIR ROUNDS/ })).toBeVisible();
   await expect(playerPage.getByText(groupName)).not.toBeVisible();
-  await expect(playerPage.getByText(/Your Recent Groups/)).not.toBeVisible();
+  await expect(playerPage.getByRole("heading", { name: "Your groups" })).not.toBeVisible();
 
   // Now join the group
   await playerPage.goto(`/g/${groupId}`);
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
   await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
 
-  // Return to homepage: group MUST now appear in recent groups
+  // Return to homepage: group MUST now appear under Your groups
   await playerPage.goto("/");
-  await expect(playerPage.getByText(/Your Recent Groups/)).toBeVisible();
+  await expect(playerPage.getByRole("heading", { name: "Your groups" })).toBeVisible();
   await expect(playerPage.getByText(groupName)).toBeVisible();
 
   await playerContext.close();
@@ -740,6 +743,12 @@ test("non-host member can leave a group from find groups page with confirmation 
   await playerPage.goto(`/g/${groupId}`);
   await playerPage.getByRole("button", { name: "Join Group Now" }).click();
   await expect(playerPage.getByRole("button", { name: "Group options" })).toBeVisible();
+
+  // A search with no hits names the query and offers a way back to the full directory.
+  const missingQuery = `zz-no-such-group-${Date.now()}`;
+  await playerPage.goto(`/players/groups?q=${missingQuery}`);
+  await expect(playerPage.getByTestId("public-groups-no-results")).toContainText(`No groups match “${missingQuery}”`);
+  await expect(playerPage.getByRole("link", { name: "Clear search" })).toHaveAttribute("href", "/players/groups");
 
   // Navigate to Find Groups page
   await playerPage.goto(`/players/groups?q=${encodeURIComponent(groupName)}`);
@@ -842,9 +851,12 @@ test("find players workflow from homepage shows public and private players with 
   // Switch User B to private
   await pageB.goto("/players");
   await pageB.getByRole("button", { name: "Edit Profile" }).click();
-  const privacyToggle = pageB.locator("button[title='Click to switch to Private']");
-  await expect(privacyToggle).toBeVisible();
-  await privacyToggle.click();
+  const profileDrawerB = pageB.locator("[data-testid='toggle-drawer-profile']");
+  await expect(profileDrawerB).toBeVisible();
+  await profileDrawerB.click();
+  const onlyYouOptionB = pageB.locator("[data-testid='profile-visibility-only_you']");
+  await expect(onlyYouOptionB).toBeVisible();
+  await onlyYouOptionB.click();
   await pageB.getByRole("button", { name: "Save Changes" }).click();
   await expect(pageB.getByText("Profile updated successfully")).toBeVisible();
   await contextB.close();
@@ -871,7 +883,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userBCard).toContainText(userB.name);
   await expect(userBCard).toContainText(`@${userB.username}`);
   await expect(userBCard).toContainText("Private");
-  await expect(userBCard).toContainText("Rating:");
+  await expect(userBCard).not.toContainText("Rating:");
 
   // 6. View User B's private profile
   await userBCard.getByRole("link", { name: "View Profile" }).click();
@@ -889,7 +901,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userACard).toBeVisible();
   await expect(userACard).toContainText(userA.name);
   await expect(userACard).toContainText(`@${userA.username}`);
-  await expect(userACard).toContainText("Public");
+  await expect(userACard).toContainText("Everyone");
   await expect(userACard).toContainText("Rating:");
 
   // 8. Test Back button from Find Players returns to Home

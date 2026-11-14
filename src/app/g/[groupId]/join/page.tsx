@@ -9,12 +9,21 @@ import {
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import { JoinGroupClient } from "./join-group-client";
 
+/** Only same-group paths are honoured, so a crafted link can't bounce players elsewhere. */
+function safeContinuePath(groupId: string, next: string | undefined): string | null {
+  if (!next || !next.startsWith(`/g/${groupId}/`) || next.includes("//") || next.includes("\\")) return null;
+  return next;
+}
+
 export default async function JoinGroupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ groupId: string }>;
+  searchParams?: Promise<{ next?: string }>;
 }) {
   const { groupId } = await params;
+  const continueTo = safeContinuePath(groupId, (await searchParams)?.next);
   const repository = getActionRepository();
   const group = await repository.getGroup(groupId);
 
@@ -56,6 +65,7 @@ export default async function JoinGroupPage({
         isOrganizer={isOrganizer}
         isAccountMember={isAccountMember}
         guestPlayer={guestPlayer ? { id: guestPlayer.id, name: guestPlayer.name } : null}
+        continueTo={continueTo}
       />
     </main>
   );

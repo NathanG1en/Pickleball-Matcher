@@ -51,7 +51,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
         initialIsPublic={true}
       />
     );
-    expect(htmlPublic).toContain("Public");
+    expect(htmlPublic).toContain("Everyone");
     expect(htmlPublic).not.toContain("Account Visibility");
     expect(htmlPublic).toContain('aria-label="Account visibility details"');
 
@@ -65,7 +65,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
         initialIsPublic={false}
       />
     );
-    expect(htmlPrivate).toContain("Private");
+    expect(htmlPrivate).toContain("Only You");
     expect(htmlPrivate).not.toContain("Account Visibility");
     expect(htmlPrivate).toContain('aria-label="Account visibility details"');
   });
@@ -137,7 +137,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
     const html = renderToStaticMarkup(PageElement);
 
     expect(html).toContain("No Partner Yet");
-    expect(html).toContain("Play matches with other people to unlock");
+    expect(html).toContain("Chemistry tracks partners who have player accounts");
     expect(html).toContain("Chemistry Spotlight");
   });
 
@@ -193,7 +193,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("@public_star");
       expect(html).toContain("Male");
       expect(html).toContain("Competitive");
-      expect(html).toContain("Public");
+      expect(html).toContain("Everyone");
       expect(html).toContain("Best Partner");
       expect(html).toContain("@chem_partner");
       expect(html).toContain("+83% Synergy");
@@ -228,7 +228,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       const html = renderToStaticMarkup(PageElement);
 
       expect(html).toContain("No Partner Yet");
-      expect(html).toContain("Must play matches with other people to unlock");
+      expect(html).toContain("Chemistry shows up after doubles games with partners who have player accounts");
     });
 
     it("renders only display name and username when target is private and viewer is another user", async () => {
@@ -489,6 +489,62 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       // Go to session button and link SHOULD be present for the owner
       expect(html).toContain("Go to session");
       expect(html).toContain('href="/g/grp-1/sessions/sess-1?from=profile"');
+    });
+
+    it("displays 'Group Members Only' badge when a fellow group member views a player with group_members visibility", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_group_user",
+            username: "group_member_ace",
+            name: "Member Ace",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            rating: 1250,
+            visibilitySettings: {
+              profile: "group_members",
+              activities: "group_members",
+              ratingStats: "group_members",
+              chemistry: "group_members",
+              groups: "group_members",
+            },
+            createdAt: new Date(),
+          },
+          {
+            id: "viewer_fellow_user",
+            username: "fellow_user",
+            name: "Fellow User",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+        ],
+        groups: [
+          { id: "grp-shared", name: "Shared Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        ],
+        players: [
+          { id: "p-target", groupId: "grp-shared", accountId: "target_group_user", name: "Member Ace", initialRating: 1200, rating: 1250, ratedGamesPlayed: 5, active: true },
+          { id: "p-viewer", groupId: "grp-shared", accountId: "viewer_fellow_user", name: "Fellow User", initialRating: 1000, rating: 1000, ratedGamesPlayed: 2, active: true },
+        ],
+      });
+
+      setActionRepository(repository);
+
+      // Viewer is fellow group member
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_fellow_user");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "group_member_ace" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      // Should display Group Members Only badge and NOT Everyone
+      expect(html).toContain("Group Members Only");
+      expect(html).not.toContain("<span>Everyone</span>");
     });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ResultsEntryView } from "@/components/results/results-entry";
+import { ResultsEntryView, cancelMatchWarning, getViewerRoundState, saveAndStartBlocker, type MatchScoreEntry } from "@/components/results/results-entry";
 
 const sampleMatches = [
   {
@@ -41,6 +41,26 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Court 2");
     expect(html).toContain('aria-label="Court 1 Team 1 score"');
     expect(html).toContain('aria-label="Court 1 Team 2 score"');
+  });
+
+  it("renders a readable, thumb-sized Cancel match control on result cards", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        onCancelMatch={() => {}}
+      />
+    );
+
+    const cancelButton = html.match(/<button[^>]*>Cancel match<\/button>/)?.[0] ?? "";
+    expect(cancelButton).not.toBe("");
+    // #b91c1c keeps 4.5:1+ contrast on both the open (#FFFDF7) and final (#ecfdf5) card backgrounds.
+    expect(cancelButton).toContain("text-[#b91c1c]");
+    expect(cancelButton).not.toContain("text-[#ff6b6b]");
+    // 44px minimum touch target for courtside use.
+    expect(cancelButton).toContain("min-h-11");
   });
 
   it("renders cancelled match state clearly", () => {
@@ -527,6 +547,104 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain(`dateTime="${startedAt}"`);
     expect(html).toContain(`dateTime="${completedAt}"`);
   });
+
+  describe("viewer's own assignment", () => {
+    const liveMatches = [
+      {
+        id: "m1",
+        courtNumber: 1,
+        team1Names: ["Alice", "Bob"],
+        team2Names: ["Charlie", "Diana"],
+        team1PlayerIds: ["p-alice", "p-bob"],
+        team2PlayerIds: ["p-charlie", "p-diana"],
+        team1Score: null,
+        team2Score: null,
+        status: "pending" as const,
+        version: 1,
+      },
+      {
+        id: "m2",
+        courtNumber: 2,
+        team1Names: ["Evan", "Frank"],
+        team2Names: ["Grace", "Hank"],
+        team1PlayerIds: ["p-evan", "p-frank"],
+        team2PlayerIds: ["p-grace", "p-hank"],
+        team1Score: 8,
+        team2Score: 11,
+        status: "completed" as const,
+        version: 2,
+      },
+    ];
+
+    it("tells a player their court, partner and opponents above the courts", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage={false} viewerPlayerId="p-diana" />
+      );
+      expect(html).toContain('data-testid="viewer-round-card"');
+      expect(html).toContain("You&#x27;re on Court 1");
+      expect(html).toContain("Charlie");
+      expect(html).toContain("Alice &amp; Bob");
+      expect(html.indexOf("viewer-round-card")).toBeLessThan(html.indexOf('data-testid="court-match-1"'));
+      // The viewer's team is marked on the court card too
+      expect(html.match(/data-viewer-team="true"/g)).toHaveLength(1);
+    });
+
+    it("shows the final result from the viewer's side", () => {
+      const state = getViewerRoundState(liveMatches, "p-evan");
+      expect(state?.kind).toBe("playing");
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage={false} viewerPlayerId="p-evan" />
+      );
+      expect(html).toContain("Final · You lost 8–11");
+    });
+
+    it("tells a sitting player they are out this round", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView
+          roundId="r1"
+          roundNumber={2}
+          matches={liveMatches}
+          canManage={false}
+          viewerPlayerId="p-ivy"
+          sittingPlayerIds={["p-ivy"]}
+          sittingNames={["Ivy"]}
+        />
+      );
+      expect(html).toContain("You&#x27;re sitting out");
+    });
+
+    it("shows nothing extra when the viewer is not in this round or no viewer is known", () => {
+      expect(getViewerRoundState(liveMatches, "p-nobody")).toBeNull();
+      expect(getViewerRoundState(liveMatches, null)).toBeNull();
+    });
+
+    it("keeps the organizer's score screen free of the player card but still marks their team", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView roundId="r1" roundNumber={2} matches={liveMatches} canManage viewerPlayerId="p-alice" />
+      );
+      expect(html).not.toContain('data-testid="viewer-round-card"');
+      expect(html).toContain('data-viewer-team="true"');
+    });
+  });
+
+  it("warns that cancelling a final throws away its score and rating changes", () => {
+    expect(cancelMatchWarning({ status: "completed", team1Score: 11, team2Score: 8 })).toBe(
+      "This removes the 11–8 result and the rating changes from it. It can't be undone.",
+    );
+    expect(cancelMatchWarning({ status: "pending", team1Score: null, team2Score: null })).toContain("Nobody on this court gets a result");
+  });
+
+  it("explains why Save & Start is disabled, naming the courts that still need scores", () => {
+    const entries = [
+      { id: "a", courtNumber: 1, team1Names: ["A"], team2Names: ["B"], team1Score: 11, team2Score: 4, status: "completed" as const, version: 1 },
+      { id: "b", courtNumber: 2, team1Names: ["C"], team2Names: ["D"], team1Score: null, team2Score: null, status: "pending" as const, version: 1 },
+      { id: "c", courtNumber: 3, team1Names: ["E"], team2Names: ["F"], team1Score: null, team2Score: null, status: "pending" as const, version: 1 },
+      { id: "d", courtNumber: 4, team1Names: ["G"], team2Names: ["H"], team1Score: null, team2Score: null, status: "cancelled" as const, version: 1 },
+    ];
+    const scores = (m: MatchScoreEntry) => ({ team1: m.team1Score === null ? "" : String(m.team1Score), team2: m.team2Score === null ? "" : String(m.team2Score) });
+    expect(saveAndStartBlocker(entries, scores, false)).toBe("Courts 2 and 3 need scores. Enter them, or cancel those games, to start the next round.");
+    expect(saveAndStartBlocker(entries.slice(0, 2), scores, false)).toBe("Court 2 needs a score. Enter it, or cancel that game, to start the next round.");
+    expect(saveAndStartBlocker([entries[0]!], scores, false)).toBeNull();
+    expect(saveAndStartBlocker(entries, scores, true)).toBe("Fix the score errors above to continue.");
+  });
 });
-
-

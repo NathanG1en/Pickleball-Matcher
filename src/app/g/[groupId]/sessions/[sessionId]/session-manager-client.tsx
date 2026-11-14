@@ -15,6 +15,7 @@ import {
   proposeRoundAction,
   reshuffleRoundAction,
   saveAndStartNextRoundAction,
+  setMyAttendanceAction,
   startRoundAction,
   undoLatestRoundAction,
   updateCourtConfigAction,
@@ -26,11 +27,12 @@ import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } fr
 import { isPickleScore } from "@/components/results/pickle-celebration";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
 import { CurrentRoundView } from "@/components/rounds/current-round";
-import { ResultsEntryView, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
+import { ResultsEntryView, cancelMatchWarning, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
-import { formatDupr } from "@/lib/domain/rating-display";
+import { formatDupr, formatDuprDelta } from "@/lib/domain/rating-display";
 import { ChevronDownIcon, GearIcon, PinIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import {
   sortPlayersWithPinned,
@@ -53,10 +55,23 @@ import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
 import { AddPickupGameModal } from "@/components/sessions/add-pickup-game-modal";
 import { clearLineupDraft, lineupDraftKey } from "@/lib/rounds/lineup-draft";
+import {
+  clearLineupChoice,
+  defaultLineupSeed,
+  parseLineupChoice,
+  readLineupChoiceSnapshot,
+  saveLineupChoice,
+  subscribeLineupChoice,
+} from "@/lib/rounds/lineup-seed";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
 import { useHydrated } from "@/lib/utils/hydration";
+import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
+import { readScoreDrafts, scoreDraftsKey, writeScoreDrafts } from "@/lib/rounds/score-drafts";
+import { buildPlayCounts } from "@/lib/sessions/play-count";
+import { PlayCountPanel } from "@/components/sessions/play-count-panel";
+import { useLiveSessionSync } from "@/lib/sessions/use-live-session-sync";
 
 export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together" | "preferences";
 
@@ -161,6 +176,17 @@ export function SessionManagerClient({
     };
   }, []);
 
+  // Players watching a live session follow the organizer's round changes, scores,
+  // and session end without reloading. Organizers already refresh after their own
+  // actions, and polling under them could disturb score drafts mid-entry.
+  const liveStamp = useMemo(() => buildSessionLiveStamp(session, startedRounds), [session, startedRounds]);
+  useLiveSessionSync({
+    enabled: !canManage && session.status === "active",
+    groupId,
+    sessionId: session.id,
+    stamp: liveStamp,
+  });
+
   const pinnedPlayerIds = usePinnedPlayerIds(groupId);
   const [attendanceSearchQuery, setAttendanceSearchQuery] = useState("");
 
@@ -198,28 +224,17 @@ export function SessionManagerClient({
     setRegeneratedProposal(null);
   }
 
-  const activeProposal = regeneratedProposal ?? initialProposal;
   const [savingMatchIds, setSavingMatchIds] = useState<Set<string>>(() => new Set());
   const [prevAttendance, setPrevAttendance] = useState(attendance);
   const [currentAttendance, setCurrentAttendance] = useState(attendance);
+  // Set when the server rejected a stale lineup; cleared once fresh attendance arrives.
+  const [isAwaitingFreshLineup, setIsAwaitingFreshLineup] = useState(false);
   if (attendance !== prevAttendance) {
     setPrevAttendance(attendance);
     setCurrentAttendance(attendance);
+    setIsAwaitingFreshLineup(false);
   }
 
-  const presentAttendancePlayers = useMemo(() => {
-    return displayedAttendancePlayers.filter((p) => {
-      const rec = currentAttendance.find((a) => a.playerId === p.id);
-      return rec ? rec.leftRound === null : false;
-    });
-  }, [displayedAttendancePlayers, currentAttendance]);
-
-  const notPresentAttendancePlayers = useMemo(() => {
-    return displayedAttendancePlayers.filter((p) => {
-      const rec = currentAttendance.find((a) => a.playerId === p.id);
-      return rec ? rec.leftRound !== null : true;
-    });
-  }, [displayedAttendancePlayers, currentAttendance]);
 
   const [prevStartedRounds, setPrevStartedRounds] = useState(startedRounds);
   const [localStartedRounds, setLocalStartedRounds] = useState<readonly StartedRoundRecord[]>(startedRounds);
@@ -250,13 +265,32 @@ export function SessionManagerClient({
   const [isGeneratingRound, startGeneratingRound] = useTransition();
   const [isCourtConfigPending, startCourtConfigTransition] = useTransition();
   const [isRequestPending, setRequestPending] = useState(false);
-  const isPending = isActionPending || isGeneratingRound || isCourtConfigPending || isRequestPending;
+  const isPending = isActionPending || isGeneratingRound || isCourtConfigPending || isRequestPending || isAwaitingFreshLineup;
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showInProgressModal, setShowInProgressModal] = useState(false);
   const [doNotAskAgain, setDoNotAskAgain] = useState(false);
   const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(initialOpenSettingsModal);
+
+  // Attendance rows stay in the section they were in when Settings opened, so a row
+  // doesn't jump out from under the organizer's thumb as they mark arrivals and
+  // departures. Sections regroup the next time Settings opens.
+  const isPresentNow = (playerId: string) => {
+    const rec = currentAttendance.find((a) => a.playerId === playerId);
+    return rec ? rec.leftRound === null : false;
+  };
+  const [attendanceLayout, setAttendanceLayout] = useState<ReadonlyMap<string, boolean> | null>(null);
+  const [layoutForOpenModal, setLayoutForOpenModal] = useState(false);
+  if (showSessionSettingsModal !== layoutForOpenModal) {
+    setLayoutForOpenModal(showSessionSettingsModal);
+    setAttendanceLayout(
+      showSessionSettingsModal ? new Map(sessionPlayers.map((p) => [p.id, isPresentNow(p.id)])) : null,
+    );
+  }
+  const isInPresentSection = (playerId: string) => attendanceLayout?.get(playerId) ?? isPresentNow(playerId);
+  const presentAttendancePlayers = displayedAttendancePlayers.filter((p) => isInPresentSection(p.id));
+  const notPresentAttendancePlayers = displayedAttendancePlayers.filter((p) => !isInPresentSection(p.id));
   const [showAddPickupModal, setShowAddPickupModal] = useState(false);
   const [modalTab, setModalTab] = useState<SessionSettingsTab>(
     initialSettingsModalTab === "stay_together"
@@ -271,6 +305,11 @@ export function SessionManagerClient({
         : Array.from({ length: session.courtCount }, () => 4 as const)
   );
   const [editingHistoricalMatchId, setEditingHistoricalMatchId] = useState<string | null>(null);
+  const [matchPendingCancel, setMatchPendingCancel] = useState<MatchScoreEntry | null>(null);
+  const [isMyAttendancePending, setIsMyAttendancePending] = useState(false);
+  // Only an actual end-session request says "Ending…"; other actions just disable the button.
+  const [isEnding, setIsEnding] = useState(false);
+  const [myAttendanceError, setMyAttendanceError] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
     (cb) => subscribeConfirmMatchups(groupId, cb),
@@ -554,7 +593,49 @@ export function SessionManagerClient({
   const latestStarted = localStartedRounds.at(-1);
   const isRoundInProgress = latestStarted && latestStarted.round.status === "started";
 
-  const [matchmakingVariety, setMatchmakingVariety] = useState<number>(0);
+  // Typed-but-unsaved scores survive a reload of this tab (a phone locking courtside).
+  const scoreDraftStorageKey = canManage && isRoundInProgress && latestStarted ? scoreDraftsKey(latestStarted.round.id) : null;
+  const [restoredScoreDraftsFor, setRestoredScoreDraftsFor] = useState<string | null>(null);
+  if (isHydrated && scoreDraftStorageKey && restoredScoreDraftsFor !== scoreDraftStorageKey && latestStarted) {
+    setRestoredScoreDraftsFor(scoreDraftStorageKey);
+    const pendingIds = new Set(latestStarted.matches.filter((m) => m.status === "pending").map((m) => m.id));
+    const restored = readScoreDrafts(scoreDraftStorageKey, pendingIds);
+    if (restored) setScoreDrafts((prev) => ({ ...restored, ...prev }));
+  }
+  useEffect(() => {
+    if (scoreDraftStorageKey && restoredScoreDraftsFor === scoreDraftStorageKey) {
+      writeScoreDrafts(scoreDraftStorageKey, scoreDrafts);
+    }
+  }, [scoreDraftStorageKey, restoredScoreDraftsFor, scoreDrafts]);
+
+  // The next round's lineup. Its default seed is fixed per session and round, so
+  // reloads and other organizer devices agree. A Reshuffle or variety change made
+  // on this device is remembered until that round starts.
+  const proposalRoundNumber = (latestStarted?.round.roundNumber ?? 0) + (isRoundInProgress ? 0 : 1);
+  const storedLineupChoiceRaw = useSyncExternalStore(
+    subscribeLineupChoice,
+    () => readLineupChoiceSnapshot(session.id),
+    () => "",
+  );
+  const storedLineupChoice = parseLineupChoice(storedLineupChoiceRaw, proposalRoundNumber, currentSession.version);
+  const storedChoiceProposal = useMemo(() => {
+    if (!storedLineupChoice || isRoundInProgress || !canManage) return null;
+    try {
+      return proposeRoundFromSnapshot(
+        { session: currentSession, players: sessionPlayers, attendance: currentAttendance, rounds: localStartedRounds },
+        storedLineupChoice.seed,
+        storedLineupChoice.temperature,
+      );
+    } catch {
+      return null;
+    }
+    // storedLineupChoice is re-parsed every render; its raw string is the stable dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedLineupChoiceRaw, proposalRoundNumber, isRoundInProgress, canManage, currentSession, sessionPlayers, currentAttendance, localStartedRounds]);
+  const activeProposal = regeneratedProposal ?? storedChoiceProposal ?? initialProposal;
+
+  const [varietyOverride, setMatchmakingVariety] = useState<number | null>(null);
+  const matchmakingVariety = varietyOverride ?? storedLineupChoice?.temperature ?? 0;
 
   const preGeneratedProposal = useMemo(() => {
     if (!latestStarted || latestStarted.round.status !== "started") return null;
@@ -566,7 +647,7 @@ export function SessionManagerClient({
           attendance: currentAttendance,
           rounds: localStartedRounds,
         },
-        undefined,
+        defaultLineupSeed(currentSession.id, latestStarted.round.roundNumber + 1),
         matchmakingVariety,
       );
     } catch {
@@ -577,9 +658,16 @@ export function SessionManagerClient({
   const applyPartnerSession = async (updated: SessionRecord) => {
     setCurrentSession(updated);
     clearLineupDraft(lineupDraftKey(updated.id));
+    clearLineupChoice(updated.id);
     setRegeneratedProposal(null);
     if (canManage && updated.status === "active" && !isRoundInProgress) {
-      const generated = await proposeRoundAction({ groupId, sessionId: updated.id, sessionVersion: updated.version, temperature: matchmakingVariety });
+      const generated = await proposeRoundAction({
+        groupId,
+        sessionId: updated.id,
+        sessionVersion: updated.version,
+        seed: defaultLineupSeed(updated.id, proposalRoundNumber),
+        temperature: matchmakingVariety,
+      });
       if (generated.ok) setRegeneratedProposal(generated.data);
       else setError(generated.error);
     }
@@ -620,6 +708,12 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: proposalRoundNumber,
+            sessionVersion: currentSession.version,
+            seed: nextSeed,
+            temperature: variety,
+          });
           setRegeneratedProposal(res.data);
         } else {
           setError(res.error);
@@ -658,6 +752,12 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: latestStarted.round.roundNumber,
+            sessionVersion: currentSession.version + 1,
+            seed: res.data.seed,
+            temperature: matchmakingVariety,
+          });
           startGeneratingRound(() => {
             setRegeneratedProposal(res.data);
             setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
@@ -676,6 +776,22 @@ export function SessionManagerClient({
         setError("Failed to reshuffle matchups.");
       }
     });
+  };
+
+  // A lineup can go stale when a player leaves from their phone or another organizer
+  // changes attendance. The server names who changed; refreshing pulls in the current
+  // attendance so the next tap uses an up-to-date lineup.
+  const reportStartError = (message: string) => {
+    if (!/out of date/i.test(message)) {
+      setError(message);
+      return;
+    }
+    setError(`${message.replace(/ Refresh the lineup before starting\.$/, "")} The lineup has been updated, so check it and try again.`);
+    // Hold the start buttons until the refreshed attendance lands, so a quick retry
+    // can't resend the same stale lineup. The timeout is a safety net.
+    setIsAwaitingFreshLineup(true);
+    router.refresh();
+    setTimeout(() => setIsAwaitingFreshLineup(false), 8_000);
   };
 
   const handleStartRound = (customProposal?: {
@@ -702,6 +818,7 @@ export function SessionManagerClient({
         });
         if (res.ok) {
           clearLineupDraft(lineupDraftKey(currentSession.id));
+          clearLineupChoice(currentSession.id);
           startGeneratingRound(() => {
             setRegeneratedProposal(null);
             setCurrentSession((prev) => ({
@@ -712,7 +829,7 @@ export function SessionManagerClient({
             // The revalidating action already returns the fresh server tree.
           });
         } else {
-          setError(res.error);
+          reportStartError(res.error);
         }
       } catch {
         setError("Failed to start round.");
@@ -877,6 +994,7 @@ export function SessionManagerClient({
                 groupId,
                 sessionId: currentSession.id,
                 sessionVersion: currentSession.version,
+                seed: defaultLineupSeed(currentSession.id, latestStarted.round.roundNumber + 1),
                 temperature: matchmakingVariety,
               });
               if (generated.ok) {
@@ -887,7 +1005,7 @@ export function SessionManagerClient({
             setLocalStartedRounds(previousRounds);
             setCurrentSession(previousSession);
             setScoreDrafts(previousDrafts);
-            setError(res.error);
+            reportStartError(res.error);
           }
         } catch {
           setLocalStartedRounds(previousRounds);
@@ -1014,7 +1132,7 @@ export function SessionManagerClient({
           setLocalStartedRounds(previousRounds);
           setCurrentSession(previousSession);
           setScoreDrafts(previousDrafts);
-          setError(res.error);
+          reportStartError(res.error);
         }
       } catch {
         setLocalStartedRounds(previousRounds);
@@ -1255,6 +1373,7 @@ export function SessionManagerClient({
   const executeEndSession = async () => {
     if (hasUnsavedScores) return;
     setIsPending(true);
+    setIsEnding(true);
     setError(null);
     try {
       const res = await endSessionAction({
@@ -1274,6 +1393,7 @@ export function SessionManagerClient({
       setError("Failed to end session.");
     } finally {
       setIsPending(false);
+      setIsEnding(false);
     }
   };
 
@@ -1306,6 +1426,32 @@ export function SessionManagerClient({
     }
     setShowInProgressModal(false);
     await executeEndSession();
+  };
+
+  const viewerAttendance = currentViewerPlayerId
+    ? currentAttendance.find((record) => record.playerId === currentViewerPlayerId) ?? null
+    : null;
+
+  /** A player saying they're leaving after this round, or staying after all. */
+  const handleSetMyAttendance = async (present: boolean) => {
+    if (!currentViewerPlayerId || isMyAttendancePending) return;
+    setIsMyAttendancePending(true);
+    setMyAttendanceError(null);
+    try {
+      const res = await setMyAttendanceAction({ groupId, sessionId: currentSession.id, present });
+      if (!res.ok) {
+        setMyAttendanceError(res.error);
+        return;
+      }
+      setCurrentAttendance((prev) =>
+        prev.map((record) => (record.playerId === currentViewerPlayerId ? { ...record, leftRound: res.data.leftRound } : record)),
+      );
+      router.refresh();
+    } catch {
+      setMyAttendanceError("Couldn't update your attendance. Please try again.");
+    } finally {
+      setIsMyAttendancePending(false);
+    }
   };
 
   const handleToggleAttendance = async (playerId: string, currentlyPresent: boolean) => {
@@ -1477,18 +1623,22 @@ export function SessionManagerClient({
   // Convert started round matches to MatchScoreEntry
   const scoreEntries: MatchScoreEntry[] = latestStarted
     ? latestStarted.matches.map((match) => {
-        const team1Players = (latestStarted.matchPlayers ?? [])
+        const team1Ids = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 1)
-          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
-        const team2Players = (latestStarted.matchPlayers ?? [])
+          .map((mp) => mp.playerId);
+        const team2Ids = (latestStarted.matchPlayers ?? [])
           .filter((mp) => mp.matchId === match.id && mp.team === 2)
-          .map((mp) => playerNames[mp.playerId] ?? mp.playerId);
+          .map((mp) => mp.playerId);
+        const team1Players = team1Ids.map((id) => playerNames[id] ?? id);
+        const team2Players = team2Ids.map((id) => playerNames[id] ?? id);
 
         return {
           id: match.id,
           courtNumber: match.courtNumber,
           team1Names: team1Players.length > 0 ? team1Players : ["Player 1"],
           team2Names: team2Players.length > 0 ? team2Players : ["Player 2"],
+          team1PlayerIds: team1Ids,
+          team2PlayerIds: team2Ids,
           team1Score: match.team1Score,
           team2Score: match.team2Score,
           status: match.status,
@@ -1593,6 +1743,17 @@ export function SessionManagerClient({
       }
     : null;
 
+  // The viewer's rating before their first rated game and after their last one this session.
+  const viewerRatingChange = (() => {
+    if (!currentViewerPlayerId) return null;
+    const rated = [...localStartedRounds]
+      .sort((a, b) => a.round.roundNumber - b.round.roundNumber)
+      .flatMap((sr) => sr.matchPlayers)
+      .filter((mp) => mp.playerId === currentViewerPlayerId && mp.ratingBefore !== null && mp.ratingAfter !== null);
+    if (rated.length === 0) return null;
+    return { before: rated[0]!.ratingBefore!, after: rated.at(-1)!.ratingAfter! };
+  })();
+
   let durationFormatted: string | null = null;
   if (session.endedAt && session.startedAt) {
     const startMs = new Date(session.startedAt).getTime();
@@ -1625,6 +1786,21 @@ export function SessionManagerClient({
         </Toast>
       )}
 
+      <ConfirmDialog
+        isOpen={matchPendingCancel !== null}
+        onClose={() => setMatchPendingCancel(null)}
+        onConfirm={() => {
+          const matchId = matchPendingCancel?.id;
+          setMatchPendingCancel(null);
+          if (matchId) void handleCancelMatch(matchId);
+        }}
+        title={matchPendingCancel ? `Cancel the Court ${matchPendingCancel.courtNumber} game?` : "Cancel this game?"}
+        description={matchPendingCancel ? cancelMatchWarning(matchPendingCancel) : ""}
+        confirmText="Cancel match"
+        cancelText="Keep match"
+        confirmDataTestId="confirm-cancel-match"
+      />
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -1636,7 +1812,7 @@ export function SessionManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -1652,7 +1828,7 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span>
@@ -1667,7 +1843,7 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span>
@@ -1683,9 +1859,9 @@ export function SessionManagerClient({
                 aria-label="End Session"
                 aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 data-testid="end-session-button"
-                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
-                {isPending ? "Ending..." : (
+                {isEnding ? "Ending..." : (
                   <>
                     <span className="sm:hidden">End</span>
                     <span className="hidden sm:inline">End Session</span>
@@ -1909,6 +2085,11 @@ export function SessionManagerClient({
                 </div>
                 <p className="text-xs font-bold text-neutral-700">
                   You won {viewerSessionStats.wins} {viewerSessionStats.wins === 1 ? "game" : "games"} and lost {viewerSessionStats.losses} {viewerSessionStats.losses === 1 ? "game" : "games"}.
+                </p>
+                <p data-testid="personal-rating-change" className="text-sm font-black text-black">
+                  {viewerRatingChange
+                    ? `Rating ${formatDupr(viewerRatingChange.before)} → ${formatDupr(viewerRatingChange.after)} (${formatDuprDelta(viewerRatingChange.after - viewerRatingChange.before)})`
+                    : "No rated doubles games this session, so your rating didn't change."}
                 </p>
               </div>
             )}
@@ -2172,12 +2353,14 @@ export function SessionManagerClient({
               roundNumber={latestStarted.round.roundNumber}
               courtCount={currentSession.courtCount}
               sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
+              sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
+              viewerPlayerId={currentViewerPlayerId}
               matches={scoreEntries}
               fieldErrors={fieldErrors}
               isPending={isPending}
               savingMatchIds={savingMatchIds}
               onSubmitResult={canManage ? handleSaveResult : undefined}
-              onCancelMatch={canManage ? handleCancelMatch : undefined}
+              onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
               onNextRound={canManage ? handleNextRound : undefined}
               onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
               isGeneratingRound={isGeneratingRound}
@@ -2244,6 +2427,45 @@ export function SessionManagerClient({
                 </p>
               )}
             </div>
+          )}
+
+          {/* A player's own way to head home early without leaving the group */}
+          {!canManage && viewerAttendance && currentSession.status === "active" && (
+            <section
+              data-testid="my-attendance"
+              className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[2px_2px_0px_0px_#000]"
+            >
+              <p className="text-sm font-bold text-black">
+                {viewerAttendance.leftRound === null
+                  ? "Heading home early? Let the organizer know and you won't be put in another round."
+                  : `You're out from Round ${viewerAttendance.leftRound}. You won't be put in another round.`}
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleSetMyAttendance(viewerAttendance.leftRound !== null)}
+                disabled={isMyAttendancePending}
+                data-testid={viewerAttendance.leftRound === null ? "leave-after-game-button" : "stay-in-session-button"}
+                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+              >
+                {isMyAttendancePending
+                  ? "Saving…"
+                  : viewerAttendance.leftRound === null
+                    ? "I'm leaving after this round"
+                    : "I'm staying"}
+              </button>
+              {myAttendanceError && (
+                <p role="alert" className="w-full text-xs font-black text-black">{myAttendanceError}</p>
+              )}
+            </section>
+          )}
+
+          {/* Running fairness tally, collapsed by default */}
+          {currentSession.status === "active" && localStartedRounds.length > 0 && (
+            <PlayCountPanel
+              rows={buildPlayCounts(localStartedRounds, currentAttendance)}
+              playerNames={playerNames}
+              viewerPlayerId={currentViewerPlayerId}
+            />
           )}
 
           {/* Past Rounds Accordion / List */}
@@ -2631,7 +2853,7 @@ export function SessionManagerClient({
                         <div className="flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border border-black shadow-[1px_1px_0px_0px_#000]" />
                           <h4 className="font-display text-xs font-black uppercase tracking-wider text-black">
-                            Present ({presentAttendancePlayers.length})
+                            Present ({displayedAttendancePlayers.filter((p) => isPresentNow(p.id)).length})
                           </h4>
                         </div>
                         <span className="text-[11px] font-bold text-neutral-500">
@@ -2711,7 +2933,7 @@ export function SessionManagerClient({
                                         }}
                                         disabled={isPending}
                                         aria-pressed={!isPresent}
-                                        title="Mark Left"
+                                        title="Mark as not playing"
                                         data-testid={`attendance-left-${p.name}`}
                                         className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                                           !isPresent
@@ -2719,12 +2941,12 @@ export function SessionManagerClient({
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
-                                        Left
+                                        {rec ? "Left" : "Not here"}
                                       </button>
                                     </div>
                                   ) : (
                                     <Badge variant={isPresent ? "success" : "muted"}>
-                                      {isPresent ? "Present" : "Left"}
+                                      {isPresent ? "Present" : rec ? "Left" : "Not here"}
                                     </Badge>
                                   )}
                                 </div>
@@ -2741,7 +2963,7 @@ export function SessionManagerClient({
                         <div className="flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-neutral-300 border border-black shadow-[1px_1px_0px_0px_#000]" />
                           <h4 className="font-display text-xs font-black uppercase tracking-wider text-neutral-700">
-                            Not Present / Left ({notPresentAttendancePlayers.length})
+                            Not here / Left ({displayedAttendancePlayers.filter((p) => !isPresentNow(p.id)).length})
                           </h4>
                         </div>
                         <span className="text-[11px] font-bold text-neutral-500">
@@ -2821,7 +3043,7 @@ export function SessionManagerClient({
                                         }}
                                         disabled={isPending}
                                         aria-pressed={!isPresent}
-                                        title="Mark Left"
+                                        title="Mark as not playing"
                                         data-testid={`attendance-left-${p.name}`}
                                         className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                                           !isPresent
@@ -2829,12 +3051,12 @@ export function SessionManagerClient({
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
-                                        Left
+                                        {rec ? "Left" : "Not here"}
                                       </button>
                                     </div>
                                   ) : (
                                     <Badge variant={isPresent ? "success" : "muted"}>
-                                      {isPresent ? "Present" : "Left"}
+                                      {isPresent ? "Present" : rec ? "Left" : "Not here"}
                                     </Badge>
                                   )}
                                 </div>
@@ -3142,7 +3364,7 @@ export function SessionManagerClient({
                 data-testid="confirm-end-session-button"
                 className="font-display uppercase tracking-wider text-xs bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
               >
-                {isPending ? "Ending..." : "End Session"}
+                {isEnding ? "Ending..." : "End Session"}
               </Button>
             </div>
           </div>

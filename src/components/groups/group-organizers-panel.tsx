@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/app/actions/players";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { GroupOrganizerRecord, PlayerRecord } from "@/lib/domain/types";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import { LinkGuestModal } from "./link-guest-modal";
 import { EditGuestModal } from "./edit-guest-modal";
 import { MergeGuestModal } from "./merge-guest-modal";
@@ -88,6 +89,8 @@ export function GroupOrganizersPanel({
   initialAddMode = "search",
   initialSearchResults = [],
   initialSearchUsername = "",
+  currentAccountId,
+  isGroupMember = true,
 }: {
   groupId: string;
   groupName?: string;
@@ -98,6 +101,8 @@ export function GroupOrganizersPanel({
   initialAddMode?: "search" | "guest";
   initialSearchResults?: readonly SearchPlayerResult[];
   initialSearchUsername?: string;
+  currentAccountId?: string | null;
+  isGroupMember?: boolean;
 }) {
   const router = useRouter();
   const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
@@ -151,9 +156,26 @@ export function GroupOrganizersPanel({
     () => players.filter((p) => !p.accountId).length,
     [players],
   );
+  const canViewPlayerDetails = useCallback((player: PlayerRecord) => {
+    if (!player.accountId) {
+      return true;
+    }
+    if (currentAccountId && currentAccountId === player.accountId) {
+      return true;
+    }
+    const visibility = parseProfileVisibilitySettings(player.visibilitySettings, player.isPublic ?? true);
+    if (player.isPublic === false || visibility.profile === "only_you" || visibility.ratingStats === "only_you") {
+      return false;
+    }
+    if ((visibility.profile === "group_members" || visibility.ratingStats === "group_members") && !isGroupMember) {
+      return false;
+    }
+    return true;
+  }, [currentAccountId, isGroupMember]);
+
   const hasGenderData = useMemo(
-    () => players.some((p) => Boolean(p.gender)),
-    [players],
+    () => players.some((p) => canViewPlayerDetails(p) && Boolean(p.gender)),
+    [players, canViewPlayerDetails],
   );
 
   const filteredAndSortedPlayers = useMemo(() => {
@@ -188,7 +210,7 @@ export function GroupOrganizersPanel({
     }
 
     if (filterGender !== "all") {
-      result = result.filter((p) => p.gender === filterGender);
+      result = result.filter((p) => canViewPlayerDetails(p) && p.gender === filterGender);
     }
 
     const compareFn = (a: PlayerRecord, b: PlayerRecord) => {
@@ -197,21 +219,45 @@ export function GroupOrganizersPanel({
           return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
         case "name_desc":
           return b.name.localeCompare(a.name, undefined, { sensitivity: "base" });
-        case "rating_desc":
+        case "rating_desc": {
+          const aCan = canViewPlayerDetails(a);
+          const bCan = canViewPlayerDetails(b);
+          if (!aCan && !bCan) return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          if (!aCan) return 1;
+          if (!bCan) return -1;
           return b.rating - a.rating || a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-        case "rating_asc":
+        }
+        case "rating_asc": {
+          const aCan = canViewPlayerDetails(a);
+          const bCan = canViewPlayerDetails(b);
+          if (!aCan && !bCan) return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          if (!aCan) return 1;
+          if (!bCan) return -1;
           return a.rating - b.rating || a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-        case "games_desc":
+        }
+        case "games_desc": {
+          const aCan = canViewPlayerDetails(a);
+          const bCan = canViewPlayerDetails(b);
+          if (!aCan && !bCan) return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          if (!aCan) return 1;
+          if (!bCan) return -1;
           return (b.ratedGamesPlayed ?? 0) - (a.ratedGamesPlayed ?? 0) || a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-        case "games_asc":
+        }
+        case "games_asc": {
+          const aCan = canViewPlayerDetails(a);
+          const bCan = canViewPlayerDetails(b);
+          if (!aCan && !bCan) return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          if (!aCan) return 1;
+          if (!bCan) return -1;
           return (a.ratedGamesPlayed ?? 0) - (b.ratedGamesPlayed ?? 0) || a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+        }
         default:
           return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
       }
     };
 
     return sortPlayersWithPinned(result, pinnedPlayerIds, undefined, compareFn);
-  }, [players, organizers, pinnedPlayerIds, searchQuery, filterType, filterGender, sortOption]);
+  }, [players, organizers, pinnedPlayerIds, searchQuery, filterType, filterGender, sortOption, canViewPlayerDetails]);
 
   // Mode switch: "search" | "guest"
   const [addMode, setAddMode] = useState<"search" | "guest">(initialAddMode);
@@ -942,23 +988,31 @@ export function GroupOrganizersPanel({
                   {/* Line 2: Stats and Role Badge */}
                   <div className="flex items-center gap-2 text-xs font-bold text-neutral-600 flex-wrap mt-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span>
-                        <span className="hidden sm:inline">Rating: </span>
-                        {formatDupr(player.rating)}
-                      </span>
-                      {player.gender && (
+                      {canViewPlayerDetails(player) ? (
                         <>
+                          <span>
+                            <span className="hidden sm:inline">Rating: </span>
+                            {formatDupr(player.rating)}
+                          </span>
+                          {player.gender && (
+                            <>
+                              <span aria-hidden="true" className="text-neutral-400">·</span>
+                              <span className="uppercase text-[11px] font-bold text-neutral-600">
+                                <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
+                                <span className="hidden sm:inline">{player.gender}</span>
+                              </span>
+                            </>
+                          )}
                           <span aria-hidden="true" className="text-neutral-400">·</span>
-                          <span className="uppercase text-[11px] font-bold text-neutral-600">
-                            <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
-                            <span className="hidden sm:inline">{player.gender}</span>
+                          <span>
+                            {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
                           </span>
                         </>
+                      ) : (
+                        <span>
+                          {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
+                        </span>
                       )}
-                      <span aria-hidden="true" className="text-neutral-400">·</span>
-                      <span>
-                        {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
-                      </span>
                     </div>
                     {organizer && (
                       <span

@@ -23,7 +23,7 @@ export default async function PublicGroupsPage({ searchParams }: { searchParams:
           <button className="rounded-xl border-2 border-black bg-[#ccff00] px-4 font-black uppercase shadow-[3px_3px_0px_0px_#000]">Search</button>
         </form>
         {!accountId && <p className="text-sm font-bold text-neutral-700">Create a player account or sign in to join a group.</p>}
-        <PublicGroupList groups={groups} isSignedIn={Boolean(accountId)} />
+        <PublicGroupList groups={groups} isSignedIn={Boolean(accountId)} query={q} />
       </section>
     </main>
   );

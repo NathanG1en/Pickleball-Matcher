@@ -1,0 +1,17 @@
+{
+  "playerHasLeaveControl": true,
+  "leaveDialogMentionsLiveSession": true,
+  "nonMemberLandedOn": "/g/grp_22f7701c-2/join",
+  "signedOutLandedOn": "/player-login",
+  "signedOutSeesGroupName": true,
+  "saveStartBlockedReason": "Court 2 needs a score. Enter it, or cancel that game, to start the next round.",
+  "playCountVisible": true,
+  "attendanceToggleTook": true,
+  "attendanceRowMoved": true,
+  "playCountVisibleRound2": true,
+  "dashboardSummaryLink": true,
+  "personalRatingChange": "Rating 3.5 → 3.6 (+0.1)",
+  "chemistryCopy": "",
+  "chartRange": "3.5 → 3.6 rating",
+  "groupId": "grp_22f7701c-2"
+}

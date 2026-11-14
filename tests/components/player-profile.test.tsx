@@ -883,6 +883,227 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(groupsIndex).toBeGreaterThan(sessionsIndex);
     expect(pastSessionsIndex).toBeGreaterThan(groupsIndex);
   });
+
+  it("PlayerProfileHeader does not render Custom Controls badge when portion privacy is customized", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Custom User"
+        initialUsername="custom_user"
+        initialGender="female"
+        initialIsPublic={true}
+        initialVisibilitySettings={{
+          profile: "everyone",
+          activities: "only_you",
+          ratingStats: "group_members",
+          chemistry: "only_you",
+          groups: "everyone",
+        }}
+      />
+    );
+
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
+  });
+
+  it("PlayerProfileHeader does not render Custom Controls badge when all portions are public default", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Default User"
+        initialUsername="default_user"
+        initialGender="male"
+        initialIsPublic={true}
+      />
+    );
+
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
+  });
+
+  it("renders PlayerProfilePage with customized visibility settings gracefully", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "strava_user",
+          name: "Strava User",
+          passwordHash: "hash",
+          skillLevel: "advanced",
+          initialRating: 1200,
+          visibilitySettings: {
+            profile: "everyone",
+            activities: "only_you",
+            ratingStats: "group_members",
+            chemistry: "only_you",
+            groups: "everyone",
+          },
+          createdAt: new Date(),
+        },
+      ],
+      groups: [],
+      players: [],
+    });
+    setActionRepository(repository);
+
+    const pageElement = await PlayerProfilePage();
+    const html = renderToStaticMarkup(pageElement);
+
+    expect(html).toContain("Strava User");
+    expect(html).toContain("@strava_user");
+    expect(html).not.toContain("Custom Controls");
+  });
+
+  it("PlayerProfileHeader in edit mode renders 'General Information' section label and collapsible Privacy Controls drawers", () => {
+    // Closed drawers view
+    const htmlClosed = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={true}
+        initialOpenDrawers={{}}
+      />
+    );
+
+    // Header label is "General Information", not "Editing Profile"
+    expect(htmlClosed).toContain("General Information");
+    expect(htmlClosed).not.toContain("Editing Profile");
+
+    // General Information no longer has the redundant Account Visibility toggle button
+    expect(htmlClosed).not.toContain("Account Visibility");
+
+    // Section title is "Privacy Controls" without "Portion Visibility" or "Choose who can see"
+    expect(htmlClosed).toContain("Privacy Controls");
+    expect(htmlClosed).not.toContain("Portion Visibility");
+    expect(htmlClosed).not.toContain("Choose who can see");
+
+    // Header toggle button is present without "Minimize" or "Expand" text language
+    expect(htmlClosed).toContain('data-testid="toggle-privacy-section"');
+    expect(htmlClosed).not.toContain("Minimize");
+    expect(htmlClosed).not.toContain("Expand");
+
+    // All portion drawer toggles are present
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-profile"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-activities"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-ratingStats"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-chemistry"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-groups"');
+
+    // Because drawers are closed, the options radiogroups are not rendered
+    expect(htmlClosed).not.toContain('data-testid="profile-visibility-everyone"');
+    expect(htmlClosed).not.toContain('data-testid="activities-visibility-everyone"');
+
+    // When a drawer is open
+    const htmlOpen = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={true}
+        initialOpenDrawers={{ profile: true }}
+      />
+    );
+
+    // Profile drawer is open with option descriptions and radio buttons
+    expect(htmlOpen).toContain('data-testid="profile-visibility-everyone"');
+    expect(htmlOpen).toContain('data-testid="profile-visibility-group_members"');
+    expect(htmlOpen).toContain('data-testid="profile-visibility-only_you"');
+    expect(htmlOpen).toContain("Anyone can search for your profile and view your profile page.");
+    expect(htmlOpen).not.toContain("Controls your general profile page and discoverability in search.");
+    // Selected radio button turns green
+    expect(htmlOpen).toContain("bg-[#ccff00]");
+
+    // Other drawers remain closed
+    expect(htmlOpen).not.toContain('data-testid="activities-visibility-everyone"');
+
+    // When the whole Privacy Controls section is collapsed
+    const htmlMinimized = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={false}
+      />
+    );
+
+    expect(htmlMinimized).not.toContain("Expand");
+    expect(htmlMinimized).not.toContain('data-testid="toggle-drawer-profile"');
+  });
+
+  it("PlayerProfileHeader renders Group Members badge when profile page visibility is group_members", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Group Player"
+        initialUsername="group_player"
+        initialGender="female"
+        initialIsPublic={true}
+        initialVisibilitySettings={{
+          profile: "group_members",
+          activities: "group_members",
+          ratingStats: "group_members",
+          chemistry: "group_members",
+          groups: "group_members",
+        }}
+      />
+    );
+
+    expect(html).toContain("Group Members Only");
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
+  });
+
+  it("enforces visibility ceiling in edit mode: disables options exceeding Profile Page ceiling", () => {
+    // When profile is group_members and activities drawer is open
+    const htmlGroupCeiling = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Capped User"
+        initialUsername="capped_user"
+        initialGender="male"
+        initialEditing={true}
+        initialVisibilitySettings={{
+          profile: "group_members",
+          activities: "group_members",
+          ratingStats: "group_members",
+          chemistry: "group_members",
+          groups: "group_members",
+        }}
+        initialOpenDrawers={{ activities: true }}
+      />
+    );
+
+    // In activities drawer, "everyone" option is disabled
+    expect(htmlGroupCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-everyone"/);
+    expect(htmlGroupCeiling).toContain("Visibility ceiling: Group Members (from Profile Page)");
+
+    // When profile is only_you and activities drawer is open
+    const htmlPrivateCeiling = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Private User"
+        initialUsername="private_user"
+        initialGender="male"
+        initialEditing={true}
+        initialVisibilitySettings={{
+          profile: "only_you",
+          activities: "only_you",
+          ratingStats: "only_you",
+          chemistry: "only_you",
+          groups: "only_you",
+        }}
+        initialOpenDrawers={{ activities: true }}
+      />
+    );
+
+    // In activities drawer, both "everyone" and "group_members" are disabled
+    expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-everyone"/);
+    expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-group_members"/);
+    expect(htmlPrivateCeiling).toContain("Visibility ceiling: Only You (from Profile Page)");
+  });
 });
+
 
 

@@ -223,4 +223,16 @@ export const addSessionGuestSchema = z
 
 export type AddSessionGuestInput = z.infer<typeof addSessionGuestSchema>;
 
+export const sessionLiveStampSchema = z.object({
+  groupId: entityIdSchema,
+  sessionId: entityIdSchema,
+});
 
+/** A player changing their own attendance: no player id, the server resolves who is asking. */
+export const setMyAttendanceSchema = z
+  .object({
+    groupId: entityIdSchema,
+    sessionId: entityIdSchema,
+    present: z.boolean(),
+  })
+  .strict();

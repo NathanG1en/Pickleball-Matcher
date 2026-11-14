@@ -12,6 +12,7 @@ import { SessionManagerClient } from "./session-manager-client";
 import { OpenPlayManagerClient } from "./open-play-manager-client";
 import type { RoundProposal } from "@/lib/domain/types";
 import { buildPairSynergies } from "@/lib/synergy/lineup";
+import { defaultLineupSeed } from "@/lib/rounds/lineup-seed";
 
 export default async function ActiveSessionPage({
   params,
@@ -51,10 +52,13 @@ export default async function ActiveSessionPage({
     : (guestPlayerId ? players.find((p) => p.id === guestPlayerId) : undefined);
 
   if (!isOrganizer && !isMember) {
+    const sessionPath = `/g/${groupId}/sessions/${sessionId}`;
     if (!accountId) {
-      redirect(`/player-login?next=%2Fg%2F${groupId}%2Fsessions%2F${sessionId}`);
+      // Members sign in and land straight on the session; the sign-in page offers joining too.
+      redirect(`/player-login?next=${encodeURIComponent(sessionPath)}`);
     }
-    redirect("/players");
+    // Signed in but not in the group: offer to join, then continue to the shared session.
+    redirect(`/g/${groupId}/join?next=${encodeURIComponent(sessionPath)}`);
   }
 
   const isHost = Boolean(accountId && group.ownerAccountId === accountId);
@@ -105,9 +109,12 @@ export default async function ActiveSessionPage({
   if (sessionRecord.status !== "completed" && !isRoundInProgress && isOrganizer) {
     try {
       const sessionService = getActionSessionService();
-      initialProposal = sessionService.proposeRoundFromSnapshot({
-        session: sessionRecord, players, attendance, rounds: startedRounds,
-      });
+      // Same seed on every load (and every organizer device) until the inputs change.
+      const nextRoundNumber = (startedRounds.at(-1)?.round.roundNumber ?? 0) + 1;
+      initialProposal = sessionService.proposeRoundFromSnapshot(
+        { session: sessionRecord, players, attendance, rounds: startedRounds },
+        defaultLineupSeed(sessionRecord.id, nextRoundNumber),
+      );
     } catch (error) {
       if (error instanceof DomainError) initialProposalError = error.message;
       // In case not enough players or state error, proposal will remain null

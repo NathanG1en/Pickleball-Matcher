@@ -43,38 +43,63 @@ describe("Find Players", () => {
     createdAt: new Date(),
   };
 
-  it("renders public and private players with username, display name, gender, and rating", () => {
+  const groupMemberPlayer: PlayerAccountRecord = {
+    id: "usr_grp",
+    username: "club_regular",
+    name: "Casey Club",
+    gender: "female",
+    isPublic: true,
+    passwordHash: "hash3",
+    skillLevel: "intermediate",
+    initialRating: 1100,
+    rating: 1150,
+    visibilitySettings: {
+      profile: "group_members",
+      activities: "group_members",
+      ratingStats: "group_members",
+      chemistry: "group_members",
+      groups: "group_members",
+    },
+    createdAt: new Date(),
+  };
+
+  it("renders public, group members only, and private players with username, display name, gender, and rating", () => {
     const html = renderToStaticMarkup(
       <FindPlayerList
-        players={[publicPlayer, privatePlayer]}
+        players={[publicPlayer, groupMemberPlayer, privatePlayer]}
         currentAccountId="usr_pub"
       />
     );
 
     // Display names
     expect(html).toContain("Alex Champion");
+    expect(html).toContain("Casey Club");
     expect(html).toContain("Sam Secret");
 
     // Usernames
     expect(html).toContain("@pickle_ace");
+    expect(html).toContain("@club_regular");
     expect(html).toContain("@stealth_drop");
 
-    // Genders
+    // Genders (Alex Champion is public female; Sam Secret is private male and hidden from other viewers)
     expect(html).toContain("Female");
-    expect(html).toContain("Male");
+    expect(html).not.toContain("Male");
 
-    // Ratings (formatDupr formats Elo: 1000 -> 3.5, 1050 -> 3.625, 1240 -> 4.1)
+    // Ratings (formatDupr formats Elo: 1000 -> 3.5, 1050 -> 3.625; private player's rating 1240 / 4.1 is hidden)
     expect(html).toContain("Rating:");
     expect(html).toContain("3.625");
-    expect(html).toContain("4.1");
+    expect(html).not.toContain("4.1");
 
     // Badges
-    expect(html).toContain("Public");
+    expect(html).toContain("Everyone");
+    expect(html).toContain("Group Members Only");
     expect(html).toContain("Private");
+    expect(html).not.toContain("Only You");
     expect(html).toContain("You");
 
     // Links to profiles
     expect(html).toContain('href="/players/pickle_ace"');
+    expect(html).toContain('href="/players/club_regular"');
     expect(html).toContain('href="/players/stealth_drop"');
     expect(html).toContain("View Profile");
   });

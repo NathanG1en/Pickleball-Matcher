@@ -23,6 +23,11 @@ import { GroupTournamentsList } from "@/components/tournaments/group-tournaments
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
+/** Request-time check used to surface a session summary shortly after it ends. */
+function endedWithinHours(endedAt: Date | null, hours: number): boolean {
+  return endedAt !== null && Date.now() - endedAt.getTime() < hours * 60 * 60 * 1000;
+}
+
 export default async function GroupDashboardPage({
   params,
 }: {
@@ -58,6 +63,11 @@ export default async function GroupDashboardPage({
   const isGuestMember = Boolean(guestPlayerId && players.some((p) => p.id === guestPlayerId && p.active));
   const isMember = Boolean(accountId && players.some((player) => player.accountId === accountId && player.active)) || isGuestMember;
   const isPartOfGroup = isOrganizer || isMember;
+  const viewerPlayerId = accountId
+    ? players.find((player) => player.accountId === accountId && player.active)?.id ?? null
+    : isGuestMember
+      ? guestPlayerId
+      : null;
 
   if (!isPartOfGroup && !group.isPublic) {
     if (!accountId) {
@@ -78,6 +88,9 @@ export default async function GroupDashboardPage({
   const latestCompletedSession = sessions.filter(s => s.status === "completed")
     .sort((a, b) => (b.endedAt ?? b.startedAt).getTime() - (a.endedAt ?? a.startedAt).getTime())[0];
 
+  // Right after a session ends, the dashboard points straight at its summary.
+  const showRecentSummaryLink = !activeSession && endedWithinHours(latestCompletedSession?.endedAt ?? null, 12);
+
   let currentRoundMatches: readonly MatchRecord[] = [];
   let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
   if (activeSession) {
@@ -88,6 +101,15 @@ export default async function GroupDashboardPage({
       currentMatchPlayers = latestStarted.matchPlayers;
     }
   }
+
+  const viewerCourt = viewerPlayerId
+    ? currentRoundMatches.find((m) => currentMatchPlayers.some((mp) => mp.matchId === m.id && mp.playerId === viewerPlayerId))?.courtNumber
+    : undefined;
+  const viewerLiveSessionWarning = activeSession
+    ? viewerCourt !== undefined
+      ? `A session is running and you're playing on Court ${viewerCourt} right now.`
+      : "A session is running right now."
+    : null;
 
   const pastSessionsData = await Promise.all(
     pastSessions.map(async (s) => {
@@ -164,6 +186,7 @@ export default async function GroupDashboardPage({
                 organizerPermissions={group.organizerPermissions}
                 players={players}
                 organizers={organizers}
+                liveSessionWarning={viewerLiveSessionWarning}
               />
             ) : null}
           </div>
@@ -184,29 +207,28 @@ export default async function GroupDashboardPage({
           {!activeSession && isOrganizer && latestCompletedSession && (
             <SessionSignOff key={latestCompletedSession.id} groupId={groupId} sessionId={latestCompletedSession.id} />
           )}
+          {showRecentSummaryLink && latestCompletedSession && (
+            <Link
+              href={`/g/${groupId}/sessions/${latestCompletedSession.id}`}
+              data-testid="session-summary-link"
+              className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+            >
+              See the session summary →
+            </Link>
+          )}
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Organizers and Roster panel: appears first on mobile stack, right column on desktop */}
-        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:order-2">
-          <GroupOrganizersPanel groupId={groupId} groupName={group.name} players={players} organizers={organizers} isHost={isHost} isOrganizer={isOrganizer} />
-          {/* Mobile Add to Home Screen Tip */}
-          <HomeScreenTip />
-        </div>
-
-        {/* Primary Action and Sessions column: appears after roster on mobile, left column on desktop */}
-        <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:order-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 items-start">
+        {/* Primary action: first on mobile so organizers can start or resume play without scrolling past the roster */}
+        <div className="lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-1">
           {!isPartOfGroup ? (
             <GroupJoinCard
               groupId={groupId}
               groupName={group.name}
               isSignedIn={Boolean(accountId)}
             />
-          ) : (
-            <>
-              {/* Primary Action Card */}
-              {activeSession ? (
+          ) : activeSession ? (
                 <section
                   data-testid="active-session-card"
                   className="relative bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 lg:p-7 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
@@ -309,18 +331,37 @@ export default async function GroupDashboardPage({
                 currentRoundMatches.length > 0 && (
                   <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
                     <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
-                    <div data-testid="current-matchups" className="max-h-[136px] overflow-y-auto lg:max-h-72 space-y-2 pr-1">
-                      {currentRoundMatches.map((m) => {
+                    <div data-testid="current-matchups" className="space-y-2">
+                      {[...currentRoundMatches]
+                        .sort((a, b) => {
+                          // The viewer's own court comes first so a glance answers "where am I?"
+                          const isViewerIn = (matchId: string) =>
+                            Boolean(viewerPlayerId && currentMatchPlayers.some((mp) => mp.matchId === matchId && mp.playerId === viewerPlayerId));
+                          return Number(isViewerIn(b.id)) - Number(isViewerIn(a.id)) || a.courtNumber - b.courtNumber;
+                        })
+                        .map((m) => {
                         const t1 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 1)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                         const t2 = currentMatchPlayers
                           .filter((mp) => mp.matchId === m.id && mp.team === 2)
                           .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
+                        const isViewerMatch = Boolean(
+                          viewerPlayerId && currentMatchPlayers.some((mp) => mp.matchId === m.id && mp.playerId === viewerPlayerId),
+                        );
                         return (
-                          <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                          <div
+                            key={m.id}
+                            data-viewer-match={isViewerMatch ? "true" : undefined}
+                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-white shadow-[2px_2px_0px_0px_#000]" : "bg-[#FFFDF7]"}`}
+                          >
                             <div>
-                              <span className="font-black text-black block">Court {m.courtNumber}</span>
+                              <span className="font-black text-black flex items-center gap-2">
+                                Court {m.courtNumber}
+                                {isViewerMatch && (
+                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase">You&apos;re here</span>
+                                )}
+                              </span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
                             </div>
                             {m.status === "completed" && (
@@ -344,6 +385,7 @@ export default async function GroupDashboardPage({
                       sessionId={activeSession.id}
                       sessionType={activeSession.type}
                       sessionVersion={activeSession.version}
+                      gamesInProgress={currentRoundMatches.filter((m) => m.status === "pending").length}
                     />
                   </div>
                   <Link
@@ -396,7 +438,26 @@ export default async function GroupDashboardPage({
               </p>
             </section>
           )}
+        </div>
 
+        {/* Organizers and Roster panel: after the primary action on mobile, right column on desktop */}
+        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:col-start-8 xl:col-start-9 lg:row-start-1 lg:row-span-2">
+          <GroupOrganizersPanel
+            groupId={groupId}
+            groupName={group.name}
+            players={players}
+            organizers={organizers}
+            isHost={isHost}
+            isOrganizer={isOrganizer}
+            currentAccountId={accountId}
+            isGroupMember={isPartOfGroup}
+          />
+          {/* Mobile Add to Home Screen Tip */}
+          <HomeScreenTip />
+        </div>
+
+        {isPartOfGroup && (
+          <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-2">
           {/* Tournaments Section */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">
@@ -426,9 +487,8 @@ export default async function GroupDashboardPage({
               isOrganizer={Boolean(isOrganizer || isHost)}
             />
           </section>
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );

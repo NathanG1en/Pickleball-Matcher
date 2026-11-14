@@ -1,0 +1,26 @@
+[
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "/Users/nathanglen/AntigravityProjects/Pickleball Matcher/src/components/groups/group-settings/organizers-tab.tsx",
+    "line": 286,
+    "snippet": "border-l-4",
+    "importedBy": [
+      "group-settings-modal.tsx"
+    ]
+  },
+  {
+    "antipattern": "bounce-easing",
+    "name": "Bounce or elastic easing",
+    "description": "Bounce and elastic easing feel dated and tacky. Real objects decelerate smoothly — use exponential easing (ease-out-quart/quint/expo) instead.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/Users/nathanglen/AntigravityProjects/Pickleball Matcher/src/components/rounds/current-round.tsx",
+    "line": 899,
+    "snippet": "animate-bounce (Tailwind)",
+    "advisory": true
+  }
+]

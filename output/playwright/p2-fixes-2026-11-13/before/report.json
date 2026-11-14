@@ -1,0 +1,17 @@
+{
+  "playerHasLeaveControl": false,
+  "leaveDialogMentionsLiveSession": false,
+  "nonMemberLandedOn": "/players",
+  "signedOutLandedOn": "/player-login",
+  "signedOutSeesGroupName": false,
+  "saveStartBlockedReason": null,
+  "playCountVisible": false,
+  "attendanceToggleTook": true,
+  "attendanceRowMoved": true,
+  "playCountVisibleRound2": false,
+  "dashboardSummaryLink": false,
+  "personalRatingChange": null,
+  "chemistryCopy": "",
+  "chartRange": "3.5 → 3.5 rating",
+  "groupId": "grp_656f1b96-8"
+}
