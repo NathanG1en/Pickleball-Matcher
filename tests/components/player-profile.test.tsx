@@ -970,6 +970,9 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlClosed).toContain("General Information");
     expect(htmlClosed).not.toContain("Editing Profile");
 
+    // General Information no longer has the redundant Account Visibility toggle button
+    expect(htmlClosed).not.toContain("Account Visibility");
+
     // Section title is "Privacy Controls" without "Portion Visibility" or "Choose who can see"
     expect(htmlClosed).toContain("Privacy Controls");
     expect(htmlClosed).not.toContain("Portion Visibility");
@@ -1027,6 +1030,28 @@ describe("PlayerProfilePage and Group Leaving", () => {
 
     expect(htmlMinimized).not.toContain("Expand");
     expect(htmlMinimized).not.toContain('data-testid="toggle-drawer-profile"');
+  });
+
+  it("PlayerProfileHeader renders Group Members badge when profile page visibility is group_members", () => {
+    const html = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Group Player"
+        initialUsername="group_player"
+        initialGender="female"
+        initialIsPublic={true}
+        initialVisibilitySettings={{
+          profile: "group_members",
+          activities: "group_members",
+          ratingStats: "group_members",
+          chemistry: "group_members",
+          groups: "group_members",
+        }}
+      />
+    );
+
+    expect(html).toContain("Group Members");
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
   });
 });
 

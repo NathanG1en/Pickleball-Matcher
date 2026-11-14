@@ -515,9 +515,12 @@ test.describe("Permissions and Security Workflow", () => {
     // Make privateUser private via their profile page
     await privatePage.goto("/players");
     await privatePage.getByRole("button", { name: "Edit Profile" }).click();
-    const privacyBtn = privatePage.getByRole("button", { name: /Account visibility: currently Public/ });
-    await expect(privacyBtn).toBeVisible();
-    await privacyBtn.click();
+    const profileDrawer = privatePage.locator("[data-testid='toggle-drawer-profile']");
+    await expect(profileDrawer).toBeVisible();
+    await profileDrawer.click();
+    const onlyYouOption = privatePage.locator("[data-testid='profile-visibility-only_you']");
+    await expect(onlyYouOption).toBeVisible();
+    await onlyYouOption.click();
     await privatePage.getByRole("button", { name: "Save Changes" }).click();
     await expect(privatePage.getByText("Profile updated successfully")).toBeVisible();
 
@@ -848,9 +851,12 @@ test("find players workflow from homepage shows public and private players with 
   // Switch User B to private
   await pageB.goto("/players");
   await pageB.getByRole("button", { name: "Edit Profile" }).click();
-  const privacyToggle = pageB.locator("button[title='Click to switch to Private']");
-  await expect(privacyToggle).toBeVisible();
-  await privacyToggle.click();
+  const profileDrawerB = pageB.locator("[data-testid='toggle-drawer-profile']");
+  await expect(profileDrawerB).toBeVisible();
+  await profileDrawerB.click();
+  const onlyYouOptionB = pageB.locator("[data-testid='profile-visibility-only_you']");
+  await expect(onlyYouOptionB).toBeVisible();
+  await onlyYouOptionB.click();
   await pageB.getByRole("button", { name: "Save Changes" }).click();
   await expect(pageB.getByText("Profile updated successfully")).toBeVisible();
   await contextB.close();

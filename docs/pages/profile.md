@@ -15,7 +15,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Display Name & Username**: Prominently displayed at the top.
    - **Gender**: Displayed if configured (`Male` or `Female`).
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
-   - **Visibility Badge**: Indicates whether the account is `Public` or `Private`, along with any customized portion privacy controls.
+   - **Visibility Badge**: Indicates the active account visibility tier (`Public`, `Group Members`, or `Private`), along with a `Custom Controls` pill when granular portions override the baseline.
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu with "Log Out".
 2. **Chemistry Spotlight**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost.
@@ -37,19 +37,18 @@ The player profile page is where athletes can review their rating, track their g
 
 ## Edit Profile Mode
 
-Clicking the **Edit Profile** button switches the header into edit mode under the **General Information** section:
-- **Display Name**: Editable text field (up to 80 characters).
-- **Username**: Editable `@username` with live availability check against the database.
-- **Gender**: Dropdown to select Male or Female.
-- **Account Visibility**: Quick toggle between Public and Private.
-- **Privacy Controls**: Collapsible section containing individual drawers for each portion of the profile:
+Clicking the **Edit Profile** button switches the header into edit mode:
+- **General Information**:
+  - **Display Name**: Editable text field (up to 80 characters).
+  - **Username**: Editable `@username` with live availability check against the database.
+  - **Gender**: Dropdown to select Male or Female.
+- **Privacy Controls**: Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
   - Can be collapsed or expanded using the "Privacy Controls" chevron header toggle.
-  - Each portion is rendered as an expandable drawer showing the active visibility level pill:
-    - **Profile Page**: Controls general discoverability in search (`Everyone`, `Group Members`, or `Only You`).
-    - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`).
-    - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`).
-    - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`).
-    - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`).
+  - **Profile Page (Account Baseline)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). Setting this to `Only You` makes the entire account private.
+  - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`).
+  - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`).
+  - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`).
+  - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`).
 
 ### Visibility Levels (Modeled after Strava)
 - **Everyone**: Visible to all players and public visitors.

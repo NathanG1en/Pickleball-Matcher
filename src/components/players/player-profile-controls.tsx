@@ -112,7 +112,6 @@ export function PlayerProfileHeader({
   const [genderInput, setGenderInput] = useState<"male" | "female">(
     initialGender === "female" ? "female" : "male",
   );
-  const [isPublicInput, setIsPublicInput] = useState(initialIsPublic);
   const [visibilityInput, setVisibilityInput] = useState<ProfileVisibilitySettings>(
     () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
   );
@@ -176,7 +175,6 @@ export function PlayerProfileHeader({
     setNameInput(name);
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
-    setIsPublicInput(isPublic);
     setVisibilityInput(visibilitySettings);
     setIsPrivacySectionOpen(true);
     setOpenDrawers({});
@@ -190,7 +188,6 @@ export function PlayerProfileHeader({
       nameInput.trim() !== name.trim() ||
       cleanUsernameInput !== username.toLowerCase() ||
       genderInput !== (gender ?? "male") ||
-      isPublicInput !== isPublic ||
       visibilityInput.profile !== visibilitySettings.profile ||
       visibilityInput.activities !== visibilitySettings.activities ||
       visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
@@ -208,7 +205,6 @@ export function PlayerProfileHeader({
     setNameInput(name);
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
-    setIsPublicInput(isPublic);
     setVisibilityInput(visibilitySettings);
     setIsPrivacySectionOpen(true);
     setOpenDrawers({});
@@ -283,8 +279,9 @@ export function PlayerProfileHeader({
         }
       }
 
+      const targetIsPublic = visibilityInput.profile !== "only_you";
       const visibilityChanged =
-        isPublicInput !== isPublic ||
+        targetIsPublic !== isPublic ||
         visibilityInput.profile !== visibilitySettings.profile ||
         visibilityInput.activities !== visibilitySettings.activities ||
         visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
@@ -292,7 +289,6 @@ export function PlayerProfileHeader({
         visibilityInput.groups !== visibilitySettings.groups;
 
       if (visibilityChanged) {
-        const targetIsPublic = visibilityInput.profile !== "only_you";
         const privacyRes = await updatePlayerPrivacyAction({
           isPublic: targetIsPublic,
           visibilitySettings: visibilityInput,
@@ -446,7 +442,7 @@ export function PlayerProfileHeader({
             </div>
 
             {/* Gender */}
-            <div className="space-y-1">
+            <div className="space-y-1 sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">
               <label
                 htmlFor="profile-gender-input"
                 className="block text-xs font-black uppercase tracking-wider text-neutral-700"
@@ -464,93 +460,6 @@ export function PlayerProfileHeader({
                 ]}
                 sizeVariant="sm"
               />
-            </div>
-
-            {/* Visibility */}
-            <div className="space-y-1">
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-700">
-                Account Visibility
-              </label>
-              <div className="flex items-center gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextVal = !isPublicInput;
-                    setIsPublicInput(nextVal);
-                    setVisibilityInput((prev) => ({
-                      ...prev,
-                      profile: nextVal ? "everyone" : "only_you",
-                    }));
-                  }}
-                  aria-label={`Account visibility: currently ${isPublicInput ? "Public" : "Private"}. Click to switch.`}
-                  title={isPublicInput ? "Click to switch to Private" : "Click to switch to Public"}
-                  className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
-                    isPublicInput ? "bg-[#ccff00]" : "bg-neutral-200"
-                  } px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] hover:opacity-90 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer`}
-                >
-                  {isPublicInput ? (
-                    <>
-                      <GlobeIcon className="h-3 w-3 shrink-0" />
-                      <span>Public</span>
-                    </>
-                  ) : (
-                    <>
-                      <LockIcon className="h-3 w-3 shrink-0" />
-                      <span>Private</span>
-                    </>
-                  )}
-                </button>
-
-                <div
-                  className="relative inline-flex items-center"
-                  onMouseEnter={() => setShowPrivacyTooltip(true)}
-                  onMouseLeave={() => setShowPrivacyTooltip(false)}
-                >
-                  <button
-                    ref={privacyTriggerRef}
-                    type="button"
-                    onClick={() => setShowPrivacyTooltip((prev) => !prev)}
-                    onFocus={() => setShowPrivacyTooltip(true)}
-                    onBlur={() => setShowPrivacyTooltip(false)}
-                    aria-label="Account visibility details"
-                    title="Account visibility details"
-                    className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-black/40 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-black transition-all cursor-pointer"
-                  >
-                    <InfoIcon className="h-2.5 w-2.5" />
-                  </button>
-
-                  {showPrivacyTooltip && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40 sm:hidden"
-                        onClick={() => setShowPrivacyTooltip(false)}
-                        aria-hidden="true"
-                      />
-                      <div
-                        ref={privacyTooltipRef}
-                        role="tooltip"
-                        style={privacyTooltipStyle}
-                        className="absolute left-0 sm:left-7 top-7 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
-                      >
-                        <div className="space-y-1.5 text-xs">
-                          <p className="font-bold leading-snug">
-                            <span className="font-black text-black uppercase">Public:</span>{" "}
-                            <span className="text-neutral-700">
-                              Your profile and stats are discoverable by @username search.
-                            </span>
-                          </p>
-                          <p className="font-bold leading-snug">
-                            <span className="font-black text-black uppercase">Private:</span>{" "}
-                            <span className="text-neutral-700">
-                              Your profile is private; stats are hidden from public search.
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -647,9 +556,6 @@ export function PlayerProfileHeader({
                                   onClick={() => {
                                     const next = { ...visibilityInput, [portion.key]: opt.value };
                                     setVisibilityInput(next);
-                                    if (portion.key === "profile") {
-                                      setIsPublicInput(opt.value !== "only_you");
-                                    }
                                   }}
                                   className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-black px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer ${
                                     isSelected
@@ -707,13 +613,22 @@ export function PlayerProfileHeader({
           <div className="flex items-center gap-2 pt-0.5">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
-                isPublic ? "bg-[#ccff00]" : "bg-neutral-200"
+                visibilitySettings.profile === "everyone"
+                  ? "bg-[#ccff00]"
+                  : visibilitySettings.profile === "group_members"
+                  ? "bg-[#e0e7ff]"
+                  : "bg-neutral-200"
               } px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black`}
             >
-              {isPublic ? (
+              {visibilitySettings.profile === "everyone" ? (
                 <>
                   <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
                   <span>Public</span>
+                </>
+              ) : visibilitySettings.profile === "group_members" ? (
+                <>
+                  <UsersIcon className="h-2.5 w-2.5 shrink-0" />
+                  <span>Group Members</span>
                 </>
               ) : (
                 <>
@@ -723,7 +638,10 @@ export function PlayerProfileHeader({
               )}
             </span>
 
-            {Object.entries(visibilitySettings).some(([, val]) => val !== "everyone") && (
+            {Object.entries(visibilitySettings).some(([key, val]) => {
+              if (key === "profile") return false;
+              return val !== visibilitySettings.profile;
+            }) && (
               <span
                 data-testid="custom-visibility-badge"
                 className="inline-flex items-center gap-1 rounded-full border-2 border-black bg-[#fde047] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black"
@@ -767,7 +685,13 @@ export function PlayerProfileHeader({
                       <p className="font-bold leading-snug">
                         <span className="font-black text-black uppercase">Public:</span>{" "}
                         <span className="text-neutral-700">
-                          Your profile and stats are discoverable by @username search.
+                          Your profile is discoverable in player search and viewable by everyone.
+                        </span>
+                      </p>
+                      <p className="font-bold leading-snug">
+                        <span className="font-black text-black uppercase">Group Members:</span>{" "}
+                        <span className="text-neutral-700">
+                          Your profile is only viewable by athletes who share a group with you.
                         </span>
                       </p>
                       <p className="font-bold leading-snug">
