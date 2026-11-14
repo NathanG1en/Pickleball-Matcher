@@ -12,7 +12,9 @@ for (const surface of ["session", "dashboard"] as const) {
     const sessionUrl = page.url();
     if (surface === "dashboard") {
       await page.goto(`/g/${groupId}`);
+      // Ending from the dashboard asks first.
       await page.getByTestId("end-session-now-button").click();
+      await page.getByTestId("confirm-end-session-now").click();
     } else {
       page.once("dialog", dialog => dialog.accept());
       await page.getByTestId("end-session-button").click();
