@@ -720,7 +720,7 @@ export function PlayerProfileHeader({
               {visibilitySettings.profile === "everyone" ? (
                 <>
                   <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-                  <span>Public</span>
+                  <span>Everyone</span>
                 </>
               ) : visibilitySettings.profile === "group_members" ? (
                 <>
@@ -730,7 +730,7 @@ export function PlayerProfileHeader({
               ) : (
                 <>
                   <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                  <span>Private</span>
+                  <span>Only You</span>
                 </>
               )}
             </span>
@@ -780,7 +780,7 @@ export function PlayerProfileHeader({
                   >
                     <div className="space-y-1.5 text-xs">
                       <p className="font-bold leading-snug">
-                        <span className="font-black text-black uppercase">Public:</span>{" "}
+                        <span className="font-black text-black uppercase">Everyone:</span>{" "}
                         <span className="text-neutral-700">
                           Your profile is discoverable in player search and viewable by everyone.
                         </span>
@@ -792,7 +792,7 @@ export function PlayerProfileHeader({
                         </span>
                       </p>
                       <p className="font-bold leading-snug">
-                        <span className="font-black text-black uppercase">Private:</span>{" "}
+                        <span className="font-black text-black uppercase">Only You:</span>{" "}
                         <span className="text-neutral-700">
                           Your profile is private; stats are hidden from public search.
                         </span>
@@ -884,8 +884,8 @@ export function PlayerVisibilityControl({
           type="button"
           onClick={toggle}
           disabled={pending}
-          aria-label={`Account visibility: currently ${isPublic ? "Public" : "Private"}. Click to switch.`}
-          title={isPublic ? "Click to switch to Private" : "Click to switch to Public"}
+          aria-label={`Account visibility: currently ${isPublic ? "Everyone" : "Only You"}. Click to switch.`}
+          title={isPublic ? "Click to switch to Only You" : "Click to switch to Everyone"}
           className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
         >
           {pending ? (
@@ -893,12 +893,12 @@ export function PlayerVisibilityControl({
           ) : isPublic ? (
             <>
               <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-              <span>Public</span>
+              <span>Everyone</span>
             </>
           ) : (
             <>
               <LockIcon className="h-2.5 w-2.5 shrink-0" />
-              <span>Private</span>
+              <span>Only You</span>
             </>
           )}
         </button>
@@ -936,11 +936,15 @@ export function PlayerVisibilityControl({
               >
                 <div className="space-y-1.5 text-xs">
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Public:</span>{" "}
-                    <span className="text-neutral-700">Your profile and stats are discoverable by @username search.</span>
+                    <span className="font-black text-black uppercase">Everyone:</span>{" "}
+                    <span className="text-neutral-700">Your profile is discoverable in player search and viewable by everyone.</span>
                   </p>
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Private:</span>{" "}
+                    <span className="font-black text-black uppercase">Group Members:</span>{" "}
+                    <span className="text-neutral-700">Your profile is only viewable by athletes who share a group with you.</span>
+                  </p>
+                  <p className="font-bold leading-snug">
+                    <span className="font-black text-black uppercase">Only You:</span>{" "}
                     <span className="text-neutral-700">Your profile is private; stats are hidden from public search.</span>
                   </p>
                 </div>

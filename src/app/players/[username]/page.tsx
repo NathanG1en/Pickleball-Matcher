@@ -10,7 +10,7 @@ import {
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { BackButton, StatCard } from "@/components/ui";
-import { GlobeIcon, LockIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { GlobeIcon, LockIcon, ChevronRightIcon, UsersIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { ClientDate } from "@/components/ui/client-date-time";
 import { canViewPortion, parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
@@ -180,9 +180,31 @@ export default async function PlayerPublicProfilePage({
                 </p>
               )}
               <div className="flex items-center gap-2 pt-0.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
-                  <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-                  <span>Public</span>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black ${
+                    visibilitySettings.profile === "everyone"
+                      ? "bg-[#ccff00]"
+                      : visibilitySettings.profile === "group_members"
+                      ? "bg-[#e0e7ff]"
+                      : "bg-neutral-200"
+                  } px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black`}
+                >
+                  {visibilitySettings.profile === "everyone" ? (
+                    <>
+                      <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
+                      <span>Everyone</span>
+                    </>
+                  ) : visibilitySettings.profile === "group_members" ? (
+                    <>
+                      <UsersIcon className="h-2.5 w-2.5 shrink-0" />
+                      <span>Group Members</span>
+                    </>
+                  ) : (
+                    <>
+                      <LockIcon className="h-2.5 w-2.5 shrink-0" />
+                      <span>Only You</span>
+                    </>
+                  )}
                 </span>
               </div>
               <div className="pt-2 border-t-2 border-neutral-100">

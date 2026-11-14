@@ -51,7 +51,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
         initialIsPublic={true}
       />
     );
-    expect(htmlPublic).toContain("Public");
+    expect(htmlPublic).toContain("Everyone");
     expect(htmlPublic).not.toContain("Account Visibility");
     expect(htmlPublic).toContain('aria-label="Account visibility details"');
 
@@ -65,7 +65,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
         initialIsPublic={false}
       />
     );
-    expect(htmlPrivate).toContain("Private");
+    expect(htmlPrivate).toContain("Only You");
     expect(htmlPrivate).not.toContain("Account Visibility");
     expect(htmlPrivate).toContain('aria-label="Account visibility details"');
   });
@@ -193,7 +193,7 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("@public_star");
       expect(html).toContain("Male");
       expect(html).toContain("Competitive");
-      expect(html).toContain("Public");
+      expect(html).toContain("Everyone");
       expect(html).toContain("Best Partner");
       expect(html).toContain("@chem_partner");
       expect(html).toContain("+83% Synergy");

@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { PlayerAccountRecord } from "@/lib/domain/types";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { EmptyState } from "@/components/ui";
-import { GlobeIcon, LockIcon } from "@/components/ui/icons";
+import { GlobeIcon, LockIcon, UsersIcon } from "@/components/ui/icons";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 
 interface FindPlayerListProps {
   readonly players: readonly PlayerAccountRecord[];
@@ -20,7 +21,8 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
       {players.map((player) => {
         const isSelf = Boolean(currentAccountId && currentAccountId === player.id);
-        const isPrivate = player.isPublic === false;
+        const visibility = parseProfileVisibilitySettings(player.visibilitySettings, player.isPublic ?? true);
+        const profileLevel = visibility.profile;
         const currentRating = player.rating ?? player.initialRating;
         const formattedRating = formatDupr(currentRating);
         const genderLabel = player.gender === "male" ? "Male" : player.gender === "female" ? "Female" : null;
@@ -41,15 +43,20 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                     You
                   </span>
                 )}
-                {isPrivate ? (
-                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
-                    <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Private</span>
-                  </span>
-                ) : (
+                {profileLevel === "everyone" ? (
                   <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
                     <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Public</span>
+                    <span>Everyone</span>
+                  </span>
+                ) : profileLevel === "group_members" ? (
+                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#e0e7ff] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
+                    <UsersIcon className="h-2.5 w-2.5 shrink-0" />
+                    <span>Group Members</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
+                    <LockIcon className="h-2.5 w-2.5 shrink-0" />
+                    <span>Only You</span>
                   </span>
                 )}
               </div>

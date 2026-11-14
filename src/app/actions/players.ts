@@ -267,6 +267,7 @@ export async function updatePlayerPrivacyAction(
       return { ok: false, error: "You must be signed in to change privacy settings." };
     }
     const repository = getActionRepository();
+    const account = await repository.getPlayerAccount(accountId);
     await repository.updatePlayerPrivacy(
       accountId,
       parsed.data.isPublic,
@@ -274,6 +275,10 @@ export async function updatePlayerPrivacyAction(
     );
     try {
       revalidatePath("/players");
+      revalidatePath("/players/find");
+      if (account?.username) {
+        revalidatePath(`/players/${encodeURIComponent(account.username)}`);
+      }
     } catch {
       // Non-request test contexts.
     }

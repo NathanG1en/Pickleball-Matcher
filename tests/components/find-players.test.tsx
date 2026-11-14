@@ -69,8 +69,8 @@ describe("Find Players", () => {
     expect(html).toContain("4.1");
 
     // Badges
-    expect(html).toContain("Public");
-    expect(html).toContain("Private");
+    expect(html).toContain("Everyone");
+    expect(html).toContain("Only You");
     expect(html).toContain("You");
 
     // Links to profiles
