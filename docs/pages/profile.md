@@ -15,7 +15,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Display Name & Username**: Prominently displayed at the top.
    - **Gender**: Displayed if configured (`Male` or `Female`).
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
-   - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`), along with a `Custom Controls` pill when granular portions override the baseline. Tooltip explains the three tiers: Everyone, Group Members, and Only You.
+   - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu with "Log Out".
 2. **Chemistry Spotlight**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost.

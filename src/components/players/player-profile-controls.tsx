@@ -735,18 +735,6 @@ export function PlayerProfileHeader({
               )}
             </span>
 
-            {Object.entries(visibilitySettings).some(([key, val]) => {
-              if (key === "profile") return false;
-              return val !== visibilitySettings.profile;
-            }) && (
-              <span
-                data-testid="custom-visibility-badge"
-                className="inline-flex items-center gap-1 rounded-full border-2 border-black bg-[#fde047] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black"
-              >
-                Custom Controls
-              </span>
-            )}
-
             <div
               className="relative inline-flex items-center"
               onMouseEnter={() => setShowPrivacyTooltip(true)}

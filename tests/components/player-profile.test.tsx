@@ -884,7 +884,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(pastSessionsIndex).toBeGreaterThan(groupsIndex);
   });
 
-  it("PlayerProfileHeader renders Custom Controls badge when portion privacy is customized", () => {
+  it("PlayerProfileHeader does not render Custom Controls badge when portion privacy is customized", () => {
     const html = renderToStaticMarkup(
       <PlayerProfileHeader
         initialName="Custom User"
@@ -901,8 +901,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    expect(html).toContain("Custom Controls");
-    expect(html).toContain('data-testid="custom-visibility-badge"');
+    expect(html).not.toContain("Custom Controls");
+    expect(html).not.toContain('data-testid="custom-visibility-badge"');
   });
 
   it("PlayerProfileHeader does not render Custom Controls badge when all portions are public default", () => {
@@ -949,7 +949,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
 
     expect(html).toContain("Strava User");
     expect(html).toContain("@strava_user");
-    expect(html).toContain("Custom Controls");
+    expect(html).not.toContain("Custom Controls");
   });
 
   it("PlayerProfileHeader in edit mode renders 'General Information' section label and collapsible Privacy Controls drawers", () => {
