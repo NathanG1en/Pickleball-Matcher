@@ -8,6 +8,8 @@ export interface ToastProps extends React.HTMLAttributes<HTMLDivElement> {
   fixed?: boolean;
   className?: string;
   testId?: string;
+  /** Toast auto-dismiss duration in milliseconds. Renders a loader bar along the bottom when > 0. Set to 0 to disable. Defaults to 3000. */
+  duration?: number;
 }
 
 export function Toast({
@@ -18,6 +20,7 @@ export function Toast({
   className = "",
   testId,
   role = "status",
+  duration = 3000,
   ...props
 }: ToastProps) {
   const positionClass = fixed
@@ -27,7 +30,7 @@ export function Toast({
   return (
     <div
       data-testid={testId}
-      className={`${positionClass} flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-2.5 sm:p-3 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in ${className}`}
+      className={`${positionClass} relative overflow-hidden flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-2.5 sm:p-3 pb-3 sm:pb-3.5 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in ${className}`}
       {...props}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -45,6 +48,19 @@ export function Toast({
         >
           <XIcon className="h-3.5 w-3.5 stroke-[2.5]" />
         </button>
+      )}
+      {duration > 0 && (
+        <div
+          data-testid="toast-progress-track"
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 right-0 h-1 bg-black/15 overflow-hidden"
+        >
+          <div
+            data-testid="toast-progress-bar"
+            className="toast-progress-bar h-full bg-black"
+            style={{ animationDuration: `${duration}ms` }}
+          />
+        </div>
       )}
     </div>
   );
