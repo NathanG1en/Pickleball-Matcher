@@ -382,7 +382,7 @@ export function PlayerProfileHeader({
         <form onSubmit={handleSave} className="space-y-4 pt-1">
           <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
             <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
-              General
+              General Information
             </span>
           </div>
 
@@ -568,14 +568,11 @@ export function PlayerProfileHeader({
                 <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">
                   Privacy Controls
                 </h3>
-                <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 group-hover:text-black">
-                  <span>{isPrivacySectionOpen ? "Minimize" : "Expand"}</span>
-                  <ChevronDownIcon
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      isPrivacySectionOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </span>
+                <ChevronDownIcon
+                  className={`h-4 w-4 text-neutral-500 transition-transform duration-200 group-hover:text-black ${
+                    isPrivacySectionOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
             </div>
 

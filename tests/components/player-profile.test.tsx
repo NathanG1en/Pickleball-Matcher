@@ -952,7 +952,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Custom Controls");
   });
 
-  it("PlayerProfileHeader in edit mode renders 'General' section label and minimizable Privacy Controls with collapsible drawers", () => {
+  it("PlayerProfileHeader in edit mode renders 'General Information' section label and collapsible Privacy Controls drawers", () => {
     // Closed drawers view
     const htmlClosed = renderToStaticMarkup(
       <PlayerProfileHeader
@@ -966,8 +966,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    // Header label is "General", not "Editing Profile"
-    expect(htmlClosed).toContain("General");
+    // Header label is "General Information", not "Editing Profile"
+    expect(htmlClosed).toContain("General Information");
     expect(htmlClosed).not.toContain("Editing Profile");
 
     // Section title is "Privacy Controls" without "Portion Visibility" or "Choose who can see"
@@ -975,9 +975,10 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlClosed).not.toContain("Portion Visibility");
     expect(htmlClosed).not.toContain("Choose who can see");
 
-    // Minimize toggle button is present
+    // Header toggle button is present without "Minimize" or "Expand" text language
     expect(htmlClosed).toContain('data-testid="toggle-privacy-section"');
-    expect(htmlClosed).toContain("Minimize");
+    expect(htmlClosed).not.toContain("Minimize");
+    expect(htmlClosed).not.toContain("Expand");
 
     // All portion drawer toggles are present
     expect(htmlClosed).toContain('data-testid="toggle-drawer-profile"');
@@ -1012,7 +1013,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     // Other drawers remain closed
     expect(htmlOpen).not.toContain('data-testid="activities-visibility-everyone"');
 
-    // When the whole Privacy Controls section is minimized
+    // When the whole Privacy Controls section is collapsed
     const htmlMinimized = renderToStaticMarkup(
       <PlayerProfileHeader
         initialName="Test Player"
@@ -1024,7 +1025,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    expect(htmlMinimized).toContain("Expand");
+    expect(htmlMinimized).not.toContain("Expand");
     expect(htmlMinimized).not.toContain('data-testid="toggle-drawer-profile"');
   });
 });
