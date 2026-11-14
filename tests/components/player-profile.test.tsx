@@ -1053,6 +1053,53 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toContain("Custom Controls");
     expect(html).not.toContain('data-testid="custom-visibility-badge"');
   });
+
+  it("enforces visibility ceiling in edit mode: disables options exceeding Profile Page ceiling", () => {
+    // When profile is group_members and activities drawer is open
+    const htmlGroupCeiling = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Capped User"
+        initialUsername="capped_user"
+        initialGender="male"
+        initialEditing={true}
+        initialVisibilitySettings={{
+          profile: "group_members",
+          activities: "group_members",
+          ratingStats: "group_members",
+          chemistry: "group_members",
+          groups: "group_members",
+        }}
+        initialOpenDrawers={{ activities: true }}
+      />
+    );
+
+    // In activities drawer, "everyone" option is disabled
+    expect(htmlGroupCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-everyone"/);
+    expect(htmlGroupCeiling).toContain("Visibility ceiling: Group Members (from Profile Page)");
+
+    // When profile is only_you and activities drawer is open
+    const htmlPrivateCeiling = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Private User"
+        initialUsername="private_user"
+        initialGender="male"
+        initialEditing={true}
+        initialVisibilitySettings={{
+          profile: "only_you",
+          activities: "only_you",
+          ratingStats: "only_you",
+          chemistry: "only_you",
+          groups: "only_you",
+        }}
+        initialOpenDrawers={{ activities: true }}
+      />
+    );
+
+    // In activities drawer, both "everyone" and "group_members" are disabled
+    expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-everyone"/);
+    expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-group_members"/);
+    expect(htmlPrivateCeiling).toContain("Visibility ceiling: Only You (from Profile Page)");
+  });
 });
 
 

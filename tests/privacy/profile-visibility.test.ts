@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { resolveProfileVisibility } from "@/lib/privacy/profile-visibility";
+import {
+  resolveProfileVisibility,
+  parseProfileVisibilitySettings,
+} from "@/lib/privacy/profile-visibility";
 import type { PlayerAccountRecord } from "@/lib/domain/types";
 
 describe("resolveProfileVisibility", () => {
@@ -108,5 +111,55 @@ describe("resolveProfileVisibility", () => {
     expect(memberView.isRestricted).toBe(false);
     expect(memberView.rating).toBe(1400);
     expect(memberView.bestPartner?.username).toBe("top_partner");
+  });
+
+  it("enforces the ceiling rule in parseProfileVisibilitySettings", () => {
+    // When profile is only_you, all portions clamp to only_you even if passed as everyone
+    const clampedToOnlyYou = parseProfileVisibilitySettings({
+      profile: "only_you",
+      activities: "everyone",
+      ratingStats: "group_members",
+      chemistry: "everyone",
+      groups: "everyone",
+    });
+    expect(clampedToOnlyYou).toEqual({
+      profile: "only_you",
+      activities: "only_you",
+      ratingStats: "only_you",
+      chemistry: "only_you",
+      groups: "only_you",
+    });
+
+    // When profile is group_members, portions passed as everyone clamp to group_members
+    const clampedToGroup = parseProfileVisibilitySettings({
+      profile: "group_members",
+      activities: "everyone",
+      ratingStats: "group_members",
+      chemistry: "only_you",
+      groups: "everyone",
+    });
+    expect(clampedToGroup).toEqual({
+      profile: "group_members",
+      activities: "group_members",
+      ratingStats: "group_members",
+      chemistry: "only_you",
+      groups: "group_members",
+    });
+
+    // When profile is everyone, all valid levels are preserved
+    const unclamped = parseProfileVisibilitySettings({
+      profile: "everyone",
+      activities: "everyone",
+      ratingStats: "group_members",
+      chemistry: "only_you",
+      groups: "everyone",
+    });
+    expect(unclamped).toEqual({
+      profile: "everyone",
+      activities: "everyone",
+      ratingStats: "group_members",
+      chemistry: "only_you",
+      groups: "everyone",
+    });
   });
 });

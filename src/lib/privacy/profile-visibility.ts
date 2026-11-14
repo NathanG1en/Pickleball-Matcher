@@ -24,6 +24,19 @@ export interface SanitizedProfileView {
   readonly visibilitySettings?: ProfileVisibilitySettings;
 }
 
+export const PROFILE_VISIBILITY_RANKS: Record<ProfileVisibilityLevel, number> = {
+  only_you: 1,
+  group_members: 2,
+  everyone: 3,
+};
+
+export function clampVisibilityLevel(
+  level: ProfileVisibilityLevel,
+  ceiling: ProfileVisibilityLevel,
+): ProfileVisibilityLevel {
+  return PROFILE_VISIBILITY_RANKS[level] > PROFILE_VISIBILITY_RANKS[ceiling] ? ceiling : level;
+}
+
 export function parseProfileVisibilitySettings(
   raw: unknown,
   fallbackIsPublic: boolean = true,
@@ -47,12 +60,17 @@ export function parseProfileVisibilitySettings(
     return fallback;
   };
 
+  const profile = validLevel(data.profile, defaults.profile);
+
   return {
-    profile: validLevel(data.profile, defaults.profile),
-    activities: validLevel(data.activities, defaults.activities),
-    ratingStats: validLevel(data.ratingStats ?? data.rating_stats, defaults.ratingStats),
-    chemistry: validLevel(data.chemistry, defaults.chemistry),
-    groups: validLevel(data.groups, defaults.groups),
+    profile,
+    activities: clampVisibilityLevel(validLevel(data.activities, defaults.activities), profile),
+    ratingStats: clampVisibilityLevel(
+      validLevel(data.ratingStats ?? data.rating_stats, defaults.ratingStats),
+      profile,
+    ),
+    chemistry: clampVisibilityLevel(validLevel(data.chemistry, defaults.chemistry), profile),
+    groups: clampVisibilityLevel(validLevel(data.groups, defaults.groups), profile),
   };
 }
 

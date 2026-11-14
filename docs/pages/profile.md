@@ -44,16 +44,20 @@ Clicking the **Edit Profile** button switches the header into edit mode:
   - **Gender**: Dropdown to select Male or Female.
 - **Privacy Controls**: Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
   - Can be collapsed or expanded using the "Privacy Controls" chevron header toggle.
-  - **Profile Page (Account Baseline)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). Setting this to `Only You` makes the entire account private.
-  - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`).
-  - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`).
-  - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`).
-  - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`).
+  - **Profile Page (Account Baseline & Visibility Ceiling)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). This acts as a strict ceiling for all child portions:
+    - Setting Profile Page to `Only You` automatically clamps all other portions to `Only You` and disables higher options.
+    - Setting Profile Page to `Group Members` caps child options to `Group Members` (disabling `Everyone`).
+    - Setting Profile Page to `Everyone` permits all three visibility levels across child portions.
+  - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+  - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+  - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+  - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
 
-### Visibility Levels (Modeled after Strava)
+### Visibility Levels & Ceiling Rule (Modeled after Strava)
 - **Everyone**: Visible to all players and public visitors.
 - **Group Members**: Visible only to players who share at least one group with the player (and the player themselves).
 - **Only You**: Visible only to the player themselves.
+- **The Ceiling Rule**: No individual portion of a profile can be configured to be more visible than the overall Profile Page. Setting the Profile Page to `Only You` locks the entire profile and all of its contents to private.
 
 ## Restricted & Private Profile States
 

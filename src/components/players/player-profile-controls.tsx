@@ -20,7 +20,11 @@ import { LockIcon, GlobeIcon, InfoIcon, UsersIcon, ChevronDownIcon } from "@/com
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 import { AccountOptionsMenu } from "@/components/players/account-options-menu";
 import type { ProfileVisibilityLevel, ProfileVisibilitySettings } from "@/lib/domain/types";
-import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
+import {
+  parseProfileVisibilitySettings,
+  PROFILE_VISIBILITY_RANKS,
+  clampVisibilityLevel,
+} from "@/lib/privacy/profile-visibility";
 
 export { AccountOptionsMenu };
 
@@ -494,6 +498,8 @@ export function PlayerProfileHeader({
                       (opt) => opt.value === visibilityInput[portion.key],
                     ) ?? VISIBILITY_LEVEL_OPTIONS[0];
                   const CurrentIcon = currentSelected.icon;
+                  const currentCeiling = visibilityInput.profile;
+                  const isCapped = portion.key !== "profile" && currentCeiling !== "everyone";
 
                   return (
                     <div
@@ -537,6 +543,11 @@ export function PlayerProfileHeader({
                           <p className="text-[11px] font-semibold text-neutral-600">
                             {portion.description}
                           </p>
+                          {isCapped && (
+                            <p className="text-[10px] font-bold text-neutral-500">
+                              Visibility ceiling: {currentCeiling === "only_you" ? "Only You" : "Group Members"} (from Profile Page)
+                            </p>
+                          )}
                           <div
                             className="flex flex-wrap gap-1.5"
                             role="radiogroup"
@@ -545,6 +556,11 @@ export function PlayerProfileHeader({
                             {VISIBILITY_LEVEL_OPTIONS.map((opt) => {
                               const isSelected = visibilityInput[portion.key] === opt.value;
                               const Icon = opt.icon;
+                              const isExceedingCeiling =
+                                portion.key !== "profile" &&
+                                PROFILE_VISIBILITY_RANKS[opt.value] >
+                                  PROFILE_VISIBILITY_RANKS[currentCeiling];
+
                               return (
                                 <button
                                   key={opt.value}
@@ -552,15 +568,54 @@ export function PlayerProfileHeader({
                                   role="radio"
                                   aria-checked={isSelected}
                                   aria-label={`${portion.label}: ${opt.label}`}
+                                  aria-disabled={isExceedingCeiling}
+                                  disabled={isExceedingCeiling}
+                                  title={
+                                    isExceedingCeiling
+                                      ? `Limited by Profile Page (${
+                                          currentCeiling === "only_you"
+                                            ? "Only You"
+                                            : "Group Members"
+                                        })`
+                                      : undefined
+                                  }
                                   data-testid={`${portion.key}-visibility-${opt.value}`}
                                   onClick={() => {
-                                    const next = { ...visibilityInput, [portion.key]: opt.value };
-                                    setVisibilityInput(next);
+                                    if (isExceedingCeiling) return;
+                                    if (portion.key === "profile") {
+                                      const newProfile = opt.value;
+                                      setVisibilityInput({
+                                        profile: newProfile,
+                                        activities: clampVisibilityLevel(
+                                          visibilityInput.activities,
+                                          newProfile,
+                                        ),
+                                        ratingStats: clampVisibilityLevel(
+                                          visibilityInput.ratingStats,
+                                          newProfile,
+                                        ),
+                                        chemistry: clampVisibilityLevel(
+                                          visibilityInput.chemistry,
+                                          newProfile,
+                                        ),
+                                        groups: clampVisibilityLevel(
+                                          visibilityInput.groups,
+                                          newProfile,
+                                        ),
+                                      });
+                                    } else {
+                                      setVisibilityInput({
+                                        ...visibilityInput,
+                                        [portion.key]: opt.value,
+                                      });
+                                    }
                                   }}
-                                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-black px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer ${
-                                    isSelected
-                                      ? "bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000]"
-                                      : "bg-white text-neutral-600 hover:bg-neutral-100"
+                                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-2.5 py-1 text-xs font-bold uppercase transition-all ${
+                                    isExceedingCeiling
+                                      ? "border-neutral-300 bg-neutral-100 text-neutral-400 opacity-40 cursor-not-allowed"
+                                      : isSelected
+                                      ? "border-black bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer"
+                                      : "border-black bg-white text-neutral-600 hover:bg-neutral-100 cursor-pointer"
                                   }`}
                                 >
                                   <Icon className="h-3 w-3 shrink-0" />
