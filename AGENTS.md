@@ -20,8 +20,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ### Mandatory Test Updates Before Running Tests
 **Every time a change is made, you MUST edit and update all necessary tests—including unit, integration, and E2E tests—BEFORE running them.**
 - Never run tests against stale expectations or outdated assertions. Proactively update test files to reflect changes to behavior, UI elements, data models, or user flows before executing any test commands.
-- Whenever user flows, routes, components, or permissions change, inspect and update the corresponding E2E specs and test helpers first so they remain synchronized with the implementation.
-- For every page or user-flow change, review every spec under `tests/e2e/` and `tests/e2e/test-helpers.ts` to find all affected flows, including indirect coverage in acceptance, permissions, resilience, and feature-specific specs. Update all affected tests in the same commit; do not limit the review to the most obvious spec or leave stale expected behavior in another flow. Unaffected specs do not need edits.
+- **Fast Static Grep Protocol (DO NOT run the full E2E test suite):**
+  - **Changed UI Text / Badges**: Whenever user-visible text changes (e.g. changing badge labels like "Public" → "Everyone", button text, status badges, or headers), you MUST run `grep_search` across `tests/e2e/` for the old string to find and update all assertions in specs (such as `permissions.spec.ts`, `acceptance.spec.ts`, and `resilience.spec.ts`). This is a fast, sub-second static inspection.
+  - **Database Column Additions**: Whenever you add or query a new column on `player_accounts`, check `migrations/` to ensure the `pickleball_rating_maintenance` role is granted SELECT access if the column is read in shared repository queries like `listPlayers()`.
+- For every page or user-flow change, review all affected specs under `tests/e2e/` and `tests/e2e/test-helpers.ts` using static search so test files remain synchronized in the same commit.
 
 ### E2E Test Guidelines
 When making changes to:
@@ -31,9 +33,10 @@ When making changes to:
 - **Session & Matchmaking Workflows** (e.g. `/sessions/new`, court counts, attendance, round generation, scoring, attendance adjustments, round undo).
 - **Accessibility & ARIA Attributes** (e.g. labels, roles, Axe audits).
 
-**E2E runs are NOT mandatory on every task.** Verify code as best you can through static inspection, typechecks, and fast unit/component tests, and update test files to correct flow mismatches before running them.
-- You do **not** have to run the full Playwright suite (`npm run test:e2e`) every time.
-- If needed, test only the single targeted spec or test case (e.g. `npx playwright test tests/e2e/corrections.spec.ts:15`) rather than running the whole suite.
+**CRITICAL: Do NOT run the full 8-minute Playwright suite (`npm run test:e2e`).**
+- Running the full suite takes 8+ minutes and is forbidden during standard iterative tasks.
+- Verify changes using static inspection, `npm run typecheck`, `npm run lint`, and fast Vitest unit/component tests (`npm test`, ~4s).
+- If you specifically need to verify an E2E test case, run ONLY that single targeted line (e.g. `npx playwright test tests/e2e/permissions.spec.ts:498`), never the whole suite.
 
 Key E2E specs for reference:
 - `tests/e2e/acceptance.spec.ts` (PRD acceptance: group creation, roster setup, court generation, match scoring, round progression)
