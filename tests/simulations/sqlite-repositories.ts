@@ -23,9 +23,11 @@ import type {
   StartedRoundRecord,
   TournamentRecord,
   GroupOrganizerPermissions,
+  ProfileVisibilitySettings,
 } from "@/lib/domain/types";
 import { DEFAULT_GROUP_ORGANIZER_PERMISSIONS } from "@/lib/domain/types";
 import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { replayRatings } from "@/lib/domain/rating-replay";
@@ -46,6 +48,7 @@ interface PlayerAccountRow {
   name: string;
   gender?: "male" | "female" | null;
   is_public?: number;
+  visibility_settings?: string | null;
   password_hash: string;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
@@ -158,6 +161,7 @@ export class SqliteDomainRepository implements DomainRepository {
         name TEXT NOT NULL,
         gender TEXT,
         is_public INTEGER NOT NULL DEFAULT 1,
+        visibility_settings TEXT,
         password_hash TEXT NOT NULL,
         skill_level TEXT NOT NULL,
         initial_rating REAL NOT NULL,
@@ -454,12 +458,12 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE id = ?").get(accountId) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE id = ?").get(accountId) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE lower(username) = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE lower(username) = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
@@ -470,6 +474,9 @@ export class SqliteDomainRepository implements DomainRepository {
       name: row.name,
       gender: (row.gender as "male" | "female") ?? undefined,
       isPublic: Boolean(row.is_public ?? 1),
+      visibilitySettings: row.visibility_settings
+        ? parseProfileVisibilitySettings(row.visibility_settings, Boolean(row.is_public ?? 1))
+        : undefined,
       passwordHash: row.password_hash,
       skillLevel: row.skill_level,
       initialRating: row.initial_rating,
@@ -480,15 +487,17 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
+    const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     this.db.prepare(`
-      INSERT INTO player_accounts (id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+      INSERT INTO player_accounts (id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
     `).run(
       account.id,
       account.username.trim().toLowerCase(),
       account.name,
       account.gender ?? null,
       account.isPublic !== false ? 1 : 0,
+      visibilityJson,
       account.passwordHash,
       account.skillLevel,
       account.initialRating,
@@ -511,8 +520,12 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("UPDATE players SET gender = ? WHERE account_id = ?").run(gender, accountId);
   }
 
-  async updatePlayerPrivacy(accountId: string, isPublic: boolean): Promise<void> {
-    this.db.prepare("UPDATE player_accounts SET is_public = ? WHERE id = ?").run(isPublic ? 1 : 0, accountId);
+  async updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void> {
+    if (visibilitySettings) {
+      this.db.prepare("UPDATE player_accounts SET is_public = ?, visibility_settings = ? WHERE id = ?").run(isPublic ? 1 : 0, JSON.stringify(visibilitySettings), accountId);
+    } else {
+      this.db.prepare("UPDATE player_accounts SET is_public = ? WHERE id = ?").run(isPublic ? 1 : 0, accountId);
+    }
   }
 
   async addPlayerToGroup(accountId: string, groupId: string): Promise<PlayerRecord | null> {
@@ -1617,7 +1630,7 @@ export class SqliteDomainRepository implements DomainRepository {
     if (!trimmed) return [];
     const searchTerm = `%${trimmed}%`;
     const rows = this.db.prepare(`
-      SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       FROM player_accounts
       WHERE username LIKE ? OR name LIKE ?
       ORDER BY (lower(username) = ?) DESC, username ASC
@@ -1630,7 +1643,7 @@ export class SqliteDomainRepository implements DomainRepository {
     const trimmed = search.trim().toLowerCase().replace(/^@/, "");
     const searchTerm = `%${trimmed}%`;
     const rows = this.db.prepare(`
-      SELECT id, username, name, gender, is_public, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
       FROM player_accounts
       WHERE (? = '' OR username LIKE ? OR name LIKE ?)
       ORDER BY (? != '' AND lower(username) = ?) DESC, name ASC, username ASC

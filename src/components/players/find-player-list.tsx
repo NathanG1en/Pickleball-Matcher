@@ -51,7 +51,7 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                 ) : profileLevel === "group_members" ? (
                   <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#e0e7ff] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
                     <UsersIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Group Members</span>
+                    <span>Group Members Only</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">

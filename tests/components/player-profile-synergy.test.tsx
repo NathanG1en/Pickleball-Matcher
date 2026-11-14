@@ -490,6 +490,62 @@ describe("Player Profile Privacy Toggle and Best Partner Spotlight", () => {
       expect(html).toContain("Go to session");
       expect(html).toContain('href="/g/grp-1/sessions/sess-1?from=profile"');
     });
+
+    it("displays 'Group Members Only' badge when a fellow group member views a player with group_members visibility", async () => {
+      const repository = new InMemoryRepositories({
+        playerAccounts: [
+          {
+            id: "target_group_user",
+            username: "group_member_ace",
+            name: "Member Ace",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "advanced",
+            initialRating: 1200,
+            rating: 1250,
+            visibilitySettings: {
+              profile: "group_members",
+              activities: "group_members",
+              ratingStats: "group_members",
+              chemistry: "group_members",
+              groups: "group_members",
+            },
+            createdAt: new Date(),
+          },
+          {
+            id: "viewer_fellow_user",
+            username: "fellow_user",
+            name: "Fellow User",
+            isPublic: true,
+            passwordHash: "hash",
+            skillLevel: "intermediate",
+            initialRating: 1000,
+            createdAt: new Date(),
+          },
+        ],
+        groups: [
+          { id: "grp-shared", name: "Shared Club", organizerPinHash: "hash", createdAt: new Date(), isPublic: true },
+        ],
+        players: [
+          { id: "p-target", groupId: "grp-shared", accountId: "target_group_user", name: "Member Ace", initialRating: 1200, rating: 1250, ratedGamesPlayed: 5, active: true },
+          { id: "p-viewer", groupId: "grp-shared", accountId: "viewer_fellow_user", name: "Fellow User", initialRating: 1000, rating: 1000, ratedGamesPlayed: 2, active: true },
+        ],
+      });
+
+      setActionRepository(repository);
+
+      // Viewer is fellow group member
+      vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("viewer_fellow_user");
+
+      const PageElement = await PlayerPublicProfilePage({
+        params: Promise.resolve({ username: "group_member_ace" }),
+      });
+      const html = renderToStaticMarkup(PageElement);
+
+      // Should display Group Members Only badge and NOT Everyone
+      expect(html).toContain("Group Members Only");
+      expect(html).not.toContain("<span>Everyone</span>");
+    });
   });
 });
 

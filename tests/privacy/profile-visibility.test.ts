@@ -162,4 +162,45 @@ describe("resolveProfileVisibility", () => {
       groups: "everyone",
     });
   });
+
+  it("safely parses JSON string visibilitySettings (e.g. from postgres/sqlite)", () => {
+    const jsonString = JSON.stringify({
+      profile: "group_members",
+      activities: "group_members",
+      ratingStats: "only_you",
+      chemistry: "group_members",
+      groups: "group_members",
+    });
+
+    const parsed = parseProfileVisibilitySettings(jsonString, true);
+    expect(parsed).toEqual({
+      profile: "group_members",
+      activities: "group_members",
+      ratingStats: "only_you",
+      chemistry: "group_members",
+      groups: "group_members",
+    });
+
+    // Malformed JSON falls back gracefully
+    const fallback = parseProfileVisibilitySettings("{bad-json}", true);
+    expect(fallback.profile).toBe("everyone");
+  });
+
+  it("preserves visibilitySettings in resolveProfileVisibility for non-owner viewers", () => {
+    const groupMemberAccount: PlayerAccountRecord = {
+      ...publicAccount,
+      visibilitySettings: {
+        profile: "group_members",
+        activities: "group_members",
+        ratingStats: "group_members",
+        chemistry: "group_members",
+        groups: "group_members",
+      },
+    };
+
+    const view = resolveProfileVisibility("viewer_member", groupMemberAccount, stats, {
+      isGroupMember: true,
+    });
+    expect(view.visibilitySettings?.profile).toBe("group_members");
+  });
 });

@@ -1052,7 +1052,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    expect(html).toContain("Group Members");
+    expect(html).toContain("Group Members Only");
     expect(html).not.toContain("Custom Controls");
     expect(html).not.toContain('data-testid="custom-visibility-badge"');
   });

@@ -50,11 +50,20 @@ export function parseProfileVisibilitySettings(
     groups: defaultLevel,
   };
 
-  if (!raw || typeof raw !== "object") {
+  let dataObj = raw;
+  if (typeof raw === "string") {
+    try {
+      dataObj = JSON.parse(raw);
+    } catch {
+      return defaults;
+    }
+  }
+
+  if (!dataObj || typeof dataObj !== "object") {
     return defaults;
   }
 
-  const data = raw as Record<string, unknown>;
+  const data = dataObj as Record<string, unknown>;
   const validLevel = (lvl: unknown, fallback: ProfileVisibilityLevel): ProfileVisibilityLevel => {
     if (lvl === "everyone" || lvl === "group_members" || lvl === "only_you") return lvl;
     return fallback;
@@ -146,7 +155,7 @@ export function resolveProfileVisibility(
       name: targetAccount.name,
       isPublic: false,
       isRestricted: true,
-      visibilitySettings: isOwner ? settings : undefined,
+      visibilitySettings: settings,
     };
   }
 
@@ -174,6 +183,6 @@ export function resolveProfileVisibility(
     rating: canViewRatingStats ? (targetAccount.rating ?? targetAccount.initialRating) : undefined,
     bestPartner: canViewChemistry ? stats.bestPartner : null,
     viewerSynergyScore: canViewChemistry ? stats.viewerSynergyScore : null,
-    visibilitySettings: isOwner ? settings : undefined,
+    visibilitySettings: settings,
   };
 }

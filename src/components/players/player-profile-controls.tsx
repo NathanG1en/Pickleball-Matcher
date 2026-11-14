@@ -725,7 +725,7 @@ export function PlayerProfileHeader({
               ) : visibilitySettings.profile === "group_members" ? (
                 <>
                   <UsersIcon className="h-2.5 w-2.5 shrink-0" />
-                  <span>Group Members</span>
+                  <span>Group Members Only</span>
                 </>
               ) : (
                 <>
