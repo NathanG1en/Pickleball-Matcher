@@ -37,17 +37,19 @@ The player profile page is where athletes can review their rating, track their g
 
 ## Edit Profile Mode
 
-Clicking the **Edit Profile** button switches the header into edit mode:
+Clicking the **Edit Profile** button switches the header into edit mode under the **General** section:
 - **Display Name**: Editable text field (up to 80 characters).
 - **Username**: Editable `@username` with live availability check against the database.
 - **Gender**: Dropdown to select Male or Female.
 - **Account Visibility**: Quick toggle between Public and Private.
-- **Privacy Controls (Portion Visibility)**: Granular Strava-modeled privacy options allowing athletes to control who can view each specific section of their profile:
-  - **Profile Page**: Controls general discoverability in search (`Everyone`, `Group Members`, or `Only You`).
-  - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`).
-  - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`).
-  - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`).
-  - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`).
+- **Privacy Controls**: Collapsible, minimizable section containing individual drawers for each portion of the profile:
+  - Can be minimized or expanded using the "Privacy Controls" section toggle.
+  - Each portion is rendered as an expandable drawer showing the active visibility level pill:
+    - **Profile Page**: Controls general discoverability in search (`Everyone`, `Group Members`, or `Only You`).
+    - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`).
+    - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`).
+    - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`).
+    - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`).
 
 ### Visibility Levels (Modeled after Strava)
 - **Everyone**: Visible to all players and public visitors.

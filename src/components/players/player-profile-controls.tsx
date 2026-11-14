@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
-import { LockIcon, GlobeIcon, InfoIcon, UsersIcon } from "@/components/ui/icons";
+import { LockIcon, GlobeIcon, InfoIcon, UsersIcon, ChevronDownIcon } from "@/components/ui/icons";
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 import { AccountOptionsMenu } from "@/components/players/account-options-menu";
 import type { ProfileVisibilityLevel, ProfileVisibilitySettings } from "@/lib/domain/types";
@@ -76,6 +76,9 @@ export function PlayerProfileHeader({
   rating,
   initialIsPublic = true,
   initialVisibilitySettings,
+  initialEditing = false,
+  initialPrivacySectionOpen = true,
+  initialOpenDrawers = {},
 }: {
   backButton?: React.ReactNode;
   initialName: string;
@@ -87,11 +90,14 @@ export function PlayerProfileHeader({
   rating?: number;
   initialIsPublic?: boolean;
   initialVisibilitySettings?: ProfileVisibilitySettings;
+  initialEditing?: boolean;
+  initialPrivacySectionOpen?: boolean;
+  initialOpenDrawers?: Record<string, boolean>;
 }) {
   const displayRating = currentRating ?? rating ?? initialRating ?? 1000;
   const router = useRouter();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [name, setName] = useState(initialName);
   const [username, setUsername] = useState(initialUsername);
   const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
@@ -110,6 +116,8 @@ export function PlayerProfileHeader({
   const [visibilityInput, setVisibilityInput] = useState<ProfileVisibilitySettings>(
     () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
   );
+  const [isPrivacySectionOpen, setIsPrivacySectionOpen] = useState(initialPrivacySectionOpen);
+  const [openDrawers, setOpenDrawers] = useState<Record<string, boolean>>(initialOpenDrawers);
 
   const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -157,12 +165,21 @@ export function PlayerProfileHeader({
     };
   }, [usernameInput, isEditing, username]);
 
+  const toggleDrawer = (key: string) => {
+    setOpenDrawers((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
   const handleEnterEditMode = () => {
     setNameInput(name);
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
     setIsPublicInput(isPublic);
     setVisibilityInput(visibilitySettings);
+    setIsPrivacySectionOpen(true);
+    setOpenDrawers({});
     setSaveError(null);
     setAvailability(null);
     setIsEditing(true);
@@ -193,6 +210,8 @@ export function PlayerProfileHeader({
     setGenderInput(gender === "female" ? "female" : "male");
     setIsPublicInput(isPublic);
     setVisibilityInput(visibilitySettings);
+    setIsPrivacySectionOpen(true);
+    setOpenDrawers({});
     setSaveError(null);
     setAvailability(null);
     setShowDiscardConfirm(false);
@@ -363,7 +382,7 @@ export function PlayerProfileHeader({
         <form onSubmit={handleSave} className="space-y-4 pt-1">
           <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
             <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
-              Editing Profile
+              General
             </span>
           </div>
 
@@ -535,72 +554,125 @@ export function PlayerProfileHeader({
             </div>
           </div>
 
-          {/* Privacy Controls · Strava-modeled portion visibility options */}
+          {/* Privacy Controls · Granular portion visibility drawers */}
           <div className="pt-3 border-t-2 border-neutral-200 space-y-3" data-testid="privacy-controls-section">
-            <div>
-              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">
-                Privacy Controls · Portion Visibility
-              </h3>
-              <p className="mt-0.5 text-[11px] font-semibold text-neutral-600">
-                Choose who can see different portions of your profile (Everyone, Group Members, or Only You), modeled after Strava&apos;s privacy controls.
-              </p>
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsPrivacySectionOpen((prev: boolean) => !prev)}
+                aria-expanded={isPrivacySectionOpen}
+                aria-controls="privacy-controls-content"
+                data-testid="toggle-privacy-section"
+                className="group flex w-full items-center justify-between rounded-xl px-1 py-1 text-left transition hover:bg-neutral-100 cursor-pointer"
+              >
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">
+                  Privacy Controls
+                </h3>
+                <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 group-hover:text-black">
+                  <span>{isPrivacySectionOpen ? "Minimize" : "Expand"}</span>
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isPrivacySectionOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </button>
             </div>
 
-            <div className="space-y-2.5">
-              {PORTION_CONFIGS.map((portion) => (
-                <div
-                  key={portion.key}
-                  data-testid={`portion-visibility-${portion.key}`}
-                  className="rounded-2xl border-2 border-black bg-white p-3 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <span className="block text-xs font-black uppercase text-black">
-                        {portion.label}
-                      </span>
-                      <p className="text-[11px] font-semibold text-neutral-600">
-                        {portion.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className="flex flex-wrap gap-1.5"
-                    role="radiogroup"
-                    aria-label={`${portion.label} visibility`}
-                  >
-                    {VISIBILITY_LEVEL_OPTIONS.map((opt) => {
-                      const isSelected = visibilityInput[portion.key] === opt.value;
-                      const Icon = opt.icon;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          aria-label={`${portion.label}: ${opt.label}`}
-                          data-testid={`${portion.key}-visibility-${opt.value}`}
-                          onClick={() => {
-                            const next = { ...visibilityInput, [portion.key]: opt.value };
-                            setVisibilityInput(next);
-                            if (portion.key === "profile") {
-                              setIsPublicInput(opt.value !== "only_you");
-                            }
-                          }}
-                          className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-black px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000]"
-                              : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
-                          }`}
+            {isPrivacySectionOpen && (
+              <div id="privacy-controls-content" className="space-y-2.5">
+                {PORTION_CONFIGS.map((portion) => {
+                  const isOpen = Boolean(openDrawers[portion.key]);
+                  const currentSelected =
+                    VISIBILITY_LEVEL_OPTIONS.find(
+                      (opt) => opt.value === visibilityInput[portion.key],
+                    ) ?? VISIBILITY_LEVEL_OPTIONS[0];
+                  const CurrentIcon = currentSelected.icon;
+
+                  return (
+                    <div
+                      key={portion.key}
+                      data-testid={`portion-visibility-${portion.key}`}
+                      className="rounded-2xl border-2 border-black bg-white overflow-hidden transition-all shadow-[2px_2px_0px_0px_#000]"
+                    >
+                      {/* Drawer Toggle Header */}
+                      <button
+                        type="button"
+                        onClick={() => toggleDrawer(portion.key)}
+                        aria-expanded={isOpen}
+                        aria-controls={`drawer-content-${portion.key}`}
+                        data-testid={`toggle-drawer-${portion.key}`}
+                        className="flex w-full items-center justify-between gap-3 p-3 text-left transition hover:bg-neutral-50 cursor-pointer"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <span className="block text-xs font-black uppercase text-black">
+                            {portion.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-neutral-100 px-2.5 py-0.5 text-[11px] font-bold text-neutral-700">
+                            <CurrentIcon className="h-3 w-3 shrink-0" />
+                            <span>{currentSelected.label}</span>
+                          </span>
+                          <ChevronDownIcon
+                            className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                      </button>
+
+                      {/* Drawer Content */}
+                      {isOpen && (
+                        <div
+                          id={`drawer-content-${portion.key}`}
+                          className="border-t-2 border-neutral-100 bg-neutral-50/60 p-3 space-y-2.5"
                         >
-                          <Icon className="h-3 w-3 shrink-0" />
-                          <span>{opt.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+                          <p className="text-[11px] font-semibold text-neutral-600">
+                            {portion.description}
+                          </p>
+                          <div
+                            className="flex flex-wrap gap-1.5"
+                            role="radiogroup"
+                            aria-label={`${portion.label} visibility`}
+                          >
+                            {VISIBILITY_LEVEL_OPTIONS.map((opt) => {
+                              const isSelected = visibilityInput[portion.key] === opt.value;
+                              const Icon = opt.icon;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={isSelected}
+                                  aria-label={`${portion.label}: ${opt.label}`}
+                                  data-testid={`${portion.key}-visibility-${opt.value}`}
+                                  onClick={() => {
+                                    const next = { ...visibilityInput, [portion.key]: opt.value };
+                                    setVisibilityInput(next);
+                                    if (portion.key === "profile") {
+                                      setIsPublicInput(opt.value !== "only_you");
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-black px-2.5 py-1 text-xs font-bold uppercase transition-all cursor-pointer ${
+                                    isSelected
+                                      ? "bg-[#ccff00] text-black shadow-[1.5px_1.5px_0px_0px_#000]"
+                                      : "bg-white text-neutral-600 hover:bg-neutral-100"
+                                  }`}
+                                >
+                                  <Icon className="h-3 w-3 shrink-0" />
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {saveError && (

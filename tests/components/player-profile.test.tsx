@@ -951,6 +951,82 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("@strava_user");
     expect(html).toContain("Custom Controls");
   });
+
+  it("PlayerProfileHeader in edit mode renders 'General' section label and minimizable Privacy Controls with collapsible drawers", () => {
+    // Closed drawers view
+    const htmlClosed = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={true}
+        initialOpenDrawers={{}}
+      />
+    );
+
+    // Header label is "General", not "Editing Profile"
+    expect(htmlClosed).toContain("General");
+    expect(htmlClosed).not.toContain("Editing Profile");
+
+    // Section title is "Privacy Controls" without "Portion Visibility" or "Choose who can see"
+    expect(htmlClosed).toContain("Privacy Controls");
+    expect(htmlClosed).not.toContain("Portion Visibility");
+    expect(htmlClosed).not.toContain("Choose who can see");
+
+    // Minimize toggle button is present
+    expect(htmlClosed).toContain('data-testid="toggle-privacy-section"');
+    expect(htmlClosed).toContain("Minimize");
+
+    // All portion drawer toggles are present
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-profile"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-activities"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-ratingStats"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-chemistry"');
+    expect(htmlClosed).toContain('data-testid="toggle-drawer-groups"');
+
+    // Because drawers are closed, the options radiogroups are not rendered
+    expect(htmlClosed).not.toContain('data-testid="profile-visibility-everyone"');
+    expect(htmlClosed).not.toContain('data-testid="activities-visibility-everyone"');
+
+    // When a drawer is open
+    const htmlOpen = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={true}
+        initialOpenDrawers={{ profile: true }}
+      />
+    );
+
+    // Profile drawer is open with description and radiogroup
+    expect(htmlOpen).toContain('data-testid="profile-visibility-everyone"');
+    expect(htmlOpen).toContain('data-testid="profile-visibility-group_members"');
+    expect(htmlOpen).toContain('data-testid="profile-visibility-only_you"');
+    expect(htmlOpen).toContain("Controls your general profile page and discoverability in search.");
+
+    // Other drawers remain closed
+    expect(htmlOpen).not.toContain('data-testid="activities-visibility-everyone"');
+
+    // When the whole Privacy Controls section is minimized
+    const htmlMinimized = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Test Player"
+        initialUsername="test_player"
+        initialGender="male"
+        initialIsPublic={true}
+        initialEditing={true}
+        initialPrivacySectionOpen={false}
+      />
+    );
+
+    expect(htmlMinimized).toContain("Expand");
+    expect(htmlMinimized).not.toContain('data-testid="toggle-drawer-profile"');
+  });
 });
 
 
