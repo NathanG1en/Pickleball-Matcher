@@ -56,23 +56,28 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
                     <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Only You</span>
+                    <span>Private</span>
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-neutral-600">
                 <span className="text-black font-extrabold">@{player.username}</span>
-                {genderLabel && (
+                {/* For private players, hide gender and rating from other viewers */}
+                {(isSelf || profileLevel !== "only_you") && (
                   <>
+                    {genderLabel && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="uppercase">{genderLabel}</span>
+                      </>
+                    )}
                     <span aria-hidden="true">·</span>
-                    <span className="uppercase">{genderLabel}</span>
+                    <span className="uppercase text-neutral-700">
+                      Rating: <span className="font-black text-black">{formattedRating}</span>
+                    </span>
                   </>
                 )}
-                <span aria-hidden="true">·</span>
-                <span className="uppercase text-neutral-700">
-                  Rating: <span className="font-black text-black">{formattedRating}</span>
-                </span>
               </div>
             </div>
 

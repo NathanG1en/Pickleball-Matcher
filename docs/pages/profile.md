@@ -67,3 +67,9 @@ When a player visits another athlete's profile:
 - **Restricted Profile**: If the player set their Profile Page to `Group Members` and the viewer is not a co-member of any group, a locked card explains that the profile is only shared with group members.
 - **Granular Customization**: If the profile is viewable, but specific portions (such as Past Sessions or Rating) are set to `Group Members` or `Only You`, those specific sections show polite privacy notices while allowing the rest of the profile to be viewed.
 
+### Find Players & Search Privacy
+In the community player directory (`/players/find`):
+- Athletes with `Only You` profile visibility display a **Private** badge.
+- For private players, their gender and current rating are hidden from other viewers to respect their privacy settings.
+- Athletes with `Everyone` display an **Everyone** badge, and athletes with `Group Members` display a **Group Members** badge.
+

@@ -59,18 +59,19 @@ describe("Find Players", () => {
     expect(html).toContain("@pickle_ace");
     expect(html).toContain("@stealth_drop");
 
-    // Genders
+    // Genders (Alex Champion is public female; Sam Secret is private male and hidden from other viewers)
     expect(html).toContain("Female");
-    expect(html).toContain("Male");
+    expect(html).not.toContain("Male");
 
-    // Ratings (formatDupr formats Elo: 1000 -> 3.5, 1050 -> 3.625, 1240 -> 4.1)
+    // Ratings (formatDupr formats Elo: 1000 -> 3.5, 1050 -> 3.625; private player's rating 1240 / 4.1 is hidden)
     expect(html).toContain("Rating:");
     expect(html).toContain("3.625");
-    expect(html).toContain("4.1");
+    expect(html).not.toContain("4.1");
 
     // Badges
     expect(html).toContain("Everyone");
-    expect(html).toContain("Only You");
+    expect(html).toContain("Private");
+    expect(html).not.toContain("Only You");
     expect(html).toContain("You");
 
     // Links to profiles
