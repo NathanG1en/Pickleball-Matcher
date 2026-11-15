@@ -6,7 +6,7 @@ For a deeper look at roles and visibility, see [synergy-and-privacy-system.md](.
 
 Shows public groups and lets players search them.
 
-- **Header:** a Back button and a link to My Profile. Signed-out visitors get a Home link instead.
+- **Header:** clean header with category eyebrow and page title, integrated with the shared responsive navigation system.
 - **Search:** searches public groups by name. The query is in the URL (`?q=`), so a search can be shared and survives a reload. Private groups never appear here.
 - **Signed out:** a line under the search asks the visitor to create an account or sign in before joining.
 - **Group cards:** each card shows the group name, a role badge (Host, Organizer, or Member) when the viewer belongs to the group, and the number of active players. Every card has a **View Group** link. The second button depends on the viewer:
@@ -30,7 +30,8 @@ Requires a signed-in player account. The creator becomes the host and is added t
 
 ## Group dashboard — `/g/[groupId]`
 
-- **Header:** Back button, **Share**, and a **Group options** menu. The options menu is shown to organizers and to signed-in members who aren't the host. Below these sit the group name, a Public/Private badge, and the roster count, which includes the host. After a session ends, organizers also see the session sign-off control here.
+- **Header:** **Share**, and a **Group options** menu (integrated with the shared responsive navigation). The options menu is shown to organizers and to signed-in members who aren't the host. Below these sit the group name, a Public/Private badge, and the roster count, which includes the host. After a session ends, organizers also see the session sign-off control here.
+
 - **Feedback toasts:** Success feedback (e.g. adding a player or guest) uses a compact toast placed at the bottom of the screen on mobile devices so header navigation and group title remain clear and accessible. On larger screens it stays in the top-right corner. It includes an accessible announcement, a dismiss control, and a visual loader progress bar running along the bottom indicating how long the notification will remain visible before auto-dismissing.
 - **Primary session card:** this comes first on phones, right under the header. On desktop it sits at the top of the left column. What it shows depends on the viewer:
   - **Not part of the group:** the join card.

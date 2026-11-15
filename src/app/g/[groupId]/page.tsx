@@ -13,7 +13,6 @@ import { ClientDate } from "@/components/ui/client-date-time";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
-import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
@@ -171,8 +170,7 @@ export default async function GroupDashboardPage({
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
       <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8">
-        <div className="mb-4 flex items-center justify-between">
-          <BackButton href={accountId && isMember ? "/players" : "/"} />
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
             {isOrganizer || (isMember && accountId && !isHost) ? (

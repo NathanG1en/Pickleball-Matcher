@@ -103,10 +103,10 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const pageElement = await PlayerProfilePage();
     const html = renderToStaticMarkup(pageElement);
 
-    // Should display back button and group names
-    expect(html).toContain("← Back");
+    // Displays group names
     expect(html).toContain("Hosted League");
     expect(html).toContain("Regular League");
+
 
     // Must not show "Host" label or "Leave" option on profile page
     expect(html).not.toContain(">Host<");
@@ -273,9 +273,9 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Edit Profile");
     expect(html).toContain('aria-label="Account options"');
 
-    // Has back button
-    expect(html).toContain('aria-label="Go back"');
-    expect(html).toContain("← Back");
+    // Back button removed from page in favor of persistent navigation
+    expect(html).not.toContain('aria-label="Go back"');
+
 
     // The old display name editor form section is removed
     expect(html).not.toContain('id="profile-name"');

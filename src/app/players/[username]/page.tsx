@@ -9,7 +9,7 @@ import {
 } from "@/components/players/player-profile-controls";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
-import { BackButton, StatCard } from "@/components/ui";
+import { StatCard } from "@/components/ui";
 import { GlobeIcon, LockIcon, ChevronRightIcon, UsersIcon } from "@/components/ui/icons";
 import { eloToDupr, formatDupr, getSkillTier } from "@/lib/domain/rating-display";
 import { ClientDate } from "@/components/ui/client-date-time";
@@ -78,9 +78,6 @@ export default async function PlayerPublicProfilePage({
       <main className="min-h-screen p-4 sm:p-6 lg:p-8">
         <section className="mx-auto max-w-xl md:max-w-2xl space-y-5">
           <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <BackButton fallbackHref="/" />
-            </div>
             <div className="space-y-1">
               <h1 className="font-display text-3xl font-black uppercase truncate text-black">
                 {targetAccount.name}
@@ -153,7 +150,6 @@ export default async function PlayerPublicProfilePage({
         <header className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 lg:p-6">
           {isOwner ? (
             <PlayerProfileHeader
-              backButton={<BackButton fallbackHref="/" />}
               initialName={targetAccount.name}
               initialUsername={targetAccount.username}
               initialGender={targetAccount.gender}
@@ -164,9 +160,6 @@ export default async function PlayerPublicProfilePage({
             />
           ) : (
             <>
-              <div className="mb-4 flex items-center justify-between">
-                <BackButton fallbackHref="/" />
-              </div>
               <div className="min-w-0 flex-1 space-y-2">
                 <h1 className="font-display text-3xl font-black uppercase truncate text-black">
                   {targetAccount.name}

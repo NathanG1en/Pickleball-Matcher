@@ -904,18 +904,19 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userACard).toContainText("Everyone");
   await expect(userACard).toContainText("Rating:");
 
-  // 8. Test Back button from Find Players returns to Home
-  const backFromPlayersBtn = page.getByRole("link", { name: "Go back" });
-  await expect(backFromPlayersBtn).toBeVisible();
-  await backFromPlayersBtn.click();
+  // 8. Test navigation from Find Players returns to Home
+  const homeFromPlayers = page.getByRole("link", { name: "Home" }).first();
+  await expect(homeFromPlayers).toBeVisible();
+  await homeFromPlayers.click();
   await expect(page).toHaveURL("/");
 
-  // 9. Test Back button from Find Groups returns to Home
+  // 9. Test navigation from Find Groups returns to Home
   await findGroupsBtn.click();
   await expect(page).toHaveURL("/players/groups");
-  const backFromGroupsBtn = page.getByRole("link", { name: "Go back" });
-  await expect(backFromGroupsBtn).toBeVisible();
-  await backFromGroupsBtn.click();
+  const homeFromGroups = page.getByRole("link", { name: "Home" }).first();
+  await expect(homeFromGroups).toBeVisible();
+  await homeFromGroups.click();
   await expect(page).toHaveURL("/");
 });
+
 });
