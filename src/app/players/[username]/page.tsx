@@ -226,8 +226,8 @@ export default async function PlayerPublicProfilePage({
 
         {/* Top Row: Chemistry Spotlight & Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Chemistry Spotlight & Mutual Chemistry */}
-          <div className="space-y-4 lg:col-span-7 xl:col-span-8 flex flex-col justify-center">
+          {/* Chemistry Spotlight */}
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-center">
             {!canViewChemistry ? (
               <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
@@ -295,29 +295,6 @@ export default async function PlayerPublicProfilePage({
                       ? "Chemistry tracks partners who have player accounts. Play doubles with them to see who you click with."
                       : "Chemistry shows up after doubles games with partners who have player accounts."}
                   </p>
-                </div>
-              </section>
-            )}
-
-            {canViewChemistry && viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
-              <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
-                    <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
-                    <p className="mt-1 text-xs font-bold text-neutral-600">
-                      {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black">
-                      {(() => {
-                        const raw = viewerSynergy.synergyScore;
-                        const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
-                        return score > 0 ? `+${score}%` : `${score}%`;
-                      })()}
-                    </span>
-                  </div>
                 </div>
               </section>
             )}
@@ -398,8 +375,31 @@ export default async function PlayerPublicProfilePage({
             )}
           </div>
 
-          {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
+          {/* Everything Else (Mutual Chemistry, Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}
           <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
+            {canViewChemistry && viewerSynergy && viewerSynergy.matchesPlayed > 0 && (
+              <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
+                    <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
+                    <p className="mt-1 text-xs font-bold text-neutral-600">
+                      {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-3 py-1 font-display text-xl font-black">
+                      {(() => {
+                        const raw = viewerSynergy.synergyScore;
+                        const score = Math.round(raw > -1 && raw < 1 && raw !== 0 ? raw * 100 : raw);
+                        return score > 0 ? `+${score}%` : `${score}%`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {canViewRatingStats && (
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <ScoreHistoryChart history={history} startingRating={targetAccount.initialRating} />

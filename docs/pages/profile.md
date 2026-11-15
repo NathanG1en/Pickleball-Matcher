@@ -17,9 +17,9 @@ The player profile page is where athletes can review their rating, track their g
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
    - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu with "Log Out".
-2. **Chemistry Spotlight**:
-   - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost.
-   - **Mutual Chemistry**: When another signed-in player views the profile, displays mutual partner chemistry between the viewer and the profile owner.
+2. **Chemistry Spotlight & Mutual Chemistry**:
+   - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost. Placed in the top row alongside Performance Stats to maintain balanced card proportions.
+   - **Mutual Chemistry**: When another signed-in player views the profile, displays mutual partner chemistry between the viewer and the profile owner in the main content stream.
    - **No partner yet**: With no chemistry yet, the card explains that chemistry only tracks doubles partners who have player accounts, so games with guest partners don't unlock it.
    - **Privacy fallback**: Displays a locked notice ("Chemistry Private") if the player has hidden partner chemistry.
 3. **Performance Stats**:
