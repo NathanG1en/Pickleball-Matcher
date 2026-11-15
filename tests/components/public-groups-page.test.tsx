@@ -55,6 +55,8 @@ describe("PublicGroupsPage", () => {
 
     expect(html).toContain("Find a group");
     expect(html).toContain("Metro Pickleball Club");
+    expect(html).toContain('href="/setup"');
+    expect(html).toContain("Create a Group");
 
     actionContext.setActionRepository(null);
   });
