@@ -35,8 +35,8 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 The hero section introduces the application's core identity with balanced, refined proportions that do not dominate the initial viewport:
 
 - **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
+- **Brand Motif & Interactive Pickleball:** Instead of a generic horizontal divider line, the signature pickleball graphic functions as an intentional brand motif integrated directly into the headline—replacing the period after "FAIR ROUNDS" with an interactive, responsive pickleball mark (`w-5 h-5` on mobile to `w-8 h-8` on desktop). Users can hover or tap the ball to trigger the signature bounce animation on both mobile and desktop, while screen readers receive a coherent announcement via `aria-label`.
 - **Tagline:** "An elevated pickleball experience."
-- **Interactive Court Divider:** The decorative bouncing pickleball divider is featured on desktop screens and kept clean on mobile (`hidden sm:flex`).
 - **Contextual Actions:**
   - **Signed In:** Pure brand introduction without duplicate profile navigation (profile is accessed via the desktop top nav avatar or mobile bottom nav bar).
   - **Signed Out:** Integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions within the card.
