@@ -66,14 +66,16 @@ test("players follow a live session without reloading and always see where they 
   await expect(page.locator("[data-testid='court-match-1'] >> text=Final")).toBeVisible();
   await expect(player.getByTestId("court-match-1").getByText("Final")).toBeVisible({ timeout: 15_000 });
 
-  // Home is one tap from the court for the player, and lists the group for the guest.
+  // Home is one tap from the court for the player, and signed-out guests see the welcome screen while their group dashboard retains live session access.
   await player.goto("/");
   const liveLink = player.getByTestId("home-live-session");
   await expect(liveLink).toContainText(groupName);
   await expect(liveLink).toHaveAttribute("href", sessionPath);
   await guest.goto("/");
-  await expect(guest.getByRole("heading", { name: "Your groups" })).toBeVisible();
-  await expect(guest.getByTestId("home-live-session")).toContainText(groupName);
+  await expect(guest.getByRole("link", { name: "Sign In to Play →", exact: true })).toBeVisible();
+  await expect(guest.getByRole("heading", { name: "Your groups" })).toHaveCount(0);
+  await guest.goto(`/g/${groupId}`);
+  await expect(guest.locator("text=Session In Progress")).toBeVisible();
 
   await playerContext.close();
   await guestContext.close();

@@ -112,7 +112,10 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
           - Desktop: branding on left, center nav links, right profile/login
           - Mobile: compact branding header with no profile option (profile is in bottom bar)
          ========================================================================= */}
-      <header className="sticky top-0 left-0 right-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-2 border-black">
+      <nav
+        aria-label="Site navigation"
+        className="sticky top-0 left-0 right-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-2 border-black"
+      >
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-13 md:h-16 flex items-center justify-between gap-4">
           {/* Left: Branding */}
           <Link
@@ -130,7 +133,8 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
 
           {/* Center: Primary Navigation Links (only on desktop md and when signed in) */}
           {playerAccount && (
-            <nav
+            <div
+              role="navigation"
               aria-label="Desktop main navigation"
               className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 border border-black/10"
             >
@@ -167,7 +171,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
               >
                 Players
               </Link>
-            </nav>
+            </div>
           )}
 
           {/* Right: Profile Avatar & Account Dropdown, or Sign In Button (hidden on mobile; no profile option in mobile header) */}
@@ -252,7 +256,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
             )}
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* =========================================================================
           MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)

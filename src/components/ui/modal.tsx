@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useId } from "react";
+import React, { useEffect, useId, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+
+const emptySubscribe = () => () => {};
 
 export interface ModalProps {
   isOpen: boolean;
@@ -32,6 +35,7 @@ export function Modal({
   const generatedId = useId();
   const titleId = `${generatedId}-title`;
   const descId = `${generatedId}-desc`;
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return;
@@ -55,7 +59,7 @@ export function Modal({
     xl: "max-w-xl",
   };
 
-  return (
+  const modalContent = (
     <div
       role={role}
       aria-modal="true"
@@ -104,6 +108,12 @@ export function Modal({
       </div>
     </div>
   );
+
+  if (mounted && typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+
+  return modalContent;
 }
 
 export function ModalHeader({
