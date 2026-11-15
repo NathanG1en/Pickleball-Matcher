@@ -48,15 +48,16 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Welcome banner with the player's username (`@handle`) and a primary **View Profile →** action.
+  - **Your groups** listing showing all active groups, positioned immediately below the welcome banner and above the action cards.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
-  - **Your groups** listing showing all active groups.
-  - Discrete **Log Out** button at the footer.
+  - Account logout is available via the Profile page and the desktop top navigation account dropdown.
 - **Signed Out:**
   - High-priority **Sign In to Play →** action button in signature neon lime.
   - **Create an Account** secondary action.
   - **Start a Quick Session** option for temporary round-robins without account creation.
   - Feature preview action cards allowing guest exploration of groups and players.
   - **Your groups** listing if guest groups are active on the current device.
+
 
 ## Sign in — `/player-login`
 

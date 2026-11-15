@@ -10,11 +10,10 @@ import {
   YourGroupsHome,
   type HomeGroupSummary,
 } from "@/components/home/your-groups-home";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { PlayerLogoutButton } from "@/components/players/player-profile-controls";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
 import { UsersIcon, SearchIcon, ZapIcon } from "@/components/ui/icons";
+
 
 async function getGuestGroups(): Promise<Record<string, string>> {
   try {
@@ -107,8 +106,8 @@ export default async function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
                 Organizer Session
               </span>
-              <LogoutButton />
             </div>
+
             <h2 className="font-display text-2xl font-black uppercase text-black leading-tight truncate">
               {activeGroup.name}
             </h2>
@@ -192,7 +191,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 5. Main Action Cards: Cohesive, Refined 3-Card Layout */}
+      {/* 5. Your Groups Section (Above Find Groups and below Welcome Back) */}
+      <YourGroupsHome groups={homeGroups} />
+
+      {/* 6. Main Action Cards: Cohesive, Refined 3-Card Layout */}
       <section aria-label="Main actions" className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Action 1: Find Groups */}
@@ -275,7 +277,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 6. Signed-Out Call-To-Action (if visitor is not signed in) */}
+      {/* 7. Signed-Out Call-To-Action (if visitor is not signed in) */}
       {!playerAccount && (
         <section
           aria-label="Sign in or register"
@@ -309,15 +311,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 7. Your Groups List */}
-      <YourGroupsHome groups={homeGroups} />
-
-      {/* 8. Logged-in Footer Action (Logout) */}
-      {playerAccount && (
-        <div className="flex justify-center pt-2">
-          <PlayerLogoutButton className="px-5 py-2.5 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer" />
-        </div>
-      )}
     </main>
   );
 }

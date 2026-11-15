@@ -104,7 +104,7 @@ describe("HomePage authentication states", () => {
     expect(html).not.toContain("Log Out");
   });
 
-  it("renders logged-in home page with the account's groups, logout button, and hides temporary group option", async () => {
+  it("renders logged-in home page with the account's groups above actions, and hides temporary group option and log out button", async () => {
     saveRecentGroup({ id: "grp-1", name: "Sunset Pickleballers" });
     const repo = new InMemoryRepositories({
       groups: [
@@ -145,24 +145,24 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Find Groups");
     expect(html).toContain("Find Players");
     expect(html).toContain("View Profile");
-    expect(html).toContain("Log Out");
+    expect(html).not.toContain("Log Out");
 
-    // Order: View Profile -> Find Groups/Players -> Create A Group -> Log Out
+    // Order: View Profile -> Your groups -> Find Groups/Players -> Create A Group
     const viewProfileIdx = html.indexOf("View Profile");
+    const yourGroupsIdx = html.indexOf("Your groups");
     const findGroupsIdx = html.indexOf("Find Groups");
     const findPlayersIdx = html.indexOf("Find Players");
     const createGroupIdx = html.indexOf("Create A Group");
-    const logoutIdx = html.indexOf("Log Out");
 
-    expect(viewProfileIdx).toBeLessThan(findGroupsIdx);
+    expect(viewProfileIdx).toBeLessThan(yourGroupsIdx);
+    expect(yourGroupsIdx).toBeLessThan(findGroupsIdx);
     expect(findGroupsIdx).toBeLessThan(createGroupIdx);
     expect(findPlayersIdx).toBeLessThan(createGroupIdx);
-    expect(createGroupIdx).toBeLessThan(logoutIdx);
 
-    // Font weight: Find Groups, Find Players, and Log Out share the same font-bold weight
+    // Font weight: Find Groups and Find Players share the same font-bold weight
     expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/groups"/);
     expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/find"/);
-    expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*>Log Out<\/button>/);
+
 
     // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
     expect(html).not.toContain("Sign In to Play");
