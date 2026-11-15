@@ -35,14 +35,16 @@ describe("ResponsiveNavigation Component", () => {
     expect(html).toContain("Players");
     expect(html).toContain("@dinkmaster");
 
-    // Desktop nav should exist
+    // Desktop nav should exist and be hidden on mobile
     expect(html).toContain('aria-label="Desktop main navigation"');
+    expect(html).toContain('hidden md:flex items-center gap-1.5');
 
     // Mobile bottom nav should exist
     expect(html).toContain('aria-label="Mobile bottom navigation"');
 
-    // Mobile top header should NOT exist
-    expect(html).not.toContain("md:hidden sticky top-0");
+    // Top header is present across mobile and desktop, with profile hidden on mobile
+    expect(html).toContain("sticky top-0");
+    expect(html).toContain("hidden md:flex items-center gap-2");
 
     // Bottom navigation must NOT contain "Log Out"
     const bottomNavStart = html.indexOf('aria-label="Mobile bottom navigation"');

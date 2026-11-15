@@ -108,30 +108,31 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
   return (
     <>
       {/* =========================================================================
-          DESKTOP TOP NAVIGATION BAR (md and up)
-          Compact, editorial neo-brutalist header bar with branding, links, and avatar
+          TOP NAVIGATION BAR (Desktop & Mobile)
+          - Desktop: branding on left, center nav links, right profile/login
+          - Mobile: compact branding header with no profile option (profile is in bottom bar)
          ========================================================================= */}
-      <header className="hidden md:block sticky top-0 left-0 right-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-2 border-black">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+      <header className="sticky top-0 left-0 right-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-2 border-black">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-13 md:h-16 flex items-center justify-between gap-4">
           {/* Left: Branding */}
           <Link
             href="/"
-            className="flex items-center gap-2.5 group transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-lg"
+            className="flex items-center gap-2 md:gap-2.5 group transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-lg"
             aria-label="Pickleball Matchmaker Home"
           >
-            <span className="w-8 h-8 rounded-lg bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000] group-hover:rotate-6 transition-transform">
-              <PickleballIcon className="w-5 h-5 text-black" />
+            <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000] md:shadow-[2px_2px_0px_0px_#000] group-hover:rotate-6 transition-transform">
+              <PickleballIcon className="w-4 h-4 md:w-5 md:h-5 text-black" />
             </span>
-            <span className="font-display text-xl font-black uppercase tracking-tight text-black group-hover:text-neutral-800">
+            <span className="font-display text-lg md:text-xl font-black uppercase tracking-tight text-black group-hover:text-neutral-800">
               Pickleball Matchmaker
             </span>
           </Link>
 
-          {/* Center: Primary Navigation Links (only when signed in) */}
+          {/* Center: Primary Navigation Links (only on desktop md and when signed in) */}
           {playerAccount && (
             <nav
               aria-label="Desktop main navigation"
-              className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 border border-black/10"
+              className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 border border-black/10"
             >
               <Link
                 href="/"
@@ -169,8 +170,8 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
             </nav>
           )}
 
-          {/* Right: Profile Avatar & Account Dropdown, or Sign In Button */}
-          <div className="flex items-center gap-2" ref={menuRef}>
+          {/* Right: Profile Avatar & Account Dropdown, or Sign In Button (hidden on mobile; no profile option in mobile header) */}
+          <div className="hidden md:flex items-center gap-2" ref={menuRef}>
             {playerAccount ? (
               <>
                 <Link

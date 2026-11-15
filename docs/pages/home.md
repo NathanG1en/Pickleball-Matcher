@@ -6,10 +6,9 @@ The home page provides a modern, editorial neo-brutalist entry point to the Pick
 
 The application features an Instagram-inspired responsive navigation system shared across the platform:
 
-- **Desktop (Top Navigation Bar):**
-  - **Left:** Pickleball Matchmaker branding linking to `/`.
-  - **Center:** Quick navigation pill links for **Home** (`/`), **Groups** (`/players/groups`), and **Players** (`/players/find`), with lime active-state indicators (rendered for signed-in accounts).
-  - **Right:** Player Profile avatar linking directly to `/players` when authenticated, with an account dropdown menu for Profile, Create A Group, and Log Out. When signed out, displays a direct **Sign In** action button linking to `/player-login`.
+- **Top Navigation Bar:**
+  - **Desktop (`md` and up):** Compact editorial neo-brutalist header (`h-16`) with branding on the left, quick navigation pill links (**Home**, **Groups**, **Players**) in the center when signed in, and player profile avatar with account dropdown (or **Sign In**) on the right.
+  - **Mobile (`md:hidden`):** Sticky compact branding header (`h-13`) displaying the Pickleball Matchmaker branding. It contains **no profile option** in the header, keeping the mobile top clean; profile access is instead handled directly via the persistent mobile bottom navigation bar.
 - **Mobile (Fixed Bottom Navigation Bar):**
   - Persistent bottom bar with four core destinations for signed-in players:
     1. **Home** (`/`)
