@@ -13,7 +13,6 @@ import { ClientDate } from "@/components/ui/client-date-time";
 import { RecentGroupTracker } from "@/components/groups/recent-group-tracker";
 import { HomeScreenTip } from "@/components/groups/home-screen-tip";
 import { GroupOrganizersPanel } from "@/components/groups/group-organizers-panel";
-import { BackButton } from "@/components/groups/back-button";
 import { GroupOptionsMenu } from "@/components/groups/group-options-menu";
 import { ShareGroupButton } from "@/components/groups/share-group-modal";
 import { GroupJoinCard } from "@/components/groups/group-join-card";
@@ -171,8 +170,7 @@ export default async function GroupDashboardPage({
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
       <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8">
-        <div className="mb-4 flex items-center justify-between">
-          <BackButton href={accountId && isMember ? "/players" : "/"} />
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
             {isOrganizer || (isMember && accountId && !isHost) ? (
@@ -191,7 +189,7 @@ export default async function GroupDashboardPage({
             ) : null}
           </div>
         </div>
-        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase text-black tracking-tight truncate">
+        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase text-black tracking-tight truncate">
           {group.name}
         </h1>
         <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
@@ -231,7 +229,7 @@ export default async function GroupDashboardPage({
           ) : activeSession ? (
                 <section
                   data-testid="active-session-card"
-                  className="relative bg-[#ccff00] border-[3px] border-black rounded-3xl p-6 lg:p-7 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+                  className="relative bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7 space-y-4 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
                 >
               <Link
                 href={`/g/${groupId}/sessions/${activeSession.id}`}
@@ -245,10 +243,16 @@ export default async function GroupDashboardPage({
               />
               {activeSession.type === "open_play" ? (
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-black">
+                      <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
+                      Open Play
+                    </span>
+                  </div>
+                  <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-black mb-1">
                     Open Play In Progress
                   </h2>
-                  <p className="text-sm font-bold text-neutral-900">
+                  <p className="text-sm font-bold text-neutral-600">
                     {activeSession.name || (
                       <ClientDate
                         date={activeSession.startedAt}
@@ -264,15 +268,16 @@ export default async function GroupDashboardPage({
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-black">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-black">
+                      <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
                       Round {activeSession.currentRoundNumber}
                     </span>
                   </div>
                   <div>
-                    <h2 className="font-display text-2xl font-black uppercase text-black mb-1">
+                    <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-black mb-1">
                       {activeSession.name || "Session In Progress"}
                     </h2>
-                    <p className="text-sm font-bold text-neutral-900">
+                    <p className="text-sm font-bold text-neutral-600">
                       <ClientDate
                         date={activeSession.startedAt}
                         prefix="Started "
@@ -298,8 +303,8 @@ export default async function GroupDashboardPage({
                     .slice(0, 5);
                   if (recentGames.length === 0) return null;
                   return (
-                    <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-black">Recent Games</h3>
+                    <div className="relative z-20 space-y-2 pt-2 border-t-2 border-neutral-200">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-neutral-600">Recent Games</h3>
                       <div data-testid="open-play-recent-games" className="max-h-[136px] overflow-y-auto lg:max-h-72 space-y-2 pr-1">
                         {recentGames.map((m) => {
                           const t1 = currentMatchPlayers
@@ -309,7 +314,7 @@ export default async function GroupDashboardPage({
                             .filter((mp) => mp.matchId === m.id && mp.team === 2)
                             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                           return (
-                            <div key={m.id} className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2">
+                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 shadow-[1px_1px_0px_0px_#000]">
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
@@ -329,8 +334,8 @@ export default async function GroupDashboardPage({
                 })()
               ) : (
                 currentRoundMatches.length > 0 && (
-                  <div className="relative z-20 space-y-2 pt-2 border-t-2 border-black/20">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-black">Current Matchups</h3>
+                  <div className="relative z-20 space-y-2 pt-2 border-t-2 border-neutral-200">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-neutral-600">Current Matchups</h3>
                     <div data-testid="current-matchups" className="space-y-2">
                       {[...currentRoundMatches]
                         .sort((a, b) => {
@@ -353,13 +358,13 @@ export default async function GroupDashboardPage({
                           <div
                             key={m.id}
                             data-viewer-match={isViewerMatch ? "true" : undefined}
-                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-white shadow-[2px_2px_0px_0px_#000]" : "bg-[#FFFDF7]"}`}
+                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000] ring-2 ring-black" : "bg-white shadow-[1px_1px_0px_0px_#000]"}`}
                           >
                             <div>
                               <span className="font-black text-black flex items-center gap-2">
                                 Court {m.courtNumber}
                                 {isViewerMatch && (
-                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase">You&apos;re here</span>
+                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase text-black">You&apos;re here</span>
                                 )}
                               </span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
@@ -390,7 +395,7 @@ export default async function GroupDashboardPage({
                   </div>
                   <Link
                     href={`/g/${groupId}/sessions/${activeSession.id}`}
-                    className="col-span-3 flex items-center justify-center text-center py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                    className="col-span-3 flex items-center justify-center text-center py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
                   >
                     <span>
                       {activeSession.type === "open_play"
@@ -403,7 +408,7 @@ export default async function GroupDashboardPage({
                 <div className="relative z-20">
                   <Link
                     href={`/g/${groupId}/sessions/${activeSession.id}`}
-                    className="block text-center w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                    className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
                   >
                     <span>
                       {activeSession.type === "open_play"

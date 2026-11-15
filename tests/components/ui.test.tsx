@@ -276,6 +276,24 @@ describe("Reusable UI Components", () => {
       expect(html).toContain('role="status"');
     });
 
+    it("renders visual loader progress bar along bottom with duration styling", () => {
+      const html = renderToStaticMarkup(
+        <Toast duration={4000}>Saved successfully!</Toast>
+      );
+      expect(html).toContain('data-testid="toast-progress-track"');
+      expect(html).toContain('data-testid="toast-progress-bar"');
+      expect(html).toContain("animation-duration:4000ms");
+      expect(html).toContain('aria-hidden="true"');
+    });
+
+    it("does not render progress bar when duration is 0", () => {
+      const html = renderToStaticMarkup(
+        <Toast duration={0}>Persistent notice</Toast>
+      );
+      expect(html).not.toContain('data-testid="toast-progress-track"');
+      expect(html).not.toContain('data-testid="toast-progress-bar"');
+    });
+
     it("renders unboxed little black x dismiss button when onDismiss provided", () => {
       const html = renderToStaticMarkup(
         <Toast onDismiss={() => {}}>Game submitted!</Toast>

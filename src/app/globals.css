@@ -318,6 +318,22 @@ body {
   }
 }
 
+/* Toast progress loader bar */
+@keyframes toast-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.toast-progress-bar {
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

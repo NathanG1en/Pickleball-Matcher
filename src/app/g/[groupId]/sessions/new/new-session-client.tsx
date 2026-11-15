@@ -150,7 +150,7 @@ export function NewSessionClient({
         </div>
 
         <header>
-          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-black">
             Choose Session Format
           </h1>
           <p className="text-sm font-bold text-neutral-700 mt-1">
@@ -170,16 +170,16 @@ export function NewSessionClient({
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Predetermined Matchups
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+              <span className="text-xs font-bold text-neutral-600">
                 Structured
               </span>
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-black uppercase text-black">
+              <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Normal Session
               </h2>
               <p className="text-sm font-bold text-neutral-700 mt-1 leading-snug">
@@ -214,16 +214,16 @@ export function NewSessionClient({
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Flexible Games
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+              <span className="text-xs font-bold text-neutral-600">
                 Casual &amp; Drop-in
               </span>
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-black uppercase text-black">
+              <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Open Play
               </h2>
               <p className="text-sm font-bold text-neutral-700 mt-1 leading-snug">
@@ -276,7 +276,7 @@ export function NewSessionClient({
           </div>
 
           <header>
-            <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+            <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-black">
               Stay Together Pairings
             </h1>
             <p className="text-sm font-bold text-neutral-700 mt-1">
@@ -349,7 +349,7 @@ export function NewSessionClient({
         </div>
 
         <header>
-          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-black">
             Start Matchmaking
           </h1>
           <p className="text-sm font-bold text-neutral-700 mt-1">
@@ -404,7 +404,7 @@ export function NewSessionClient({
       </div>
 
       <header>
-        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-black">
           Open Play Setup
         </h1>
         <p className="text-sm font-bold text-neutral-700 mt-1">

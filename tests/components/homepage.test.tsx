@@ -82,9 +82,13 @@ describe("HomePage authentication states", () => {
     const jsx = await HomePage();
     const html = renderToStaticMarkup(jsx);
 
-    // Groups saved on device should NOT be visible when logged out
+    // Groups saved on device or action cards should NOT be visible when logged out
     expect(html).not.toContain("Sunset Pickleballers");
     expect(html).not.toContain("Your Group on this Device");
+    expect(html).not.toContain("Your groups");
+    expect(html).not.toContain("Find Groups");
+    expect(html).not.toContain("Find Players");
+    expect(html).not.toContain("Create A Group");
 
     // Sign in and temporary group options should be visible
     expect(html).toContain("Sign In to Play");
@@ -98,13 +102,14 @@ describe("HomePage authentication states", () => {
     expect(html).not.toContain("New Pairs");
     expect(html).not.toContain("Fair Games");
     expect(html).not.toContain("Even court time");
-    expect(html).not.toContain("Partner variety");
+    // Yellow Pickleball Matchmaker eyebrow badge should be removed (branding belongs in top navigation header)
+    expect(html).not.toContain("Pickleball Matchmaker");
 
     // Log out button should NOT be visible
     expect(html).not.toContain("Log Out");
   });
 
-  it("renders logged-in home page with the account's groups, logout button, and hides temporary group option", async () => {
+  it("renders logged-in home page with the account's groups above actions, and hides temporary group option and log out button", async () => {
     saveRecentGroup({ id: "grp-1", name: "Sunset Pickleballers" });
     const repo = new InMemoryRepositories({
       groups: [
@@ -145,29 +150,35 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Find Groups");
     expect(html).toContain("Find Players");
     expect(html).toContain("View Profile");
-    expect(html).toContain("Log Out");
+    expect(html).toContain("Playing as");
+    expect(html).toContain("@player1");
+    expect(html).not.toContain("Log Out");
 
-    // Order: View Profile -> Find Groups/Players -> Create A Group -> Log Out
+    // Standalone greeting between hero and your groups is removed
+    expect(html).not.toContain("WELCOME BACK, Player One");
+
+    // Order: View Profile (in hero footer) -> Your groups -> Find Groups/Players -> Create A Group
     const viewProfileIdx = html.indexOf("View Profile");
+    const yourGroupsIdx = html.indexOf("Your groups");
     const findGroupsIdx = html.indexOf("Find Groups");
     const findPlayersIdx = html.indexOf("Find Players");
     const createGroupIdx = html.indexOf("Create A Group");
-    const logoutIdx = html.indexOf("Log Out");
 
-    expect(viewProfileIdx).toBeLessThan(findGroupsIdx);
+    expect(viewProfileIdx).toBeLessThan(yourGroupsIdx);
+    expect(yourGroupsIdx).toBeLessThan(findGroupsIdx);
     expect(findGroupsIdx).toBeLessThan(createGroupIdx);
     expect(findPlayersIdx).toBeLessThan(createGroupIdx);
-    expect(createGroupIdx).toBeLessThan(logoutIdx);
 
-    // Font weight: Find Groups, Find Players, and Log Out share the same font-bold weight
+    // Font weight: Find Groups and Find Players share the same font-bold weight
     expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/groups"/);
     expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/find"/);
-    expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*>Log Out<\/button>/);
 
-    // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
+
+    // Sign In button, Make Temporary Group, legacy PIN link, and yellow matchmaker eyebrow badge should be GONE
     expect(html).not.toContain("Sign In to Play");
     expect(html).not.toContain("Start a Quick Session");
     expect(html).not.toContain("Legacy organizer PIN sign in");
+    expect(html).not.toContain("Pickleball Matchmaker");
   });
 
   it("does not render recent groups the player is not part of even if looked at and saved on device", async () => {
@@ -231,7 +242,7 @@ describe("HomePage authentication states", () => {
     expect(html).toContain('href="/g/grp-1"');
   });
 
-  it("shows signed-out guests the groups they joined on this device", async () => {
+  it("does not show groups to signed-out visitors even if guest groups exist", async () => {
     const repo = new InMemoryRepositories({
       groups: [
         { id: "grp-1", name: "Sunset Pickleballers", organizerPinHash: "pin-hash", createdAt: new Date(), ownerAccountId: "usr-1" },
@@ -247,11 +258,12 @@ describe("HomePage authentication states", () => {
 
     const html = renderToStaticMarkup(await HomePage());
 
-    expect(html).toContain("Your groups");
-    expect(html).toContain("Sunset Pickleballers");
-    // A guest removed from a roster no longer sees that group
+    // Signed-out visitors see only welcome and sign-in options
+    expect(html).not.toContain("Your groups");
+    expect(html).not.toContain("Sunset Pickleballers");
     expect(html).not.toContain("Left Behind");
     expect(html).toContain("Sign In to Play");
+    expect(html).toContain("Create an Account");
   });
 });
 

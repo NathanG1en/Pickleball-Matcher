@@ -35,7 +35,7 @@ export function HomePickleball() {
     <button
       type="button"
       aria-label="Bounce pickleball"
-      className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-black"
+      className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-black hover:scale-110 active:scale-95 transition-transform duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
       onPointerEnter={event => {
         if (event.pointerType === "mouse" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) replayBounce();
       }}

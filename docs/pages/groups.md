@@ -4,17 +4,15 @@ For a deeper look at roles and visibility, see [synergy-and-privacy-system.md](.
 
 ## Find a group — `/players/groups`
 
-Shows public groups and lets players search them.
+Shows public groups and lets players search them. Requires a signed-in player account; unauthenticated visitors are automatically redirected to `/player-login?next=%2Fplayers%2Fgroups`.
 
-- **Header:** a Back button and a link to My Profile. Signed-out visitors get a Home link instead.
+- **Header:** clean header with category eyebrow, page title ("Find a group"), and a responsive **+ Create Group** button (`/setup`) aligned horizontally for easy access across mobile and desktop.
 - **Search:** searches public groups by name. The query is in the URL (`?q=`), so a search can be shared and survives a reload. Private groups never appear here.
-- **Signed out:** a line under the search asks the visitor to create an account or sign in before joining.
 - **Group cards:** each card shows the group name, a role badge (Host, Organizer, or Member) when the viewer belongs to the group, and the number of active players. Every card has a **View Group** link. The second button depends on the viewer:
   - **Join** for signed-in non-members. The card refreshes to show the Member badge after joining.
   - **Leave** for members who aren't the host. It asks for confirmation first.
-  - **Sign in to join** for signed-out visitors.
 - **Empty states:**
-  - *A search with no results* names the query (“No groups match “…””), notes that private groups never appear in search, and offers **Clear search**, which returns to `/players/groups`.
+  - *A search with no results* names the query (“No groups match “…””), notes that private groups never appear in search, suggests checking spelling or trying another name, and offers **Clear search** alongside a path to create a group (`/setup`, or create an account for signed-out visitors).
   - *No public groups at all* (no search entered) shows “No public groups yet”, suggests asking an organizer for an invite link, and offers **Create a group** (`/setup`). Signed-out visitors see **Create an account** instead, which leads to signup and then on to `/setup`.
 
 ## Create group — `/setup`
@@ -30,10 +28,12 @@ Requires a signed-in player account. The creator becomes the host and is added t
 
 ## Group dashboard — `/g/[groupId]`
 
-- **Header:** Back button, **Share**, and a **Group options** menu. The options menu is shown to organizers and to signed-in members who aren't the host. Below these sit the group name, a Public/Private badge, and the roster count, which includes the host. After a session ends, organizers also see the session sign-off control here.
+- **Header:** **Share**, and a **Group options** menu (integrated with the shared responsive navigation). The options menu is shown to organizers and to signed-in members who aren't the host. Below these sit the group name, a Public/Private badge, and the roster count, which includes the host. After a session ends, organizers also see the session sign-off control here.
+
+- **Feedback toasts:** Success feedback (e.g. adding a player or guest) uses a compact toast placed at the bottom of the screen on mobile devices so header navigation and group title remain clear and accessible. On larger screens it stays in the top-right corner. It includes an accessible announcement, a dismiss control, and a visual loader progress bar running along the bottom indicating how long the notification will remain visible before auto-dismissing.
 - **Primary session card:** this comes first on phones, right under the header. On desktop it sits at the top of the left column. What it shows depends on the viewer:
   - **Not part of the group:** the join card.
-  - **A session is running:** a lime card with the round number, start date, and court count, plus current matchups (or recent games for open play). Every court is listed; the list doesn't scroll inside the card. If the viewer is playing this round, their court is listed first and tagged **You're here**. Organizers get **End Session** (shortened to “End” on phones) and **Resume Session** (or **Manage Open Play**). **End** first opens an "End this session?" confirmation. For a normal session it says how many games are still in progress and won't be recorded; for open play it says players won't be able to log more games. It also warns that a session can't be reopened. **Keep playing** closes the dialog and leaves the session running. Players get **View Live Session** (or **View Open Play**).
+  - **A session is running:** a card with a warm neutral surface (`#FFFDF7`), round number or session format badge, start date, and court count, plus current matchups (or recent games for open play). Every court is listed; the list doesn't scroll inside the card. If the viewer is playing this round, their court is listed first and tagged with a bright lime **You're here** badge. The primary action is a prominent bright lime button: **Resume Session** (or **Manage Open Play**) for organizers, and **View Live Session** (or **View Open Play**) for players. Organizers also get **End Session** (shortened to “End” on phones). **End** first opens an "End this session?" confirmation. For a normal session it says how many games are still in progress and won't be recorded; for open play it says players won't be able to log more games. It also warns that a session can't be reopened. **Keep playing** closes the dialog and leaves the session running.
   - **No session, organizer:** “Ready to Play?” with **Start New Session**, which opens `/g/[groupId]/sessions/new`.
   - **No session, player:** “No Active Session” with an explanation.
 - **Organizers and roster:** on phones this follows the session card. On desktop it fills the right-hand column. Organizers can find players by username or add guests here. The roster supports search, filter, and sort.
