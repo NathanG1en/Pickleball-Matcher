@@ -39,6 +39,9 @@ describe("ResponsiveNavigation Component", () => {
     // Mobile bottom nav should exist
     expect(html).toContain('aria-label="Mobile bottom navigation"');
 
+    // Mobile top header should NOT exist
+    expect(html).not.toContain("md:hidden sticky top-0");
+
     // Bottom navigation must NOT contain "Log Out"
     const bottomNavStart = html.indexOf('aria-label="Mobile bottom navigation"');
     const bottomNavHtml = html.slice(bottomNavStart);

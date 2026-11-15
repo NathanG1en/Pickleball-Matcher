@@ -243,36 +243,9 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
       </header>
 
       {/* =========================================================================
-          MOBILE TOP BRANDING BAR (Compact, md:hidden)
-          Clean compact branding header for mobile screens
-         ========================================================================= */}
-      <header className="md:hidden sticky top-0 left-0 right-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-2 border-black px-4 h-13 flex items-center justify-between">
-        <Link
-          href="/"
-          className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-lg"
-          aria-label="Pickleball Matchmaker Home"
-        >
-          <span className="w-7 h-7 rounded-lg bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000]">
-            <PickleballIcon className="w-4 h-4 text-black" />
-          </span>
-          <span className="font-display text-lg font-black uppercase tracking-tight text-black">
-            Pickleball Matchmaker
-          </span>
-        </Link>
-        {playerAccount && (
-          <Link
-            href="/players"
-            aria-label={`Profile for @${playerAccount.username}`}
-            className="w-7 h-7 rounded-full bg-[#fde047] border-2 border-black flex items-center justify-center font-display font-black text-xs uppercase text-black shadow-[1.5px_1.5px_0px_0px_#000]"
-          >
-            {playerAccount.username.charAt(0).toUpperCase()}
-          </Link>
-        )}
-      </header>
-
-      {/* =========================================================================
           MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)
           Instagram-inspired persistent bottom bar with 4 destinations:
+
           Home, Groups, Players, Profile
          ========================================================================= */}
       {!isSessionCourtView && (
