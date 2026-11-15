@@ -25,12 +25,12 @@ export function Toast({
 }: ToastProps) {
   const positionClass = fixed
     ? "fixed bottom-4 left-4 right-4 sm:bottom-auto sm:left-auto sm:top-4 sm:right-4 z-[60] max-w-[calc(100vw-2rem)] sm:max-w-md"
-    : "w-fit max-w-full";
+    : "relative w-fit max-w-full";
 
   return (
     <div
       data-testid={testId}
-      className={`${positionClass} relative overflow-hidden flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-2.5 sm:p-3 pb-3 sm:pb-3.5 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in ${className}`}
+      className={`${positionClass} overflow-hidden flex items-center justify-between gap-3 bg-[#ccff00] border-2 border-black rounded-xl p-2.5 sm:p-3 pb-3 sm:pb-3.5 font-black text-black shadow-[3px_3px_0px_0px_#000] text-sm animate-in fade-in ${className}`}
       {...props}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -53,12 +53,21 @@ export function Toast({
         <div
           data-testid="toast-progress-track"
           aria-hidden="true"
-          className="absolute bottom-0 left-0 right-0 h-1 bg-black/15 overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/20 overflow-hidden pointer-events-none"
         >
           <div
             data-testid="toast-progress-bar"
             className="toast-progress-bar h-full bg-black"
-            style={{ animationDuration: `${duration}ms` }}
+            style={{
+              animationName: "toast-progress",
+              animationDuration: `${duration}ms`,
+              animationTimingFunction: "linear",
+              animationFillMode: "forwards",
+              WebkitAnimationName: "toast-progress",
+              WebkitAnimationDuration: `${duration}ms`,
+              WebkitAnimationTimingFunction: "linear",
+              WebkitAnimationFillMode: "forwards",
+            }}
           />
         </div>
       )}
