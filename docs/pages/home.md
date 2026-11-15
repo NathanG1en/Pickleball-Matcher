@@ -35,10 +35,10 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 The hero section introduces the application's core identity with balanced, refined proportions that do not dominate the initial viewport:
 
 - **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
-- **Brand Motif & Interactive Pickleball:** Instead of a generic horizontal divider line, the signature pickleball graphic functions as an intentional brand motif integrated directly into the headline—replacing the period after "FAIR ROUNDS" with an interactive, responsive pickleball mark (`w-5 h-5` on mobile to `w-8 h-8` on desktop). Users can hover or tap the ball to trigger the signature bounce animation on both mobile and desktop, while screen readers receive a coherent announcement via `aria-label`.
 - **Tagline:** "An elevated pickleball experience."
-- **Contextual Actions:**
-  - **Signed In:** Pure brand introduction without duplicate profile navigation (profile is accessed via the desktop top nav avatar or mobile bottom nav bar).
+- **Interactive Court Divider:** The centered decorative bouncing pickleball divider (horizontal lines with the interactive pickleball button) sits below the subtitle across desktop and mobile.
+- **Hero Footer / Contextual Actions:**
+  - **Signed In:** Features a subtle, horizontally aligned profile footer row beneath the divider with a small neon-lime initial avatar, a muted "PLAYING AS" label with `@username`, and a distinct neon-lime "View Profile →" button.
   - **Signed Out:** Integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions within the card.
 
 ## Main Actions
@@ -53,8 +53,7 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - Refined hero section containing the "FAIR ROUNDS. FRESH PARTNERS." brand introduction.
-  - Compact personalized greeting row ("WELCOME BACK, <displayName>") with the player's avatar badge immediately above the group list.
+  - Refined hero section containing "FAIR ROUNDS. FRESH PARTNERS.", subtitle, pickleball divider, and the compact profile footer row (**Playing as @username** and **View Profile →**).
   - **Your groups** listing showing all active groups.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
   - Account logout is available via the Profile page and the desktop top navigation account dropdown.

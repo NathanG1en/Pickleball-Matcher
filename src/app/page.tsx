@@ -102,19 +102,13 @@ export default async function HomePage() {
           className="text-center space-y-4 sm:space-y-6 rounded-3xl border-2 border-black bg-[#FFFDF7] p-5 sm:p-8 shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000]"
           aria-labelledby="home-title"
         >
-          {/* Distinctive Barlow Condensed Display Heading with Brand Pickleball Motif */}
+          {/* Distinctive Barlow Condensed Display Heading */}
           <div className="space-y-1.5 sm:space-y-2">
             <h1
               id="home-title"
-              aria-label="FAIR ROUNDS. FRESH PARTNERS."
               className="font-display text-[2rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
             >
-              <span className="inline-flex items-center justify-center">
-                <span>FAIR ROUNDS</span>
-                <span className="inline-flex items-center align-middle ml-1.5 sm:ml-2.5">
-                  <HomePickleball />
-                </span>
-              </span>
+              FAIR ROUNDS.
               <br />
               <span className="inline-block mt-1.5 sm:mt-2 bg-[#ccff00] text-black px-3.5 sm:px-4 py-0.5 sm:py-1 border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] rounded-xl -rotate-1">
                 FRESH PARTNERS.
@@ -123,6 +117,13 @@ export default async function HomePage() {
             <p className="text-sm sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
               An elevated pickleball experience.
             </p>
+          </div>
+
+          {/* Interactive Pickleball Divider */}
+          <div className="flex items-center justify-center gap-3 py-1 max-w-xs mx-auto">
+            <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
+            <HomePickleball />
+            <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
           </div>
 
           {/* Combined Sign In & Create Account Actions */}
@@ -192,24 +193,18 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 3. Hero Section: Refined brand introduction (no duplicate profile button) */}
+      {/* 3. Hero Section: Refined brand introduction with compact profile footer */}
       <section
-        className="text-center space-y-4 sm:space-y-5 rounded-3xl border-2 border-black bg-[#FFFDF7] p-5 sm:p-8 shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000]"
+        className="text-center space-y-4 sm:space-y-5 rounded-3xl border-2 border-black bg-[#FFFDF7] p-5 sm:p-7 shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000]"
         aria-labelledby="home-title"
       >
-        {/* Distinctive Barlow Condensed Display Heading with Brand Pickleball Motif */}
+        {/* Distinctive Barlow Condensed Display Heading */}
         <div className="space-y-1.5 sm:space-y-2">
           <h1
             id="home-title"
-            aria-label="FAIR ROUNDS. FRESH PARTNERS."
             className="font-display text-[2rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
           >
-            <span className="inline-flex items-center justify-center">
-              <span>FAIR ROUNDS</span>
-              <span className="inline-flex items-center align-middle ml-1.5 sm:ml-2.5">
-                <HomePickleball />
-              </span>
-            </span>
+            FAIR ROUNDS.
             <br />
             <span className="inline-block mt-1.5 sm:mt-2 bg-[#ccff00] text-black px-3.5 sm:px-4 py-0.5 sm:py-1 border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] rounded-xl -rotate-1">
               FRESH PARTNERS.
@@ -219,22 +214,42 @@ export default async function HomePage() {
             An elevated pickleball experience.
           </p>
         </div>
+
+        {/* Interactive Pickleball Divider */}
+        <div className="flex items-center justify-center gap-3 py-1 max-w-xs mx-auto">
+          <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
+          <HomePickleball />
+          <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
+        </div>
+
+        {/* Subtle, horizontally aligned profile footer row */}
+        <div
+          aria-label="Account status"
+          className="pt-1 flex flex-col sm:flex-row sm:items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto"
+        >
+          <div className="flex items-center justify-center gap-2.5 text-left">
+            <span className="w-8 h-8 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-sm text-black shadow-[1.5px_1.5px_0px_0px_#000] shrink-0">
+              {playerAccount.username.charAt(0).toUpperCase()}
+            </span>
+            <div>
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-neutral-500 leading-none">
+                Playing as
+              </p>
+              <p className="font-display text-sm sm:text-base font-black uppercase text-black leading-tight mt-0.5">
+                @{playerAccount.username}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/players"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-xs sm:text-sm uppercase tracking-wider border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
+          >
+            View Profile →
+          </Link>
+        </div>
       </section>
 
-      {/* 4. Personalized Greeting immediately above Your Groups */}
-      <div
-        aria-label="Account greeting"
-        className="flex items-center gap-2.5 px-1 pt-1"
-      >
-        <span className="w-8 h-8 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-sm text-black shadow-[1.5px_1.5px_0px_0px_#000]">
-          {playerAccount.username.charAt(0).toUpperCase()}
-        </span>
-        <h2 className="font-display text-base sm:text-lg font-black uppercase tracking-wide text-neutral-900">
-          WELCOME BACK, {playerAccount.name ? playerAccount.name : `@${playerAccount.username}`}
-        </h2>
-      </div>
-
-      {/* 5. Your Groups Section */}
+      {/* 4. Your Groups Section */}
       <YourGroupsHome groups={homeGroups} />
 
       {/* 6. Main Action Cards: Cohesive, Refined 3-Card Layout */}

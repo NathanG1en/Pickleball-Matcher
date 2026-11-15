@@ -149,20 +149,22 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Create A Group");
     expect(html).toContain("Find Groups");
     expect(html).toContain("Find Players");
-    expect(html).not.toContain("View Profile"); // Profile is accessed via navigation avatar/tab
+    expect(html).toContain("View Profile");
+    expect(html).toContain("Playing as");
+    expect(html).toContain("@player1");
     expect(html).not.toContain("Log Out");
 
-    // Compact personalized greeting above Your Groups
-    expect(html).toContain("WELCOME BACK, Player One");
+    // Standalone greeting between hero and your groups is removed
+    expect(html).not.toContain("WELCOME BACK, Player One");
 
-    // Order: Personalized greeting -> Your groups -> Find Groups/Players -> Create A Group
-    const greetingIdx = html.indexOf("WELCOME BACK, Player One");
+    // Order: View Profile (in hero footer) -> Your groups -> Find Groups/Players -> Create A Group
+    const viewProfileIdx = html.indexOf("View Profile");
     const yourGroupsIdx = html.indexOf("Your groups");
     const findGroupsIdx = html.indexOf("Find Groups");
     const findPlayersIdx = html.indexOf("Find Players");
     const createGroupIdx = html.indexOf("Create A Group");
 
-    expect(greetingIdx).toBeLessThan(yourGroupsIdx);
+    expect(viewProfileIdx).toBeLessThan(yourGroupsIdx);
     expect(yourGroupsIdx).toBeLessThan(findGroupsIdx);
     expect(findGroupsIdx).toBeLessThan(createGroupIdx);
     expect(findPlayersIdx).toBeLessThan(createGroupIdx);
