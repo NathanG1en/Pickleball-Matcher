@@ -26,41 +26,50 @@ export function LiveSessionsHome({ groups }: { groups: readonly HomeGroupSummary
           key={group.id}
           href={`/g/${group.id}/sessions/${group.liveSession!.id}`}
           data-testid="home-live-session"
-          className="block rounded-2xl border-[3px] border-black bg-[#ccff00] p-4 shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+          className="group block rounded-2xl border-2 border-black bg-[#FFFDF7] hover:bg-white p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] hover:shadow-[5px_5px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all"
         >
-          <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-black">
-            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-black bg-white" />
-            Live now · {liveLabel(group.liveSession!)}
-          </span>
-          <span className="mt-1.5 block font-display text-2xl font-black uppercase leading-tight text-black break-words">
-            {group.name}
-          </span>
-          <span className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-black px-4 font-display text-base font-black uppercase tracking-wide text-[#ccff00]">
-            See my court →
-          </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
+                Live now · {liveLabel(group.liveSession!)}
+              </span>
+              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-black uppercase leading-tight text-black break-words group-hover:text-neutral-900">
+                {group.name}
+              </h2>
+            </div>
+            <span className="flex min-h-11 items-center justify-center rounded-xl bg-black px-5 font-display text-sm font-black uppercase tracking-wide text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] shrink-0 self-start sm:self-auto group-hover:bg-neutral-900">
+              See my court →
+            </span>
+          </div>
         </Link>
       ))}
     </div>
   );
 }
 
+
 export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[] }) {
   if (groups.length === 0) return null;
   return (
-    <section aria-labelledby="your-groups-heading" className="rounded-2xl border-2 border-black bg-[#e0f2fe] p-4 text-left sm:p-5">
-      <h2 id="your-groups-heading" className="font-display text-xl font-black uppercase text-black">
-        Your groups
-      </h2>
-      <ul className="mt-3 space-y-2">
+    <section aria-labelledby="your-groups-heading" className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-5 text-left shadow-[3px_3px_0px_0px_#000]">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h2 id="your-groups-heading" className="font-display text-2xl font-black uppercase text-black">
+          Your groups
+        </h2>
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
+          {groups.length} {groups.length === 1 ? "group" : "groups"}
+        </span>
+      </div>
+      <ul className="space-y-2.5">
         {groups.map((group) => (
           <li key={group.id}>
             <Link
               href={`/g/${group.id}`}
-              className="flex min-h-11 items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 hover:bg-white"
+              className="flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-4 py-2.5 hover:bg-neutral-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
             >
-              <span className="min-w-0 font-display text-base font-black uppercase text-black break-words">{group.name}</span>
-              {/* The Live now card above already links to a running session, so the row only opens the group. */}
-              <span className="shrink-0 text-xs font-black uppercase text-black">Open →</span>
+              <span className="min-w-0 font-display text-lg font-black uppercase text-black break-words">{group.name}</span>
+              <span className="shrink-0 text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border border-black px-2.5 py-1 rounded-lg">Open →</span>
             </Link>
           </li>
         ))}
@@ -68,3 +77,4 @@ export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[]
     </section>
   );
 }
+
