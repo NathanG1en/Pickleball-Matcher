@@ -32,14 +32,14 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 
 ## Hero
 
-The hero card unifies the application's core identity, interactive court animation, and contextual user actions within a single cohesive container:
+The hero section introduces the application's core identity with balanced, refined proportions that do not dominate the initial viewport:
 
-- **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, accented with a selective neon lime badge highlight.
+- **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
 - **Tagline:** "An elevated pickleball experience."
-- **Interactive Court Divider:** Features the interactive pickleball animation that bounces once per session and responds to hover/tap interactions.
-- **Combined Contextual Actions:**
-  - **Signed In:** Seamlessly integrates the "Welcome back @username" status and **View Profile →** button directly inside the hero section without a separate nested box.
-  - **Signed Out:** Seamlessly integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions directly within the hero section, avoiding multiple disconnected cards.
+- **Interactive Court Divider:** The decorative bouncing pickleball divider is featured on desktop screens and kept clean on mobile (`hidden sm:flex`).
+- **Contextual Actions:**
+  - **Signed In:** Pure brand introduction without duplicate profile navigation (profile is accessed via the desktop top nav avatar or mobile bottom nav bar).
+  - **Signed Out:** Integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions within the card.
 
 ## Main Actions
 
@@ -53,8 +53,9 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - Unified hero section containing the "FAIR ROUNDS. FRESH PARTNERS." identity and integrated "Welcome back @username" status with **View Profile →** (rendered inline without nested framing).
-  - **Your groups** listing showing all active groups, positioned immediately below the hero card and above the action cards.
+  - Refined hero section containing the "FAIR ROUNDS. FRESH PARTNERS." brand introduction.
+  - Compact personalized greeting row ("WELCOME BACK, <displayName>") with the player's avatar badge immediately above the group list.
+  - **Your groups** listing showing all active groups.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
   - Account logout is available via the Profile page and the desktop top navigation account dropdown.
 - **Signed Out:**
