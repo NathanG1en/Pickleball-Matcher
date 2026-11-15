@@ -11,7 +11,7 @@ When any group the viewer belongs to has a session in progress, a lime **Live no
 
 ## Your groups
 
-Below the heading, **Your groups** lists every group the viewer belongs to. Groups with a live session are listed first, marked **Live →**; the rest are in alphabetical order.
+Below the heading, **Your groups** lists every group the viewer belongs to. Groups with a live session are listed first; the rest are in alphabetical order. Every row says **Open →** and opens the group dashboard. The row isn't marked live, because the **Live now** card above is the way into a running session.
 
 - **Where the list comes from:** it is loaded from the server, not from this device's browsing history, so a new phone shows the same groups.
   - **Signed-in players:** every group where they are an active roster member, the host, or an organizer.
@@ -26,4 +26,4 @@ Below the heading, **Your groups** lists every group the viewer belongs to. Grou
 
 ## Sign in — `/player-login`
 
-After signing in, the player goes to the page in the link's `?next=` if there is one. Otherwise they land on the home page, which shows their live sessions and groups.
+When the link's `?next=` points inside a group, the page names that group ("Sign in to open <Group>") and offers **Not in this group yet? Join as a guest**. That link goes to the group's join page and keeps the destination. After signing in, the player goes to the page in the link's `?next=` if there is one. Otherwise they land on the home page, which shows their live sessions and groups.

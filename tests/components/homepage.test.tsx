@@ -226,6 +226,9 @@ describe("HomePage authentication states", () => {
     expect(html).toContain('href="/g/grp-1/sessions/ses-1"');
     expect(html).toContain("See my court");
     expect(html.indexOf("Live now")).toBeLessThan(html.indexOf("FAIR ROUNDS"));
+    // The live card is the way into the session; the group row just opens the group.
+    expect(html).not.toContain("Live →");
+    expect(html).toContain('href="/g/grp-1"');
   });
 
   it("shows signed-out guests the groups they joined on this device", async () => {

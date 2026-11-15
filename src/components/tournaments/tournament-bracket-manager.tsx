@@ -580,9 +580,13 @@ export function TournamentBracketManager({
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-black bg-[#ccff00] text-black">
                               Done
                             </span>
-                          ) : (
+                          ) : p1 && p2 ? (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-neutral-300 bg-white text-neutral-600">
                               In Play
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-dashed border-neutral-400 bg-white text-neutral-600">
+                              Waiting
                             </span>
                           )}
                           {isOrganizer && !isBye && (

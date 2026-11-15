@@ -559,7 +559,7 @@ test.describe("Permissions and Security Workflow", () => {
     await page.waitForURL(new RegExp(`/players/${publicUser.username}`));
     await expect(page.locator("h1")).toContainText(publicUser.name);
     await expect(page.getByText(`@${publicUser.username}`, { exact: true })).toBeVisible();
-    await expect(page.getByText("Public", { exact: true })).toBeVisible();
+    await expect(page.getByText("Everyone", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Rating over time" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Past Sessions" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Go to session" })).not.toBeVisible();
@@ -883,7 +883,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userBCard).toContainText(userB.name);
   await expect(userBCard).toContainText(`@${userB.username}`);
   await expect(userBCard).toContainText("Private");
-  await expect(userBCard).toContainText("Rating:");
+  await expect(userBCard).not.toContainText("Rating:");
 
   // 6. View User B's private profile
   await userBCard.getByRole("link", { name: "View Profile" }).click();
@@ -901,7 +901,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userACard).toBeVisible();
   await expect(userACard).toContainText(userA.name);
   await expect(userACard).toContainText(`@${userA.username}`);
-  await expect(userACard).toContainText("Public");
+  await expect(userACard).toContainText("Everyone");
   await expect(userACard).toContainText("Rating:");
 
   // 8. Test Back button from Find Players returns to Home

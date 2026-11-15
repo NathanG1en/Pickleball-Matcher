@@ -20,6 +20,7 @@ The player profile page is where athletes can review their rating, track their g
 2. **Chemistry Spotlight**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost.
    - **Mutual Chemistry**: When another signed-in player views the profile, displays mutual partner chemistry between the viewer and the profile owner.
+   - **No partner yet**: With no chemistry yet, the card explains that chemistry only tracks doubles partners who have player accounts, so games with guest partners don't unlock it.
    - **Privacy fallback**: Displays a locked notice ("Chemistry Private") if the player has hidden partner chemistry.
 3. **Performance Stats**:
    - Stat cards showing total attended sessions, match wins, and match losses across all groups.
@@ -30,6 +31,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Privacy fallback**: Displays a locked notice ("Groups Private") if the player has hidden group memberships.
 5. **Score History Chart**:
    - Visual trend of rating progression over time across completed sessions. Hidden if rating & stats are private.
+   - Week, Month, Year and All filters. Under the chart, a line reads "from → to rating" for the selected range. For **All**, "from" is the player's starting rating, so the line shows a change even after the first session.
 6. **Past Sessions**:
    - Chronological list of completed sessions with date, group name, session type (e.g. Regular or Open Play), and win/loss match records.
    - When viewed by the owner, includes direct links (`?from=profile`) to inspect session round results.

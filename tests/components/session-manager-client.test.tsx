@@ -658,7 +658,7 @@ describe("SessionManagerClient Component", () => {
 
     // Present and Not Present sections are separated with counts
     expect(managerHtml).toContain("Present (3)");
-    expect(managerHtml).toContain("Not Present / Left (1)");
+    expect(managerHtml).toContain("Not here / Left (1)");
     expect(managerHtml).toContain('data-testid="attendance-present-list"');
     expect(managerHtml).toContain('data-testid="attendance-not-present-list"');
 
@@ -709,6 +709,30 @@ describe("SessionManagerClient Component", () => {
     expect(nonManagerHtml).not.toContain('id="session-guest-name"');
     expect(nonManagerHtml).toContain("Present");
     expect(nonManagerHtml).toContain("Left");
+  });
+
+  it("labels players who never arrived 'Not here' and players who left mid-session 'Left'", () => {
+    const activeSession: SessionRecord = { ...completedSession, status: "active", endedAt: null, currentRoundNumber: 1 };
+    const withLatecomer = [...players, { id: "p5", groupId, name: "Erin", active: true, initialRating: 1200, rating: 1200, ratedGamesPlayed: 0 }];
+    const html = renderToStaticMarkup(
+      <SessionManagerClient
+        groupId={groupId}
+        session={activeSession}
+        players={withLatecomer}
+        attendance={[
+          { sessionId, playerId: "p1", joinedRound: 1, leftRound: null },
+          { sessionId, playerId: "p2", joinedRound: 1, leftRound: 1 },
+        ]}
+        startedRounds={[]}
+        initialProposal={null}
+        canManage={true}
+        isOrganizer={true}
+        initialOpenSettingsModal={true}
+      />
+    );
+    expect(html).toMatch(/data-testid="attendance-left-Erin"[^>]*>Not here<\/button>/);
+    expect(html).toMatch(/data-testid="attendance-left-Bob"[^>]*>Left<\/button>/);
+    expect(html).toContain("Not here / Left (4)");
   });
 
   it("turns the pin button black when pinned without displaying a little pin or text label next to the player name in session settings", () => {

@@ -292,8 +292,8 @@ export default async function PlayerPublicProfilePage({
                   <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
                   <p className="mt-1 text-xs font-bold text-neutral-600">
                     {isOwner
-                      ? "Play matches with other people to unlock."
-                      : "Must play matches with other people to unlock."}
+                      ? "Chemistry tracks partners who have player accounts. Play doubles with them to see who you click with."
+                      : "Chemistry shows up after doubles games with partners who have player accounts."}
                   </p>
                 </div>
               </section>
@@ -402,7 +402,7 @@ export default async function PlayerPublicProfilePage({
           <div className="space-y-5 lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
             {canViewRatingStats && (
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
-                <ScoreHistoryChart history={history} />
+                <ScoreHistoryChart history={history} startingRating={targetAccount.initialRating} />
               </section>
             )}
 

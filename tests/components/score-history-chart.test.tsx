@@ -22,6 +22,15 @@ describe("ScoreHistoryChart", () => {
     expect(html).toContain('disabled=""');
   });
 
+  it("measures 'All time' from the starting rating, so a first session shows its change", () => {
+    const history: PlayerSessionHistoryRecord[] = [
+      { sessionId: "s1", groupId: "g1", groupName: "Club A", rating: 1050, wins: 2, losses: 0, startedAt: new Date("2026-09-01T10:00:00Z") },
+    ];
+    const html = renderToStaticMarkup(<ScoreHistoryChart history={history} startingRating={1000} />);
+    expect(html).toContain("3.5 → 3.625 rating");
+    expect(renderToStaticMarkup(<ScoreHistoryChart history={history} />)).toContain("3.625 → 3.625 rating");
+  });
+
   it("renders SVG chart with points, line, date labels, and active 'All time' filter for session records", () => {
     const history: PlayerSessionHistoryRecord[] = [
       {

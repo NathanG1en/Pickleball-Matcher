@@ -59,9 +59,8 @@ export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[]
               className="flex min-h-11 items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 hover:bg-white"
             >
               <span className="min-w-0 font-display text-base font-black uppercase text-black break-words">{group.name}</span>
-              <span className="shrink-0 text-xs font-black uppercase text-black">
-                {group.liveSession ? "Live →" : "Open →"}
-              </span>
+              {/* The Live now card above already links to a running session, so the row only opens the group. */}
+              <span className="shrink-0 text-xs font-black uppercase text-black">Open →</span>
             </Link>
           </li>
         ))}

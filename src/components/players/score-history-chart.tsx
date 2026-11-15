@@ -119,6 +119,8 @@ export interface ScoreHistoryChartProps {
   readonly title?: string | null;
   readonly initialTimeRange?: RatingTimeRange;
   readonly referenceDate?: Date;
+  /** Rating before the first session; the "All" range is measured from here. */
+  readonly startingRating?: number | null;
 }
 
 export function ScoreHistoryChart({
@@ -126,6 +128,7 @@ export function ScoreHistoryChart({
   title = "Rating over time",
   initialTimeRange = "all",
   referenceDate,
+  startingRating = null,
 }: ScoreHistoryChartProps) {
   const isHydrated = useHydrated();
   const [timeRange, setTimeRange] = useState<RatingTimeRange>(initialTimeRange);
@@ -408,7 +411,7 @@ export function ScoreHistoryChart({
 
           <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-neutral-600">
             <p>
-              {formatDupr(values[0])} → {formatDupr(values.at(-1)!)} rating
+              {formatDupr(timeRange === "all" && startingRating !== null ? startingRating : values[0])} → {formatDupr(values.at(-1)!)} rating
             </p>
             {activeRecord && (
               <p data-testid="active-rating-details" className="text-black font-black">

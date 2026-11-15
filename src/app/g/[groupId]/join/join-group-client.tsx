@@ -30,6 +30,7 @@ export function JoinGroupClient({
   isOrganizer,
   isAccountMember,
   guestPlayer,
+  continueTo = null,
 }: {
   groupId: string;
   groupName: string;
@@ -39,8 +40,12 @@ export function JoinGroupClient({
   isOrganizer: boolean;
   isAccountMember: boolean;
   guestPlayer: GuestSummary | null;
+  /** Where to go after joining, e.g. a shared session link inside this group. */
+  continueTo?: string | null;
 }) {
   const router = useRouter();
+  const destination = continueTo ?? `/g/${groupId}`;
+  const joinPath = continueTo ? `/g/${groupId}/join?next=${encodeURIComponent(continueTo)}` : `/g/${groupId}/join`;
 
   // Account join state
   const [accountJoining, setAccountJoining] = useState(false);
@@ -60,7 +65,7 @@ export function JoinGroupClient({
     const result = await joinGroupViaInviteAction({ groupId });
     if (result.ok) {
       saveRecentGroup({ id: groupId, name: groupName });
-      router.push(`/g/${groupId}`);
+      router.push(destination);
       router.refresh();
       return;
     }
@@ -84,7 +89,7 @@ export function JoinGroupClient({
     });
     if (result.ok) {
       saveRecentGroup({ id: groupId, name: groupName });
-      router.push(`/g/${groupId}`);
+      router.push(destination);
       router.refresh();
       return;
     }
@@ -121,10 +126,10 @@ export function JoinGroupClient({
 
         <div className="pt-2 space-y-3">
           <Link
-            href={`/g/${groupId}`}
+            href={destination}
             className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
           >
-            Go to Group Dashboard →
+            {continueTo ? "Continue →" : "Go to Group Dashboard →"}
           </Link>
           <Link
             href="/"
@@ -192,7 +197,7 @@ export function JoinGroupClient({
           <div className="text-xs font-bold text-neutral-600">
             <span>Not you? </span>
             <Link
-              href={`/player-login?next=${encodeURIComponent(`/g/${groupId}/join`)}`}
+              href={`/player-login?next=${encodeURIComponent(joinPath)}`}
               className="font-black text-black underline"
             >
               Switch Account
@@ -315,13 +320,13 @@ export function JoinGroupClient({
       {/* Option 2 & 3: Sign In or Create Account */}
       <div className="space-y-2">
         <Link
-          href={`/player-login?next=${encodeURIComponent(`/g/${groupId}/join`)}`}
+          href={`/player-login?next=${encodeURIComponent(joinPath)}`}
           className="block text-center w-full py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
         >
           Sign In to Existing Account
         </Link>
         <Link
-          href={`/player-signup?next=${encodeURIComponent(`/g/${groupId}/join`)}`}
+          href={`/player-signup?next=${encodeURIComponent(joinPath)}`}
           className="block text-center w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-50 text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
         >
           Create New Account

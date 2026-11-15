@@ -67,6 +67,29 @@ export function cancelMatchWarning(match: Pick<MatchScoreEntry, "status" | "team
   return "Nobody on this court gets a result this round. It can't be undone.";
 }
 
+/** Why Save & Start is unavailable, in words an organizer can act on; null when it isn't blocked. */
+export function saveAndStartBlocker(
+  matches: readonly MatchScoreEntry[],
+  getScores: (match: MatchScoreEntry) => { team1: string; team2: string },
+  hasScoreErrors: boolean,
+): string | null {
+  if (hasScoreErrors) return "Fix the score errors above to continue.";
+  const needing = matches
+    .filter((m) => {
+      if (m.status === "cancelled") return false;
+      const s = getScores(m);
+      const t1 = Number(s.team1);
+      const t2 = Number(s.team2);
+      return !s.team1 || !s.team2 || !Number.isSafeInteger(t1) || !Number.isSafeInteger(t2) || t1 === t2 || t1 < 0 || t2 < 0;
+    })
+    .map((m) => m.courtNumber);
+  if (needing.length === 0) return null;
+  const courts = needing.length === 1
+    ? `Court ${needing[0]} needs a score`
+    : `Courts ${needing.slice(0, -1).join(", ")} and ${needing.at(-1)} need scores`;
+  return `${courts}. Enter ${needing.length === 1 ? "it" : "them"}, or cancel ${needing.length === 1 ? "that game" : "those games"}, to start the next round.`;
+}
+
 type ViewerRoundState =
   | { kind: "playing"; match: MatchScoreEntry; team: 1 | 2; partners: readonly string[]; opponents: readonly string[] }
   | { kind: "sitting" }
@@ -221,6 +244,9 @@ export function ResultsEntryView({
 
   const isSaveDisabled = !hasNewScores || isPending || isSaving;
   const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
+  const saveAndStartBlockedReason = isPending || isGeneratingRound || isSaving
+    ? null
+    : saveAndStartBlocker(matches, getScores, hasScoreErrors);
 
   return (
     <div className="results-entry-view space-y-4 text-black">
@@ -384,6 +410,8 @@ export function ResultsEntryView({
                     {canManage ? (
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         min={0}
                         max={99}
                         aria-label={`Court ${match.courtNumber} Team 1 score`}
@@ -424,6 +452,8 @@ export function ResultsEntryView({
                     {canManage ? (
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         min={0}
                         max={99}
                         aria-label={`Court ${match.courtNumber} Team 2 score`}
@@ -502,7 +532,7 @@ export function ResultsEntryView({
                           Number(matchScores.team1) === match.team1Score &&
                           Number(matchScores.team2) === match.team2Score)
                       }
-                      className="ml-auto font-display text-base uppercase tracking-wider"
+                      className="ml-auto min-h-11 font-display text-base uppercase tracking-wider"
                     >
                       {isMatchSaving ? "Saving..." : (isCompleted ? "Update Score" : "Save Result")}
                     </Button>
@@ -525,6 +555,16 @@ export function ResultsEntryView({
               Save or revert your score changes before continuing.
             </p>
           )}
+          {saveAndStartBlockedReason && (onSaveAndStartNextRound || onNextRound) && (
+            <p
+              id="save-start-blocked-reason"
+              data-testid="save-start-blocked-reason"
+              role="status"
+              className="max-w-xl mx-auto mb-1.5 text-xs font-bold text-black"
+            >
+              {saveAndStartBlockedReason}
+            </p>
+          )}
           <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
             <div className="text-left shrink-0">
               <p className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-neutral-500 leading-none mb-0.5">Round Progress</p>
@@ -541,7 +581,7 @@ export function ResultsEntryView({
                   disabled={isSaveDisabled}
                   onClick={onSaveAllScores}
                   data-testid="save-all-scores-button"
-                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0"
+                  className="min-h-11 font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0"
                 >
                   {isSaving ? "Saving..." : "Save All"}
                 </Button>
@@ -552,6 +592,7 @@ export function ResultsEntryView({
                   variant="primary"
                   size="sm"
                   disabled={isSaveAndStartDisabled}
+                  aria-describedby={saveAndStartBlockedReason ? "save-start-blocked-reason" : undefined}
                   onClick={() => {
                     const startFn = onSaveAndStartNextRound ?? onNextRound;
                     startFn?.();
@@ -562,7 +603,7 @@ export function ResultsEntryView({
                       ? `Save all scores and review Round ${roundNumber + 1} matchups`
                       : `Save all scores and start Round ${roundNumber + 1}`
                   }
-                  className="font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
+                  className="min-h-11 font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
                   {isGeneratingRound ? (
                     <RoundGenerationIndicator />
