@@ -32,9 +32,14 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 
 ## Hero
 
+The hero card unifies the application's core identity, interactive court animation, and contextual user actions within a single cohesive container:
+
 - **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, accented with a selective neon lime badge highlight.
 - **Tagline:** "An elevated pickleball experience."
 - **Interactive Court Divider:** Features the interactive pickleball animation that bounces once per session and responds to hover/tap interactions.
+- **Combined Contextual Actions:**
+  - **Signed In:** Seamlessly integrates the "Welcome back @username" status card and **View Profile →** button directly inside the hero section.
+  - **Signed Out:** Seamlessly integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions directly within the hero section, avoiding multiple disconnected cards.
 
 ## Main Actions
 
@@ -48,15 +53,13 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - Welcome banner with the player's username (`@handle`) and a primary **View Profile →** action.
-  - **Your groups** listing showing all active groups, positioned immediately below the welcome banner and above the action cards.
+  - Unified hero section containing the "FAIR ROUNDS. FRESH PARTNERS." identity and integrated "Welcome back @username" status with **View Profile →**.
+  - **Your groups** listing showing all active groups, positioned immediately below the hero card and above the action cards.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
   - Account logout is available via the Profile page and the desktop top navigation account dropdown.
 - **Signed Out:**
-  - Visitors see only the welcome hero section ("FAIR ROUNDS. FRESH PARTNERS. An elevated pickleball experience.") and sign-in options. Groups, player lists, action cards, and profiles are hidden.
-  - High-priority **Sign In to Play →** action button in signature neon lime.
-  - **Create an Account** secondary action.
-  - **Start a Quick Session** option for temporary round-robins without account creation.
+  - Visitors see a single unified welcome hero section with "FAIR ROUNDS. FRESH PARTNERS." and integrated sign-in / registration options (**Sign In to Play →**, **Create an Account**, and **Start a Quick Session**).
+  - Groups, player lists, action cards, and profiles are hidden from unauthenticated visitors.
   - Protected routes (`/players/groups`, `/players/find`, `/players`, `/players/[username]`, `/setup`) automatically redirect unauthenticated visitors to `/player-login`.
 
 

@@ -97,7 +97,7 @@ export default async function HomePage() {
   if (!playerAccount) {
     return (
       <main className="min-h-full px-4 py-8 sm:py-16 max-w-2xl mx-auto space-y-8">
-        {/* Welcome / Hero Section */}
+        {/* Welcome / Hero Section with combined Sign In & Registration actions */}
         <section
           className="text-center space-y-6 rounded-3xl border-2 border-black bg-[#FFFDF7] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000]"
           aria-labelledby="home-title"
@@ -125,14 +125,9 @@ export default async function HomePage() {
             <HomePickleball />
             <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
           </div>
-        </section>
 
-        {/* Sign In & Create Account Options */}
-        <section
-          aria-label="Sign in or register"
-          className="rounded-3xl border-2 border-black bg-[#FFFDF7] p-6 sm:p-8 text-center space-y-4 shadow-[3px_3px_0px_0px_#000]"
-        >
-          <div className="max-w-md mx-auto space-y-3">
+          {/* Combined Sign In & Create Account Actions */}
+          <div className="pt-2 max-w-md mx-auto space-y-3">
             <Link
               href="/player-login"
               className="block w-full py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-lg border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display cursor-pointer"
@@ -198,7 +193,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 3. Hero Section: Editorial Neo-brutalism */}
+      {/* 3. Hero Section with Combined Welcome Back & Profile Action */}
       <section
         className="text-center space-y-6 rounded-3xl border-2 border-black bg-[#FFFDF7] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000]"
         aria-labelledby="home-title"
@@ -226,32 +221,34 @@ export default async function HomePage() {
           <HomePickleball />
           <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
         </div>
-      </section>
 
-      {/* 4. Signed-In Welcome & Profile Header */}
-      <section
-        aria-label="Account status"
-        className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-xl text-black shadow-[2px_2px_0px_0px_#000]">
-            {playerAccount.username.charAt(0).toUpperCase()}
-          </span>
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-neutral-500">
-              Welcome back
-            </p>
-            <h2 className="font-display text-2xl font-black uppercase text-black leading-tight">
-              @{playerAccount.username}
-            </h2>
+        {/* Combined Welcome Back & Profile Action */}
+        <div
+          aria-label="Account status"
+          className="pt-2 max-w-lg mx-auto w-full"
+        >
+          <div className="rounded-2xl border-2 border-black bg-white p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-left">
+              <span className="w-11 h-11 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-xl text-black shadow-[2px_2px_0px_0px_#000]">
+                {playerAccount.username.charAt(0).toUpperCase()}
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-neutral-500">
+                  Welcome back
+                </p>
+                <h2 className="font-display text-2xl font-black uppercase text-black leading-tight">
+                  @{playerAccount.username}
+                </h2>
+              </div>
+            </div>
+            <Link
+              href="/players"
+              className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-base uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
+            >
+              View Profile →
+            </Link>
           </div>
         </div>
-        <Link
-          href="/players"
-          className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-base uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
-        >
-          View Profile →
-        </Link>
       </section>
 
       {/* 5. Your Groups Section (Above Find Groups and below Welcome Back) */}
