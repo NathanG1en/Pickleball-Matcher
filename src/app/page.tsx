@@ -102,14 +102,6 @@ export default async function HomePage() {
           className="text-center space-y-6 rounded-3xl border-2 border-black bg-[#FFFDF7] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000]"
           aria-labelledby="home-title"
         >
-          {/* Eyebrow badge */}
-          <div className="flex items-center justify-center">
-            <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-              <span className="w-2 h-2 rounded-full bg-black animate-ping" />
-              Pickleball Matchmaker
-            </span>
-          </div>
-
           {/* Distinctive Barlow Condensed Display Heading */}
           <div className="space-y-2">
             <h1
@@ -211,14 +203,6 @@ export default async function HomePage() {
         className="text-center space-y-6 rounded-3xl border-2 border-black bg-[#FFFDF7] p-6 sm:p-10 shadow-[4px_4px_0px_0px_#000]"
         aria-labelledby="home-title"
       >
-        {/* Eyebrow badge */}
-        <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-            <span className="w-2 h-2 rounded-full bg-black animate-ping" />
-            Pickleball Matchmaker
-          </span>
-        </div>
-
         {/* Distinctive Barlow Condensed Display Heading */}
         <div className="space-y-2">
           <h1

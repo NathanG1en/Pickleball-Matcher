@@ -102,7 +102,8 @@ describe("HomePage authentication states", () => {
     expect(html).not.toContain("New Pairs");
     expect(html).not.toContain("Fair Games");
     expect(html).not.toContain("Even court time");
-    expect(html).not.toContain("Partner variety");
+    // Yellow Pickleball Matchmaker eyebrow badge should be removed (branding belongs in top navigation header)
+    expect(html).not.toContain("Pickleball Matchmaker");
 
     // Log out button should NOT be visible
     expect(html).not.toContain("Log Out");
@@ -168,10 +169,11 @@ describe("HomePage authentication states", () => {
     expect(html).toMatch(/class="[^"]*font-bold[^"]*"[^>]*href="\/players\/find"/);
 
 
-    // Sign In button, Make Temporary Group, and legacy PIN link should be GONE
+    // Sign In button, Make Temporary Group, legacy PIN link, and yellow matchmaker eyebrow badge should be GONE
     expect(html).not.toContain("Sign In to Play");
     expect(html).not.toContain("Start a Quick Session");
     expect(html).not.toContain("Legacy organizer PIN sign in");
+    expect(html).not.toContain("Pickleball Matchmaker");
   });
 
   it("does not render recent groups the player is not part of even if looked at and saved on device", async () => {
