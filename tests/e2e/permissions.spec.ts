@@ -882,7 +882,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userBCard).toBeVisible();
   await expect(userBCard).toContainText(userB.name);
   await expect(userBCard).toContainText(`@${userB.username}`);
-  await expect(userBCard).toContainText("Private");
+  await expect(userBCard).not.toContainText("Private");
   await expect(userBCard).not.toContainText("Rating:");
 
   // 6. View User B's private profile
@@ -901,7 +901,7 @@ test("find players workflow from homepage shows public and private players with 
   await expect(userACard).toBeVisible();
   await expect(userACard).toContainText(userA.name);
   await expect(userACard).toContainText(`@${userA.username}`);
-  await expect(userACard).toContainText("Everyone");
+  await expect(userACard).not.toContainText("Everyone");
   await expect(userACard).toContainText("Rating:");
 
   // 8. Test navigation from Find Players returns to Home

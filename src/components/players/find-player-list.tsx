@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { PlayerAccountRecord } from "@/lib/domain/types";
 import { formatDupr } from "@/lib/domain/rating-display";
 import { EmptyState } from "@/components/ui";
-import { GlobeIcon, LockIcon, UsersIcon } from "@/components/ui/icons";
 import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 
 interface FindPlayerListProps {
@@ -41,22 +40,6 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                 {isSelf && (
                   <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
                     You
-                  </span>
-                )}
-                {profileLevel === "everyone" ? (
-                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
-                    <GlobeIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Everyone</span>
-                  </span>
-                ) : profileLevel === "group_members" ? (
-                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#e0e7ff] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
-                    <UsersIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Group Members Only</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black whitespace-nowrap">
-                    <LockIcon className="h-2.5 w-2.5 shrink-0" />
-                    <span>Private</span>
                   </span>
                 )}
               </div>

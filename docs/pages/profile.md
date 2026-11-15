@@ -71,7 +71,6 @@ When a player visits another athlete's profile:
 
 ### Find Players & Search Privacy
 In the community player directory (`/players/find`):
-- Athletes with `Only You` profile visibility display a **Private** badge.
-- For private players, their gender and current rating are hidden from other viewers to respect their privacy settings.
-- Athletes with `Everyone` display an **Everyone** badge, and athletes with `Group Members` display a **Group Members Only** badge.
+- For private players (`Only You`), their gender and current rating are hidden from other viewers to respect their privacy settings.
+- Athletes with viewable profiles display their username, gender, and current rating.
 
