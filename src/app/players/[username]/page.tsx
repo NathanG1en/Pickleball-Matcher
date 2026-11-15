@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getActionRepository,
   getActivePlayerAccountId,
@@ -43,7 +43,10 @@ export default async function PlayerPublicProfilePage({
   }
 
   const viewerAccountId = await getActivePlayerAccountId();
-  const isOwner = Boolean(viewerAccountId && viewerAccountId === targetAccount.id);
+  if (!viewerAccountId) {
+    redirect(`/player-login?next=${encodeURIComponent(`/players/${rawUsername}`)}`);
+  }
+  const isOwner = Boolean(viewerAccountId === targetAccount.id);
 
   const [history, groups, bestPartner, viewerSynergy, viewerGroups] = await Promise.all([
     repository.listPlayerSessionHistory(targetAccount.id),

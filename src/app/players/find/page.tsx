@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getActionRepository, getActivePlayerAccountId } from "@/app/actions/action-context";
 import { FindPlayerList } from "@/components/players/find-player-list";
 
@@ -11,11 +12,11 @@ export default async function FindPlayersPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const [{ q = "" }, accountId] = await Promise.all([
-    searchParams,
-    getActivePlayerAccountId(),
-  ]);
-
+  const accountId = await getActivePlayerAccountId();
+  if (!accountId) {
+    redirect("/player-login?next=%2Fplayers%2Ffind");
+  }
+  const { q = "" } = await searchParams;
   const players = await getActionRepository().listPlayerAccounts(q);
 
   return (

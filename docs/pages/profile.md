@@ -4,8 +4,8 @@ The player profile page is where athletes can review their rating, track their g
 
 ## Overview & Routing
 
-- **Personal Profile (`/players`)**: Accessible from the home page or navigation menu when signed in. Automatically loads the authenticated player's profile in owner mode.
-- **Public Profile (`/players/[username]`)**: Accessible by clicking player usernames or "View profile" across group rosters, chemistry spotlights, and search results.
+- **Personal Profile (`/players`)**: Accessible from the home page or navigation menu when signed in. Automatically loads the authenticated player's profile in owner mode. Unauthenticated visitors are redirected to `/player-login`.
+- **Public Profile (`/players/[username]`)**: Accessible by clicking player usernames or "View profile" across group rosters, chemistry spotlights, and search results. Requires a signed-in player account; unauthenticated visitors are redirected to `/player-login?next=...`.
   - When the signed-in player visits their own `@username`, the page renders in owner mode with full editing capabilities.
   - When viewing another player, the page displays a read-only view that strictly honors the target player's privacy controls.
 

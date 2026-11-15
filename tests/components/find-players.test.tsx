@@ -7,6 +7,10 @@ import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
 import type { PlayerAccountRecord } from "@/lib/domain/types";
 
+const mockRedirect = vi.fn((url: string) => {
+  throw new Error(`REDIRECT:${url}`);
+});
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
@@ -14,7 +18,17 @@ vi.mock("next/navigation", () => ({
     refresh: vi.fn(),
     back: vi.fn(),
   }),
+  redirect: (url: string) => mockRedirect(url),
+  notFound: vi.fn(),
 }));
+
+vi.mock("@/app/actions/action-context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/app/actions/action-context")>();
+  return {
+    ...actual,
+    getActivePlayerAccountId: vi.fn(),
+  };
+});
 
 describe("Find Players", () => {
   const publicPlayer: PlayerAccountRecord = {
@@ -111,11 +125,12 @@ describe("Find Players", () => {
     expect(html).toContain("No players match that search.");
   });
 
-  it("renders FindPlayersPage and searches correctly", async () => {
+  it("renders FindPlayersPage and searches correctly when signed in", async () => {
     const repo = new InMemoryRepositories({
       playerAccounts: [publicPlayer, privatePlayer],
     });
     actionContext.setActionRepository(repo);
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("usr_pub");
 
     // Test with empty query
     const jsxAll = await FindPlayersPage({ searchParams: Promise.resolve({}) });
@@ -135,13 +150,22 @@ describe("Find Players", () => {
     actionContext.setActionRepository(null);
   });
 
-  it("displays limited information for private player profile", async () => {
+  it("redirects FindPlayersPage to /player-login when signed out", async () => {
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
+
+    await expect(
+      FindPlayersPage({ searchParams: Promise.resolve({}) })
+    ).rejects.toThrow("REDIRECT:/player-login?next=%2Fplayers%2Ffind");
+  });
+
+  it("displays limited information for private player profile when signed in as another user", async () => {
     const repo = new InMemoryRepositories({
       playerAccounts: [publicPlayer, privatePlayer],
     });
     actionContext.setActionRepository(repo);
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue("usr_pub");
 
-    // Viewing private player as another user (or logged out)
+    // Viewing private player as another user
     const jsx = await PlayerPublicProfilePage({
       params: Promise.resolve({ username: "stealth_drop" }),
     });
@@ -159,6 +183,20 @@ describe("Find Players", () => {
     expect(html).not.toContain("Chemistry Spotlight");
     expect(html).not.toContain("My Groups");
     expect(html).not.toContain("current rating");
+
+    actionContext.setActionRepository(null);
+  });
+
+  it("redirects PlayerPublicProfilePage to /player-login when signed out", async () => {
+    const repo = new InMemoryRepositories({
+      playerAccounts: [publicPlayer],
+    });
+    actionContext.setActionRepository(repo);
+    vi.mocked(actionContext.getActivePlayerAccountId).mockResolvedValue(null);
+
+    await expect(
+      PlayerPublicProfilePage({ params: Promise.resolve({ username: "pickle_ace" }) })
+    ).rejects.toThrow("REDIRECT:/player-login?next=%2Fplayers%2Fpickle_ace");
 
     actionContext.setActionRepository(null);
   });

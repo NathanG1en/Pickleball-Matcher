@@ -127,116 +127,127 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
             </span>
           </Link>
 
-          {/* Center: Primary Navigation Links */}
-          <nav
-            aria-label="Desktop main navigation"
-            className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 border border-black/10"
-          >
-            <Link
-              href="/"
-              aria-current={isHomeActive ? "page" : undefined}
-              className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
-                isHomeActive
-                  ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
-                  : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
-              }`}
+          {/* Center: Primary Navigation Links (only when signed in) */}
+          {playerAccount && (
+            <nav
+              aria-label="Desktop main navigation"
+              className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 border border-black/10"
             >
-              Home
-            </Link>
-            <Link
-              href="/players/groups"
-              aria-current={isGroupsActive ? "page" : undefined}
-              className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
-                isGroupsActive
-                  ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
-                  : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
-              }`}
-            >
-              Groups
-            </Link>
-            <Link
-              href="/players/find"
-              aria-current={isPlayersActive ? "page" : undefined}
-              className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
-                isPlayersActive
-                  ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
-                  : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
-              }`}
-            >
-              Players
-            </Link>
-          </nav>
+              <Link
+                href="/"
+                aria-current={isHomeActive ? "page" : undefined}
+                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isHomeActive
+                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
+                }`}
+              >
+                Home
+              </Link>
+              <Link
+                href="/players/groups"
+                aria-current={isGroupsActive ? "page" : undefined}
+                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isGroupsActive
+                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
+                }`}
+              >
+                Groups
+              </Link>
+              <Link
+                href="/players/find"
+                aria-current={isPlayersActive ? "page" : undefined}
+                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isPlayersActive
+                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
+                }`}
+              >
+                Players
+              </Link>
+            </nav>
+          )}
 
-          {/* Right: Profile Avatar & Account Dropdown */}
+          {/* Right: Profile Avatar & Account Dropdown, or Sign In Button */}
           <div className="flex items-center gap-2" ref={menuRef}>
-            <Link
-              href="/players"
-              aria-current={isProfileActive ? "page" : undefined}
-              aria-label={playerAccount ? `Profile for @${playerAccount.username}` : "Profile"}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
-                isProfileActive
-                  ? "bg-[#ccff00] text-black border-black shadow-[2px_2px_0px_0px_#000]"
-                  : "bg-white hover:bg-neutral-50 text-black border-black shadow-[2px_2px_0px_0px_#000]"
-              }`}
-            >
-              <span className="w-6 h-6 rounded-full bg-[#fde047] border border-black flex items-center justify-center font-display font-black text-xs uppercase text-black">
-                {playerAccount?.username ? playerAccount.username.charAt(0).toUpperCase() : <UserIcon className="w-3.5 h-3.5" />}
-              </span>
-              <span className="font-display text-sm font-black uppercase tracking-wider max-w-[120px] truncate">
-                {playerAccount ? `@${playerAccount.username}` : "Profile"}
-              </span>
-            </Link>
-
-            {playerAccount && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setAccountMenuOpen((prev) => !prev)}
-                  aria-label="Account options menu"
-                  aria-expanded={accountMenuOpen}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-[#ccff00] shadow-[2px_2px_0px_0px_#000] text-base font-black active:translate-x-0.5 active:translate-y-0.5 transition-colors cursor-pointer"
+            {playerAccount ? (
+              <>
+                <Link
+                  href="/players"
+                  aria-current={isProfileActive ? "page" : undefined}
+                  aria-label={`Profile for @${playerAccount.username}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
+                    isProfileActive
+                      ? "bg-[#ccff00] text-black border-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white hover:bg-neutral-50 text-black border-black shadow-[2px_2px_0px_0px_#000]"
+                  }`}
                 >
-                  ···
-                </button>
+                  <span className="w-6 h-6 rounded-full bg-[#fde047] border border-black flex items-center justify-center font-display font-black text-xs uppercase text-black">
+                    {playerAccount.username ? playerAccount.username.charAt(0).toUpperCase() : <UserIcon className="w-3.5 h-3.5" />}
+                  </span>
+                  <span className="font-display text-sm font-black uppercase tracking-wider max-w-[120px] truncate">
+                    @{playerAccount.username}
+                  </span>
+                </Link>
 
-                {accountMenuOpen && (
-                  <div
-                    role="menu"
-                    aria-label="Account actions"
-                    className="absolute right-0 top-full mt-2 w-48 rounded-2xl border-2 border-black bg-[#FFFDF7] p-2 space-y-1 shadow-[4px_4px_0px_0px_#000] z-50 dropdown-animate"
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setAccountMenuOpen((prev) => !prev)}
+                    aria-label="Account options menu"
+                    aria-expanded={accountMenuOpen}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-[#ccff00] shadow-[2px_2px_0px_0px_#000] text-base font-black active:translate-x-0.5 active:translate-y-0.5 transition-colors cursor-pointer"
                   >
-                    <Link
-                      href="/players"
-                      role="menuitem"
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
+                    ···
+                  </button>
+
+                  {accountMenuOpen && (
+                    <div
+                      role="menu"
+                      aria-label="Account actions"
+                      className="absolute right-0 top-full mt-2 w-48 rounded-2xl border-2 border-black bg-[#FFFDF7] p-2 space-y-1 shadow-[4px_4px_0px_0px_#000] z-50 dropdown-animate"
                     >
-                      <UserIcon className="w-4 h-4" />
-                      <span>My Profile</span>
-                    </Link>
-                    <Link
-                      href="/setup"
-                      role="menuitem"
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
-                    >
-                      <UsersIcon className="w-4 h-4" />
-                      <span>Create A Group</span>
-                    </Link>
-                    <div className="border-t border-black/10 my-1" />
-                    <button
-                      type="button"
-                      role="menuitem"
-                      disabled={isLoggingOut}
-                      onClick={handleLogout}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <LogOutIcon className="w-4 h-4 stroke-2" />
-                      <span>{isLoggingOut ? "Signing out…" : "Log Out"}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <Link
+                        href="/players"
+                        role="menuitem"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
+                      >
+                        <UserIcon className="w-4 h-4" />
+                        <span>My Profile</span>
+                      </Link>
+                      <Link
+                        href="/setup"
+                        role="menuitem"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
+                      >
+                        <UsersIcon className="w-4 h-4" />
+                        <span>Create A Group</span>
+                      </Link>
+                      <div className="border-t border-black/10 my-1" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={isLoggingOut}
+                        onClick={handleLogout}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <LogOutIcon className="w-4 h-4 stroke-2" />
+                        <span>{isLoggingOut ? "Signing out…" : "Log Out"}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <Link
+                href="/player-login"
+                className="inline-flex items-center justify-center px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              >
+                Sign In
+              </Link>
             )}
           </div>
         </div>
@@ -245,10 +256,10 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
       {/* =========================================================================
           MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)
           Instagram-inspired persistent bottom bar with 4 destinations:
-
           Home, Groups, Players, Profile
+          Only rendered for signed-in players outside active session court view.
          ========================================================================= */}
-      {!isSessionCourtView && (
+      {!isSessionCourtView && Boolean(playerAccount) && (
         <nav
           aria-label="Mobile bottom navigation"
           className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#FFFDF7]/95 backdrop-blur-md border-t-2 border-black shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"

@@ -4,15 +4,13 @@ For a deeper look at roles and visibility, see [synergy-and-privacy-system.md](.
 
 ## Find a group — `/players/groups`
 
-Shows public groups and lets players search them.
+Shows public groups and lets players search them. Requires a signed-in player account; unauthenticated visitors are automatically redirected to `/player-login?next=%2Fplayers%2Fgroups`.
 
 - **Header:** clean header with category eyebrow and page title, integrated with the shared responsive navigation system.
 - **Search:** searches public groups by name. The query is in the URL (`?q=`), so a search can be shared and survives a reload. Private groups never appear here.
-- **Signed out:** a line under the search asks the visitor to create an account or sign in before joining.
 - **Group cards:** each card shows the group name, a role badge (Host, Organizer, or Member) when the viewer belongs to the group, and the number of active players. Every card has a **View Group** link. The second button depends on the viewer:
   - **Join** for signed-in non-members. The card refreshes to show the Member badge after joining.
   - **Leave** for members who aren't the host. It asks for confirmation first.
-  - **Sign in to join** for signed-out visitors.
 - **Empty states:**
   - *A search with no results* names the query (“No groups match “…””), notes that private groups never appear in search, suggests checking spelling or trying another name, and offers **Clear search** alongside a path to create a group (`/setup`, or create an account for signed-out visitors).
   - *No public groups at all* (no search entered) shows “No public groups yet”, suggests asking an organizer for an invite link, and offers **Create a group** (`/setup`). Signed-out visitors see **Create an account** instead, which leads to signup and then on to `/setup`.

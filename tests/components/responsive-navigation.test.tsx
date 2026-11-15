@@ -14,9 +14,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("ResponsiveNavigation Component", () => {
-  it("renders desktop and mobile navigation elements with the 4 core destinations", () => {
+  const mockAccount = { username: "dinkmaster" };
+
+  it("renders desktop and mobile navigation elements with the 4 core destinations when signed in", () => {
     currentPathname = "/";
-    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
 
     // Branding
     expect(html).toContain("Pickleball Matchmaker");
@@ -31,7 +33,7 @@ describe("ResponsiveNavigation Component", () => {
     expect(html).toContain("Home");
     expect(html).toContain("Groups");
     expect(html).toContain("Players");
-    expect(html).toContain("Profile");
+    expect(html).toContain("@dinkmaster");
 
     // Desktop nav should exist
     expect(html).toContain('aria-label="Desktop main navigation"');
@@ -48,9 +50,30 @@ describe("ResponsiveNavigation Component", () => {
     expect(bottomNavHtml).not.toContain("Log Out");
   });
 
-  it("highlights Home as active when pathname is '/'", () => {
+  it("renders only branding and Sign In button when signed out, hiding navigation destinations and bottom bar", () => {
     currentPathname = "/";
     const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+
+    // Branding
+    expect(html).toContain("Pickleball Matchmaker");
+
+    // Sign in link on desktop
+    expect(html).toContain('href="/player-login"');
+    expect(html).toContain("Sign In");
+
+    // Desktop nav and links to groups/players/profile should NOT exist
+    expect(html).not.toContain('aria-label="Desktop main navigation"');
+    expect(html).not.toContain('href="/players/groups"');
+    expect(html).not.toContain('href="/players/find"');
+    expect(html).not.toContain('href="/players"');
+
+    // Mobile bottom nav should NOT exist
+    expect(html).not.toContain('aria-label="Mobile bottom navigation"');
+  });
+
+  it("highlights Home as active when pathname is '/'", () => {
+    currentPathname = "/";
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
 
     // Active tab in desktop nav has aria-current="page"
     expect(html).toMatch(/aria-current="page"[^>]*href="\/"/);
@@ -61,33 +84,32 @@ describe("ResponsiveNavigation Component", () => {
 
   it("highlights Groups as active when pathname is '/players/groups' or inside a group", () => {
     currentPathname = "/players/groups";
-    let html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    let html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players\/groups"/);
 
     currentPathname = "/g/grp-123";
-    html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players\/groups"/);
   });
 
   it("highlights Players as active when pathname is '/players/find'", () => {
     currentPathname = "/players/find";
-    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players\/find"/);
     expect(html).not.toMatch(/aria-current="page"[^>]*href="\/"/);
   });
 
   it("highlights Profile as active when pathname is '/players'", () => {
     currentPathname = "/players";
-    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players"/);
     expect(html).not.toMatch(/aria-current="page"[^>]*href="\/"/);
   });
 
-
   it("displays player account avatar and username when signed in", () => {
     currentPathname = "/";
     const html = renderToStaticMarkup(
-      <ResponsiveNavigation playerAccount={{ id: "usr-1", username: "dinkmaster" }} />,
+      <ResponsiveNavigation playerAccount={{ username: "dinkmaster" }} />,
     );
 
     expect(html).toContain("@dinkmaster");
@@ -97,7 +119,7 @@ describe("ResponsiveNavigation Component", () => {
 
   it("hides mobile bottom navigation during live court sessions (/sessions/)", () => {
     currentPathname = "/g/grp-123/sessions/ses-456";
-    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
 
     // Desktop header still renders for navigation, but mobile bottom nav is suppressed
     expect(html).not.toContain('aria-label="Mobile bottom navigation"');

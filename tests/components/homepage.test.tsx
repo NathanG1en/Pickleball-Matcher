@@ -82,9 +82,13 @@ describe("HomePage authentication states", () => {
     const jsx = await HomePage();
     const html = renderToStaticMarkup(jsx);
 
-    // Groups saved on device should NOT be visible when logged out
+    // Groups saved on device or action cards should NOT be visible when logged out
     expect(html).not.toContain("Sunset Pickleballers");
     expect(html).not.toContain("Your Group on this Device");
+    expect(html).not.toContain("Your groups");
+    expect(html).not.toContain("Find Groups");
+    expect(html).not.toContain("Find Players");
+    expect(html).not.toContain("Create A Group");
 
     // Sign in and temporary group options should be visible
     expect(html).toContain("Sign In to Play");
@@ -231,7 +235,7 @@ describe("HomePage authentication states", () => {
     expect(html).toContain('href="/g/grp-1"');
   });
 
-  it("shows signed-out guests the groups they joined on this device", async () => {
+  it("does not show groups to signed-out visitors even if guest groups exist", async () => {
     const repo = new InMemoryRepositories({
       groups: [
         { id: "grp-1", name: "Sunset Pickleballers", organizerPinHash: "pin-hash", createdAt: new Date(), ownerAccountId: "usr-1" },
@@ -247,11 +251,12 @@ describe("HomePage authentication states", () => {
 
     const html = renderToStaticMarkup(await HomePage());
 
-    expect(html).toContain("Your groups");
-    expect(html).toContain("Sunset Pickleballers");
-    // A guest removed from a roster no longer sees that group
+    // Signed-out visitors see only welcome and sign-in options
+    expect(html).not.toContain("Your groups");
+    expect(html).not.toContain("Sunset Pickleballers");
     expect(html).not.toContain("Left Behind");
     expect(html).toContain("Sign In to Play");
+    expect(html).toContain("Create an Account");
   });
 });
 
