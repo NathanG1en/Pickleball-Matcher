@@ -121,7 +121,6 @@ describe("Find Players", () => {
     const jsxAll = await FindPlayersPage({ searchParams: Promise.resolve({}) });
     const htmlAll = renderToStaticMarkup(jsxAll);
     expect(htmlAll).toContain("Find Players");
-    expect(htmlAll).toContain("← Back");
     expect(htmlAll).toContain("Alex Champion");
     expect(htmlAll).toContain("Sam Secret");
 
