@@ -222,32 +222,30 @@ export default async function HomePage() {
           <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
         </div>
 
-        {/* Combined Welcome Back & Profile Action */}
+        {/* Welcome Back & Profile Action (directly in hero, no inner box) */}
         <div
           aria-label="Account status"
-          className="pt-2 max-w-lg mx-auto w-full"
+          className="pt-2 flex flex-col sm:flex-row sm:items-center justify-center gap-4 max-w-lg mx-auto"
         >
-          <div className="rounded-2xl border-2 border-black bg-white p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-left">
-              <span className="w-11 h-11 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-xl text-black shadow-[2px_2px_0px_0px_#000]">
-                {playerAccount.username.charAt(0).toUpperCase()}
-              </span>
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-neutral-500">
-                  Welcome back
-                </p>
-                <h2 className="font-display text-2xl font-black uppercase text-black leading-tight">
-                  @{playerAccount.username}
-                </h2>
-              </div>
+          <div className="flex items-center justify-center gap-3 text-left">
+            <span className="w-11 h-11 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-xl text-black shadow-[2px_2px_0px_0px_#000]">
+              {playerAccount.username.charAt(0).toUpperCase()}
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-neutral-500">
+                Welcome back
+              </p>
+              <h2 className="font-display text-2xl font-black uppercase text-black leading-tight">
+                @{playerAccount.username}
+              </h2>
             </div>
-            <Link
-              href="/players"
-              className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-base uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
-            >
-              View Profile →
-            </Link>
           </div>
+          <Link
+            href="/players"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-base uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
+          >
+            View Profile →
+          </Link>
         </div>
       </section>
 

@@ -38,7 +38,7 @@ The hero card unifies the application's core identity, interactive court animati
 - **Tagline:** "An elevated pickleball experience."
 - **Interactive Court Divider:** Features the interactive pickleball animation that bounces once per session and responds to hover/tap interactions.
 - **Combined Contextual Actions:**
-  - **Signed In:** Seamlessly integrates the "Welcome back @username" status card and **View Profile →** button directly inside the hero section.
+  - **Signed In:** Seamlessly integrates the "Welcome back @username" status and **View Profile →** button directly inside the hero section without a separate nested box.
   - **Signed Out:** Seamlessly integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions directly within the hero section, avoiding multiple disconnected cards.
 
 ## Main Actions
@@ -53,7 +53,7 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - Unified hero section containing the "FAIR ROUNDS. FRESH PARTNERS." identity and integrated "Welcome back @username" status with **View Profile →**.
+  - Unified hero section containing the "FAIR ROUNDS. FRESH PARTNERS." identity and integrated "Welcome back @username" status with **View Profile →** (rendered inline without nested framing).
   - **Your groups** listing showing all active groups, positioned immediately below the hero card and above the action cards.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
   - Account logout is available via the Profile page and the desktop top navigation account dropdown.
