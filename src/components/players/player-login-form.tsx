@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerLoginAction } from "@/app/actions/player-account";
+import { GoogleAuthButton } from "@/components/players/google-auth-button";
 import {
   Alert,
   Button,
@@ -12,13 +13,20 @@ import {
   VisibilityToggle,
 } from "@/components/ui";
 
-export function PlayerLoginForm() {
+export function PlayerLoginForm({
+  initialError,
+  initialNext,
+}: {
+  initialError?: string;
+  initialNext?: string;
+} = {}) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
   const [pending, setPending] = useState(false);
+  const returnPath = initialNext ?? getReturnPath();
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,12 +43,22 @@ export function PlayerLoginForm() {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4 text-left">
+    <div className="space-y-4">
       {error && (
         <Alert variant="danger" size="md" className="text-center">
           {error}
         </Alert>
       )}
+
+      <GoogleAuthButton label="Continue with Google" next={returnPath} />
+
+      <div className="flex items-center gap-3">
+        <div className="h-0.5 flex-1 bg-black/15" />
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or</span>
+        <div className="h-0.5 flex-1 bg-black/15" />
+      </div>
+
+      <form onSubmit={submit} className="space-y-4 text-left">
 
       <FormField id="player-login-username" label="Username">
         <Input
@@ -71,6 +89,15 @@ export function PlayerLoginForm() {
         </div>
       </FormField>
 
+      <div className="flex items-center justify-end -mt-2">
+        <Link
+          href="/forgot-password"
+          className="text-xs font-bold text-neutral-600 hover:text-black hover:underline"
+        >
+          Forgot password?
+        </Link>
+      </div>
+
       <Button
         type="submit"
         variant="primary"
@@ -98,6 +125,7 @@ export function PlayerLoginForm() {
         </Link>
       </p>
     </form>
+    </div>
   );
 }
 

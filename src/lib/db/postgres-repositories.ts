@@ -5,7 +5,9 @@ import { parseGroupOrganizerPermissions } from "@/lib/auth/group-permissions";
 import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 import {
   type AttendanceRecord,
+  type EmailVerificationTokenRecord,
   type PartnerRequestRecord,
+  type PasswordResetTokenRecord,
   type GroupRecord,
   type GroupOrganizerPermissions,
   type GroupOrganizerRecord,
@@ -13,6 +15,7 @@ import {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -102,11 +105,39 @@ type PlayerAccountRow = {
   gender?: "male" | "female" | null;
   is_public?: boolean;
   visibility_settings?: unknown;
-  password_hash: string;
+  password_hash?: string | null;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
   rating?: number;
   rated_games_played?: number;
+  email?: string | null;
+  email_verified?: boolean;
+  created_at: Date;
+};
+
+type OAuthAccountRow = {
+  id: string;
+  account_id: string;
+  provider: string;
+  provider_user_id: string;
+  email: string | null;
+  created_at: Date;
+};
+
+type PasswordResetTokenRow = {
+  id: string;
+  account_id: string;
+  token_hash: string;
+  expires_at: Date;
+  created_at: Date;
+};
+
+type EmailVerificationTokenRow = {
+  id: string;
+  account_id: string;
+  email: string;
+  token_hash: string;
+  expires_at: Date;
   created_at: Date;
 };
 
@@ -259,11 +290,39 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   gender: (row.gender as PlayerGender) ?? undefined,
   isPublic: row.is_public ?? true,
   visibilitySettings: parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true),
-  passwordHash: row.password_hash,
+  passwordHash: row.password_hash ?? null,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
   rating: row.rating ?? row.initial_rating,
   ratedGamesPlayed: row.rated_games_played ?? 0,
+  email: row.email ?? null,
+  emailVerified: row.email_verified ?? false,
+  createdAt: row.created_at,
+});
+
+const mapOAuthAccount = (row: OAuthAccountRow): OAuthAccountRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  provider: row.provider,
+  providerUserId: row.provider_user_id,
+  email: row.email,
+  createdAt: row.created_at,
+});
+
+const mapPasswordResetToken = (row: PasswordResetTokenRow): PasswordResetTokenRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  tokenHash: row.token_hash,
+  expiresAt: row.expires_at,
+  createdAt: row.created_at,
+});
+
+const mapEmailVerificationToken = (row: EmailVerificationTokenRow): EmailVerificationTokenRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  email: row.email,
+  tokenHash: row.token_hash,
+  expiresAt: row.expires_at,
   createdAt: row.created_at,
 });
 
@@ -476,7 +535,7 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
       from player_accounts where id = ${accountId}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
@@ -484,8 +543,16 @@ export class PostgresRepositories implements DomainRepository {
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
       from player_accounts where username = ${username.trim().toLowerCase()}
+    `;
+    return rows[0] ? mapPlayerAccount(rows[0]) : null;
+  }
+
+  async getPlayerAccountByEmail(email: string): Promise<PlayerAccountRecord | null> {
+    const rows = await this.query<PlayerAccountRow[]>`
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
+      from player_accounts where lower(trim(email)) = ${email.trim().toLowerCase()}
     `;
     return rows[0] ? mapPlayerAccount(rows[0]) : null;
   }
@@ -493,9 +560,103 @@ export class PostgresRepositories implements DomainRepository {
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     await this.query`
-      insert into player_accounts (id, username, name, gender, is_public, visibility_settings, initial_rating, rating, rated_games_played, password_hash, skill_level, created_at)
-      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.createdAt})
+      insert into player_accounts (id, username, name, gender, is_public, visibility_settings, initial_rating, rating, rated_games_played, password_hash, skill_level, email, email_verified, created_at)
+      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash ?? null}, ${account.skillLevel}, ${account.email?.trim().toLowerCase() ?? null}, ${account.emailVerified ?? false}, ${account.createdAt})
     `;
+  }
+
+  async updatePlayerAccountEmail(accountId: string, email: string | null, emailVerified: boolean): Promise<void> {
+    const normalized = email ? email.trim().toLowerCase() : null;
+    await this.query`
+      update player_accounts
+      set email = ${normalized},
+          email_verified = ${emailVerified}
+      where id = ${accountId}
+    `;
+  }
+
+  async updatePlayerAccountPassword(accountId: string, passwordHash: string): Promise<void> {
+    await this.query`
+      update player_accounts
+      set password_hash = ${passwordHash}
+      where id = ${accountId}
+    `;
+  }
+
+  async createPasswordResetToken(token: PasswordResetTokenRecord): Promise<void> {
+    await this.query`
+      insert into password_reset_tokens (id, account_id, token_hash, expires_at, created_at)
+      values (${token.id}, ${token.accountId}, ${token.tokenHash}, ${token.expiresAt}, ${token.createdAt})
+    `;
+  }
+
+  async getPasswordResetToken(tokenHash: string): Promise<PasswordResetTokenRecord | null> {
+    const rows = await this.query<PasswordResetTokenRow[]>`
+      select id, account_id, token_hash, expires_at, created_at
+      from password_reset_tokens
+      where token_hash = ${tokenHash}
+    `;
+    return rows[0] ? mapPasswordResetToken(rows[0]) : null;
+  }
+
+  async deletePasswordResetToken(id: string): Promise<void> {
+    await this.query`delete from password_reset_tokens where id = ${id}`;
+  }
+
+  async deletePasswordResetTokensForAccount(accountId: string): Promise<void> {
+    await this.query`delete from password_reset_tokens where account_id = ${accountId}`;
+  }
+
+  async createEmailVerificationToken(token: EmailVerificationTokenRecord): Promise<void> {
+    await this.query`
+      insert into email_verification_tokens (id, account_id, email, token_hash, expires_at, created_at)
+      values (${token.id}, ${token.accountId}, ${token.email.trim().toLowerCase()}, ${token.tokenHash}, ${token.expiresAt}, ${token.createdAt})
+    `;
+  }
+
+  async getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationTokenRecord | null> {
+    const rows = await this.query<EmailVerificationTokenRow[]>`
+      select id, account_id, email, token_hash, expires_at, created_at
+      from email_verification_tokens
+      where token_hash = ${tokenHash}
+    `;
+    return rows[0] ? mapEmailVerificationToken(rows[0]) : null;
+  }
+
+  async deleteEmailVerificationToken(id: string): Promise<void> {
+    await this.query`delete from email_verification_tokens where id = ${id}`;
+  }
+
+  async deleteEmailVerificationTokensForAccount(accountId: string): Promise<void> {
+    await this.query`delete from email_verification_tokens where account_id = ${accountId}`;
+  }
+
+  async createOAuthAccount(account: OAuthAccountRecord): Promise<void> {
+    await this.query`
+      insert into oauth_accounts (id, account_id, provider, provider_user_id, email, created_at)
+      values (${account.id}, ${account.accountId}, ${account.provider}, ${account.providerUserId}, ${account.email?.trim().toLowerCase() ?? null}, ${account.createdAt})
+      on conflict (provider, provider_user_id) do update set
+        email = excluded.email
+    `;
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccountRecord | null> {
+    const rows = await this.query<OAuthAccountRow[]>`
+      select id, account_id, provider, provider_user_id, email, created_at
+      from oauth_accounts
+      where provider = ${provider} and provider_user_id = ${providerUserId}
+    `;
+    return rows[0] ? mapOAuthAccount(rows[0]) : null;
+  }
+
+  async listOAuthAccountsForPlayer(accountId: string): Promise<readonly OAuthAccountRecord[]> {
+    const rows = await this.query<OAuthAccountRow[]>`
+      select id, account_id, provider, provider_user_id, email, created_at
+      from oauth_accounts
+      where account_id = ${accountId}
+      order by created_at asc
+    `;
+    return rows.map(mapOAuthAccount);
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {
@@ -670,7 +831,7 @@ export class PostgresRepositories implements DomainRepository {
     if (!trimmed) return [];
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
       from player_accounts
       where (username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (username = ${trimmed}) desc, username asc
@@ -683,7 +844,7 @@ export class PostgresRepositories implements DomainRepository {
     const trimmed = search.trim().toLowerCase().replace(/^@/, "");
     const searchTerm = `%${trimmed}%`;
     const rows = await this.query<PlayerAccountRow[]>`
-      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+      select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
       from player_accounts
       where (${trimmed} = '' or username ilike ${searchTerm} or name ilike ${searchTerm})
       order by (${trimmed} != '' and username = ${trimmed}) desc, name asc, username asc
@@ -721,7 +882,7 @@ export class PostgresRepositories implements DomainRepository {
       const txRepo = tx as PostgresRepositories;
       // Keep the baseline stable through linking/replay, including maintenance corrections.
       const accountRows = await txRepo.query<PlayerAccountRow[]>`
-        select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at
+        select id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at
         from player_accounts
         where id = ${accountId}
         for update

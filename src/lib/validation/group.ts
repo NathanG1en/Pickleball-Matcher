@@ -103,6 +103,7 @@ const usernameFieldSchema = z
 export const playerSignupSchema = z.object({
   username: usernameFieldSchema,
   name: z.string().trim().min(1).max(80),
+  email: z.string().trim().email("Enter a valid email address.").max(254).optional().or(z.literal("")),
   gender: z.enum(["male", "female"], { message: "Select your gender (male or female)." }).default("male"),
   password: z.string().min(10).max(72),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
@@ -115,6 +116,23 @@ export const playerSignupSchema = z.object({
     })
     .default(3.5)
     .transform(normalizeInitialRating),
+}).strict();
+
+export const requestPasswordResetSchema = z.object({
+  identifier: z.string().trim().min(1, "Enter your username or email address."),
+}).strict();
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required."),
+  password: z.string().min(10, "Password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
+}).strict();
+
+export const updateRecoveryEmailSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address.").max(254),
+}).strict();
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, "Verification token is required."),
 }).strict();
 
 export const playerLoginSchema = z.object({

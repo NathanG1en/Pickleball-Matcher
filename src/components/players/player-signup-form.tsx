@@ -16,14 +16,16 @@ import {
   RatingSlider,
   VisibilityToggle,
 } from "@/components/ui";
+import { GoogleAuthButton } from "@/components/players/google-auth-button";
 
 const emptySubscribe = () => () => {};
 
-export function PlayerSignupForm() {
+export function PlayerSignupForm({ initialNext }: { initialNext?: string } = {}) {
   const router = useRouter();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -55,6 +57,7 @@ export function PlayerSignupForm() {
     const result = await playerSignupAction({
       username,
       name,
+      email: email.trim() || undefined,
       gender,
       password,
       skillLevel,
@@ -72,7 +75,16 @@ export function PlayerSignupForm() {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4 text-left" data-hydrated={mounted ? "true" : undefined}>
+    <div className="space-y-4">
+      <GoogleAuthButton label="Sign up with Google" next={initialNext ?? getReturnPath()} />
+
+      <div className="flex items-center gap-3">
+        <div className="h-0.5 flex-1 bg-black/15" />
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or register with username</span>
+        <div className="h-0.5 flex-1 bg-black/15" />
+      </div>
+
+      <form onSubmit={submit} noValidate className="space-y-4 text-left" data-hydrated={mounted ? "true" : undefined}>
       {error && Object.values(fieldErrors).every((messages) => messages.length === 0) && error !== "Please check your player details and try again." && (
         <Alert variant="danger-soft" size="md">
           {error}
@@ -114,6 +126,25 @@ export function PlayerSignupForm() {
           placeholder="Name shown to your groups"
           hasError={Boolean(fieldErrors.name?.length)}
           aria-describedby={fieldErrors.name?.length ? "player-name-error" : undefined}
+        />
+      </FormField>
+
+      <FormField
+        id="player-email"
+        label="Recovery Email"
+        hint="Used to reset your password if you ever forget it."
+        error={fieldErrors.email?.[0]}
+      >
+        <Input
+          id="player-email"
+          type="email"
+          maxLength={254}
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com (recommended)"
+          hasError={Boolean(fieldErrors.email?.length)}
+          aria-describedby={fieldErrors.email?.length ? "player-email-error" : "player-email-hint"}
         />
       </FormField>
 
@@ -249,6 +280,7 @@ export function PlayerSignupForm() {
         </Link>
       </p>
     </form>
+    </div>
   );
 }
 

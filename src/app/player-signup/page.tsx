@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { PlayerSignupForm } from "@/components/players/player-signup-form";
 
-export default function PlayerSignupPage() {
+export default async function PlayerSignupPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}) {
+  const next = (await searchParams)?.next;
+
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
       <section className="relative w-full max-w-md rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 shadow-[8px_8px_0px_0px_#000] sm:p-8">
@@ -10,7 +16,7 @@ export default function PlayerSignupPage() {
           <h1 className="font-display text-4xl font-black uppercase">Join the game</h1>
           <p className="text-sm font-bold text-neutral-700">Create a player profile, then find public groups to join.</p>
         </header>
-        <PlayerSignupForm />
+        <PlayerSignupForm initialNext={next} />
       </section>
     </main>
   );

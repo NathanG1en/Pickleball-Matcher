@@ -1,6 +1,6 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -13,14 +13,28 @@ import {
   joinPublicGroupSchema,
   playerLoginSchema,
   playerSignupSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
   updatePlayerGenderSchema,
   updatePlayerProfileSchema,
   updatePlayerUsernameSchema,
+  updateRecoveryEmailSchema,
+  verifyEmailSchema,
 } from "@/lib/validation/group";
+import {
+  sendEmailVerificationEmail,
+  sendPasswordResetEmail,
+} from "@/lib/email/email-service";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
 const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
+
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  return "http://localhost:3000";
+}
 
 export type PlayerActionResult<T = void> =
   | { ok: true; data: T }
@@ -32,9 +46,16 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
     input && typeof input === "object" && "username" in input && typeof input.username === "string"
       ? input.username.trim().toLowerCase()
       : "";
+  const submittedEmail =
+    input && typeof input === "object" && "email" in input && typeof input.email === "string" && input.email.trim()
+      ? input.email.trim().toLowerCase()
+      : undefined;
+
   const usernameValidation = playerSignupSchema.shape.username.safeParse(submittedUsername);
   const repository = getActionRepository();
   let usernameTaken = false;
+  let emailTaken = false;
+
   if (usernameValidation.success) {
     try {
       usernameTaken = Boolean(await repository.getPlayerAccountByUsername(submittedUsername));
@@ -42,23 +63,42 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       return { ok: false, error: "Unable to check username availability. Please try again." };
     }
   }
+
+  if (submittedEmail) {
+    try {
+      emailTaken = Boolean(await repository.getPlayerAccountByEmail(submittedEmail));
+    } catch {
+      return { ok: false, error: "Unable to check email availability. Please try again." };
+    }
+  }
+
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     if (usernameTaken) fieldErrors.username = ["That username is already taken."];
+    if (emailTaken) fieldErrors.email = ["That email is already registered."];
     return { ok: false, error: "Please check your player details and try again.", fieldErrors };
   }
   if (Buffer.byteLength(parsed.data.password, "utf8") > 72) {
     const fieldErrors: Record<string, string[]> = { password: ["Password must be 72 bytes or fewer."] };
     if (usernameTaken) fieldErrors.username = ["That username is already taken."];
+    if (emailTaken) fieldErrors.email = ["That email is already registered."];
     return { ok: false, error: "Please check your player details and try again.", fieldErrors };
   }
 
   const username = parsed.data.username.toLowerCase();
   try {
-    if (usernameTaken) {
-      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+    if (usernameTaken || emailTaken) {
+      const fieldErrors: Record<string, string[]> = {};
+      if (usernameTaken) fieldErrors.username = ["That username is already taken."];
+      if (emailTaken) fieldErrors.email = ["That email is already registered."];
+      return {
+        ok: false,
+        error: usernameTaken ? "That username is already taken." : "That email is already registered.",
+        fieldErrors,
+      };
     }
     const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    const emailToSave = submittedEmail || null;
     const account = {
       id: accountId,
       username,
@@ -67,9 +107,30 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       passwordHash: await hash(parsed.data.password, PASSWORD_HASH_COST),
       skillLevel: parsed.data.skillLevel,
       initialRating: parsed.data.customRating ? parsed.data.initialRating : DEFAULT_RATING[parsed.data.skillLevel],
+      email: emailToSave,
+      emailVerified: false,
       createdAt: new Date(),
     };
     await repository.createPlayerAccount(account);
+
+    if (emailToSave) {
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createEmailVerificationToken({
+        id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId,
+        email: emailToSave,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+      });
+      await sendEmailVerificationEmail({
+        to: emailToSave,
+        name: parsed.data.name,
+        verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
+      });
+    }
+
     const token = await createPlayerSession(accountId);
     try {
       (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
@@ -79,7 +140,7 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
     return { ok: true, data: { accountId } };
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")) {
-      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+      return { ok: false, error: "That username or email is already taken.", fieldErrors: { username: ["That username is already taken."] } };
     }
     return { ok: false, error: error instanceof Error ? error.message : "Unable to create player account." };
   }
@@ -312,5 +373,193 @@ export async function joinAsGuestAction(
   } catch (error) {
     console.error("joinAsGuestAction failed", error);
     return { ok: false, error: "We couldn't add you to this group right now. Please try again in a moment." };
+  }
+}
+
+export async function requestPasswordResetAction(input: unknown): Promise<PlayerActionResult<{ message: string }>> {
+  const parsed = requestPasswordResetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Enter a valid username or email address." };
+  }
+  const identifier = parsed.data.identifier.toLowerCase();
+  try {
+    const repository = getActionRepository();
+    let account = await repository.getPlayerAccountByUsername(identifier);
+    if (!account && identifier.includes("@")) {
+      account = await repository.getPlayerAccountByEmail(identifier);
+    }
+
+    if (account && account.email) {
+      await repository.deletePasswordResetTokensForAccount(account.id);
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createPasswordResetToken({
+        id: `rst_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId: account.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        createdAt: new Date(),
+      });
+
+      await sendPasswordResetEmail({
+        to: account.email,
+        name: account.name,
+        resetUrl: `${getAppBaseUrl()}/reset-password?token=${rawToken}`,
+      });
+    }
+
+    return {
+      ok: true,
+      data: {
+        message: "If an account matches that username or email address with recovery configured, we've sent a password reset link.",
+      },
+    };
+  } catch {
+    return { ok: false, error: "Unable to process password reset request right now." };
+  }
+}
+
+export async function resetPasswordAction(input: unknown): Promise<PlayerActionResult<{ success: boolean }>> {
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Password must be at least 10 characters." };
+  }
+  if (Buffer.byteLength(parsed.data.password, "utf8") > 72) {
+    return { ok: false, error: "Password must be 72 bytes or fewer." };
+  }
+  try {
+    const repository = getActionRepository();
+    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
+    const tokenRecord = await repository.getPasswordResetToken(tokenHash);
+
+    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
+      return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
+    }
+
+    const newPasswordHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+    await repository.updatePlayerAccountPassword(tokenRecord.accountId, newPasswordHash);
+    await repository.deletePasswordResetToken(tokenRecord.id);
+
+    return { ok: true, data: { success: true } };
+  } catch {
+    return { ok: false, error: "Unable to reset password. Please try again." };
+  }
+}
+
+export async function updateRecoveryEmailAction(input: unknown): Promise<PlayerActionResult<{ email: string }>> {
+  const parsed = updateRecoveryEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Enter a valid email address.", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const account = await repository.getPlayerAccount(accountId);
+    if (!account) throw new Error("Player account not found.");
+    const normalizedEmail = parsed.data.email.toLowerCase();
+
+    const existing = await repository.getPlayerAccountByEmail(normalizedEmail);
+    if (existing && existing.id !== account.id) {
+      return {
+        ok: false,
+        error: "That email is already registered to another account.",
+        fieldErrors: { email: ["That email is already registered."] },
+      };
+    }
+
+    await repository.updatePlayerAccountEmail(account.id, normalizedEmail, false);
+
+    await repository.deleteEmailVerificationTokensForAccount(account.id);
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await repository.createEmailVerificationToken({
+      id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      accountId: account.id,
+      email: normalizedEmail,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      createdAt: new Date(),
+    });
+
+    await sendEmailVerificationEmail({
+      to: normalizedEmail,
+      name: account.name,
+      verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
+    });
+
+    try {
+      revalidatePath("/players");
+      revalidatePath("/");
+    } catch {
+      // Non-request test contexts.
+    }
+    return { ok: true, data: { email: normalizedEmail } };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update recovery email." };
+  }
+}
+
+export async function verifyEmailAction(input: unknown): Promise<PlayerActionResult<{ email: string }>> {
+  const parsed = verifyEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid verification link." };
+  }
+  try {
+    const repository = getActionRepository();
+    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
+    const tokenRecord = await repository.getEmailVerificationToken(tokenHash);
+
+    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
+      return { ok: false, error: "This email verification link is invalid or has expired." };
+    }
+
+    await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
+    await repository.deleteEmailVerificationToken(tokenRecord.id);
+
+    try {
+      revalidatePath("/players");
+      revalidatePath("/");
+    } catch {
+      // Non-request test contexts.
+    }
+    return { ok: true, data: { email: tokenRecord.email } };
+  } catch {
+    return { ok: false, error: "Unable to verify email." };
+  }
+}
+
+export async function resendVerificationEmailAction(): Promise<PlayerActionResult<void>> {
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const account = await repository.getPlayerAccount(accountId);
+    if (!account) throw new Error("Player account not found.");
+    if (!account.email) {
+      return { ok: false, error: "No recovery email found. Please add an email address first." };
+    }
+    if (account.emailVerified) {
+      return { ok: true, data: undefined };
+    }
+    await repository.deleteEmailVerificationTokensForAccount(account.id);
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await repository.createEmailVerificationToken({
+      id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      accountId: account.id,
+      email: account.email,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+    });
+
+    await sendEmailVerificationEmail({
+      to: account.email,
+      name: account.name,
+      verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
+    });
+
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to send verification email." };
   }
 }

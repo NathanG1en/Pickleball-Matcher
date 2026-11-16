@@ -59,11 +59,39 @@ export interface PlayerAccountRecord {
   gender?: PlayerGender;
   readonly isPublic?: boolean;
   readonly visibilitySettings?: ProfileVisibilitySettings;
-  readonly passwordHash: string;
+  readonly passwordHash?: string | null;
   readonly skillLevel: PlayerSkillLevel;
   readonly initialRating: number;
   rating?: number;
   ratedGamesPlayed?: number;
+  email?: string | null;
+  emailVerified?: boolean;
+  readonly createdAt: Date;
+}
+
+export interface OAuthAccountRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly provider: string;
+  readonly providerUserId: string;
+  readonly email?: string | null;
+  readonly createdAt: Date;
+}
+
+export interface PasswordResetTokenRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly tokenHash: string;
+  readonly expiresAt: Date;
+  readonly createdAt: Date;
+}
+
+export interface EmailVerificationTokenRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly email: string;
+  readonly tokenHash: string;
+  readonly expiresAt: Date;
   readonly createdAt: Date;
 }
 

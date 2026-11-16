@@ -104,10 +104,10 @@ describe("Find Players", () => {
     expect(html).toContain("3.625");
     expect(html).not.toContain("4.1");
 
-    // Badges
-    expect(html).toContain("Everyone");
-    expect(html).toContain("Group Members Only");
-    expect(html).toContain("Private");
+    // Visibility badges should not be rendered
+    expect(html).not.toContain("Everyone");
+    expect(html).not.toContain("Group Members Only");
+    expect(html).not.toContain("Private");
     expect(html).not.toContain("Only You");
     expect(html).toContain("You");
 

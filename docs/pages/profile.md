@@ -16,6 +16,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Gender**: Displayed if configured (`Male` or `Female`).
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
    - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
+   - **Account Recovery Banner & Email Status**: When viewing one's own profile, if no recovery email is on file or if an email is pending verification, a dedicated recovery card prompts the player to add an email or resend verification. Once verified, the account is protected with automated password recovery.
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu with "Log Out".
 2. **Chemistry Spotlight & Mutual Chemistry**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost. Placed in the top row alongside Performance Stats to maintain balanced card proportions.
@@ -71,7 +72,6 @@ When a player visits another athlete's profile:
 
 ### Find Players & Search Privacy
 In the community player directory (`/players/find`):
-- Athletes with `Only You` profile visibility display a **Private** badge.
-- For private players, their gender and current rating are hidden from other viewers to respect their privacy settings.
-- Athletes with `Everyone` display an **Everyone** badge, and athletes with `Group Members` display a **Group Members Only** badge.
+- For private players (`Only You`), their gender and current rating are hidden from other viewers to respect their privacy settings.
+- Athletes with viewable profiles display their username, gender, and current rating.
 

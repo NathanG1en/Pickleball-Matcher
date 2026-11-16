@@ -1,7 +1,9 @@
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  EmailVerificationTokenRecord,
   PartnerRequestRecord,
+  PasswordResetTokenRecord,
   GroupRecord,
   GroupOrganizerPermissions,
   GroupOrganizerRecord,
@@ -14,6 +16,7 @@ import type {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -31,6 +34,9 @@ import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 interface InMemoryState {
   groups: GroupRecord[];
   playerAccounts: PlayerAccountRecord[];
+  oauthAccounts: OAuthAccountRecord[];
+  passwordResetTokens: PasswordResetTokenRecord[];
+  emailVerificationTokens: EmailVerificationTokenRecord[];
   groupOrganizers: { groupId: string; accountId: string }[];
   players: PlayerRecord[];
   sessions: SessionRecord[];
@@ -59,6 +65,9 @@ export class InMemoryRepositories implements DomainRepository {
     this.state = {
       groups: structuredClone(seed.groups ?? []),
       playerAccounts: structuredClone(seed.playerAccounts ?? []),
+      oauthAccounts: structuredClone(seed.oauthAccounts ?? []),
+      passwordResetTokens: structuredClone(seed.passwordResetTokens ?? []),
+      emailVerificationTokens: structuredClone(seed.emailVerificationTokens ?? []),
       groupOrganizers: structuredClone(seed.groupOrganizers ?? []),
       players: structuredClone(seed.players ?? []),
       sessions: structuredClone(seed.sessions ?? []),
@@ -189,10 +198,21 @@ export class InMemoryRepositories implements DomainRepository {
     return this.state.playerAccounts.find((account) => account.username.toLowerCase() === normalized) ?? null;
   }
 
+  async getPlayerAccountByEmail(email: string) {
+    const normalized = email.trim().toLowerCase();
+    return this.state.playerAccounts.find((account) => account.email?.trim().toLowerCase() === normalized) ?? null;
+  }
+
   async createPlayerAccount(account: PlayerAccountRecord) {
     const username = account.username.trim().toLowerCase();
     if (this.state.playerAccounts.some((item) => item.username.trim().toLowerCase() === username)) {
       throw new Error("Username already exists");
+    }
+    if (account.email) {
+      const emailNorm = account.email.trim().toLowerCase();
+      if (this.state.playerAccounts.some((item) => item.email?.trim().toLowerCase() === emailNorm)) {
+        throw new Error("Email already exists");
+      }
     }
     this.state.playerAccounts.push(structuredClone({ ...account, username }));
   }
@@ -226,6 +246,83 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.players = this.state.players.map((player) =>
       player.accountId === accountId ? { ...player, gender } : player,
     );
+  }
+
+  async updatePlayerAccountEmail(accountId: string, email: string | null, emailVerified: boolean) {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return;
+    account.email = email ? email.trim().toLowerCase() : null;
+    account.emailVerified = emailVerified;
+    this.writeCount += 1;
+  }
+
+  async updatePlayerAccountPassword(accountId: string, passwordHash: string) {
+    const account = this.state.playerAccounts.find((item) => item.id === accountId);
+    if (!account) return;
+    (account as { passwordHash: string }).passwordHash = passwordHash;
+    this.writeCount += 1;
+  }
+
+  async createPasswordResetToken(token: PasswordResetTokenRecord) {
+    this.state.passwordResetTokens.push(structuredClone(token));
+    this.writeCount += 1;
+  }
+
+  async getPasswordResetToken(tokenHash: string) {
+    return this.state.passwordResetTokens.find((t) => t.tokenHash === tokenHash) ?? null;
+  }
+
+  async deletePasswordResetToken(id: string) {
+    this.state.passwordResetTokens = this.state.passwordResetTokens.filter((t) => t.id !== id);
+    this.writeCount += 1;
+  }
+
+  async deletePasswordResetTokensForAccount(accountId: string) {
+    this.state.passwordResetTokens = this.state.passwordResetTokens.filter((t) => t.accountId !== accountId);
+    this.writeCount += 1;
+  }
+
+  async createEmailVerificationToken(token: EmailVerificationTokenRecord) {
+    this.state.emailVerificationTokens.push(structuredClone(token));
+    this.writeCount += 1;
+  }
+
+  async getEmailVerificationToken(tokenHash: string) {
+    return this.state.emailVerificationTokens.find((t) => t.tokenHash === tokenHash) ?? null;
+  }
+
+  async deleteEmailVerificationToken(id: string) {
+    this.state.emailVerificationTokens = this.state.emailVerificationTokens.filter((t) => t.id !== id);
+    this.writeCount += 1;
+  }
+
+  async deleteEmailVerificationTokensForAccount(accountId: string) {
+    this.state.emailVerificationTokens = this.state.emailVerificationTokens.filter((t) => t.accountId !== accountId);
+    this.writeCount += 1;
+  }
+
+  async createOAuthAccount(account: OAuthAccountRecord) {
+    const existingIndex = this.state.oauthAccounts.findIndex(
+      (a) => a.provider === account.provider && a.providerUserId === account.providerUserId,
+    );
+    if (existingIndex >= 0) {
+      this.state.oauthAccounts[existingIndex] = structuredClone(account);
+    } else {
+      this.state.oauthAccounts.push(structuredClone(account));
+    }
+    this.writeCount += 1;
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string) {
+    return (
+      this.state.oauthAccounts.find(
+        (a) => a.provider === provider && a.providerUserId === providerUserId,
+      ) ?? null
+    );
+  }
+
+  async listOAuthAccountsForPlayer(accountId: string) {
+    return this.state.oauthAccounts.filter((a) => a.accountId === accountId);
   }
 
   async addPlayerToGroup(accountId: string, groupId: string) {
