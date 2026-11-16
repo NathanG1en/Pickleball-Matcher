@@ -16,10 +16,11 @@ import {
   RatingSlider,
   VisibilityToggle,
 } from "@/components/ui";
+import { GoogleAuthButton } from "@/components/players/google-auth-button";
 
 const emptySubscribe = () => () => {};
 
-export function PlayerSignupForm() {
+export function PlayerSignupForm({ initialNext }: { initialNext?: string } = {}) {
   const router = useRouter();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [username, setUsername] = useState("");
@@ -74,7 +75,16 @@ export function PlayerSignupForm() {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4 text-left" data-hydrated={mounted ? "true" : undefined}>
+    <div className="space-y-4">
+      <GoogleAuthButton label="Sign up with Google" next={initialNext ?? getReturnPath()} />
+
+      <div className="flex items-center gap-3">
+        <div className="h-0.5 flex-1 bg-black/15" />
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or register with username</span>
+        <div className="h-0.5 flex-1 bg-black/15" />
+      </div>
+
+      <form onSubmit={submit} noValidate className="space-y-4 text-left" data-hydrated={mounted ? "true" : undefined}>
       {error && Object.values(fieldErrors).every((messages) => messages.length === 0) && error !== "Please check your player details and try again." && (
         <Alert variant="danger-soft" size="md">
           {error}
@@ -270,6 +280,7 @@ export function PlayerSignupForm() {
         </Link>
       </p>
     </form>
+    </div>
   );
 }
 

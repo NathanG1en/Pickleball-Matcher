@@ -16,6 +16,7 @@ import type {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -33,6 +34,7 @@ import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 interface InMemoryState {
   groups: GroupRecord[];
   playerAccounts: PlayerAccountRecord[];
+  oauthAccounts: OAuthAccountRecord[];
   passwordResetTokens: PasswordResetTokenRecord[];
   emailVerificationTokens: EmailVerificationTokenRecord[];
   groupOrganizers: { groupId: string; accountId: string }[];
@@ -63,6 +65,7 @@ export class InMemoryRepositories implements DomainRepository {
     this.state = {
       groups: structuredClone(seed.groups ?? []),
       playerAccounts: structuredClone(seed.playerAccounts ?? []),
+      oauthAccounts: structuredClone(seed.oauthAccounts ?? []),
       passwordResetTokens: structuredClone(seed.passwordResetTokens ?? []),
       emailVerificationTokens: structuredClone(seed.emailVerificationTokens ?? []),
       groupOrganizers: structuredClone(seed.groupOrganizers ?? []),
@@ -296,6 +299,30 @@ export class InMemoryRepositories implements DomainRepository {
   async deleteEmailVerificationTokensForAccount(accountId: string) {
     this.state.emailVerificationTokens = this.state.emailVerificationTokens.filter((t) => t.accountId !== accountId);
     this.writeCount += 1;
+  }
+
+  async createOAuthAccount(account: OAuthAccountRecord) {
+    const existingIndex = this.state.oauthAccounts.findIndex(
+      (a) => a.provider === account.provider && a.providerUserId === account.providerUserId,
+    );
+    if (existingIndex >= 0) {
+      this.state.oauthAccounts[existingIndex] = structuredClone(account);
+    } else {
+      this.state.oauthAccounts.push(structuredClone(account));
+    }
+    this.writeCount += 1;
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string) {
+    return (
+      this.state.oauthAccounts.find(
+        (a) => a.provider === provider && a.providerUserId === providerUserId,
+      ) ?? null
+    );
+  }
+
+  async listOAuthAccountsForPlayer(accountId: string) {
+    return this.state.oauthAccounts.filter((a) => a.accountId === accountId);
   }
 
   async addPlayerToGroup(accountId: string, groupId: string) {

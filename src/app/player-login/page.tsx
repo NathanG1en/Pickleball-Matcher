@@ -17,9 +17,11 @@ async function groupForReturnPath(next: string | undefined): Promise<{ id: strin
 export default async function PlayerLoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ next?: string }>;
+  searchParams?: Promise<{ next?: string; error?: string }>;
 }) {
-  const next = (await searchParams)?.next;
+  const params = await searchParams;
+  const next = params?.next;
+  const error = params?.error;
   const group = await groupForReturnPath(next);
   const joinHref = group ? `/g/${group.id}/join?next=${encodeURIComponent(next!)}` : null;
 
@@ -35,7 +37,7 @@ export default async function PlayerLoginPage({
         ) : (
           <p className="mb-6 text-sm font-bold text-neutral-700">Sign in to see your groups and match history.</p>
         )}
-        <PlayerLoginForm />
+        <PlayerLoginForm initialError={error} initialNext={next} />
         {joinHref && (
           <Link
             href={joinHref}

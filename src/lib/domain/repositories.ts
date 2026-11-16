@@ -10,6 +10,7 @@ import type {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -54,6 +55,9 @@ export interface DomainRepository {
   getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationTokenRecord | null>;
   deleteEmailVerificationToken(id: string): Promise<void>;
   deleteEmailVerificationTokensForAccount(accountId: string): Promise<void>;
+  createOAuthAccount(account: OAuthAccountRecord): Promise<void>;
+  getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccountRecord | null>;
+  listOAuthAccountsForPlayer(accountId: string): Promise<readonly OAuthAccountRecord[]>;
   updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void>;
   listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]>;
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;

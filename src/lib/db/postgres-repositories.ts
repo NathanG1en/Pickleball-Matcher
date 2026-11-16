@@ -15,6 +15,7 @@ import {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   PlayerAccountRecord,
   PlayerGender,
@@ -104,13 +105,22 @@ type PlayerAccountRow = {
   gender?: "male" | "female" | null;
   is_public?: boolean;
   visibility_settings?: unknown;
-  password_hash: string;
+  password_hash?: string | null;
   skill_level: "beginner" | "intermediate" | "advanced";
   initial_rating: number;
   rating?: number;
   rated_games_played?: number;
   email?: string | null;
   email_verified?: boolean;
+  created_at: Date;
+};
+
+type OAuthAccountRow = {
+  id: string;
+  account_id: string;
+  provider: string;
+  provider_user_id: string;
+  email: string | null;
   created_at: Date;
 };
 
@@ -280,13 +290,22 @@ const mapPlayerAccount = (row: PlayerAccountRow): PlayerAccountRecord => ({
   gender: (row.gender as PlayerGender) ?? undefined,
   isPublic: row.is_public ?? true,
   visibilitySettings: parseProfileVisibilitySettings(row.visibility_settings, row.is_public ?? true),
-  passwordHash: row.password_hash,
+  passwordHash: row.password_hash ?? null,
   skillLevel: row.skill_level,
   initialRating: row.initial_rating,
   rating: row.rating ?? row.initial_rating,
   ratedGamesPlayed: row.rated_games_played ?? 0,
   email: row.email ?? null,
   emailVerified: row.email_verified ?? false,
+  createdAt: row.created_at,
+});
+
+const mapOAuthAccount = (row: OAuthAccountRow): OAuthAccountRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  provider: row.provider,
+  providerUserId: row.provider_user_id,
+  email: row.email,
   createdAt: row.created_at,
 });
 
@@ -542,7 +561,7 @@ export class PostgresRepositories implements DomainRepository {
     const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     await this.query`
       insert into player_accounts (id, username, name, gender, is_public, visibility_settings, initial_rating, rating, rated_games_played, password_hash, skill_level, email, email_verified, created_at)
-      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash}, ${account.skillLevel}, ${account.email?.trim().toLowerCase() ?? null}, ${account.emailVerified ?? false}, ${account.createdAt})
+      values (${account.id}, ${account.username.trim().toLowerCase()}, ${account.name}, ${account.gender ?? null}, ${account.isPublic ?? true}, ${visibilityJson}::jsonb, ${account.initialRating}, ${account.initialRating}, 0, ${account.passwordHash ?? null}, ${account.skillLevel}, ${account.email?.trim().toLowerCase() ?? null}, ${account.emailVerified ?? false}, ${account.createdAt})
     `;
   }
 
@@ -610,6 +629,34 @@ export class PostgresRepositories implements DomainRepository {
 
   async deleteEmailVerificationTokensForAccount(accountId: string): Promise<void> {
     await this.query`delete from email_verification_tokens where account_id = ${accountId}`;
+  }
+
+  async createOAuthAccount(account: OAuthAccountRecord): Promise<void> {
+    await this.query`
+      insert into oauth_accounts (id, account_id, provider, provider_user_id, email, created_at)
+      values (${account.id}, ${account.accountId}, ${account.provider}, ${account.providerUserId}, ${account.email?.trim().toLowerCase() ?? null}, ${account.createdAt})
+      on conflict (provider, provider_user_id) do update set
+        email = excluded.email
+    `;
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccountRecord | null> {
+    const rows = await this.query<OAuthAccountRow[]>`
+      select id, account_id, provider, provider_user_id, email, created_at
+      from oauth_accounts
+      where provider = ${provider} and provider_user_id = ${providerUserId}
+    `;
+    return rows[0] ? mapOAuthAccount(rows[0]) : null;
+  }
+
+  async listOAuthAccountsForPlayer(accountId: string): Promise<readonly OAuthAccountRecord[]> {
+    const rows = await this.query<OAuthAccountRow[]>`
+      select id, account_id, provider, provider_user_id, email, created_at
+      from oauth_accounts
+      where account_id = ${accountId}
+      order by created_at asc
+    `;
+    return rows.map(mapOAuthAccount);
   }
 
   async updatePlayerAccountName(accountId: string, name: string): Promise<void> {

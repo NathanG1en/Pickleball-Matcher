@@ -14,6 +14,7 @@ import type {
   MatchPlayerRecord,
   MatchRecord,
   MatchResultContext,
+  OAuthAccountRecord,
   PlayerRecord,
   RatingSnapshot,
   ReplayMatch,
@@ -194,6 +195,17 @@ export class SqliteDomainRepository implements DomainRepository {
         expires_at TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS oauth_accounts (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        provider_user_id TEXT NOT NULL,
+        email TEXT,
+        created_at TEXT NOT NULL,
+        UNIQUE (provider, provider_user_id)
+      );
+      CREATE INDEX IF NOT EXISTS oauth_accounts_account_id_idx ON oauth_accounts(account_id);
 
       CREATE TABLE IF NOT EXISTS groups (
         id TEXT PRIMARY KEY,
@@ -553,6 +565,50 @@ export class SqliteDomainRepository implements DomainRepository {
     this.db.prepare("DELETE FROM email_verification_tokens WHERE account_id = ?").run(accountId);
   }
 
+  async createOAuthAccount(account: OAuthAccountRecord): Promise<void> {
+    this.db.prepare(`
+      INSERT INTO oauth_accounts (id, account_id, provider, provider_user_id, email, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(provider, provider_user_id) DO UPDATE SET email = excluded.email
+    `).run(
+      account.id,
+      account.accountId,
+      account.provider,
+      account.providerUserId,
+      account.email ?? null,
+      account.createdAt.toISOString(),
+    );
+  }
+
+  async getOAuthAccount(provider: string, providerUserId: string): Promise<OAuthAccountRecord | null> {
+    const row = this.db.prepare(
+      "SELECT id, account_id, provider, provider_user_id, email, created_at FROM oauth_accounts WHERE provider = ? AND provider_user_id = ?"
+    ).get(provider, providerUserId) as { id: string; account_id: string; provider: string; provider_user_id: string; email: string | null; created_at: string } | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      accountId: row.account_id,
+      provider: row.provider,
+      providerUserId: row.provider_user_id,
+      email: row.email,
+      createdAt: new Date(row.created_at),
+    };
+  }
+
+  async listOAuthAccountsForPlayer(accountId: string): Promise<readonly OAuthAccountRecord[]> {
+    const rows = this.db.prepare(
+      "SELECT id, account_id, provider, provider_user_id, email, created_at FROM oauth_accounts WHERE account_id = ? ORDER BY created_at ASC"
+    ).all(accountId) as unknown as { id: string; account_id: string; provider: string; provider_user_id: string; email: string | null; created_at: string }[];
+    return rows.map((row) => ({
+      id: row.id,
+      accountId: row.account_id,
+      provider: row.provider,
+      providerUserId: row.provider_user_id,
+      email: row.email,
+      createdAt: new Date(row.created_at),
+    }));
+  }
+
   private mapPlayerAccount(row: PlayerAccountRow): PlayerAccountRecord {
     return {
       id: row.id,
@@ -586,7 +642,7 @@ export class SqliteDomainRepository implements DomainRepository {
       account.gender ?? null,
       account.isPublic !== false ? 1 : 0,
       visibilityJson,
-      account.passwordHash,
+      account.passwordHash ?? null,
       account.skillLevel,
       account.initialRating,
       account.initialRating,
