@@ -11,7 +11,7 @@ export interface TestPlayerAccount {
  */
 export async function createAndSignInPlayer(
   page: Page,
-  options?: { username?: string; name?: string; password?: string }
+  options?: { username?: string; name?: string; password?: string; email?: string }
 ): Promise<TestPlayerAccount> {
   const ts = Date.now();
   const username = options?.username ?? `user_${ts}_${Math.floor(Math.random() * 1000)}`;
@@ -22,6 +22,9 @@ export async function createAndSignInPlayer(
   await page.waitForSelector("form[data-hydrated='true']");
   await page.fill("#player-username", username);
   await page.fill("#player-name", name);
+  if (options?.email) {
+    await page.fill("#player-email", options.email);
+  }
   await page.locator("#player-gender").selectOption({ value: "male" });
   await page.fill("#player-password", password);
   await page.click("button[type='submit']");

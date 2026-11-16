@@ -64,6 +64,25 @@ export interface PlayerAccountRecord {
   readonly initialRating: number;
   rating?: number;
   ratedGamesPlayed?: number;
+  email?: string | null;
+  emailVerified?: boolean;
+  readonly createdAt: Date;
+}
+
+export interface PasswordResetTokenRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly tokenHash: string;
+  readonly expiresAt: Date;
+  readonly createdAt: Date;
+}
+
+export interface EmailVerificationTokenRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly email: string;
+  readonly tokenHash: string;
+  readonly expiresAt: Date;
   readonly createdAt: Date;
 }
 

@@ -3,7 +3,9 @@ import { DatabaseSync } from "node:sqlite";
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type {
   AttendanceRecord,
+  EmailVerificationTokenRecord,
   PartnerRequestRecord,
+  PasswordResetTokenRecord,
   GroupRecord,
   GroupOrganizerRecord,
   PlayerAccountRecord,
@@ -54,6 +56,8 @@ interface PlayerAccountRow {
   initial_rating: number;
   rating?: number;
   rated_games_played?: number;
+  email?: string | null;
+  email_verified?: number;
   created_at: string;
 }
 
@@ -167,10 +171,29 @@ export class SqliteDomainRepository implements DomainRepository {
         initial_rating REAL NOT NULL,
         rating REAL NOT NULL,
         rated_games_played INTEGER NOT NULL DEFAULT 0,
+        email TEXT,
+        email_verified INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
       );
       CREATE UNIQUE INDEX IF NOT EXISTS player_accounts_username_case_insensitive_unique_idx
         ON player_accounts(lower(username));
+
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        email TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
 
       CREATE TABLE IF NOT EXISTS groups (
         id TEXT PRIMARY KEY,
@@ -458,13 +481,76 @@ export class SqliteDomainRepository implements DomainRepository {
   }
 
   async getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE id = ?").get(accountId) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at FROM player_accounts WHERE id = ?").get(accountId) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
   }
 
   async getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null> {
-    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at FROM player_accounts WHERE lower(username) = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at FROM player_accounts WHERE lower(username) = ?").get(username.trim().toLowerCase()) as PlayerAccountRow | undefined;
     return row ? this.mapPlayerAccount(row) : null;
+  }
+
+  async getPlayerAccountByEmail(email: string): Promise<PlayerAccountRecord | null> {
+    const row = this.db.prepare("SELECT id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at FROM player_accounts WHERE lower(email) = ?").get(email.trim().toLowerCase()) as PlayerAccountRow | undefined;
+    return row ? this.mapPlayerAccount(row) : null;
+  }
+
+  async updatePlayerAccountEmail(accountId: string, email: string | null, emailVerified: boolean): Promise<void> {
+    const norm = email ? email.trim().toLowerCase() : null;
+    this.db.prepare("UPDATE player_accounts SET email = ?, email_verified = ? WHERE id = ?").run(norm, emailVerified ? 1 : 0, accountId);
+  }
+
+  async updatePlayerAccountPassword(accountId: string, passwordHash: string): Promise<void> {
+    this.db.prepare("UPDATE player_accounts SET password_hash = ? WHERE id = ?").run(passwordHash, accountId);
+  }
+
+  async createPasswordResetToken(token: PasswordResetTokenRecord): Promise<void> {
+    this.db.prepare("INSERT INTO password_reset_tokens (id, account_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)").run(token.id, token.accountId, token.tokenHash, token.expiresAt.toISOString(), token.createdAt.toISOString());
+  }
+
+  async getPasswordResetToken(tokenHash: string): Promise<PasswordResetTokenRecord | null> {
+    const row = this.db.prepare("SELECT id, account_id, token_hash, expires_at, created_at FROM password_reset_tokens WHERE token_hash = ?").get(tokenHash) as { id: string; account_id: string; token_hash: string; expires_at: string; created_at: string } | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      accountId: row.account_id,
+      tokenHash: row.token_hash,
+      expiresAt: new Date(row.expires_at),
+      createdAt: new Date(row.created_at),
+    };
+  }
+
+  async deletePasswordResetToken(id: string): Promise<void> {
+    this.db.prepare("DELETE FROM password_reset_tokens WHERE id = ?").run(id);
+  }
+
+  async deletePasswordResetTokensForAccount(accountId: string): Promise<void> {
+    this.db.prepare("DELETE FROM password_reset_tokens WHERE account_id = ?").run(accountId);
+  }
+
+  async createEmailVerificationToken(token: EmailVerificationTokenRecord): Promise<void> {
+    this.db.prepare("INSERT INTO email_verification_tokens (id, account_id, email, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(token.id, token.accountId, token.email.trim().toLowerCase(), token.tokenHash, token.expiresAt.toISOString(), token.createdAt.toISOString());
+  }
+
+  async getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationTokenRecord | null> {
+    const row = this.db.prepare("SELECT id, account_id, email, token_hash, expires_at, created_at FROM email_verification_tokens WHERE token_hash = ?").get(tokenHash) as { id: string; account_id: string; email: string; token_hash: string; expires_at: string; created_at: string } | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      accountId: row.account_id,
+      email: row.email,
+      tokenHash: row.token_hash,
+      expiresAt: new Date(row.expires_at),
+      createdAt: new Date(row.created_at),
+    };
+  }
+
+  async deleteEmailVerificationToken(id: string): Promise<void> {
+    this.db.prepare("DELETE FROM email_verification_tokens WHERE id = ?").run(id);
+  }
+
+  async deleteEmailVerificationTokensForAccount(accountId: string): Promise<void> {
+    this.db.prepare("DELETE FROM email_verification_tokens WHERE account_id = ?").run(accountId);
   }
 
   private mapPlayerAccount(row: PlayerAccountRow): PlayerAccountRecord {
@@ -482,6 +568,8 @@ export class SqliteDomainRepository implements DomainRepository {
       initialRating: row.initial_rating,
       rating: row.rating ?? row.initial_rating,
       ratedGamesPlayed: row.rated_games_played ?? 0,
+      email: row.email ?? null,
+      emailVerified: Boolean(row.email_verified),
       createdAt: new Date(row.created_at),
     };
   }
@@ -489,8 +577,8 @@ export class SqliteDomainRepository implements DomainRepository {
   async createPlayerAccount(account: PlayerAccountRecord): Promise<void> {
     const visibilityJson = account.visibilitySettings ? JSON.stringify(account.visibilitySettings) : null;
     this.db.prepare(`
-      INSERT INTO player_accounts (id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+      INSERT INTO player_accounts (id, username, name, gender, is_public, visibility_settings, password_hash, skill_level, initial_rating, rating, rated_games_played, email, email_verified, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
     `).run(
       account.id,
       account.username.trim().toLowerCase(),
@@ -502,6 +590,8 @@ export class SqliteDomainRepository implements DomainRepository {
       account.skillLevel,
       account.initialRating,
       account.initialRating,
+      account.email?.trim().toLowerCase() ?? null,
+      account.emailVerified ? 1 : 0,
       account.createdAt.toISOString(),
     );
   }

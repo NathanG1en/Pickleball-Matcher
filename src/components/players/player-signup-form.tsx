@@ -24,6 +24,7 @@ export function PlayerSignupForm() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -55,6 +56,7 @@ export function PlayerSignupForm() {
     const result = await playerSignupAction({
       username,
       name,
+      email: email.trim() || undefined,
       gender,
       password,
       skillLevel,
@@ -114,6 +116,25 @@ export function PlayerSignupForm() {
           placeholder="Name shown to your groups"
           hasError={Boolean(fieldErrors.name?.length)}
           aria-describedby={fieldErrors.name?.length ? "player-name-error" : undefined}
+        />
+      </FormField>
+
+      <FormField
+        id="player-email"
+        label="Recovery Email"
+        hint="Used to reset your password if you ever forget it."
+        error={fieldErrors.email?.[0]}
+      >
+        <Input
+          id="player-email"
+          type="email"
+          maxLength={254}
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com (recommended)"
+          hasError={Boolean(fieldErrors.email?.length)}
+          aria-describedby={fieldErrors.email?.length ? "player-email-error" : "player-email-hint"}
         />
       </FormField>
 

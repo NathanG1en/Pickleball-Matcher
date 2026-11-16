@@ -1,6 +1,8 @@
 import type {
   AttendanceRecord,
+  EmailVerificationTokenRecord,
   PartnerRequestRecord,
+  PasswordResetTokenRecord,
   GroupRecord,
   GroupOrganizerPermissions,
   GroupOrganizerRecord,
@@ -37,10 +39,21 @@ export interface DomainRepository {
   transferGroupHost(groupId: string, newHostAccountId: string): Promise<void>;
   getPlayerAccount(accountId: string): Promise<PlayerAccountRecord | null>;
   getPlayerAccountByUsername(username: string): Promise<PlayerAccountRecord | null>;
+  getPlayerAccountByEmail(email: string): Promise<PlayerAccountRecord | null>;
   createPlayerAccount(account: PlayerAccountRecord): Promise<void>;
   updatePlayerAccountName(accountId: string, name: string): Promise<void>;
   updatePlayerAccountUsername(accountId: string, username: string): Promise<void>;
   updatePlayerAccountGender(accountId: string, gender: PlayerGender): Promise<void>;
+  updatePlayerAccountEmail(accountId: string, email: string | null, emailVerified: boolean): Promise<void>;
+  updatePlayerAccountPassword(accountId: string, passwordHash: string): Promise<void>;
+  createPasswordResetToken(token: PasswordResetTokenRecord): Promise<void>;
+  getPasswordResetToken(tokenHash: string): Promise<PasswordResetTokenRecord | null>;
+  deletePasswordResetToken(id: string): Promise<void>;
+  deletePasswordResetTokensForAccount(accountId: string): Promise<void>;
+  createEmailVerificationToken(token: EmailVerificationTokenRecord): Promise<void>;
+  getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationTokenRecord | null>;
+  deleteEmailVerificationToken(id: string): Promise<void>;
+  deleteEmailVerificationTokensForAccount(accountId: string): Promise<void>;
   updatePlayerPrivacy(accountId: string, isPublic: boolean, visibilitySettings?: ProfileVisibilitySettings): Promise<void>;
   listPairSynergies(accountIds: readonly string[]): Promise<readonly PlayerSynergyRecord[]>;
   getPairSynergy(accountIdA: string, accountIdB: string): Promise<PlayerSynergyRecord | null>;

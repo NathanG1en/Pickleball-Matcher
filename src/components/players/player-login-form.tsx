@@ -71,6 +71,15 @@ export function PlayerLoginForm() {
         </div>
       </FormField>
 
+      <div className="flex items-center justify-end -mt-2">
+        <Link
+          href="/forgot-password"
+          className="text-xs font-bold text-neutral-600 hover:text-black hover:underline"
+        >
+          Forgot password?
+        </Link>
+      </div>
+
       <Button
         type="submit"
         variant="primary"
