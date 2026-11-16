@@ -106,7 +106,7 @@ export default async function HomePage() {
           <div className="space-y-1.5 sm:space-y-2">
             <h1
               id="home-title"
-              className="font-display text-[2rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
+              className="font-display text-[2.5rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
             >
               FAIR ROUNDS.
               <br />
@@ -114,13 +114,13 @@ export default async function HomePage() {
                 FRESH PARTNERS.
               </span>
             </h1>
-            <p className="text-sm sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
+            <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
               An elevated pickleball experience.
             </p>
           </div>
 
           {/* Interactive Pickleball Divider */}
-          <div className="flex items-center justify-center gap-3 py-1 max-w-xs mx-auto">
+          <div className="flex items-center justify-center gap-3 py-1 w-full max-w-xs sm:max-w-lg lg:max-w-xl mx-auto">
             <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
             <HomePickleball />
             <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
@@ -202,7 +202,7 @@ export default async function HomePage() {
         <div className="space-y-1.5 sm:space-y-2">
           <h1
             id="home-title"
-            className="font-display text-[2rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
+            className="font-display text-[2.5rem] sm:text-5xl lg:text-6xl font-black text-black tracking-tight leading-[0.92] uppercase max-w-2xl mx-auto"
           >
             FAIR ROUNDS.
             <br />
@@ -210,13 +210,13 @@ export default async function HomePage() {
               FRESH PARTNERS.
             </span>
           </h1>
-          <p className="text-sm sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
+          <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
             An elevated pickleball experience.
           </p>
         </div>
 
         {/* Interactive Pickleball Divider */}
-        <div className="flex items-center justify-center gap-3 py-1 max-w-xs mx-auto">
+        <div className="flex items-center justify-center gap-3 py-1 w-full max-w-xs sm:max-w-lg lg:max-w-xl mx-auto">
           <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />
           <HomePickleball />
           <div className="h-0.5 flex-1 bg-black/20 rounded-full" aria-hidden="true" />

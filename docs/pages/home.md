@@ -34,9 +34,9 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 
 The hero section introduces the application's core identity with balanced, refined proportions that do not dominate the initial viewport:
 
-- **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
-- **Tagline:** "An elevated pickleball experience."
-- **Interactive Court Divider:** The centered decorative bouncing pickleball divider (horizontal lines with the interactive pickleball button) sits below the subtitle across desktop and mobile.
+- **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2.5rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
+- **Tagline:** "An elevated pickleball experience.", styled at `text-base` font size.
+- **Interactive Court Divider:** The centered decorative bouncing pickleball divider (horizontal lines with the interactive pickleball button) sits below the subtitle, extending wider across desktop viewports (`max-w-xl`).
 - **Hero Footer / Contextual Actions:**
   - **Signed In:** Features a horizontally spread profile footer row beneath the divider spanning across the card with a neon-lime initial avatar and "PLAYING AS" @username on the left, and a distinct neon-lime "View Profile →" button on the right.
   - **Signed Out:** Integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions within the card.
