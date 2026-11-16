@@ -21,7 +21,7 @@ export function PlayerLoginForm({
   initialNext?: string;
 } = {}) {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
@@ -32,7 +32,7 @@ export function PlayerLoginForm({
     event.preventDefault();
     setPending(true);
     setError(null);
-    const result = await playerLoginAction({ username, password });
+    const result = await playerLoginAction({ identifier, username: identifier, password });
     if (result.ok) {
       router.push(getReturnPath() ?? "/");
       router.refresh();
@@ -60,13 +60,14 @@ export function PlayerLoginForm({
 
       <form onSubmit={submit} className="space-y-4 text-left">
 
-      <FormField id="player-login-username" label="Username">
+      <FormField id="player-login-username" label="Username or Email">
         <Input
           id="player-login-username"
           required
           autoComplete="username"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
+          placeholder="e.g. rally_champ or you@example.com"
         />
       </FormField>
 
@@ -102,7 +103,7 @@ export function PlayerLoginForm({
         type="submit"
         variant="primary"
         size="lg"
-        disabled={pending || !username.trim() || !password}
+        disabled={pending || !identifier.trim() || !password}
         className="w-full font-display text-lg uppercase"
       >
         {pending ? "Signing in…" : "Sign In"}

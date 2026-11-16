@@ -148,12 +148,21 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
 
 export async function playerLoginAction(input: unknown): Promise<PlayerActionResult<{ accountId: string }>> {
   const parsed = playerLoginSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Enter a valid username and password." };
+  if (!parsed.success) return { ok: false, error: "Enter a valid username or email and password." };
   try {
+    const rawIdentifier = (
+      parsed.data.identifier ??
+      parsed.data.email ??
+      parsed.data.username ??
+      ""
+    ).trim().toLowerCase();
     const repository = getActionRepository();
-    const account = await repository.getPlayerAccountByUsername(parsed.data.username.toLowerCase());
+    let account = await repository.getPlayerAccountByUsername(rawIdentifier);
+    if (!account) {
+      account = await repository.getPlayerAccountByEmail(rawIdentifier);
+    }
     const validPassword = await compare(parsed.data.password, account?.passwordHash ?? DUMMY_PASSWORD_HASH);
-    if (!account || !validPassword) return { ok: false, error: "Unable to sign in. Check your username and password." };
+    if (!account || !validPassword) return { ok: false, error: "Unable to sign in. Check your username or email and password." };
     const token = await createPlayerSession(account.id);
     try {
       (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
@@ -162,7 +171,7 @@ export async function playerLoginAction(input: unknown): Promise<PlayerActionRes
     }
     return { ok: true, data: { accountId: account.id } };
   } catch {
-    return { ok: false, error: "Unable to sign in. Check your username and password." };
+    return { ok: false, error: "Unable to sign in. Check your username or email and password." };
   }
 }
 

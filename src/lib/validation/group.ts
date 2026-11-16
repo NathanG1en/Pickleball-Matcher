@@ -135,10 +135,23 @@ export const verifyEmailSchema = z.object({
   token: z.string().min(1, "Verification token is required."),
 }).strict();
 
-export const playerLoginSchema = z.object({
-  username: z.string().trim().min(3).max(24),
-  password: z.string().min(1).max(72),
-}).strict();
+export const playerLoginSchema = z
+  .object({
+    username: z.string().trim().min(1).max(254).optional(),
+    email: z.string().trim().min(1).max(254).optional(),
+    identifier: z.string().trim().min(1).max(254).optional(),
+    password: z.string().min(1).max(72),
+  })
+  .strict()
+  .refine(
+    (data) => {
+      const id = data.identifier ?? data.email ?? data.username;
+      return typeof id === "string" && id.trim().length >= 3;
+    },
+    {
+      message: "Enter a valid username or email address.",
+    }
+  );
 
 export const updatePlayerProfileSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),

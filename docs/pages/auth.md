@@ -4,7 +4,7 @@ The authentication system handles player onboarding, credential verification, Go
 
 ## Overview & Routing
 
-- **Sign In (`/player-login`)**: Offers 1-click **"Continue with Google"** OAuth sign-in and a credentials form accepting `username` and `password`. Includes a "Forgot password?" link for account recovery and context preservation when entering from invite or session links (`?next=...`).
+- **Sign In (`/player-login`)**: Offers 1-click **"Continue with Google"** OAuth sign-in and a credentials form accepting `username` or `email` and `password`. Includes a "Forgot password?" link for account recovery and context preservation when entering from invite or session links (`?next=...`).
 - **Sign Up (`/player-signup`)**: New player onboarding featuring **"Sign up with Google"** and traditional registration capturing `username`, display `name`, optional `email` (for recovery), `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating.
 - **Forgot Password (`/forgot-password`)**: Self-service recovery entry point accepting username or email. Sends a time-limited (1-hour) cryptographic password reset link via Resend.
 - **Reset Password (`/reset-password?token=...`)**: Form validating a one-time reset token and allowing the player to set and confirm a new password.
@@ -32,7 +32,7 @@ The authentication system handles player onboarding, credential verification, Go
 1. **Non-blocking Schema Migration**:
    - `player_accounts` includes nullable `email` and `email_verified` columns with a unique index on `lower(trim(email))`.
    - `player_accounts.password_hash` is nullable to support OAuth-only accounts.
-   - Existing accounts created prior to the email layer continue to authenticate normally via `username` and `password`.
+   - Existing accounts created prior to the email layer continue to authenticate normally via `username` or `email` (once added) and `password`.
 2. **Progressive Email Onboarding**:
    - Authenticated players without an email address see a friendly, non-blocking notification banner (`RecoveryEmailBanner`) on their profile page and home screen: *"Add Account Recovery Email"*.
    - Players can enter an email directly in the banner or dismiss it ("Remind me later").

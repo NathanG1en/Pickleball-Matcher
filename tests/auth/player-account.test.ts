@@ -47,8 +47,74 @@ describe("player account authentication", () => {
     const failure = await playerLoginAction({ username: "rally_player", password: "wrong-password" });
 
     expect(login.ok).toBe(true);
-    expect(failure).toMatchObject({ ok: false, error: "Unable to sign in. Check your username and password." });
+    expect(failure).toMatchObject({ ok: false, error: "Unable to sign in. Check your username or email and password." });
     expect((await repository.getPlayerAccountByUsername("rally_player"))?.initialRating).toBe(975);
+  });
+
+  it("authenticates with registered email address and rejects wrong passwords or unregistered emails", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+    await playerSignupAction({
+      username: "smash_ace",
+      name: "Smash Ace",
+      email: "Smash.Ace@example.com",
+      password: "secure-password-456",
+      skillLevel: "intermediate",
+      customRating: false,
+      initialRating: 1_000,
+    });
+
+    // Sign in using email via identifier field
+    const loginViaIdentifier = await playerLoginAction({
+      identifier: "smash.ace@example.com",
+      password: "secure-password-456",
+    });
+    expect(loginViaIdentifier.ok).toBe(true);
+
+    // Sign in using uppercase email via username field (backwards-compatible input)
+    const loginViaUsername = await playerLoginAction({
+      username: "SMASH.ACE@EXAMPLE.COM",
+      password: "secure-password-456",
+    });
+    expect(loginViaUsername.ok).toBe(true);
+
+    // Sign in using email via email field
+    const loginViaEmail = await playerLoginAction({
+      email: "smash.ace@example.com",
+      password: "secure-password-456",
+    });
+    expect(loginViaEmail.ok).toBe(true);
+
+    // Wrong password with email
+    const wrongPassword = await playerLoginAction({
+      identifier: "smash.ace@example.com",
+      password: "wrong-password",
+    });
+    expect(wrongPassword).toMatchObject({
+      ok: false,
+      error: "Unable to sign in. Check your username or email and password.",
+    });
+
+    // Unregistered email
+    const unknownEmail = await playerLoginAction({
+      identifier: "unknown@example.com",
+      password: "secure-password-456",
+    });
+    expect(unknownEmail).toMatchObject({
+      ok: false,
+      error: "Unable to sign in. Check your username or email and password.",
+    });
+
+    // Invalid / too short input
+    const invalidInput = await playerLoginAction({
+      identifier: "ab",
+      password: "secure-password-456",
+    });
+    expect(invalidInput).toMatchObject({
+      ok: false,
+      error: "Enter a valid username or email and password.",
+    });
   });
 
   it("reports a duplicate username alongside other signup field errors", async () => {
