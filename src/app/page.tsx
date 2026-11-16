@@ -225,17 +225,17 @@ export default async function HomePage() {
         {/* Subtle, horizontally aligned profile footer row */}
         <div
           aria-label="Account status"
-          className="pt-1 flex flex-col sm:flex-row sm:items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto"
+          className="pt-1.5 sm:pt-2 flex items-center justify-between gap-3 sm:gap-4 w-full max-w-3xl mx-auto px-1 sm:px-2"
         >
-          <div className="flex items-center justify-center gap-2.5 text-left">
+          <div className="flex items-center gap-2.5 text-left min-w-0">
             <span className="w-8 h-8 rounded-full bg-[#ccff00] border-2 border-black flex items-center justify-center font-display font-black text-sm text-black shadow-[1.5px_1.5px_0px_0px_#000] shrink-0">
               {playerAccount.username.charAt(0).toUpperCase()}
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-neutral-500 leading-none">
                 Playing as
               </p>
-              <p className="font-display text-sm sm:text-base font-black uppercase text-black leading-tight mt-0.5">
+              <p className="font-display text-sm sm:text-base font-black uppercase text-black leading-tight mt-0.5 truncate">
                 @{playerAccount.username}
               </p>
             </div>

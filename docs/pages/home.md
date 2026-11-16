@@ -38,7 +38,7 @@ The hero section introduces the application's core identity with balanced, refin
 - **Tagline:** "An elevated pickleball experience."
 - **Interactive Court Divider:** The centered decorative bouncing pickleball divider (horizontal lines with the interactive pickleball button) sits below the subtitle across desktop and mobile.
 - **Hero Footer / Contextual Actions:**
-  - **Signed In:** Features a subtle, horizontally aligned profile footer row beneath the divider with a small neon-lime initial avatar, a muted "PLAYING AS" label with `@username`, and a distinct neon-lime "View Profile →" button.
+  - **Signed In:** Features a horizontally spread profile footer row beneath the divider spanning across the card with a neon-lime initial avatar and "PLAYING AS" @username on the left, and a distinct neon-lime "View Profile →" button on the right.
   - **Signed Out:** Integrates the **Sign In to Play →**, **Create an Account**, and **Start a Quick Session** actions within the card.
 
 ## Main Actions
