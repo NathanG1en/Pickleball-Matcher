@@ -4,9 +4,11 @@ import { VerifyEmailView } from "@/components/players/verify-email-view";
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ token?: string }>;
+  searchParams?: Promise<{ token?: string; email?: string }>;
 }) {
-  const token = (await searchParams)?.token;
+  const resolved = await searchParams;
+  const token = resolved?.token;
+  const email = resolved?.email;
 
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
@@ -21,7 +23,7 @@ export default async function VerifyEmailPage({
         <h1 className="mb-2 font-display text-2xl sm:text-3xl font-black uppercase text-black">
           Verify Email
         </h1>
-        <VerifyEmailView token={token} />
+        <VerifyEmailView token={token} email={email} />
       </section>
     </main>
   );

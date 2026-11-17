@@ -4,9 +4,11 @@ import { ResetPasswordForm } from "@/components/players/reset-password-form";
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ token?: string }>;
+  searchParams?: Promise<{ token?: string; email?: string }>;
 }) {
-  const token = (await searchParams)?.token;
+  const resolved = await searchParams;
+  const token = resolved?.token;
+  const email = resolved?.email;
 
   return (
     <main className="min-h-screen p-4 sm:p-6 flex items-center justify-center">
@@ -22,7 +24,7 @@ export default async function ResetPasswordPage({
         <p className="mb-6 text-sm font-bold text-neutral-700">
           Choose a new password with at least 10 characters.
         </p>
-        <ResetPasswordForm token={token} />
+        <ResetPasswordForm token={token} email={email} />
       </section>
     </main>
   );

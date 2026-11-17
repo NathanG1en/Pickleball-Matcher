@@ -15,5 +15,11 @@ describe("VerifyEmailView", () => {
     expect(html).toContain('data-testid="confirm-verify-email-button"');
     expect(html).toContain("Confirm Verification");
   });
+
+  it("renders 6-digit OTP code input when no token is provided", () => {
+    const html = renderToStaticMarkup(<VerifyEmailView />);
+    expect(html).toContain("Have a 6-digit code?");
+    expect(html).toContain("Verify Code");
+  });
 });
 

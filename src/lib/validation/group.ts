@@ -125,6 +125,7 @@ export const requestPasswordResetSchema = z.object({
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required."),
   password: z.string().min(10, "Password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
+  email: z.string().trim().email().optional(),
 }).strict();
 
 export const loginWithNetlifyIdentitySchema = z.object({
@@ -173,6 +174,7 @@ export const updatePlayerEmailSchema = z.object({
 
 export const verifyEmailSchema = z.object({
   token: z.string().trim().min(1, "Verification token is required."),
+  email: z.string().trim().email().optional(),
 }).strict();
 
 export const updatePlayerPasswordSchema = z

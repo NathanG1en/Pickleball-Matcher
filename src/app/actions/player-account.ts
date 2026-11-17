@@ -30,6 +30,13 @@ import {
   netlifyTriggerEmailVerification,
   netlifyVerifyEmailToken,
 } from "@/lib/auth/netlify-gotrue";
+import {
+  isNeonAuthConfigured,
+  neonResetPasswordWithOtp,
+  neonSendPasswordResetOtp,
+  neonTriggerEmailVerification,
+  neonVerifyEmailOtp,
+} from "@/lib/auth/neon-auth";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -131,12 +138,20 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
         createdAt: new Date(),
       });
 
-      await netlifyTriggerEmailVerification({
-        email: emailToSave,
-        password: parsed.data.password,
-        name: parsed.data.name,
-        username: parsed.data.username,
-      }).catch(() => {});
+      if (isNeonAuthConfigured()) {
+        await neonTriggerEmailVerification({
+          email: emailToSave,
+          password: parsed.data.password,
+          name: parsed.data.name,
+        }).catch(() => {});
+      } else {
+        await netlifyTriggerEmailVerification({
+          email: emailToSave,
+          password: parsed.data.password,
+          name: parsed.data.name,
+          username: parsed.data.username,
+        }).catch(() => {});
+      }
     }
 
     const token = await createPlayerSession(accountId);
@@ -471,7 +486,11 @@ export async function requestPasswordResetAction(
     let localDevUrl: string | undefined;
 
     if (account && account.email) {
-      await netlifyRecover(account.email).catch(() => {});
+      if (isNeonAuthConfigured()) {
+        await neonSendPasswordResetOtp(account.email).catch(() => {});
+      } else {
+        await netlifyRecover(account.email).catch(() => {});
+      }
 
       await repository.deletePasswordResetTokensForAccount(account.id);
       const rawToken = randomBytes(32).toString("hex");
@@ -488,7 +507,11 @@ export async function requestPasswordResetAction(
         localDevUrl = `${getAppBaseUrl()}/reset-password?token=${rawToken}`;
       }
     } else if (identifier.includes("@")) {
-      await netlifyRecover(identifier).catch(() => {});
+      if (isNeonAuthConfigured()) {
+        await neonSendPasswordResetOtp(identifier).catch(() => {});
+      } else {
+        await netlifyRecover(identifier).catch(() => {});
+      }
     }
 
     return {
@@ -524,6 +547,35 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
       await repository.updatePlayerAccountPassword(tokenRecord.accountId, newHash);
       await repository.deletePasswordResetToken(tokenRecord.id);
       return { ok: true, data: { success: true } };
+    }
+
+    if (isNeonAuthConfigured()) {
+      let targetEmail = parsed.data.email;
+      let targetAccountId: string | undefined;
+      if (targetEmail) {
+        const acc = await repository.getPlayerAccountByEmail(targetEmail);
+        targetAccountId = acc?.id;
+      } else {
+        const activeId = await getActivePlayerAccountId();
+        if (activeId) {
+          const acc = await repository.getPlayerAccount(activeId);
+          targetEmail = acc?.email || undefined;
+          targetAccountId = activeId;
+        }
+      }
+
+      if (targetEmail && targetAccountId) {
+        const neonRes = await neonResetPasswordWithOtp({
+          email: targetEmail,
+          otp: parsed.data.token,
+          password: parsed.data.password,
+        });
+        if (neonRes.success) {
+          const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+          await repository.updatePlayerAccountPassword(targetAccountId, newHash);
+          return { ok: true, data: { success: true } };
+        }
+      }
     }
 
     if (isNetlifyIdentityConfigured()) {
@@ -599,12 +651,19 @@ export async function updatePlayerEmailAction(
       createdAt: new Date(),
     });
 
-    // Dispatch Netlify recovery / verification email
-    await netlifyTriggerEmailVerification({
-      email,
-      name: currentAccount?.name,
-      username: currentAccount?.username,
-    }).catch(() => {});
+    // Dispatch Neon / Netlify recovery / verification email
+    if (isNeonAuthConfigured()) {
+      await neonTriggerEmailVerification({
+        email,
+        name: currentAccount?.name,
+      }).catch(() => {});
+    } else {
+      await netlifyTriggerEmailVerification({
+        email,
+        name: currentAccount?.name,
+        username: currentAccount?.username,
+      }).catch(() => {});
+    }
 
     // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(
@@ -677,12 +736,19 @@ export async function resendVerificationEmailAction(): Promise<
       createdAt: new Date(),
     });
 
-    // Dispatch Netlify verification / recovery email
-    await netlifyTriggerEmailVerification({
-      email: account.email,
-      name: account.name,
-      username: account.username,
-    }).catch(() => {});
+    // Dispatch Neon / Netlify verification / recovery email
+    if (isNeonAuthConfigured()) {
+      await neonTriggerEmailVerification({
+        email: account.email,
+        name: account.name,
+      }).catch(() => {});
+    } else {
+      await netlifyTriggerEmailVerification({
+        email: account.email,
+        name: account.name,
+        username: account.username,
+      }).catch(() => {});
+    }
 
     const localDevUrl =
       process.env.NODE_ENV !== "production"
@@ -725,6 +791,42 @@ export async function verifyEmailAction(
         // Non-request test contexts.
       }
       return { ok: true, data: { email: tokenRecord.email } };
+    }
+
+    // Fallback: Verify Neon Auth 6-digit OTP code
+    if (isNeonAuthConfigured()) {
+      let targetEmail = parsed.data.email;
+      let targetAccountId: string | undefined;
+      if (targetEmail) {
+        const acc = await repository.getPlayerAccountByEmail(targetEmail);
+        targetAccountId = acc?.id;
+      } else {
+        const activeId = await getActivePlayerAccountId();
+        if (activeId) {
+          const acc = await repository.getPlayerAccount(activeId);
+          targetEmail = acc?.email || undefined;
+          targetAccountId = activeId;
+        }
+      }
+
+      if (targetEmail) {
+        const neonRes = await neonVerifyEmailOtp({
+          email: targetEmail,
+          otp: parsed.data.token,
+        });
+        if (neonRes.success) {
+          if (targetAccountId) {
+            await repository.updatePlayerAccountEmail(targetAccountId, targetEmail, true);
+          }
+          try {
+            revalidatePath("/players");
+            revalidatePath("/");
+          } catch {
+            // Non-request test contexts.
+          }
+          return { ok: true, data: { email: targetEmail } };
+        }
+      }
     }
 
     // Fallback: Verify Netlify Identity confirmation / recovery token

@@ -529,7 +529,7 @@ export function UserSettingsModal({
                     </button>
                     {verificationToken && (
                       <Link
-                        href={`/verify-email?token=${verificationToken}`}
+                        href={`/verify-email?token=${verificationToken}&email=${encodeURIComponent(currentEmail || "")}`}
                         data-testid="settings-verify-now-link"
                         className="text-[11px] font-black text-black underline underline-offset-2 hover:text-neutral-800"
                       >

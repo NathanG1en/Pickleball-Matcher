@@ -52,12 +52,18 @@ export function ForgotPasswordForm() {
         <p className="text-sm font-medium text-neutral-700">
           Be sure to check your spam folder if you don&apos;t see the email within a couple of minutes.
         </p>
-        <div className="pt-2 text-center">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+          <Link
+            href={`/reset-password${identifier.includes("@") ? `?email=${encodeURIComponent(identifier)}` : ""}`}
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+          >
+            Enter Reset Code →
+          </Link>
           <Link
             href="/player-login"
-            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-white px-4 py-2 font-display text-sm font-black uppercase text-black hover:bg-neutral-100"
           >
-            Back to Sign In →
+            Back to Sign In
           </Link>
         </div>
       </div>

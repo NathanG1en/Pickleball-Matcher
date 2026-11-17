@@ -211,4 +211,111 @@ describe("Password recovery and email verification layer", () => {
       global.fetch = originalFetch;
     }
   });
+
+  it("verifies email using Neon Auth OTP code fallback", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    vi.stubEnv("NEON_AUTH_BASE_URL", "https://ep-test.neonauth.aws.neon.tech/neondb/auth");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+
+    const signup = await playerSignupAction({
+      username: "neon_user",
+      name: "Neon User",
+      email: "player@neon.example",
+      gender: "male",
+      password: "secure-password-123",
+      skillLevel: "intermediate",
+    });
+    expect(signup.ok).toBe(true);
+
+    const user = await repository.getPlayerAccountByUsername("neon_user");
+    expect(user?.emailVerified).toBe(false);
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation(async (url: string | URL) => {
+      const urlStr = url.toString();
+      if (urlStr.includes("/email-otp/verify-email")) {
+        return {
+          ok: true,
+          json: async () => ({
+            user: { email: "player@neon.example" },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    try {
+      const verifyResult = await verifyEmailAction({
+        token: "123456",
+        email: "player@neon.example",
+      });
+      expect(verifyResult.ok).toBe(true);
+      if (verifyResult.ok) {
+        expect(verifyResult.data.email).toBe("player@neon.example");
+      }
+
+      const updated = await repository.getPlayerAccountByUsername("neon_user");
+      expect(updated?.emailVerified).toBe(true);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("resets password using Neon Auth OTP code", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    vi.stubEnv("NEON_AUTH_BASE_URL", "https://ep-test.neonauth.aws.neon.tech/neondb/auth");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+
+    await playerSignupAction({
+      username: "neon_reset_user",
+      name: "Neon Reset",
+      email: "reset@neon.example",
+      gender: "male",
+      password: "old-password-123",
+      skillLevel: "intermediate",
+    });
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation(async (url: string | URL) => {
+      const urlStr = url.toString();
+      if (urlStr.includes("/email-otp/send-verification-otp")) {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+      if (urlStr.includes("/email-otp/reset-password")) {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    try {
+      // 1. Request password reset
+      const reqResult = await requestPasswordResetAction({ identifier: "reset@neon.example" });
+      expect(reqResult.ok).toBe(true);
+
+      // 2. Submit OTP code + new password
+      const resetResult = await resetPasswordAction({
+        token: "654321",
+        email: "reset@neon.example",
+        password: "new-super-password-123",
+      });
+      expect(resetResult.ok).toBe(true);
+
+      // 3. Old password should fail, new should succeed
+      const oldLogin = await playerLoginAction({
+        username: "neon_reset_user",
+        password: "old-password-123",
+      });
+      expect(oldLogin.ok).toBe(false);
+
+      const newLogin = await playerLoginAction({
+        username: "neon_reset_user",
+        password: "new-super-password-123",
+      });
+      expect(newLogin.ok).toBe(true);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

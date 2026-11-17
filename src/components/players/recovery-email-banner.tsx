@@ -132,14 +132,12 @@ export function RecoveryEmailBanner({
           <Alert variant="success" size="sm" className="mt-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span>{successMessage}</span>
-              {verificationToken && (
-                <Link
-                  href={`/verify-email?token=${verificationToken}`}
-                  className="font-black text-black underline underline-offset-2"
-                >
-                  Verify Now →
-                </Link>
-              )}
+              <Link
+                href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
+                className="font-black text-black underline underline-offset-2"
+              >
+                Verify Now →
+              </Link>
             </div>
           </Alert>
         )}
@@ -231,14 +229,12 @@ export function RecoveryEmailBanner({
         <Alert variant="success" size="sm" className="mt-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span>{successMessage}</span>
-            {verificationToken && (
-              <Link
-                href={`/verify-email?token=${verificationToken}`}
-                className="font-black text-black underline underline-offset-2"
-              >
-                Verify Now →
-              </Link>
-            )}
+            <Link
+              href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
+              className="font-black text-black underline underline-offset-2"
+            >
+              Verify Now →
+            </Link>
           </div>
         </Alert>
       )}
