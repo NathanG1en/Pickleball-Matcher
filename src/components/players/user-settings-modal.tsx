@@ -6,6 +6,7 @@ import { updatePlayerEmailAction, updatePlayerPasswordAction } from "@/app/actio
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { Toast } from "@/components/ui/toast";
 import {
+  AlertCircleSolidIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
@@ -88,7 +89,7 @@ export function validateEmailFormat(val: string): { isValid: boolean; message: s
     return { isValid: false, message: "Email address is required." };
   }
   if (!trimmed.includes("@")) {
-    return { isValid: false, message: "Email address must include an '@' symbol." };
+    return { isValid: false, message: "Double-check the spelling: missing '@' symbol." };
   }
   const atIndex = trimmed.lastIndexOf("@");
   const localPart = trimmed.slice(0, atIndex);
@@ -98,16 +99,16 @@ export function validateEmailFormat(val: string): { isValid: boolean; message: s
     return { isValid: false, message: "Please enter an email username before the '@'." };
   }
   if (!domainPart || !domainPart.includes(".")) {
-    return { isValid: false, message: "Email address must include a domain (e.g. example.com)." };
+    return { isValid: false, message: "Double-check the spelling and try again." };
   }
   const domainParts = domainPart.split(".");
   const tld = domainParts[domainParts.length - 1];
   if (!tld || tld.length < 2) {
-    return { isValid: false, message: "Email domain must include a valid extension." };
+    return { isValid: false, message: "Double-check the spelling and try again." };
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!emailRegex.test(trimmed)) {
-    return { isValid: false, message: "Please enter a valid email address." };
+    return { isValid: false, message: "Double-check the spelling and try again." };
   }
   return { isValid: true, message: null };
 }
@@ -169,11 +170,15 @@ export function UserSettingsModal({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPasswordTouched, setCurrentPasswordTouched] = useState(false);
+  const [newPasswordTouched, setNewPasswordTouched] = useState(false);
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+  const [currentPasswordError, setCurrentPasswordError] = useState<string | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordGeneralError, setPasswordGeneralError] = useState<string | null>(null);
 
   // Privacy controls state
   const baseVisibility = useMemo(
@@ -187,7 +192,7 @@ export function UserSettingsModal({
   const [privacySaving, setPrivacySaving] = useState(false);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
 
-  // Change detection
+  // Change detection & validation
   const trimmedNewEmail = newEmail.trim().toLowerCase();
   const trimmedCurrentEmail = currentEmail.trim().toLowerCase();
   const emailValidation = validateEmailFormat(newEmail);
@@ -200,7 +205,20 @@ export function UserSettingsModal({
     (portion) => visibilityInput[portion.key] !== baseVisibility[portion.key],
   );
 
-  const hasPasswordChanges = Boolean(currentPassword || newPassword || confirmPassword);
+  const showCurrentPasswordError =
+    currentPasswordError || (currentPasswordTouched && hasPassword && !currentPassword.trim());
+  const showNewPasswordError =
+    newPasswordTouched && Boolean(newPassword) && newPassword.length < 10;
+  const showConfirmPasswordError =
+    Boolean(confirmPassword) &&
+    (confirmPasswordTouched || confirmPassword.length >= newPassword.length) &&
+    confirmPassword !== newPassword;
+
+  const hasPasswordChanges =
+    (!hasPassword || Boolean(currentPassword.trim())) &&
+    newPassword.length >= 10 &&
+    Boolean(confirmPassword) &&
+    confirmPassword === newPassword;
 
   // Feedback Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -251,25 +269,26 @@ export function UserSettingsModal({
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordSaving) return;
+    if (passwordSaving || !hasPasswordChanges) return;
 
-    if (hasPassword && !currentPassword) {
-      setPasswordError("Current password is required.");
+    if (hasPassword && !currentPassword.trim()) {
+      setCurrentPasswordError("Current password is required.");
       return;
     }
 
     if (newPassword.length < 10) {
-      setPasswordError("New password must be at least 10 characters.");
+      setNewPasswordTouched(true);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match.");
+      setConfirmPasswordTouched(true);
       return;
     }
 
     setPasswordSaving(true);
-    setPasswordError(null);
+    setCurrentPasswordError(null);
+    setPasswordGeneralError(null);
 
     try {
       const res = await updatePlayerPasswordAction({
@@ -279,7 +298,16 @@ export function UserSettingsModal({
       });
 
       if (!res.ok) {
-        setPasswordError(res.error ?? "Failed to update password.");
+        if (
+          res.error?.toLowerCase().includes("current password") ||
+          res.fieldErrors?.currentPassword
+        ) {
+          setCurrentPasswordError(
+            res.fieldErrors?.currentPassword?.[0] ?? res.error ?? "Current password is incorrect.",
+          );
+        } else {
+          setPasswordGeneralError(res.error ?? "Failed to update password.");
+        }
         setPasswordSaving(false);
         return;
       }
@@ -287,9 +315,14 @@ export function UserSettingsModal({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setCurrentPasswordTouched(false);
+      setNewPasswordTouched(false);
+      setConfirmPasswordTouched(false);
+      setCurrentPasswordError(null);
+      setPasswordGeneralError(null);
       showToast("Password updated successfully");
     } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : "Failed to update password.");
+      setPasswordGeneralError(err instanceof Error ? err.message : "Failed to update password.");
     } finally {
       setPasswordSaving(false);
     }
@@ -476,29 +509,31 @@ export function UserSettingsModal({
                   placeholder="athlete@example.com"
                   className={`w-full rounded-xl border-2 ${
                     showEmailError
-                      ? "border-red-500 bg-red-50/50 text-black focus:border-red-600 focus:ring-2 focus:ring-red-500"
-                      : "border-black bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
+                      ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
+                      : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
                   } px-3 py-2 text-sm font-bold`}
                 />
                 {showEmailError && (
                   <div
                     role="alert"
                     data-testid="email-invalid-input-box"
-                    className="rounded-xl border-2 border-red-500 bg-red-100 p-2.5 text-xs font-black text-red-800 shadow-[2px_2px_0px_0px_#ef4444]"
+                    className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
                   >
-                    {emailValidation.message}
+                    <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>{emailValidation.message}</span>
+                  </div>
+                )}
+                {emailError && !showEmailError && (
+                  <div
+                    role="alert"
+                    data-testid="email-server-error"
+                    className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
+                  >
+                    <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>{emailError}</span>
                   </div>
                 )}
               </div>
-
-              {emailError && (
-                <div
-                  role="alert"
-                  className="rounded-lg border border-red-500 bg-red-100 p-2 text-xs font-bold text-red-800"
-                >
-                  {emailError}
-                </div>
-              )}
 
               <div className="flex justify-end">
                 <button
@@ -543,10 +578,16 @@ export function UserSettingsModal({
                     value={currentPassword}
                     onChange={(e) => {
                       setCurrentPassword(e.target.value);
-                      setPasswordError(null);
+                      setCurrentPasswordError(null);
+                      setPasswordGeneralError(null);
                     }}
+                    onBlur={() => setCurrentPasswordTouched(true)}
                     placeholder="Enter current password"
-                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className={`w-full rounded-xl border-2 ${
+                      showCurrentPasswordError
+                        ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
+                        : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
+                    } px-3 py-2 pr-10 text-sm font-bold`}
                   />
                   <button
                     type="button"
@@ -562,6 +603,16 @@ export function UserSettingsModal({
                     )}
                   </button>
                 </div>
+                {showCurrentPasswordError && (
+                  <div
+                    role="alert"
+                    data-testid="current-password-error"
+                    className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
+                  >
+                    <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>{currentPasswordError || "Current password is required."}</span>
+                  </div>
+                )}
               </div>
 
               {/* New Password */}
@@ -580,10 +631,15 @@ export function UserSettingsModal({
                     value={newPassword}
                     onChange={(e) => {
                       setNewPassword(e.target.value);
-                      setPasswordError(null);
+                      setPasswordGeneralError(null);
                     }}
+                    onBlur={() => setNewPasswordTouched(true)}
                     placeholder="At least 10 characters"
-                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className={`w-full rounded-xl border-2 ${
+                      showNewPasswordError
+                        ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
+                        : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
+                    } px-3 py-2 pr-10 text-sm font-bold`}
                   />
                   <button
                     type="button"
@@ -599,6 +655,16 @@ export function UserSettingsModal({
                     )}
                   </button>
                 </div>
+                {showNewPasswordError && (
+                  <div
+                    role="alert"
+                    data-testid="new-password-error"
+                    className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
+                  >
+                    <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>New password must be at least 10 characters.</span>
+                  </div>
+                )}
               </div>
 
               {/* Confirm New Password */}
@@ -617,10 +683,15 @@ export function UserSettingsModal({
                     value={confirmPassword}
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);
-                      setPasswordError(null);
+                      setPasswordGeneralError(null);
                     }}
+                    onBlur={() => setConfirmPasswordTouched(true)}
                     placeholder="Re-enter new password"
-                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className={`w-full rounded-xl border-2 ${
+                      showConfirmPasswordError
+                        ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
+                        : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
+                    } px-3 py-2 pr-10 text-sm font-bold`}
                   />
                   <button
                     type="button"
@@ -636,14 +707,26 @@ export function UserSettingsModal({
                     )}
                   </button>
                 </div>
+                {showConfirmPasswordError && (
+                  <div
+                    role="alert"
+                    data-testid="confirm-password-error"
+                    className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
+                  >
+                    <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>Confirm password must match the new password.</span>
+                  </div>
+                )}
               </div>
 
-              {passwordError && (
+              {passwordGeneralError && (
                 <div
                   role="alert"
-                  className="rounded-xl border-2 border-red-500 bg-red-100 p-2.5 text-xs font-black text-red-800 shadow-[2px_2px_0px_0px_#ef4444]"
+                  data-testid="password-general-error"
+                  className="flex items-center gap-1.5 pt-1 text-xs font-bold text-red-600"
                 >
-                  {passwordError}
+                  <AlertCircleSolidIcon className="h-4 w-4 shrink-0 text-red-600" />
+                  <span>{passwordGeneralError}</span>
                 </div>
               )}
 

@@ -1065,6 +1065,11 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(validateEmailFormat("athlete@.com").isValid).toBe(false);
     expect(validateEmailFormat("athlete@example.").isValid).toBe(false);
 
+    // Specific domain spelling error (e.g. phillip_h@gmailcom from user screenshot)
+    const typoCheck = validateEmailFormat("phillip_h@gmailcom");
+    expect(typoCheck.isValid).toBe(false);
+    expect(typoCheck.message).toBe("Double-check the spelling and try again.");
+
     // Valid formats
     expect(validateEmailFormat("athlete@example.com").isValid).toBe(true);
     expect(validateEmailFormat("athlete.pro@sub.example.org").isValid).toBe(true);
