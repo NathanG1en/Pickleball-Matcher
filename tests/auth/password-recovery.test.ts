@@ -4,7 +4,6 @@ import {
   playerLoginAction,
   playerSignupAction,
   requestPasswordResetAction,
-  resendVerificationEmailAction,
   resetPasswordAction,
   updatePlayerEmailAction,
   verifyEmailAction,
@@ -147,10 +146,6 @@ describe("Password recovery and email verification layer", () => {
     const updatedUser = await repository.getPlayerAccountByUsername("legacy_user");
     expect(updatedUser?.email).toBe("legacy@example.com");
     expect(updatedUser?.emailVerified).toBe(false);
-
-    // Test resending verification email
-    const resendResult = await resendVerificationEmailAction();
-    expect(resendResult.ok).toBe(true);
 
     // Simulate verification
     const rawVerifyToken = "known-verify-token";

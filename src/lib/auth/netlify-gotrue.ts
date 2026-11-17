@@ -9,8 +9,18 @@ export function getNetlifyIdentityUrl(): string | null {
     process.env.NETLIFY_IDENTITY_URL ||
     process.env.NEXT_PUBLIC_NETLIFY_IDENTITY_URL ||
     (process.env.URL ? `${process.env.URL}/.netlify/identity` : null);
-  if (!url) return null;
-  return url.replace(/\/$/, "");
+  if (url) return url.replace(/\/$/, "");
+
+  // In local development server, route to the built-in Netlify Identity emulator
+  if (process.env.NODE_ENV === "development") {
+    const origin =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      "http://localhost:3000";
+    return `${origin.replace(/\/$/, "")}/.netlify/identity`;
+  }
+
+  return null;
 }
 
 export function isNetlifyIdentityConfigured(): boolean {
@@ -148,7 +158,7 @@ export async function netlifyRecover(email: string): Promise<{ success: boolean;
 export async function netlifyResetPassword(params: {
   token: string;
   password: string;
-}): Promise<{ success: boolean; error?: string }> {
+}): Promise<{ success: boolean; email?: string; error?: string }> {
   const base = getNetlifyIdentityUrl();
   if (!base) return { success: false, error: "Netlify Identity is not configured." };
 
@@ -191,7 +201,7 @@ export async function netlifyResetPassword(params: {
       };
     }
 
-    return { success: true };
+    return { success: true, email: verifyData.user?.email };
   } catch (err) {
     console.error("Netlify password reset error:", err);
     return { success: false, error: "Network error contacting Netlify Identity." };

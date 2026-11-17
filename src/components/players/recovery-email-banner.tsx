@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  resendVerificationEmailAction,
   updatePlayerEmailAction,
 } from "@/app/actions/player-account";
 import { Alert, Button, FormField, Input } from "@/components/ui";
@@ -61,25 +60,6 @@ export function RecoveryEmailBanner({
     setError(result.error);
   };
 
-  const handleResend = async () => {
-    setPending(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    const result = await resendVerificationEmailAction();
-    setPending(false);
-
-    if (result.ok) {
-      if (result.data.verificationToken) {
-        setVerificationToken(result.data.verificationToken);
-      }
-      setSuccessMessage("A fresh verification link has been prepared for your email.");
-      return;
-    }
-
-    setError(result.error);
-  };
-
   // Case 1: User has an unverified email
   if (currentEmail && !isVerified) {
     return (
@@ -99,16 +79,6 @@ export function RecoveryEmailBanner({
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-              onClick={handleResend}
-              className="text-xs font-bold"
-            >
-              {pending ? "Sending…" : "Resend Link"}
-            </Button>
             <Button
               type="button"
               variant="outline"

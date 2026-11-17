@@ -526,6 +526,13 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
       });
 
       if (result.success) {
+        if (result.email) {
+          const account = await repository.getPlayerAccountByEmail(result.email);
+          if (account) {
+            const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+            await repository.updatePlayerAccountPassword(account.id, newHash);
+          }
+        }
         return { ok: true, data: { success: true } };
       }
       return { ok: false, error: result.error || "Unable to reset password. Please try again." };
@@ -635,50 +642,6 @@ export async function updatePlayerEmailAction(
 }
 
 export const updateRecoveryEmailAction = updatePlayerEmailAction;
-
-export async function resendVerificationEmailAction(): Promise<
-  PlayerActionResult<{ email: string; verificationToken?: string; localDevUrl?: string }>
-> {
-  try {
-    const accountId = await requirePlayer();
-    const repository = getActionRepository();
-    const account = await repository.getPlayerAccount(accountId);
-    if (!account?.email) {
-      return { ok: false, error: "No recovery email attached to this account." };
-    }
-
-    await repository.deleteEmailVerificationTokensForAccount(accountId);
-    const rawToken = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-    await repository.createEmailVerificationToken({
-      id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
-      accountId,
-      email: account.email,
-      tokenHash,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      createdAt: new Date(),
-    });
-
-    // Dispatch Netlify recovery / verification email
-    await netlifyRecover(account.email).catch(() => {});
-
-    const localDevUrl =
-      process.env.NODE_ENV !== "production"
-        ? `${getAppBaseUrl()}/verify-email?token=${rawToken}`
-        : undefined;
-
-    return {
-      ok: true,
-      data: {
-        email: account.email,
-        verificationToken: rawToken,
-        localDevUrl,
-      },
-    };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Unable to resend verification email." };
-  }
-}
 
 export async function verifyEmailAction(
   input: unknown,

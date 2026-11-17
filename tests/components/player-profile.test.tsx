@@ -5,7 +5,6 @@ import PlayerProfilePage from "@/app/players/page";
 import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
-  resendVerificationEmailAction,
   updatePlayerEmailAction,
   updatePlayerGenderAction,
   updatePlayerPasswordAction,
@@ -1247,7 +1246,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     }
   });
 
-  it("updateRecoveryEmailAction and resendVerificationEmailAction handle recovery email workflow", async () => {
+  it("updateRecoveryEmailAction handles recovery email workflow", async () => {
     const repository = new InMemoryRepositories({
       playerAccounts: [
         {
@@ -1264,10 +1263,6 @@ describe("PlayerProfilePage and Group Leaving", () => {
     });
     setActionRepository(repository);
 
-    // Resend fails when no email is attached yet
-    const failResend = await resendVerificationEmailAction();
-    expect(failResend.ok).toBe(false);
-
     // Set recovery email
     const updateRes = await updateRecoveryEmailAction({ email: "recovery@example.com" });
     expect(updateRes.ok).toBe(true);
@@ -1276,13 +1271,9 @@ describe("PlayerProfilePage and Group Leaving", () => {
       expect(updateRes.data.verificationToken).toBeDefined();
     }
 
-    // Resend succeeds now that an email is attached
-    const successResend = await resendVerificationEmailAction();
-    expect(successResend.ok).toBe(true);
-    if (successResend.ok) {
-      expect(successResend.data.email).toBe("recovery@example.com");
-      expect(successResend.data.verificationToken).toBeDefined();
-    }
+    const updated = await repository.getPlayerAccount(testAccountId);
+    expect(updated?.email).toBe("recovery@example.com");
+    expect(updated?.emailVerified).toBe(false);
   });
 
   it("PlayerProfileHeader disables Save Changes button when in edit mode and no fields have been modified", () => {

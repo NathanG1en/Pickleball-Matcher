@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["postgres"],
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  async rewrites() {
+    return [
+      {
+        source: "/.netlify/identity/:path*",
+        destination: "/api/netlify-identity/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
