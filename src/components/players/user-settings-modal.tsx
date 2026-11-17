@@ -453,7 +453,7 @@ export function UserSettingsModal({
                   type="submit"
                   disabled={emailSaving || !hasEmailChanges}
                   data-testid="save-email-button"
-                  className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
                   {emailSaving ? "Saving…" : "Update Email"}
                 </button>
@@ -550,7 +550,7 @@ export function UserSettingsModal({
                   type="submit"
                   disabled={passwordSaving || !hasPasswordChanges}
                   data-testid="save-password-button"
-                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
                   {passwordSaving ? "Updating…" : "Update Password"}
                 </button>
@@ -754,7 +754,7 @@ export function UserSettingsModal({
               onClick={handleSavePrivacy}
               disabled={privacySaving || !hasPrivacyChanges}
               data-testid="save-privacy-settings-button"
-              className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+              className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
             >
               {privacySaving ? "Saving…" : "Save Privacy Settings"}
             </button>

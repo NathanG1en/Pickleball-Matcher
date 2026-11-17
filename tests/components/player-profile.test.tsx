@@ -1018,6 +1018,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlUnverified).toContain("Unverified · Re-verification Required");
     expect(htmlUnverified).toContain('data-testid="settings-email-input"');
     expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-email-button"/);
+    expect(htmlUnverified).toContain("disabled:cursor-not-allowed");
+    expect(htmlUnverified).toContain("disabled:hover:bg-neutral-200");
 
     // Password section with current, new, and confirm and disabled save when unchanged
     expect(htmlUnverified).toContain("Password");
@@ -1220,6 +1222,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
     expect(htmlUnchanged).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-profile-button"/);
+    expect(htmlUnchanged).toContain("disabled:cursor-not-allowed");
+    expect(htmlUnchanged).toContain("disabled:hover:bg-neutral-200");
   });
 
   it("updatePlayerPasswordAction verifies current password and enforces new password requirements", async () => {
