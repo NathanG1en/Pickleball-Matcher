@@ -28,9 +28,15 @@ export async function netlifySignup(params: {
   password: string;
   name?: string;
   username?: string;
-}): Promise<{ id?: string; email: string; error?: string }> {
+}): Promise<{ id?: string; email: string; localDev?: boolean; error?: string }> {
   const base = getNetlifyIdentityUrl();
-  if (!base) return { email: params.email };
+  if (!base) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[Netlify Identity] Mock signup for ${params.email} (NETLIFY_IDENTITY_URL not configured).`);
+      return { email: params.email, localDev: true };
+    }
+    return { email: params.email };
+  }
 
   try {
     const response = await fetch(`${base}/signup`, {
@@ -100,9 +106,22 @@ export async function netlifyLogin(params: {
   }
 }
 
-export async function netlifyRecover(email: string): Promise<{ success: boolean; error?: string }> {
+export async function netlifyRecover(email: string): Promise<{ success: boolean; localDev?: boolean; error?: string }> {
   const base = getNetlifyIdentityUrl();
-  if (!base) return { success: false, error: "Netlify Identity is not configured." };
+  if (!base) {
+    if (process.env.NODE_ENV !== "production") {
+      const separator = "═".repeat(78);
+      console.info(`\n${separator}`);
+      console.info("📬 [NETLIFY IDENTITY - LOCAL DEVELOPMENT]");
+      console.info(`   Password recovery requested for: ${email}`);
+      console.info("   ℹ️  NETLIFY_IDENTITY_URL is not set in .env.local");
+      console.info("   👉 To receive real emails from localhost, set this in your .env.local:");
+      console.info("      NETLIFY_IDENTITY_URL=https://<your-site-name>.netlify.app/.netlify/identity");
+      console.info(`${separator}\n`);
+      return { success: true, localDev: true };
+    }
+    return { success: false, error: "Netlify Identity is not configured." };
+  }
 
   try {
     const response = await fetch(`${base}/recover`, {

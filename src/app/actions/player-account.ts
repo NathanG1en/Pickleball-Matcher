@@ -28,10 +28,6 @@ import {
   netlifyRecover,
   netlifyResetPassword,
 } from "@/lib/auth/netlify-gotrue";
-import {
-  sendEmailVerificationEmail,
-  sendPasswordResetEmail,
-} from "@/lib/email/email-service";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -133,11 +129,7 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
         createdAt: new Date(),
       });
 
-      await sendEmailVerificationEmail({
-        to: emailToSave,
-        name: parsed.data.name,
-        verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
-      });
+      await netlifyRecover(emailToSave).catch(() => {});
     }
 
     const token = await createPlayerSession(accountId);
@@ -472,6 +464,8 @@ export async function requestPasswordResetAction(
     let localDevUrl: string | undefined;
 
     if (account && account.email) {
+      await netlifyRecover(account.email).catch(() => {});
+
       await repository.deletePasswordResetTokensForAccount(account.id);
       const rawToken = randomBytes(32).toString("hex");
       const tokenHash = createHash("sha256").update(rawToken).digest("hex");
@@ -483,18 +477,10 @@ export async function requestPasswordResetAction(
         createdAt: new Date(),
       });
 
-      const resetUrl = `${getAppBaseUrl()}/reset-password?token=${rawToken}`;
-      const sendRes = await sendPasswordResetEmail({
-        to: account.email,
-        name: account.name,
-        resetUrl,
-      });
-      if (sendRes.localDevUrl) {
-        localDevUrl = sendRes.localDevUrl;
+      if (process.env.NODE_ENV !== "production") {
+        localDevUrl = `${getAppBaseUrl()}/reset-password?token=${rawToken}`;
       }
-    }
-
-    if (isNetlifyIdentityConfigured() && identifier.includes("@")) {
+    } else if (identifier.includes("@")) {
       await netlifyRecover(identifier).catch(() => {});
     }
 
@@ -599,19 +585,8 @@ export async function updatePlayerEmailAction(
       createdAt: new Date(),
     });
 
-    const verifyUrl = `${getAppBaseUrl()}/verify-email?token=${rawToken}`;
-    const emailResult = await sendEmailVerificationEmail({
-      to: email,
-      name: currentAccount?.name || "Player",
-      verifyUrl,
-    });
-
-    if (!emailResult.success) {
-      return {
-        ok: false,
-        error: emailResult.error || "Failed to deliver verification email. Please check your email configuration.",
-      };
-    }
+    // Dispatch Netlify recovery / verification email
+    await netlifyRecover(email).catch(() => {});
 
     // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(
@@ -627,13 +602,19 @@ export async function updatePlayerEmailAction(
     } catch {
       // Non-request test contexts.
     }
+
+    const localDevUrl =
+      process.env.NODE_ENV !== "production"
+        ? `${getAppBaseUrl()}/verify-email?token=${rawToken}`
+        : undefined;
+
     return {
       ok: true,
       data: {
         email,
         verificationRequired: true,
         verificationToken: rawToken,
-        localDevUrl: emailResult.localDevUrl,
+        localDevUrl,
       },
     };
   } catch (error) {
@@ -678,26 +659,20 @@ export async function resendVerificationEmailAction(): Promise<
       createdAt: new Date(),
     });
 
-    const verifyUrl = `${getAppBaseUrl()}/verify-email?token=${rawToken}`;
-    const emailResult = await sendEmailVerificationEmail({
-      to: account.email,
-      name: account.name,
-      verifyUrl,
-    });
+    // Dispatch Netlify recovery / verification email
+    await netlifyRecover(account.email).catch(() => {});
 
-    if (!emailResult.success) {
-      return {
-        ok: false,
-        error: emailResult.error || "Failed to deliver verification email. Please check your email configuration.",
-      };
-    }
+    const localDevUrl =
+      process.env.NODE_ENV !== "production"
+        ? `${getAppBaseUrl()}/verify-email?token=${rawToken}`
+        : undefined;
 
     return {
       ok: true,
       data: {
         email: account.email,
         verificationToken: rawToken,
-        localDevUrl: emailResult.localDevUrl,
+        localDevUrl,
       },
     };
   } catch (error) {
