@@ -170,4 +170,45 @@ describe("Password recovery and email verification layer", () => {
     const verifiedUser = await repository.getPlayerAccountByUsername("legacy_user");
     expect(verifiedUser?.emailVerified).toBe(true);
   });
+
+  it("verifies email using Netlify Identity token fallback when token is not in local database", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    vi.stubEnv("NETLIFY_IDENTITY_URL", "https://db-pickleball.netlify.app");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+
+    const signup = await playerSignupAction({
+      username: "netlify_user",
+      name: "Netlify User",
+      gender: "female",
+      password: "secure-password-123",
+      skillLevel: "intermediate",
+    });
+    expect(signup.ok).toBe(true);
+
+    const user = await repository.getPlayerAccountByUsername("netlify_user");
+    await repository.updatePlayerAccountEmail(user!.id, "user@netlify.example", false);
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        access_token: "mock_jwt",
+        user: { email: "user@netlify.example" },
+      }),
+    });
+
+    try {
+      const verifyResult = await verifyEmailAction({ token: "netlify_external_token_123" });
+      expect(verifyResult.ok).toBe(true);
+      if (verifyResult.ok) {
+        expect(verifyResult.data.email).toBe("user@netlify.example");
+      }
+
+      const updated = await repository.getPlayerAccountByUsername("netlify_user");
+      expect(updated?.emailVerified).toBe(true);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

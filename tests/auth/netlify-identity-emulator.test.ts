@@ -78,3 +78,4 @@ describe("Netlify Identity Local Development Emulator", () => {
     expect(payload.app_metadata.provider).toBe("google");
   });
 });
+

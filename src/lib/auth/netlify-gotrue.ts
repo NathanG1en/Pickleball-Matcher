@@ -290,3 +290,28 @@ export async function netlifyGetUser(token: string): Promise<{ id: string; email
   }
 }
 
+export async function netlifyVerifyEmailToken(token: string): Promise<{ success: boolean; email?: string; error?: string }> {
+  const base = getNetlifyIdentityUrl();
+  if (!base) return { success: false, error: "Netlify Identity is not configured." };
+
+  const typesToTry = ["signup", "email_change", "recovery"] as const;
+  for (const type of typesToTry) {
+    try {
+      const verifyRes = await fetch(`${base}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, type }),
+      });
+      const data = await verifyRes.json().catch(() => ({}));
+      if (verifyRes.ok && (data.user?.email || data.email)) {
+        return { success: true, email: data.user?.email || data.email };
+      }
+    } catch {
+      // try next type
+    }
+  }
+
+  return { success: false, error: "Invalid or expired verification link." };
+}
+
+

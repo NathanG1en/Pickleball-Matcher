@@ -28,6 +28,7 @@ import {
   netlifyRecover,
   netlifyResetPassword,
   netlifyTriggerEmailVerification,
+  netlifyVerifyEmailToken,
 } from "@/lib/auth/netlify-gotrue";
 
 const PASSWORD_HASH_COST = 12;
@@ -713,20 +714,38 @@ export async function verifyEmailAction(
     const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
     const tokenRecord = await repository.getEmailVerificationToken(tokenHash);
 
-    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
-      return { ok: false, error: "This email verification link is invalid or has expired." };
+    if (tokenRecord && new Date() <= tokenRecord.expiresAt) {
+      await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
+      await repository.deleteEmailVerificationToken(tokenRecord.id);
+
+      try {
+        revalidatePath("/players");
+        revalidatePath("/");
+      } catch {
+        // Non-request test contexts.
+      }
+      return { ok: true, data: { email: tokenRecord.email } };
     }
 
-    await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
-    await repository.deleteEmailVerificationToken(tokenRecord.id);
-
-    try {
-      revalidatePath("/players");
-      revalidatePath("/");
-    } catch {
-      // Non-request test contexts.
+    // Fallback: Verify Netlify Identity confirmation / recovery token
+    const netlifyRes = await netlifyVerifyEmailToken(parsed.data.token);
+    if (netlifyRes.success && netlifyRes.email) {
+      const accountByEmail = await repository.getPlayerAccountByEmail(netlifyRes.email);
+      const activeId = await getActivePlayerAccountId();
+      const targetAccountId = accountByEmail?.id || activeId;
+      if (targetAccountId) {
+        await repository.updatePlayerAccountEmail(targetAccountId, netlifyRes.email, true);
+        try {
+          revalidatePath("/players");
+          revalidatePath("/");
+        } catch {
+          // Non-request test contexts.
+        }
+        return { ok: true, data: { email: netlifyRes.email } };
+      }
     }
-    return { ok: true, data: { email: tokenRecord.email } };
+
+    return { ok: false, error: "This email verification link is invalid or has expired." };
   } catch {
     return { ok: false, error: "Unable to verify email." };
   }
