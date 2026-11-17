@@ -9,6 +9,7 @@
     "binding": "ASSETS"
   },
   "vars": {
+    "NETLIFY_IDENTITY_URL": "https://db-pickleball.netlify.app",
     "SESSION_COOKIE_SECURE": "true"
   }
 }
