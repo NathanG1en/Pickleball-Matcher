@@ -33,6 +33,7 @@ const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } a
 function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.URL) return process.env.URL.replace(/\/$/, "");
   return "http://localhost:3000";
 }
 
@@ -481,11 +482,15 @@ export async function updateRecoveryEmailAction(input: unknown): Promise<PlayerA
       createdAt: new Date(),
     });
 
-    await sendEmailVerificationEmail({
+    const emailResult = await sendEmailVerificationEmail({
       to: normalizedEmail,
       name: account.name,
       verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
     });
+
+    if (!emailResult.success) {
+      return { ok: false, error: emailResult.error || "Failed to deliver verification email. Please check your email configuration." };
+    }
 
     try {
       revalidatePath("/players");
@@ -552,11 +557,15 @@ export async function resendVerificationEmailAction(): Promise<PlayerActionResul
       createdAt: new Date(),
     });
 
-    await sendEmailVerificationEmail({
+    const emailResult = await sendEmailVerificationEmail({
       to: account.email,
       name: account.name,
       verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
     });
+
+    if (!emailResult.success) {
+      return { ok: false, error: emailResult.error || "Failed to deliver verification email. Please check your email configuration." };
+    }
 
     return { ok: true, data: undefined };
   } catch (error) {

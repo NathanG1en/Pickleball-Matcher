@@ -200,5 +200,50 @@ describe("Password recovery and email verification layer", () => {
     const verifiedUser = await repository.getPlayerAccountByUsername("legacy_user");
     expect(verifiedUser?.emailVerified).toBe(true);
   });
+
+  it("surfaces delivery error when email sending fails during recovery email update or resend", async () => {
+    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
+    vi.stubEnv("RESEND_API_KEY", "re_test_dummy");
+    const repository = new InMemoryRepositories();
+    setActionRepository(repository);
+
+    const signup = await playerSignupAction({
+      username: "resend_fail_user",
+      name: "Resend Fail User",
+      gender: "female",
+      password: "password-12345",
+      skillLevel: "intermediate",
+    });
+    expect(signup.ok).toBe(true);
+
+    const user = await repository.getPlayerAccountByUsername("resend_fail_user");
+    vi.mocked(actionContext.requirePlayer).mockResolvedValue(user!.id);
+
+    const originalFetch = global.fetch;
+    try {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          message: "You can only send testing emails to your own email address.",
+        }),
+      });
+
+      const updateResult = await updateRecoveryEmailAction({
+        email: "unverified@external.com",
+      });
+      expect(updateResult.ok).toBe(false);
+      if (!updateResult.ok) {
+        expect(updateResult.error).toBe("You can only send testing emails to your own email address.");
+      }
+
+      const resendResult = await resendVerificationEmailAction();
+      expect(resendResult.ok).toBe(false);
+      if (!resendResult.ok) {
+        expect(resendResult.error).toBe("You can only send testing emails to your own email address.");
+      }
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });
 
