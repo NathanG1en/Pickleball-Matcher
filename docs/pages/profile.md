@@ -17,7 +17,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
    - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
    - **Account Recovery Banner & Email Status**: When viewing one's own profile, if no recovery email is on file or if an email is pending verification, a dedicated recovery card prompts the player to add an email or resend verification. Once verified, the account is protected with automated password recovery.
-   - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu with "Log Out".
+   - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu (`···`) with "Settings" and "Log Out".
 2. **Chemistry Spotlight & Mutual Chemistry**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost. Placed in the top row alongside Performance Stats to maintain balanced card proportions.
    - **Mutual Chemistry**: When another signed-in player views the profile, displays mutual partner chemistry between the viewer and the profile owner in the main content stream.
@@ -40,22 +40,40 @@ The player profile page is where athletes can review their rating, track their g
 
 ## Edit Profile Mode
 
-Clicking the **Edit Profile** button switches the header into edit mode:
+Clicking the **Edit Profile** button switches the header into in-page edit mode:
 - **General Information**:
   - **Display Name**: Editable text field (up to 80 characters).
   - **Username**: Editable `@username` with live availability check against the database.
   - **Gender**: Dropdown to select Male or Female.
-- **Privacy Controls**: Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
-  - Can be collapsed or expanded using the "Privacy Controls" chevron header toggle.
-  - Inside each drawer, options are presented as a clean list of choices (`Everyone`, `Group Members`, `Only You`) with a bold label, a lighter-weight and smaller description of that choice, and a radio button on the right that turns green (`#ccff00`) when selected.
-  - **Profile Page (Account Baseline & Visibility Ceiling)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). This acts as a strict ceiling for all child portions:
-    - Setting Profile Page to `Only You` automatically clamps all other portions to `Only You` and disables higher options.
-    - Setting Profile Page to `Group Members` caps child options to `Group Members` (disabling `Everyone`).
-    - Setting Profile Page to `Everyone` permits all three visibility levels across child portions.
-  - **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
-  - **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
-  - **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
-  - **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+  - **Save Changes & Cancel**: Saves display name and username with immediate validation, or prompts to discard unsaved changes.
+
+## User Settings Modal (`···` Options Menu)
+
+Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal, organized into tabbable categories:
+
+### 1. Account & Security Tab
+- **Email Address**:
+  - Shows current email on file (or notice if no email is attached).
+  - Input field to update or add an email address with duplicate prevention against registered accounts.
+- **Password**:
+  - Dedicated password management with three verification fields:
+    - **Current Password**: Authenticates existing credentials via secure password comparison.
+    - **New Password**: Enforces strong credential requirements (at least 10 characters, up to 72 bytes).
+    - **Confirm New Password**: Ensures exact character match with the new password before submission.
+  - Password updates immediately hash the new password using bcrypt cost 12.
+
+### 2. Privacy Tab
+Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
+- Inside each drawer, options are presented as a clean list of choices (`Everyone`, `Group Members`, `Only You`) with a bold label, a lighter-weight and smaller description of that choice, and a radio button on the right that turns green (`#ccff00`) when selected.
+- **Profile Page (Account Baseline & Visibility Ceiling)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). This acts as a strict ceiling for all child portions:
+  - Setting Profile Page to `Only You` automatically clamps all other portions to `Only You` and disables higher options.
+  - Setting Profile Page to `Group Members` caps child options to `Group Members` (disabling `Everyone`).
+  - Setting Profile Page to `Everyone` permits all three visibility levels across child portions.
+- **Activities & Past Sessions**: Controls who can see session history and game results (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+- **Rating & Stats**: Controls who can see DUPR rating, skill tier, win/loss record, and rating chart (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+- **Chemistry Spotlight**: Controls who can see synergy scores and best partner (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+- **Groups**: Controls who can see joined groups and clubs (`Everyone`, `Group Members`, or `Only You`, capped by Profile Page).
+- **Save Privacy Settings Button**: Persists privacy configurations and surfaces feedback toasts.
 
 ### Visibility Levels & Ceiling Rule (Modeled after Strava)
 - **Everyone**: Visible to all players and public visitors.

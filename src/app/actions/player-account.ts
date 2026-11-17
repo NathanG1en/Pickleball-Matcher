@@ -16,7 +16,9 @@ import {
   playerSignupSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
+  updatePlayerEmailSchema,
   updatePlayerGenderSchema,
+  updatePlayerPasswordSchema,
   updatePlayerProfileSchema,
   updatePlayerUsernameSchema,
 } from "@/lib/validation/group";
@@ -472,5 +474,106 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
     return { ok: true, data: { success: true } };
   } catch {
     return { ok: false, error: "Unable to reset password. Please try again." };
+  }
+}
+
+export async function updatePlayerEmailAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ email: string }>> {
+  const parsed = updatePlayerEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Enter a valid email address.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const existing = await repository.getPlayerAccountByEmail(email);
+    if (existing && existing.id !== accountId) {
+      return {
+        ok: false,
+        error: "That email is already registered to another account.",
+        fieldErrors: { email: ["That email is already registered to another account."] },
+      };
+    }
+    const currentAccount = await repository.getPlayerAccount(accountId);
+    const isSameEmail = currentAccount?.email?.trim().toLowerCase() === email;
+    await repository.updatePlayerAccountEmail(
+      accountId,
+      email,
+      isSameEmail ? (currentAccount?.emailVerified ?? false) : false,
+    );
+    try {
+      revalidatePath("/players");
+      if (currentAccount?.username) {
+        revalidatePath(`/players/${encodeURIComponent(currentAccount.username)}`);
+      }
+    } catch {
+      // Non-request test contexts.
+    }
+    return { ok: true, data: { email } };
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")
+    ) {
+      return {
+        ok: false,
+        error: "That email is already registered to another account.",
+        fieldErrors: { email: ["That email is already registered to another account."] },
+      };
+    }
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update email." };
+  }
+}
+
+export async function updatePlayerPasswordAction(
+  input: unknown,
+): Promise<PlayerActionResult<void>> {
+  const parsed = updatePlayerPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Please check password requirements.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+  if (Buffer.byteLength(parsed.data.newPassword, "utf8") > 72) {
+    return {
+      ok: false,
+      error: "Password must be 72 bytes or fewer.",
+      fieldErrors: { newPassword: ["Password must be 72 bytes or fewer."] },
+    };
+  }
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const account = await repository.getPlayerAccount(accountId);
+    if (!account) {
+      return { ok: false, error: "Player account not found." };
+    }
+
+    if (account.passwordHash) {
+      const isMatch = await compare(parsed.data.currentPassword, account.passwordHash);
+      if (!isMatch) {
+        return {
+          ok: false,
+          error: "Current password is incorrect.",
+          fieldErrors: { currentPassword: ["Current password is incorrect."] },
+        };
+      }
+    }
+
+    const newHash = await hash(parsed.data.newPassword, PASSWORD_HASH_COST);
+    await repository.updatePlayerAccountPassword(accountId, newHash);
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update password." };
   }
 }

@@ -29,6 +29,8 @@ export default async function PlayerProfilePage() {
           initialName={account.name}
           initialUsername={account.username}
           initialGender={account.gender}
+          initialEmail={account.email ?? undefined}
+          hasPassword={Boolean(account.passwordHash)}
           skillLevel={account.skillLevel}
           currentRating={account.rating ?? account.initialRating}
           initialIsPublic={account.isPublic ?? true}

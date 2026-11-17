@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { hash } from "bcryptjs";
 import { renderToStaticMarkup } from "react-dom/server";
 import PlayerProfilePage from "@/app/players/page";
 import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
+  updatePlayerEmailAction,
   updatePlayerGenderAction,
+  updatePlayerPasswordAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
 } from "@/app/actions/player-account";
-import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader } from "@/components/players/player-profile-controls";
+import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader, UserSettingsModal } from "@/components/players/player-profile-controls";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -304,13 +307,16 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Advanced Intermediate · current rating 3.75");
   });
 
-  it("AccountOptionsMenu renders three-dot button and dropdown with Log Out when open", () => {
+  it("AccountOptionsMenu renders three-dot button and dropdown with Settings and Log Out when open", () => {
     const htmlClosed = renderToStaticMarkup(<AccountOptionsMenu initialMenuOpen={false} />);
     expect(htmlClosed).toContain('aria-label="Account options"');
     expect(htmlClosed).not.toContain('data-testid="logout-menu-item"');
+    expect(htmlClosed).not.toContain('data-testid="settings-menu-item"');
 
     const htmlOpen = renderToStaticMarkup(<AccountOptionsMenu initialMenuOpen={true} />);
     expect(htmlOpen).toContain('aria-label="Account options"');
+    expect(htmlOpen).toContain('data-testid="settings-menu-item"');
+    expect(htmlOpen).toContain("Settings");
     expect(htmlOpen).toContain('data-testid="logout-menu-item"');
     expect(htmlOpen).toContain("Log Out");
   });
@@ -952,87 +958,107 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toContain("Custom Controls");
   });
 
-  it("PlayerProfileHeader in edit mode renders 'General Information' section label and collapsible Privacy Controls drawers", () => {
-    // Closed drawers view
-    const htmlClosed = renderToStaticMarkup(
+  it("PlayerProfileHeader in edit mode renders 'General Information' section label for name, username, and gender", () => {
+    const html = renderToStaticMarkup(
       <PlayerProfileHeader
         initialName="Test Player"
         initialUsername="test_player"
         initialGender="male"
         initialIsPublic={true}
         initialEditing={true}
-        initialPrivacySectionOpen={true}
-        initialOpenDrawers={{}}
       />
     );
 
     // Header label is "General Information", not "Editing Profile"
-    expect(htmlClosed).toContain("General Information");
-    expect(htmlClosed).not.toContain("Editing Profile");
+    expect(html).toContain("General Information");
+    expect(html).not.toContain("Editing Profile");
 
-    // General Information no longer has the redundant Account Visibility toggle button
-    expect(htmlClosed).not.toContain("Account Visibility");
+    // Inputs for Display Name, Username, and Gender
+    expect(html).toContain('id="profile-name-input"');
+    expect(html).toContain('id="profile-username-input"');
+    expect(html).toContain('id="profile-gender-input"');
 
-    // Section title is "Privacy Controls" without "Portion Visibility" or "Choose who can see"
+    // In-page privacy controls are moved to User Settings Modal
+    expect(html).not.toContain('data-testid="privacy-controls-section"');
+  });
+
+  it("UserSettingsModal renders tabbable categories: Account & Security and Privacy", () => {
+    const html = renderToStaticMarkup(
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="account"
+      />
+    );
+
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('data-testid="tab-account"');
+    expect(html).toContain('data-testid="tab-privacy"');
+    expect(html).toContain("Account &amp; Security");
+    expect(html).toContain("Privacy");
+  });
+
+  it("UserSettingsModal Account tab renders email update section and password update with current, new, and confirm inputs", () => {
+    const html = renderToStaticMarkup(
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="account"
+        initialEmail="athlete@example.com"
+        hasPassword={true}
+      />
+    );
+
+    // Email section
+    expect(html).toContain("Email Address");
+    expect(html).toContain("athlete@example.com");
+    expect(html).toContain('data-testid="settings-email-input"');
+    expect(html).toContain('data-testid="save-email-button"');
+
+    // Password section with current, new, and confirm
+    expect(html).toContain("Password");
+    expect(html).toContain('data-testid="settings-current-password"');
+    expect(html).toContain('data-testid="settings-new-password"');
+    expect(html).toContain('data-testid="settings-confirm-password"');
+    expect(html).toContain('data-testid="save-password-button"');
+  });
+
+  it("UserSettingsModal Privacy tab renders collapsible Privacy Controls drawers and options", () => {
+    const htmlClosed = renderToStaticMarkup(
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="privacy"
+        initialOpenDrawers={{}}
+      />
+    );
+
     expect(htmlClosed).toContain("Privacy Controls");
-    expect(htmlClosed).not.toContain("Portion Visibility");
-    expect(htmlClosed).not.toContain("Choose who can see");
-
-    // Header toggle button is present without "Minimize" or "Expand" text language
-    expect(htmlClosed).toContain('data-testid="toggle-privacy-section"');
-    expect(htmlClosed).not.toContain("Minimize");
-    expect(htmlClosed).not.toContain("Expand");
-
-    // All portion drawer toggles are present
     expect(htmlClosed).toContain('data-testid="toggle-drawer-profile"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-activities"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-ratingStats"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-chemistry"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-groups"');
+    expect(htmlClosed).toContain('data-testid="save-privacy-settings-button"');
 
-    // Because drawers are closed, the options radiogroups are not rendered
+    // Drawers are closed
     expect(htmlClosed).not.toContain('data-testid="profile-visibility-everyone"');
-    expect(htmlClosed).not.toContain('data-testid="activities-visibility-everyone"');
 
-    // When a drawer is open
+    // Drawer open view
     const htmlOpen = renderToStaticMarkup(
-      <PlayerProfileHeader
-        initialName="Test Player"
-        initialUsername="test_player"
-        initialGender="male"
-        initialIsPublic={true}
-        initialEditing={true}
-        initialPrivacySectionOpen={true}
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="privacy"
         initialOpenDrawers={{ profile: true }}
       />
     );
 
-    // Profile drawer is open with option descriptions and radio buttons
     expect(htmlOpen).toContain('data-testid="profile-visibility-everyone"');
     expect(htmlOpen).toContain('data-testid="profile-visibility-group_members"');
     expect(htmlOpen).toContain('data-testid="profile-visibility-only_you"');
     expect(htmlOpen).toContain("Anyone can search for your profile and view your profile page.");
-    expect(htmlOpen).not.toContain("Controls your general profile page and discoverability in search.");
-    // Selected radio button turns green
     expect(htmlOpen).toContain("bg-[#ccff00]");
-
-    // Other drawers remain closed
-    expect(htmlOpen).not.toContain('data-testid="activities-visibility-everyone"');
-
-    // When the whole Privacy Controls section is collapsed
-    const htmlMinimized = renderToStaticMarkup(
-      <PlayerProfileHeader
-        initialName="Test Player"
-        initialUsername="test_player"
-        initialGender="male"
-        initialIsPublic={true}
-        initialEditing={true}
-        initialPrivacySectionOpen={false}
-      />
-    );
-
-    expect(htmlMinimized).not.toContain("Expand");
-    expect(htmlMinimized).not.toContain('data-testid="toggle-drawer-profile"');
   });
 
   it("PlayerProfileHeader renders Group Members badge when profile page visibility is group_members", () => {
@@ -1057,14 +1083,13 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).not.toContain('data-testid="custom-visibility-badge"');
   });
 
-  it("enforces visibility ceiling in edit mode: disables options exceeding Profile Page ceiling", () => {
+  it("enforces visibility ceiling in UserSettingsModal: disables options exceeding Profile Page ceiling", () => {
     // When profile is group_members and activities drawer is open
     const htmlGroupCeiling = renderToStaticMarkup(
-      <PlayerProfileHeader
-        initialName="Capped User"
-        initialUsername="capped_user"
-        initialGender="male"
-        initialEditing={true}
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="privacy"
         initialVisibilitySettings={{
           profile: "group_members",
           activities: "group_members",
@@ -1082,11 +1107,10 @@ describe("PlayerProfilePage and Group Leaving", () => {
 
     // When profile is only_you and activities drawer is open
     const htmlPrivateCeiling = renderToStaticMarkup(
-      <PlayerProfileHeader
-        initialName="Private User"
-        initialUsername="private_user"
-        initialGender="male"
-        initialEditing={true}
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="privacy"
         initialVisibilitySettings={{
           profile: "only_you",
           activities: "only_you",
@@ -1102,6 +1126,103 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-everyone"/);
     expect(htmlPrivateCeiling).toMatch(/<button[^>]*disabled=""[^>]*data-testid="activities-visibility-group_members"/);
     expect(htmlPrivateCeiling).toContain("Visibility ceiling: Only You (from Profile Page)");
+  });
+
+  it("updatePlayerEmailAction updates player email address and rejects duplicates", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "main_user",
+          name: "Main User",
+          email: "old@example.com",
+          emailVerified: true,
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+        {
+          id: "usr_other",
+          username: "other_user",
+          name: "Other User",
+          email: "taken@example.com",
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    // Rejects invalid email
+    const invalidRes = await updatePlayerEmailAction({ email: "not-an-email" });
+    expect(invalidRes.ok).toBe(false);
+
+    // Rejects taken email
+    const takenRes = await updatePlayerEmailAction({ email: "taken@example.com" });
+    expect(takenRes.ok).toBe(false);
+    expect(takenRes).toMatchObject({ ok: false, error: "That email is already registered to another account." });
+
+    // Successfully updates email
+    const successRes = await updatePlayerEmailAction({ email: "new_email@example.com" });
+    expect(successRes.ok).toBe(true);
+
+    const updated = await repository.getPlayerAccount(testAccountId);
+    expect(updated?.email).toBe("new_email@example.com");
+  });
+
+  it("updatePlayerPasswordAction verifies current password and enforces new password requirements", async () => {
+    const initialHash = await hash("old-password-123", 12);
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "pass_user",
+          name: "Password User",
+          passwordHash: initialHash,
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    // Rejects when new passwords don't match
+    const mismatchRes = await updatePlayerPasswordAction({
+      currentPassword: "old-password-123",
+      newPassword: "new-super-password-123",
+      confirmPassword: "different-password-123",
+    });
+    expect(mismatchRes.ok).toBe(false);
+
+    // Rejects when new password is too short
+    const shortRes = await updatePlayerPasswordAction({
+      currentPassword: "old-password-123",
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect(shortRes.ok).toBe(false);
+
+    // Rejects when current password is wrong
+    const wrongCurrentRes = await updatePlayerPasswordAction({
+      currentPassword: "wrong-current-password",
+      newPassword: "new-super-password-123",
+      confirmPassword: "new-super-password-123",
+    });
+    expect(wrongCurrentRes.ok).toBe(false);
+    expect(wrongCurrentRes).toMatchObject({ ok: false, error: "Current password is incorrect." });
+
+    // Successfully updates password
+    const successRes = await updatePlayerPasswordAction({
+      currentPassword: "old-password-123",
+      newPassword: "new-super-password-123",
+      confirmPassword: "new-super-password-123",
+    });
+    expect(successRes.ok).toBe(true);
+
+    const updated = await repository.getPlayerAccount(testAccountId);
+    expect(updated?.passwordHash).not.toBe(initialHash);
   });
 });
 

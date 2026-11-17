@@ -167,6 +167,22 @@ export const updatePlayerUsernameSchema = z.object({
   username: usernameFieldSchema,
 }).strict();
 
+export const updatePlayerEmailSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address.").max(254),
+}).strict();
+
+export const updatePlayerPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required.").max(72),
+    newPassword: z.string().min(10, "New password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
+    confirmPassword: z.string().min(1, "Confirm your new password.").max(72),
+  })
+  .strict()
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 export const joinPublicGroupSchema = z.object({
   groupId: entityIdSchema,
 }).strict();

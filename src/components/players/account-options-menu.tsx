@@ -4,16 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { playerLogoutAction } from "@/app/actions/player-account";
 import { clearRecentGroups } from "@/lib/storage/recent-groups";
-import { LogOutIcon } from "@/components/ui/icons";
+import { GearIcon, LogOutIcon } from "@/components/ui/icons";
 
 export interface AccountOptionsMenuProps {
   className?: string;
   initialMenuOpen?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export function AccountOptionsMenu({
   className,
   initialMenuOpen = false,
+  onOpenSettings,
 }: AccountOptionsMenuProps = {}) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
@@ -27,7 +29,7 @@ export function AccountOptionsMenu({
       if (next && menuRef.current) {
         const rect = menuRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
-        const menuHeight = 80;
+        const menuHeight = 130;
         setOpenUpward(spaceBelow < menuHeight + 16 && rect.top > menuHeight);
       }
       return next;
@@ -83,6 +85,19 @@ export function AccountOptionsMenu({
             openUpward ? "bottom-full mb-1.5 dropdown-animate-up" : "top-full mt-1.5 dropdown-animate"
           } z-40 w-[200px] max-w-[calc(100vw-32px)] rounded-[20px] border-[2.5px] border-black bg-[#FFFDF6] p-2 space-y-0.5 shadow-[4px_4px_0px_0px_#000]`}
         >
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="settings-menu-item"
+            onClick={() => {
+              setMenuOpen(false);
+              onOpenSettings?.();
+            }}
+            className="flex w-full min-h-[44px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+          >
+            <GearIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+            <span>Settings</span>
+          </button>
           <button
             type="button"
             role="menuitem"
