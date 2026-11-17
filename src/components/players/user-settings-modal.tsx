@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updatePlayerEmailAction, updatePlayerPasswordAction } from "@/app/actions/player-account";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
@@ -85,6 +85,7 @@ export interface UserSettingsModalProps {
   onClose: () => void;
   initialTab?: "account" | "privacy";
   initialEmail?: string | null;
+  initialEmailVerified?: boolean;
   hasPassword?: boolean;
   initialVisibilitySettings?: ProfileVisibilitySettings;
   initialIsPublic?: boolean;
@@ -98,6 +99,7 @@ export function UserSettingsModal({
   onClose,
   initialTab = "account",
   initialEmail = "",
+  initialEmailVerified = false,
   hasPassword = true,
   initialVisibilitySettings,
   initialIsPublic = true,
@@ -126,6 +128,7 @@ export function UserSettingsModal({
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
   const [newEmail, setNewEmail] = useState(initialEmail ?? "");
+  const [isEmailVerified, setIsEmailVerified] = useState(initialEmailVerified ?? false);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
 
@@ -137,12 +140,31 @@ export function UserSettingsModal({
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Privacy controls state
+  const baseVisibility = useMemo(
+    () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
+    [initialVisibilitySettings, initialIsPublic],
+  );
   const [visibilityInput, setVisibilityInput] = useState<ProfileVisibilitySettings>(() =>
     parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
   );
   const [openDrawers, setOpenDrawers] = useState<Record<string, boolean>>(initialOpenDrawers);
   const [privacySaving, setPrivacySaving] = useState(false);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
+
+  // Change detection
+  const trimmedNewEmail = newEmail.trim().toLowerCase();
+  const trimmedCurrentEmail = currentEmail.trim().toLowerCase();
+  const hasEmailChanges = Boolean(trimmedNewEmail) && trimmedNewEmail !== trimmedCurrentEmail;
+
+  const hasPrivacyChanges = PORTION_CONFIGS.some(
+    (portion) => visibilityInput[portion.key] !== baseVisibility[portion.key],
+  );
+
+  const hasPasswordChanges =
+    Boolean(newPassword) &&
+    newPassword.length >= 10 &&
+    newPassword === confirmPassword &&
+    (!hasPassword || Boolean(currentPassword));
 
   // Feedback Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -166,33 +188,23 @@ export function UserSettingsModal({
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (emailSaving) return;
-
-    const trimmed = newEmail.trim().toLowerCase();
-    if (!trimmed) {
-      setEmailError("Please enter an email address.");
-      return;
-    }
-
-    if (trimmed === currentEmail.trim().toLowerCase()) {
-      showToast("Email updated successfully");
-      return;
-    }
+    if (emailSaving || !hasEmailChanges) return;
 
     setEmailSaving(true);
     setEmailError(null);
 
     try {
-      const res = await updatePlayerEmailAction({ email: trimmed });
+      const res = await updatePlayerEmailAction({ email: trimmedNewEmail });
       if (!res.ok) {
         setEmailError(res.error ?? "Failed to update email.");
         setEmailSaving(false);
         return;
       }
 
-      setCurrentEmail(trimmed);
-      onEmailUpdated?.(trimmed);
-      showToast("Email updated successfully");
+      setCurrentEmail(trimmedNewEmail);
+      setIsEmailVerified(false);
+      onEmailUpdated?.(trimmedNewEmail);
+      showToast("Email updated. Please verify your new email address.");
       router.refresh();
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : "Failed to update email.");
@@ -248,7 +260,7 @@ export function UserSettingsModal({
   };
 
   const handleSavePrivacy = async () => {
-    if (privacySaving) return;
+    if (privacySaving || !hasPrivacyChanges) return;
     setPrivacySaving(true);
     setPrivacyError(null);
 
@@ -369,9 +381,28 @@ export function UserSettingsModal({
           {/* Email Section */}
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                Email Address
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-black">
+                  Email Address
+                </h3>
+                {currentEmail ? (
+                  isEmailVerified ? (
+                    <span
+                      data-testid="email-verified-badge"
+                      className="inline-flex items-center rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black"
+                    >
+                      Verified
+                    </span>
+                  ) : (
+                    <span
+                      data-testid="email-unverified-badge"
+                      className="inline-flex items-center rounded-full border border-amber-500 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
+                    >
+                      Unverified · Re-verification Required
+                    </span>
+                  )
+                ) : null}
+              </div>
               <p className="mt-0.5 text-xs font-bold text-neutral-600">
                 {currentEmail ? (
                   <>
@@ -381,6 +412,11 @@ export function UserSettingsModal({
                   "No email address linked to your account."
                 )}
               </p>
+              {currentEmail && !isEmailVerified && (
+                <p className="mt-1 text-[11px] font-bold text-amber-800">
+                  Your email address requires verification. An email update requires re-verification before it can be used for account recovery.
+                </p>
+              )}
             </div>
 
             <form onSubmit={handleUpdateEmail} className="space-y-3">
@@ -415,7 +451,7 @@ export function UserSettingsModal({
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={emailSaving || !newEmail.trim()}
+                  disabled={emailSaving || !hasEmailChanges}
                   data-testid="save-email-button"
                   className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
                 >
@@ -512,12 +548,7 @@ export function UserSettingsModal({
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={
-                    passwordSaving ||
-                    (hasPassword && !currentPassword) ||
-                    newPassword.length < 10 ||
-                    !confirmPassword
-                  }
+                  disabled={passwordSaving || !hasPasswordChanges}
                   data-testid="save-password-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
                 >
@@ -721,7 +752,7 @@ export function UserSettingsModal({
             <button
               type="button"
               onClick={handleSavePrivacy}
-              disabled={privacySaving}
+              disabled={privacySaving || !hasPrivacyChanges}
               data-testid="save-privacy-settings-button"
               className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
             >

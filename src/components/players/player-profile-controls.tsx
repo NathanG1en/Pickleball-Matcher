@@ -36,6 +36,7 @@ export function PlayerProfileHeader({
   initialUsername,
   initialGender,
   initialEmail,
+  initialEmailVerified,
   hasPassword = true,
   initialRating,
   currentRating,
@@ -52,6 +53,7 @@ export function PlayerProfileHeader({
   initialUsername: string;
   initialGender?: "male" | "female" | null;
   initialEmail?: string | null;
+  initialEmailVerified?: boolean;
   hasPassword?: boolean;
   skillLevel?: string;
   initialRating?: number;
@@ -74,6 +76,7 @@ export function PlayerProfileHeader({
   const [username, setUsername] = useState(initialUsername);
   const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
   const [email, setEmail] = useState(initialEmail ?? "");
+  const [emailVerified, setEmailVerified] = useState(initialEmailVerified ?? false);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [visibilitySettings, setVisibilitySettings] = useState<ProfileVisibilitySettings>(
     () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
@@ -141,13 +144,23 @@ export function PlayerProfileHeader({
     setIsEditing(true);
   };
 
-  const handleCancelClick = () => {
-    const hasChanges =
-      nameInput.trim() !== name.trim() ||
-      cleanUsernameInput !== username.toLowerCase() ||
-      genderInput !== (gender ?? "male");
+  const trimmedName = nameInput.trim();
+  const hasProfileChanges =
+    trimmedName !== name.trim() ||
+    cleanUsernameInput !== username.toLowerCase() ||
+    genderInput !== (gender ?? "male");
 
-    if (hasChanges) {
+  const isFormValid =
+    Boolean(trimmedName) &&
+    trimmedName.length <= 80 &&
+    Boolean(cleanUsernameInput) &&
+    cleanUsernameInput.length >= 3 &&
+    cleanUsernameInput.length <= 24 &&
+    /^[A-Za-z0-9_]+$/.test(cleanUsernameInput) &&
+    !isUsernameTaken;
+
+  const handleCancelClick = () => {
+    if (hasProfileChanges) {
       setShowDiscardConfirm(true);
     } else {
       handleDiscard();
@@ -164,19 +177,9 @@ export function PlayerProfileHeader({
     setIsEditing(false);
   };
 
-  const trimmedName = nameInput.trim();
-  const isFormValid =
-    Boolean(trimmedName) &&
-    trimmedName.length <= 80 &&
-    Boolean(cleanUsernameInput) &&
-    cleanUsernameInput.length >= 3 &&
-    cleanUsernameInput.length <= 24 &&
-    /^[A-Za-z0-9_]+$/.test(cleanUsernameInput) &&
-    !isUsernameTaken;
-
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (saving) return;
+    if (saving || !hasProfileChanges) return;
 
     if (!trimmedName) {
       setSaveError("Display name is required.");
@@ -277,7 +280,7 @@ export function PlayerProfileHeader({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving || !isFormValid}
+                disabled={saving || !isFormValid || !hasProfileChanges}
                 data-testid="save-profile-button"
                 className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
@@ -534,6 +537,7 @@ export function PlayerProfileHeader({
         onClose={() => setIsSettingsOpen(false)}
         initialTab={initialSettingsTab}
         initialEmail={email}
+        initialEmailVerified={emailVerified}
         hasPassword={hasPassword}
         initialVisibilitySettings={visibilitySettings}
         initialIsPublic={isPublic}
@@ -544,6 +548,7 @@ export function PlayerProfileHeader({
         }}
         onEmailUpdated={(newEmail) => {
           setEmail(newEmail);
+          setEmailVerified(false);
         }}
       />
 

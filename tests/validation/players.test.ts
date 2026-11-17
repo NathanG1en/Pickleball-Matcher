@@ -6,6 +6,7 @@ import {
   playerLoginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
 } from "@/lib/validation/group";
 
 describe("deletePlayerSchema", () => {
@@ -170,4 +171,17 @@ describe("resetPasswordSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("verifyEmailSchema", () => {
+  it("accepts valid verification token", () => {
+    const result = verifyEmailSchema.safeParse({ token: "valid-token-123" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty verification token", () => {
+    const result = verifyEmailSchema.safeParse({ token: "" });
+    expect(result.success).toBe(false);
+  });
+});
+
 

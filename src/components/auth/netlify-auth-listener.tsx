@@ -24,6 +24,14 @@ export function NetlifyAuthListener() {
       return;
     }
 
+    // 1b. Intercept email confirmation / verification link
+    const confirmationToken = params.get("confirmation_token") || params.get("email_change_token");
+    if (confirmationToken) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      router.push(`/verify-email?token=${encodeURIComponent(confirmationToken)}`);
+      return;
+    }
+
     // 2. Intercept Google OAuth access token from Netlify Identity
     if (accessToken) {
       try {

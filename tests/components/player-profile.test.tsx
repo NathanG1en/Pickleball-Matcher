@@ -10,6 +10,7 @@ import {
   updatePlayerPasswordAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
+  verifyEmailAction,
 } from "@/app/actions/player-account";
 import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader, UserSettingsModal } from "@/components/players/player-profile-controls";
 import { setActionRepository } from "@/app/actions/action-context";
@@ -998,32 +999,49 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(html).toContain("Privacy");
   });
 
-  it("UserSettingsModal Account tab renders email update section and password update with current, new, and confirm inputs", () => {
-    const html = renderToStaticMarkup(
+  it("UserSettingsModal Account tab renders email update section with verification status and password update with current, new, and confirm inputs", () => {
+    const htmlUnverified = renderToStaticMarkup(
       <UserSettingsModal
         isOpen={true}
         onClose={() => {}}
         initialTab="account"
         initialEmail="athlete@example.com"
+        initialEmailVerified={false}
         hasPassword={true}
       />
     );
 
-    // Email section
-    expect(html).toContain("Email Address");
-    expect(html).toContain("athlete@example.com");
-    expect(html).toContain('data-testid="settings-email-input"');
-    expect(html).toContain('data-testid="save-email-button"');
+    // Email section with unverified badge and disabled save when unchanged
+    expect(htmlUnverified).toContain("Email Address");
+    expect(htmlUnverified).toContain("athlete@example.com");
+    expect(htmlUnverified).toContain('data-testid="email-unverified-badge"');
+    expect(htmlUnverified).toContain("Unverified · Re-verification Required");
+    expect(htmlUnverified).toContain('data-testid="settings-email-input"');
+    expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-email-button"/);
 
-    // Password section with current, new, and confirm
-    expect(html).toContain("Password");
-    expect(html).toContain('data-testid="settings-current-password"');
-    expect(html).toContain('data-testid="settings-new-password"');
-    expect(html).toContain('data-testid="settings-confirm-password"');
-    expect(html).toContain('data-testid="save-password-button"');
+    // Password section with current, new, and confirm and disabled save when unchanged
+    expect(htmlUnverified).toContain("Password");
+    expect(htmlUnverified).toContain('data-testid="settings-current-password"');
+    expect(htmlUnverified).toContain('data-testid="settings-new-password"');
+    expect(htmlUnverified).toContain('data-testid="settings-confirm-password"');
+    expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-password-button"/);
+
+    // When verified
+    const htmlVerified = renderToStaticMarkup(
+      <UserSettingsModal
+        isOpen={true}
+        onClose={() => {}}
+        initialTab="account"
+        initialEmail="athlete@example.com"
+        initialEmailVerified={true}
+        hasPassword={true}
+      />
+    );
+    expect(htmlVerified).toContain('data-testid="email-verified-badge"');
+    expect(htmlVerified).toContain("Verified");
   });
 
-  it("UserSettingsModal Privacy tab renders collapsible Privacy Controls drawers and options", () => {
+  it("UserSettingsModal Privacy tab renders collapsible Privacy Controls drawers and disables save button when unchanged", () => {
     const htmlClosed = renderToStaticMarkup(
       <UserSettingsModal
         isOpen={true}
@@ -1039,7 +1057,8 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlClosed).toContain('data-testid="toggle-drawer-ratingStats"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-chemistry"');
     expect(htmlClosed).toContain('data-testid="toggle-drawer-groups"');
-    expect(htmlClosed).toContain('data-testid="save-privacy-settings-button"');
+    // Save Privacy Settings is disabled when no changes made
+    expect(htmlClosed).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-privacy-settings-button"/);
 
     // Drawers are closed
     expect(htmlClosed).not.toContain('data-testid="profile-visibility-everyone"');
@@ -1163,12 +1182,44 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(takenRes.ok).toBe(false);
     expect(takenRes).toMatchObject({ ok: false, error: "That email is already registered to another account." });
 
+    // Rejects identical email
+    const sameRes = await updatePlayerEmailAction({ email: "old@example.com" });
+    expect(sameRes.ok).toBe(false);
+    expect(sameRes).toMatchObject({ ok: false, error: "New email address must be different from current email address." });
+
     // Successfully updates email
     const successRes = await updatePlayerEmailAction({ email: "new_email@example.com" });
     expect(successRes.ok).toBe(true);
 
     const updated = await repository.getPlayerAccount(testAccountId);
     expect(updated?.email).toBe("new_email@example.com");
+    // Email verification must be reset to false (re-verification required)
+    expect(updated?.emailVerified).toBe(false);
+
+    // Verification token was generated
+    expect(repository.state.emailVerificationTokens.length).toBe(1);
+    expect(repository.state.emailVerificationTokens[0].email).toBe("new_email@example.com");
+
+    // verifyEmailAction verifies the token, restores verified status, and removes the token
+    if (successRes.ok && successRes.data.verificationToken) {
+      const verifyRes = await verifyEmailAction({ token: successRes.data.verificationToken });
+      expect(verifyRes.ok).toBe(true);
+      const verifiedAcc = await repository.getPlayerAccount(testAccountId);
+      expect(verifiedAcc?.emailVerified).toBe(true);
+      expect(repository.state.emailVerificationTokens.length).toBe(0);
+    }
+  });
+
+  it("PlayerProfileHeader disables Save Changes button when in edit mode and no fields have been modified", () => {
+    const htmlUnchanged = renderToStaticMarkup(
+      <PlayerProfileHeader
+        initialName="Jane Doe"
+        initialUsername="janedoe"
+        initialGender="female"
+        initialEditing={true}
+      />
+    );
+    expect(htmlUnchanged).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-profile-button"/);
   });
 
   it("updatePlayerPasswordAction verifies current password and enforces new password requirements", async () => {

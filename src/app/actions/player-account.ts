@@ -1,6 +1,6 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -21,6 +21,7 @@ import {
   updatePlayerPasswordSchema,
   updatePlayerProfileSchema,
   updatePlayerUsernameSchema,
+  verifyEmailSchema,
 } from "@/lib/validation/group";
 import {
   netlifyRecover,
@@ -479,7 +480,7 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
 
 export async function updatePlayerEmailAction(
   input: unknown,
-): Promise<PlayerActionResult<{ email: string }>> {
+): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string }>> {
   const parsed = updatePlayerEmailSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -502,10 +503,34 @@ export async function updatePlayerEmailAction(
     }
     const currentAccount = await repository.getPlayerAccount(accountId);
     const isSameEmail = currentAccount?.email?.trim().toLowerCase() === email;
+    if (isSameEmail) {
+      return {
+        ok: false,
+        error: "New email address must be different from current email address.",
+        fieldErrors: { email: ["New email address must be different from current email address."] },
+      };
+    }
+
+    // Delete existing verification tokens for this account
+    await repository.deleteEmailVerificationTokensForAccount(accountId);
+
+    // Generate a fresh email verification token
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await repository.createEmailVerificationToken({
+      id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      accountId,
+      email,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      createdAt: new Date(),
+    });
+
+    // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(
       accountId,
       email,
-      isSameEmail ? (currentAccount?.emailVerified ?? false) : false,
+      false,
     );
     try {
       revalidatePath("/players");
@@ -515,7 +540,14 @@ export async function updatePlayerEmailAction(
     } catch {
       // Non-request test contexts.
     }
-    return { ok: true, data: { email } };
+    return {
+      ok: true,
+      data: {
+        email,
+        verificationRequired: true,
+        verificationToken: rawToken,
+      },
+    };
   } catch (error) {
     if (
       error &&
@@ -530,6 +562,37 @@ export async function updatePlayerEmailAction(
       };
     }
     return { ok: false, error: error instanceof Error ? error.message : "Unable to update email." };
+  }
+}
+
+export async function verifyEmailAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ email: string }>> {
+  const parsed = verifyEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid verification link." };
+  }
+  try {
+    const repository = getActionRepository();
+    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
+    const tokenRecord = await repository.getEmailVerificationToken(tokenHash);
+
+    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
+      return { ok: false, error: "This email verification link is invalid or has expired." };
+    }
+
+    await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
+    await repository.deleteEmailVerificationToken(tokenRecord.id);
+
+    try {
+      revalidatePath("/players");
+      revalidatePath("/");
+    } catch {
+      // Non-request test contexts.
+    }
+    return { ok: true, data: { email: tokenRecord.email } };
+  } catch {
+    return { ok: false, error: "Unable to verify email." };
   }
 }
 

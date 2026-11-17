@@ -30,6 +30,7 @@ export default async function PlayerProfilePage() {
           initialUsername={account.username}
           initialGender={account.gender}
           initialEmail={account.email ?? undefined}
+          initialEmailVerified={account.emailVerified ?? false}
           hasPassword={Boolean(account.passwordHash)}
           skillLevel={account.skillLevel}
           currentRating={account.rating ?? account.initialRating}

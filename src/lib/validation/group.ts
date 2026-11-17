@@ -171,6 +171,10 @@ export const updatePlayerEmailSchema = z.object({
   email: z.string().trim().email("Enter a valid email address.").max(254),
 }).strict();
 
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1, "Verification token is required."),
+}).strict();
+
 export const updatePlayerPasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required.").max(72),

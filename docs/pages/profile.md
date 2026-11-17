@@ -45,25 +45,28 @@ Clicking the **Edit Profile** button switches the header into in-page edit mode:
   - **Display Name**: Editable text field (up to 80 characters).
   - **Username**: Editable `@username` with live availability check against the database.
   - **Gender**: Dropdown to select Male or Female.
-  - **Save Changes & Cancel**: Saves display name and username with immediate validation, or prompts to discard unsaved changes.
+  - **Save Changes & Cancel**: The **Save Changes** button is disabled until at least one field is changed from its current value and valid. Saving persists changes immediately with live validation, or prompts to discard unsaved changes.
 
 ## User Settings Modal (`···` Options Menu)
 
 Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal (styled consistently with the Group Settings dialog, featuring a fixed neo-brutalist header, sticky pill-style tab navigation, and scrollable content area), organized into tabbable categories:
 
 ### 1. Account & Security Tab
-- **Email Address**:
-  - Shows current email on file (or notice if no email is attached).
-  - Input field to update or add an email address with duplicate prevention against registered accounts.
+- **Email Address & Re-Verification**:
+  - Shows current email on file with live verification status badge (`Verified` or `Unverified · Re-verification Required`).
+  - When an email address is changed, the account's email verification status is immediately reset to unverified, previous verification tokens are invalidated, a new verification token is created, and re-verification is required before it can be used for account recovery.
+  - The **Update Email** button is disabled if the entered email is empty or identical to the current email address.
 - **Password**:
   - Dedicated password management with three verification fields:
     - **Current Password**: Authenticates existing credentials via secure password comparison.
     - **New Password**: Enforces strong credential requirements (at least 10 characters, up to 72 bytes).
     - **Confirm New Password**: Ensures exact character match with the new password before submission.
+  - The **Update Password** button is disabled until all password fields are filled and valid.
   - Password updates immediately hash the new password using bcrypt cost 12.
 
 ### 2. Privacy Tab
 Single unified source of truth for visibility, organized as collapsible drawers per profile portion:
+- The **Save Privacy Settings** button is disabled if no visibility options have been modified from the current saved settings.
 - Inside each drawer, options are presented as a clean list of choices (`Everyone`, `Group Members`, `Only You`) with a bold label, a lighter-weight and smaller description of that choice, and a radio button on the right that turns green (`#ccff00`) when selected.
 - **Profile Page (Account Baseline & Visibility Ceiling)**: Sets who can discover and view your overall profile (`Everyone`, `Group Members`, or `Only You`). This acts as a strict ceiling for all child portions:
   - Setting Profile Page to `Only You` automatically clamps all other portions to `Only You` and disables higher options.
