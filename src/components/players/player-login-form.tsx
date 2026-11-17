@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerLoginAction } from "@/app/actions/player-account";
-import { openNetlifyIdentity } from "@/components/auth/netlify-identity";
+import { GoogleAuthButton } from "@/components/players/google-auth-button";
 import {
   Alert,
   Button,
@@ -50,18 +50,11 @@ export function PlayerLoginForm({
         </Alert>
       )}
 
-      <Button
-        type="button"
-        size="lg"
-        onClick={() => openNetlifyIdentity("login")}
-        className="w-full font-display text-lg uppercase flex items-center justify-center gap-2 bg-[#00ad9f] hover:bg-[#009689] text-white border-2 border-black shadow-[3px_3px_0px_0px_#000]"
-      >
-        Sign In with Netlify
-      </Button>
+      <GoogleAuthButton label="Continue with Google" next={returnPath} />
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />
-        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or with password</span>
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or</span>
         <div className="h-0.5 flex-1 bg-black/15" />
       </div>
 
@@ -98,13 +91,12 @@ export function PlayerLoginForm({
       </FormField>
 
       <div className="flex items-center justify-end -mt-2">
-        <button
-          type="button"
-          onClick={() => openNetlifyIdentity("login")}
+        <Link
+          href="/forgot-password"
           className="text-xs font-bold text-neutral-600 hover:text-black hover:underline"
         >
           Forgot password?
-        </button>
+        </Link>
       </div>
 
       <Button

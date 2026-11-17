@@ -16,7 +16,7 @@ import {
   RatingSlider,
   VisibilityToggle,
 } from "@/components/ui";
-import { openNetlifyIdentity } from "@/components/auth/netlify-identity";
+import { GoogleAuthButton } from "@/components/players/google-auth-button";
 
 const emptySubscribe = () => () => {};
 
@@ -76,14 +76,7 @@ export function PlayerSignupForm({ initialNext }: { initialNext?: string } = {})
 
   return (
     <div className="space-y-4">
-      <Button
-        type="button"
-        size="lg"
-        onClick={() => openNetlifyIdentity("signup")}
-        className="w-full font-display text-lg uppercase flex items-center justify-center gap-2 bg-[#00ad9f] hover:bg-[#009689] text-white border-2 border-black shadow-[3px_3px_0px_0px_#000]"
-      >
-        Sign Up with Netlify
-      </Button>
+      <GoogleAuthButton label="Sign up with Google" next={initialNext ?? getReturnPath()} />
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />

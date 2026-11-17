@@ -14,10 +14,16 @@ import {
   loginWithNetlifyIdentitySchema,
   playerLoginSchema,
   playerSignupSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
   updatePlayerGenderSchema,
   updatePlayerProfileSchema,
   updatePlayerUsernameSchema,
 } from "@/lib/validation/group";
+import {
+  netlifyRecover,
+  netlifyResetPassword,
+} from "@/lib/auth/netlify-gotrue";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
@@ -411,5 +417,60 @@ export async function loginWithNetlifyIdentityAction(
   } catch (error) {
     console.error("loginWithNetlifyIdentityAction error:", error);
     return { ok: false, error: "Failed to authenticate with Netlify Identity." };
+  }
+}
+
+export async function requestPasswordResetAction(input: unknown): Promise<PlayerActionResult<{ message: string }>> {
+  const parsed = requestPasswordResetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Enter a valid username or email address." };
+  }
+  const identifier = parsed.data.identifier.toLowerCase();
+  try {
+    const repository = getActionRepository();
+    let email = identifier;
+    if (!identifier.includes("@")) {
+      const account = await repository.getPlayerAccountByUsername(identifier);
+      if (account?.email) {
+        email = account.email;
+      }
+    }
+
+    if (email.includes("@")) {
+      await netlifyRecover(email);
+    }
+
+    return {
+      ok: true,
+      data: {
+        message: "If an account matches that username or email address, we've sent a password reset link.",
+      },
+    };
+  } catch {
+    return { ok: false, error: "Unable to process password reset request right now." };
+  }
+}
+
+export async function resetPasswordAction(input: unknown): Promise<PlayerActionResult<{ success: boolean }>> {
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Password must be at least 10 characters." };
+  }
+  if (Buffer.byteLength(parsed.data.password, "utf8") > 72) {
+    return { ok: false, error: "Password must be 72 bytes or fewer." };
+  }
+  try {
+    const result = await netlifyResetPassword({
+      token: parsed.data.token,
+      password: parsed.data.password,
+    });
+
+    if (!result.success) {
+      return { ok: false, error: result.error || "Unable to reset password. Please try again." };
+    }
+
+    return { ok: true, data: { success: true } };
+  } catch {
+    return { ok: false, error: "Unable to reset password. Please try again." };
   }
 }

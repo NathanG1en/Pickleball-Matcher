@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { deletePlayerSchema, loginWithNetlifyIdentitySchema, playerLoginSchema } from "@/lib/validation/group";
+import {
+  deletePlayerSchema,
+  loginWithNetlifyIdentitySchema,
+  playerLoginSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from "@/lib/validation/group";
 
 describe("deletePlayerSchema", () => {
   it("accepts valid groupId and playerId", () => {
@@ -121,3 +127,47 @@ describe("loginWithNetlifyIdentitySchema", () => {
     ).toBe(false);
   });
 });
+
+describe("requestPasswordResetSchema", () => {
+  it("accepts valid identifier (username or email) and trims it", () => {
+    const result = requestPasswordResetSchema.safeParse({
+      identifier: "  Player@Example.COM  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.identifier).toBe("Player@Example.COM");
+    }
+  });
+
+  it("rejects empty identifier", () => {
+    expect(requestPasswordResetSchema.safeParse({ identifier: "" }).success).toBe(false);
+    expect(requestPasswordResetSchema.safeParse({ identifier: "   " }).success).toBe(false);
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("accepts valid token and new password (min 10 chars)", () => {
+    const result = resetPasswordSchema.safeParse({
+      token: "valid-recovery-token",
+      password: "strongpassword123",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects short passwords and empty tokens", () => {
+    expect(
+      resetPasswordSchema.safeParse({
+        token: "token",
+        password: "short",
+      }).success
+    ).toBe(false);
+
+    expect(
+      resetPasswordSchema.safeParse({
+        token: "",
+        password: "strongpassword123",
+      }).success
+    ).toBe(false);
+  });
+});
+

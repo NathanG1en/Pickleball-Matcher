@@ -22,7 +22,7 @@ describe("PlayerLoginForm", () => {
     expect(html).toContain('id="player-login-username"');
     expect(html).toContain('placeholder="e.g. rally_champ or you@example.com"');
     expect(html).toContain("Forgot password?");
-    expect(html).toContain("Sign In with Netlify");
+    expect(html).toContain("Continue with Google");
     expect(html).toContain("Sign In");
   });
 
