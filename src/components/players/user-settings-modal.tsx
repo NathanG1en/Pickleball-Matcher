@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updatePlayerEmailAction, updatePlayerPasswordAction } from "@/app/actions/player-account";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
-import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import {
   ChevronDownIcon,
@@ -107,7 +106,22 @@ export function UserSettingsModal({
   onEmailUpdated,
 }: UserSettingsModalProps) {
   const router = useRouter();
+  const generatedId = useId();
+  const titleId = `${generatedId}-title`;
+  const descId = `${generatedId}-desc`;
   const [activeTab, setActiveTab] = useState<"account" | "privacy">(initialTab);
+
+  // Handle escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
@@ -261,66 +275,97 @@ export function UserSettingsModal({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Settings"
-      description="Manage your account security, credentials, and profile privacy."
-      size="lg"
-      className="space-y-5"
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={descId}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
-      {/* Tabbable Navigation */}
-      <div
-        role="tablist"
-        aria-label="Settings categories"
-        className="flex border-b-2 border-black gap-2 pt-1"
-      >
-        <button
-          type="button"
-          role="tab"
-          id="tab-account"
-          aria-selected={activeTab === "account"}
-          aria-controls="tabpanel-account"
-          data-testid="tab-account"
-          onClick={() => setActiveTab("account")}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-wider rounded-t-xl transition-all border-t-2 border-x-2 border-black cursor-pointer ${
-            activeTab === "account"
-              ? "bg-[#ccff00] text-black shadow-[0px_-2px_0px_0px_#000] translate-y-[2px] pb-[10px]"
-              : "bg-white text-neutral-600 hover:bg-neutral-100 hover:text-black"
-          }`}
-        >
-          <LockIcon className="h-3.5 w-3.5" />
-          <span>Account & Security</span>
-        </button>
+      <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] rounded-3xl border-[3px] border-black bg-[#FFFDF7] text-black shadow-[8px_8px_0px_0px_#000] overflow-hidden">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between border-b-[2.5px] border-black px-6 py-4 sm:px-7 sm:py-5 bg-[#FFFDF7] shrink-0">
+          <div>
+            <h2
+              id={titleId}
+              className="font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-black"
+            >
+              Settings
+            </h2>
+            <p id={descId} className="text-xs font-bold text-neutral-600 truncate max-w-md">
+              Manage your account security, credentials, and profile privacy.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close settings dialog"
+            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-lg font-black leading-none hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors"
+          >
+            ×
+          </button>
+        </div>
 
-        <button
-          type="button"
-          role="tab"
-          id="tab-privacy"
-          aria-selected={activeTab === "privacy"}
-          aria-controls="tabpanel-privacy"
-          data-testid="tab-privacy"
-          onClick={() => setActiveTab("privacy")}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-wider rounded-t-xl transition-all border-t-2 border-x-2 border-black cursor-pointer ${
-            activeTab === "privacy"
-              ? "bg-[#ccff00] text-black shadow-[0px_-2px_0px_0px_#000] translate-y-[2px] pb-[10px]"
-              : "bg-white text-neutral-600 hover:bg-neutral-100 hover:text-black"
-          }`}
-        >
-          <GlobeIcon className="h-3.5 w-3.5" />
-          <span>Privacy</span>
-        </button>
-      </div>
+        {/* Fixed Tab Navigation */}
+        <div className="border-b-2 border-black bg-neutral-100/70 px-6 py-2 sm:px-7 shrink-0 overflow-x-auto no-scrollbar">
+          <nav
+            role="tablist"
+            aria-label="Settings categories"
+            className="flex items-center gap-2 min-w-max"
+          >
+            <button
+              type="button"
+              role="tab"
+              id="tab-account"
+              aria-selected={activeTab === "account"}
+              aria-controls="tabpanel-account"
+              data-testid="tab-account"
+              onClick={() => setActiveTab("account")}
+              className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                activeTab === "account"
+                  ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                  : "text-neutral-700 hover:text-black hover:bg-neutral-200 border-2 border-transparent"
+              }`}
+            >
+              Account & Security
+            </button>
 
-      {/* Account Tab Panel */}
-      {activeTab === "account" && (
-        <div
-          id="tabpanel-account"
-          role="tabpanel"
-          aria-labelledby="tab-account"
-          className="space-y-6 pt-2"
-        >
+            <button
+              type="button"
+              role="tab"
+              id="tab-privacy"
+              aria-selected={activeTab === "privacy"}
+              aria-controls="tabpanel-privacy"
+              data-testid="tab-privacy"
+              onClick={() => setActiveTab("privacy")}
+              className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                activeTab === "privacy"
+                  ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                  : "text-neutral-700 hover:text-black hover:bg-neutral-200 border-2 border-transparent"
+              }`}
+            >
+              Privacy
+            </button>
+          </nav>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-6">
+          {/* Account Tab Panel */}
+          <div
+            id="tabpanel-account"
+            role="tabpanel"
+            aria-labelledby="tab-account"
+            className={activeTab === "account" ? "space-y-6" : "hidden"}
+          >
           {/* Email Section */}
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
@@ -482,15 +527,13 @@ export function UserSettingsModal({
             </form>
           </section>
         </div>
-      )}
 
-      {/* Privacy Tab Panel */}
-      {activeTab === "privacy" && (
+        {/* Privacy Tab Panel */}
         <div
           id="tabpanel-privacy"
           role="tabpanel"
           aria-labelledby="tab-privacy"
-          className="space-y-4 pt-1"
+          className={activeTab === "privacy" ? "space-y-4" : "hidden"}
         >
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-black">
@@ -686,7 +729,7 @@ export function UserSettingsModal({
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Success Toast */}
       {toastMessage && (
@@ -700,6 +743,7 @@ export function UserSettingsModal({
           <span>{toastMessage}</span>
         </Toast>
       )}
-    </Modal>
-  );
+    </div>
+  </div>
+);
 }

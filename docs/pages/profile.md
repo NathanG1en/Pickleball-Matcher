@@ -49,7 +49,7 @@ Clicking the **Edit Profile** button switches the header into in-page edit mode:
 
 ## User Settings Modal (`···` Options Menu)
 
-Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal, organized into tabbable categories:
+Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal (styled consistently with the Group Settings dialog, featuring a fixed neo-brutalist header, sticky pill-style tab navigation, and scrollable content area), organized into tabbable categories:
 
 ### 1. Account & Security Tab
 - **Email Address**:
