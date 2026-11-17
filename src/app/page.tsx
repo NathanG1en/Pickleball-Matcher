@@ -13,7 +13,6 @@ import {
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
 import { UsersIcon, SearchIcon, ZapIcon } from "@/components/ui/icons";
-import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
 
 
 async function getGuestGroups(): Promise<Record<string, string>> {
@@ -193,9 +192,6 @@ export default async function HomePage() {
           </Link>
         </section>
       )}
-
-      {/* Recovery Email Prompt for Existing Users */}
-      <RecoveryEmailBanner currentEmail={playerAccount.email} isVerified={playerAccount.emailVerified} />
 
       {/* 3. Hero Section: Refined brand introduction with compact profile footer */}
       <section

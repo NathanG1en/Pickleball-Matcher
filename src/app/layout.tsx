@@ -7,6 +7,7 @@ import "@fontsource/barlow-condensed/800.css";
 import "@fontsource/barlow-condensed/900.css";
 import { getActivePlayerAccountId, getActionRepository } from "@/app/actions/action-context";
 import { ResponsiveNavigation } from "@/components/navigation/responsive-navigation";
+import { NetlifyIdentityInitializer } from "@/components/auth/netlify-identity";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
+        <NetlifyIdentityInitializer />
         <ResponsiveNavigation playerAccount={playerAccount} />
         <div className={`flex-1 ${playerAccount ? "pb-20 md:pb-0" : ""}`}>
           {children}

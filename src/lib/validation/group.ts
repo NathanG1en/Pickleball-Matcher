@@ -118,21 +118,11 @@ export const playerSignupSchema = z.object({
     .transform(normalizeInitialRating),
 }).strict();
 
-export const requestPasswordResetSchema = z.object({
-  identifier: z.string().trim().min(1, "Enter your username or email address."),
-}).strict();
-
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required."),
-  password: z.string().min(10, "Password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
-}).strict();
-
-export const updateRecoveryEmailSchema = z.object({
+export const loginWithNetlifyIdentitySchema = z.object({
+  id: z.string().min(1, "User ID is required."),
   email: z.string().trim().email("Enter a valid email address.").max(254),
-}).strict();
-
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, "Verification token is required."),
+  name: z.string().trim().max(80).optional(),
+  token: z.string().optional(),
 }).strict();
 
 export const playerLoginSchema = z

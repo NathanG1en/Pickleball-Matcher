@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActionRepository, getActivePlayerAccountId } from "@/app/actions/action-context";
 import { PlayerProfileHeader } from "@/components/players/player-profile-controls";
-import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
@@ -36,9 +35,6 @@ export default async function PlayerProfilePage() {
           initialVisibilitySettings={account.visibilitySettings}
         />
       </header>
-
-      <RecoveryEmailBanner currentEmail={account.email} isVerified={account.emailVerified} />
-
 
       {/* Top Row: Chemistry Spotlight & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">

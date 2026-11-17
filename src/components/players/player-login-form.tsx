@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { playerLoginAction } from "@/app/actions/player-account";
-import { GoogleAuthButton } from "@/components/players/google-auth-button";
+import { openNetlifyIdentity } from "@/components/auth/netlify-identity";
 import {
   Alert,
   Button,
@@ -34,7 +34,7 @@ export function PlayerLoginForm({
     setError(null);
     const result = await playerLoginAction({ identifier, username: identifier, password });
     if (result.ok) {
-      router.push(getReturnPath() ?? "/");
+      router.push(returnPath ?? "/");
       router.refresh();
       return;
     }
@@ -50,11 +50,18 @@ export function PlayerLoginForm({
         </Alert>
       )}
 
-      <GoogleAuthButton label="Continue with Google" next={returnPath} />
+      <Button
+        type="button"
+        size="lg"
+        onClick={() => openNetlifyIdentity("login")}
+        className="w-full font-display text-lg uppercase flex items-center justify-center gap-2 bg-[#00ad9f] hover:bg-[#009689] text-white border-2 border-black shadow-[3px_3px_0px_0px_#000]"
+      >
+        Sign In with Netlify
+      </Button>
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />
-        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or</span>
+        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or with password</span>
         <div className="h-0.5 flex-1 bg-black/15" />
       </div>
 
@@ -91,12 +98,13 @@ export function PlayerLoginForm({
       </FormField>
 
       <div className="flex items-center justify-end -mt-2">
-        <Link
-          href="/forgot-password"
+        <button
+          type="button"
+          onClick={() => openNetlifyIdentity("login")}
           className="text-xs font-bold text-neutral-600 hover:text-black hover:underline"
         >
           Forgot password?
-        </Link>
+        </button>
       </div>
 
       <Button
@@ -114,10 +122,9 @@ export function PlayerLoginForm({
         <Link
           href="/player-signup"
           onClick={(event) => {
-            const next = getReturnPath();
-            if (next) {
+            if (returnPath) {
               event.preventDefault();
-              router.push(`/player-signup?next=${encodeURIComponent(next)}`);
+              router.push(`/player-signup?next=${encodeURIComponent(returnPath)}`);
             }
           }}
           className="underline"

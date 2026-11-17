@@ -1,46 +1,23 @@
-# Authentication, Google OAuth & Account Recovery — `/player-login`, `/player-signup`, `/forgot-password`, `/reset-password`, `/verify-email`
+# Authentication & Netlify Identity — `/player-login`, `/player-signup`
 
-The authentication system handles player onboarding, credential verification, Google OAuth single sign-on, recovery email attachment, and self-service password resets.
+The authentication system handles player onboarding, credential verification, Netlify Identity integration, and player session management.
 
 ## Overview & Routing
 
-- **Sign In (`/player-login`)**: Offers 1-click **"Continue with Google"** OAuth sign-in and a credentials form accepting `username` or `email` and `password`. Includes a "Forgot password?" link for account recovery and context preservation when entering from invite or session links (`?next=...`).
-- **Sign Up (`/player-signup`)**: New player onboarding featuring **"Sign up with Google"** and traditional registration capturing `username`, display `name`, optional `email` (for recovery), `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating.
-- **Forgot Password (`/forgot-password`)**: Self-service recovery entry point accepting username or email. Sends a time-limited (1-hour) cryptographic password reset link via Resend.
-- **Reset Password (`/reset-password?token=...`)**: Form validating a one-time reset token and allowing the player to set and confirm a new password.
-- **Verify Email (`/verify-email?token=...`)**: Confirms ownership of a recovery email address, enabling automated password reset for that account.
+- **Sign In (`/player-login`)**: Offers 1-click **"Sign In with Netlify"** opening the Netlify Identity widget modal, alongside a credentials form accepting `username` or `email` and `password`. Includes a "Forgot password?" link triggering Netlify Identity's built-in password recovery modal, and context preservation when entering from invite or session links (`?next=...`).
+- **Sign Up (`/player-signup`)**: New player onboarding featuring **"Sign Up with Netlify"** and traditional registration capturing `username`, display `name`, optional `email`, `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating.
 
-## Google OAuth Flow & Account Linking
+## Netlify Identity Widget Integration
 
-1. **Initiate (`/api/auth/google`)**:
-   - Generates a random cryptographic `state` and `nonce`.
-   - Preserves destination return path (`?next=...`) in a secure HTTP-only cookie (`google_oauth_state`).
-   - Redirects to Google's OpenID Connect consent screen requesting `openid email profile` scopes.
-2. **Callback (`/api/auth/google/callback`)**:
-   - Validates the returned authorization code and CSRF `state`.
-   - Exchanges code for tokens at `https://oauth2.googleapis.com/token`.
-   - Fetches verified profile from Google's OpenID Connect userinfo endpoint.
-3. **Smart Account Resolution & Linking**:
-   - **Existing Linked Account**: If `(provider='google', provider_user_id=sub)` exists in `oauth_accounts`, immediately signs in the associated player account.
-   - **Email Match Linking**: If an existing player account shares the Google email address, automatically creates a new `oauth_accounts` link and marks `email_verified = true`.
-   - **New Player Provisioning**: Automatically generates a unique username from the Google profile name/email, initializes default intermediate rating (1000 Elo), sets `password_hash = null`, marks `email_verified = true`, and creates both `player_accounts` and `oauth_accounts` records.
-4. **Session Cookie**:
+1. **Client-Side Initialization**:
+   - The Netlify Identity widget is loaded via `<NetlifyIdentityInitializer />` in the root layout (`src/app/layout.tsx`).
+   - Connects automatically to the site's `/.netlify/identity` endpoint (or `NEXT_PUBLIC_NETLIFY_IDENTITY_URL` when developing locally).
+   - Detects URL hash tokens (`#recovery_token=...`, `#confirmation_token=...`, `#invite_token=...`) dispatched in Netlify emails and automatically opens the appropriate modal view.
+2. **Session Linking (`loginWithNetlifyIdentityAction`)**:
+   - When a player authenticates via the Netlify Identity widget, the client receives the user object (`id`, `email`, `user_metadata`).
+   - Dispatches `loginWithNetlifyIdentityAction` to verify/match the user:
+     - If an existing account matches `email`, links the session to that account.
+     - If not, auto-provisions a new player account with intermediate rating (1000 Elo), unique username, and verified email status.
    - Issues a signed JWT session cookie (`player_session`, 30-day expiry) and redirects to the intended destination (`next` or `/`).
-
-## Account Recovery & Migration for Existing Users
-
-1. **Non-blocking Schema Migration**:
-   - `player_accounts` includes nullable `email` and `email_verified` columns with a unique index on `lower(trim(email))`.
-   - `player_accounts.password_hash` is nullable to support OAuth-only accounts.
-   - Existing accounts created prior to the email layer continue to authenticate normally via `username` or `email` (once added) and `password`.
-2. **Progressive Email Onboarding**:
-   - Authenticated players without an email address see a friendly, non-blocking notification banner (`RecoveryEmailBanner`) on their profile page and home screen: *"Add Account Recovery Email"*.
-   - Players can enter an email directly in the banner or dismiss it ("Remind me later").
-   - Upon entering an email, a 24-hour verification token is dispatched via email.
-3. **Verification**:
-   - Unverified recovery emails cannot be used for password resets to protect against typos or account takeover.
-   - Clicking the verification link updates `email_verified = true`.
-4. **Self-Service Password Reset**:
-   - If an account has a recovery email, the player can request a reset link anytime from `/forgot-password`.
-   - The reset endpoint generates a cryptographically random token, stores its SHA-256 hash in `password_reset_tokens`, and sends a one-click link valid for 1 hour.
-   - Reset requests return a uniform, privacy-preserving success message regardless of whether the account was found.
+3. **Password Recovery & Email Delivery**:
+   - Handled directly by Netlify Identity's email infrastructure, eliminating external SMTP dependencies or custom domain configuration requirements.
