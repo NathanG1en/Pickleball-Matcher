@@ -55,13 +55,14 @@ Clicking the three dots (`···`) in the profile header opens the account actio
 - **Email Address & Re-Verification**:
   - Shows current email on file with live verification status badge (`Verified` or `Unverified · Re-verification Required`).
   - When an email address is changed, the account's email verification status is immediately reset to unverified, previous verification tokens are invalidated, a new verification token is created, and re-verification is required before it can be used for account recovery.
-  - The **Update Email** button is disabled if the entered email is empty or identical to the current email address. Disabled buttons retain a neutral gray style with `cursor-not-allowed` and do not activate the lime-green hover effect.
+  - **Inline Blur Validation**: Catches malformed inputs that lack an `@` symbol or domain (e.g. `example.com`). Validation triggers upon unfocusing (`onBlur`) and highlights the input box with a red border and surfaces a red invalid input alert box beneath it, remaining until corrected.
+  - The **Update Email** button is disabled until the entered email is valid, non-empty, and changed from the current email address. Disabled buttons retain a neutral gray style with `cursor-not-allowed` and do not activate hover styling.
 - **Password**:
-  - Dedicated password management with three verification fields:
+  - Dedicated password management with three verification fields, each equipped with an eye toggle button (`EyeIcon` / `EyeOffIcon`) to view or obscure entered text:
     - **Current Password**: Authenticates existing credentials via secure password comparison.
     - **New Password**: Enforces strong credential requirements (at least 10 characters, up to 72 bytes).
     - **Confirm New Password**: Ensures exact character match with the new password before submission.
-  - The **Update Password** button is disabled until all password fields are filled and valid (remaining neutral gray with `cursor-not-allowed` without hover styling).
+  - The **Update Password** button enables as soon as password fields are modified, remaining disabled when empty. Submitting invalid combinations surfaces clear, localized error notices (e.g., matching requirements, minimum 10 characters, current password requirement).
   - Password updates immediately hash the new password using bcrypt cost 12.
 
 ### 2. Privacy Tab

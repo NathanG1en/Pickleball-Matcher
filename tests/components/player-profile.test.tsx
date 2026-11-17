@@ -13,6 +13,7 @@ import {
   verifyEmailAction,
 } from "@/app/actions/player-account";
 import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader, UserSettingsModal } from "@/components/players/player-profile-controls";
+import { validateEmailFormat } from "@/components/players/user-settings-modal";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import * as actionContext from "@/app/actions/action-context";
@@ -1021,11 +1022,14 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlUnverified).toContain("disabled:cursor-not-allowed");
     expect(htmlUnverified).toContain("disabled:hover:bg-neutral-200");
 
-    // Password section with current, new, and confirm and disabled save when unchanged
+    // Password section with current, new, and confirm, eye visibility buttons, and disabled save when unchanged
     expect(htmlUnverified).toContain("Password");
     expect(htmlUnverified).toContain('data-testid="settings-current-password"');
     expect(htmlUnverified).toContain('data-testid="settings-new-password"');
     expect(htmlUnverified).toContain('data-testid="settings-confirm-password"');
+    expect(htmlUnverified).toContain('data-testid="toggle-current-password-visibility"');
+    expect(htmlUnverified).toContain('data-testid="toggle-new-password-visibility"');
+    expect(htmlUnverified).toContain('data-testid="toggle-confirm-password-visibility"');
     expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-password-button"/);
 
     // When verified
@@ -1041,6 +1045,30 @@ describe("PlayerProfilePage and Group Leaving", () => {
     );
     expect(htmlVerified).toContain('data-testid="email-verified-badge"');
     expect(htmlVerified).toContain("Verified");
+  });
+
+  it("validateEmailFormat catches inputs lacking @ or domain and accepts valid emails", () => {
+    // Empty
+    expect(validateEmailFormat("").isValid).toBe(false);
+    expect(validateEmailFormat("   ").isValid).toBe(false);
+
+    // Lacking @
+    expect(validateEmailFormat("athleteexample.com").isValid).toBe(false);
+    expect(validateEmailFormat("athlete").isValid).toBe(false);
+
+    // Lacking username before @
+    expect(validateEmailFormat("@example.com").isValid).toBe(false);
+
+    // Lacking domain
+    expect(validateEmailFormat("athlete@").isValid).toBe(false);
+    expect(validateEmailFormat("athlete@example").isValid).toBe(false);
+    expect(validateEmailFormat("athlete@.com").isValid).toBe(false);
+    expect(validateEmailFormat("athlete@example.").isValid).toBe(false);
+
+    // Valid formats
+    expect(validateEmailFormat("athlete@example.com").isValid).toBe(true);
+    expect(validateEmailFormat("athlete.pro@sub.example.org").isValid).toBe(true);
+    expect(validateEmailFormat("pickleballer+1@club.io").isValid).toBe(true);
   });
 
   it("UserSettingsModal Privacy tab renders collapsible Privacy Controls drawers and disables save button when unchanged", () => {

@@ -7,6 +7,8 @@ import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { Toast } from "@/components/ui/toast";
 import {
   ChevronDownIcon,
+  EyeIcon,
+  EyeOffIcon,
   GlobeIcon,
   LockIcon,
   UsersIcon,
@@ -80,6 +82,36 @@ export const VISIBILITY_LEVEL_OPTIONS: {
   { value: "only_you", label: "Only You", icon: LockIcon },
 ];
 
+export function validateEmailFormat(val: string): { isValid: boolean; message: string | null } {
+  const trimmed = val.trim();
+  if (!trimmed) {
+    return { isValid: false, message: "Email address is required." };
+  }
+  if (!trimmed.includes("@")) {
+    return { isValid: false, message: "Email address must include an '@' symbol." };
+  }
+  const atIndex = trimmed.lastIndexOf("@");
+  const localPart = trimmed.slice(0, atIndex);
+  const domainPart = trimmed.slice(atIndex + 1);
+
+  if (!localPart) {
+    return { isValid: false, message: "Please enter an email username before the '@'." };
+  }
+  if (!domainPart || !domainPart.includes(".")) {
+    return { isValid: false, message: "Email address must include a domain (e.g. example.com)." };
+  }
+  const domainParts = domainPart.split(".");
+  const tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2) {
+    return { isValid: false, message: "Email domain must include a valid extension." };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    return { isValid: false, message: "Please enter a valid email address." };
+  }
+  return { isValid: true, message: null };
+}
+
 export interface UserSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -128,6 +160,7 @@ export function UserSettingsModal({
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
   const [newEmail, setNewEmail] = useState(initialEmail ?? "");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(initialEmailVerified ?? false);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -136,6 +169,9 @@ export function UserSettingsModal({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -154,17 +190,17 @@ export function UserSettingsModal({
   // Change detection
   const trimmedNewEmail = newEmail.trim().toLowerCase();
   const trimmedCurrentEmail = currentEmail.trim().toLowerCase();
-  const hasEmailChanges = Boolean(trimmedNewEmail) && trimmedNewEmail !== trimmedCurrentEmail;
+  const emailValidation = validateEmailFormat(newEmail);
+  const isEmailValid = emailValidation.isValid;
+  const showEmailError = emailTouched && !isEmailValid;
+  const hasEmailChanges =
+    isEmailValid && Boolean(trimmedNewEmail) && trimmedNewEmail !== trimmedCurrentEmail;
 
   const hasPrivacyChanges = PORTION_CONFIGS.some(
     (portion) => visibilityInput[portion.key] !== baseVisibility[portion.key],
   );
 
-  const hasPasswordChanges =
-    Boolean(newPassword) &&
-    newPassword.length >= 10 &&
-    newPassword === confirmPassword &&
-    (!hasPassword || Boolean(currentPassword));
+  const hasPasswordChanges = Boolean(currentPassword || newPassword || confirmPassword);
 
   // Feedback Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -419,7 +455,7 @@ export function UserSettingsModal({
               )}
             </div>
 
-            <form onSubmit={handleUpdateEmail} className="space-y-3">
+            <form onSubmit={handleUpdateEmail} noValidate className="space-y-3">
               <div className="space-y-1">
                 <label
                   htmlFor="settings-email-input"
@@ -432,11 +468,27 @@ export function UserSettingsModal({
                   data-testid="settings-email-input"
                   type="email"
                   value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  onChange={(e) => {
+                    setNewEmail(e.target.value);
+                    setEmailError(null);
+                  }}
+                  onBlur={() => setEmailTouched(true)}
                   placeholder="athlete@example.com"
-                  required
-                  className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className={`w-full rounded-xl border-2 ${
+                    showEmailError
+                      ? "border-red-500 bg-red-50/50 text-black focus:border-red-600 focus:ring-2 focus:ring-red-500"
+                      : "border-black bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  } px-3 py-2 text-sm font-bold`}
                 />
+                {showEmailError && (
+                  <div
+                    role="alert"
+                    data-testid="email-invalid-input-box"
+                    className="rounded-xl border-2 border-red-500 bg-red-100 p-2.5 text-xs font-black text-red-800 shadow-[2px_2px_0px_0px_#ef4444]"
+                  >
+                    {emailValidation.message}
+                  </div>
+                )}
               </div>
 
               {emailError && (
@@ -474,7 +526,7 @@ export function UserSettingsModal({
               </p>
             </div>
 
-            <form onSubmit={handleUpdatePassword} className="space-y-3">
+            <form onSubmit={handleUpdatePassword} noValidate className="space-y-3">
               {/* Current Password */}
               <div className="space-y-1">
                 <label
@@ -483,16 +535,33 @@ export function UserSettingsModal({
                 >
                   Current Password
                 </label>
-                <input
-                  id="settings-current-password"
-                  data-testid="settings-current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  required={hasPassword}
-                  className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
+                <div className="relative">
+                  <input
+                    id="settings-current-password"
+                    data-testid="settings-current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      setPasswordError(null);
+                    }}
+                    placeholder="Enter current password"
+                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword((prev) => !prev)}
+                    aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                    data-testid="toggle-current-password-visibility"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-neutral-600 hover:text-black focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* New Password */}
@@ -503,17 +572,33 @@ export function UserSettingsModal({
                 >
                   New Password
                 </label>
-                <input
-                  id="settings-new-password"
-                  data-testid="settings-new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 10 characters"
-                  minLength={10}
-                  required
-                  className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
+                <div className="relative">
+                  <input
+                    id="settings-new-password"
+                    data-testid="settings-new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPasswordError(null);
+                    }}
+                    placeholder="At least 10 characters"
+                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                    data-testid="toggle-new-password-visibility"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-neutral-600 hover:text-black focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                  >
+                    {showNewPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Confirm New Password */}
@@ -524,22 +609,39 @@ export function UserSettingsModal({
                 >
                   Confirm New Password
                 </label>
-                <input
-                  id="settings-confirm-password"
-                  data-testid="settings-confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter new password"
-                  required
-                  className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
+                <div className="relative">
+                  <input
+                    id="settings-confirm-password"
+                    data-testid="settings-confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPasswordError(null);
+                    }}
+                    placeholder="Re-enter new password"
+                    className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 pr-10 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    aria-label={showConfirmPassword ? "Hide confirm new password" : "Show confirm new password"}
+                    data-testid="toggle-confirm-password-visibility"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-neutral-600 hover:text-black focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {passwordError && (
                 <div
                   role="alert"
-                  className="rounded-lg border border-red-500 bg-red-100 p-2 text-xs font-bold text-red-800"
+                  className="rounded-xl border-2 border-red-500 bg-red-100 p-2.5 text-xs font-black text-red-800 shadow-[2px_2px_0px_0px_#ef4444]"
                 >
                   {passwordError}
                 </div>
