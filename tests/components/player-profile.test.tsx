@@ -5,11 +5,13 @@ import PlayerProfilePage from "@/app/players/page";
 import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
+  resendVerificationEmailAction,
   updatePlayerEmailAction,
   updatePlayerGenderAction,
   updatePlayerPasswordAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
+  updateRecoveryEmailAction,
   verifyEmailAction,
 } from "@/app/actions/player-account";
 import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader, UserSettingsModal } from "@/components/players/player-profile-controls";
@@ -1242,6 +1244,44 @@ describe("PlayerProfilePage and Group Leaving", () => {
       const verifiedAcc = await repository.getPlayerAccount(testAccountId);
       expect(verifiedAcc?.emailVerified).toBe(true);
       expect(repository.state.emailVerificationTokens.length).toBe(0);
+    }
+  });
+
+  it("updateRecoveryEmailAction and resendVerificationEmailAction handle recovery email workflow", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "recovery_user",
+          name: "Recovery User",
+          email: null,
+          emailVerified: false,
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    // Resend fails when no email is attached yet
+    const failResend = await resendVerificationEmailAction();
+    expect(failResend.ok).toBe(false);
+
+    // Set recovery email
+    const updateRes = await updateRecoveryEmailAction({ email: "recovery@example.com" });
+    expect(updateRes.ok).toBe(true);
+    if (updateRes.ok) {
+      expect(updateRes.data.email).toBe("recovery@example.com");
+      expect(updateRes.data.verificationToken).toBeDefined();
+    }
+
+    // Resend succeeds now that an email is attached
+    const successResend = await resendVerificationEmailAction();
+    expect(successResend.ok).toBe(true);
+    if (successResend.ok) {
+      expect(successResend.data.email).toBe("recovery@example.com");
+      expect(successResend.data.verificationToken).toBeDefined();
     }
   });
 
