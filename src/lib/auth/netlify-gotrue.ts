@@ -1,15 +1,29 @@
+import { randomBytes } from "crypto";
+
 /**
  * Headless Netlify Identity (GoTrue API) client.
  * Handles user signup, authentication, password recovery, and OAuth redirects
  * without using the Netlify Identity modal popup.
  */
 
+export function isLiveNetlifyIdentityConfigured(): boolean {
+  const url = process.env.NETLIFY_IDENTITY_URL || process.env.NEXT_PUBLIC_NETLIFY_IDENTITY_URL;
+  return Boolean(url && !url.includes("localhost") && !url.includes("127.0.0.1"));
+}
+
 export function getNetlifyIdentityUrl(): string | null {
-  const url =
+  let url =
     process.env.NETLIFY_IDENTITY_URL ||
     process.env.NEXT_PUBLIC_NETLIFY_IDENTITY_URL ||
     (process.env.URL ? `${process.env.URL}/.netlify/identity` : null);
-  if (url) return url.replace(/\/$/, "");
+
+  if (url) {
+    url = url.trim().replace(/\/$/, "");
+    if (!url.endsWith("/.netlify/identity")) {
+      url = `${url}/.netlify/identity`;
+    }
+    return url;
+  }
 
   // In local development server, route to the built-in Netlify Identity emulator
   if (process.env.NODE_ENV === "development") {
@@ -45,7 +59,12 @@ export async function netlifySignup(params: {
       console.info(`[Netlify Identity] Mock signup for ${params.email} (NETLIFY_IDENTITY_URL not configured).`);
       return { email: params.email, localDev: true };
     }
-    return { email: params.email };
+    return { email: params.email, error: "Netlify Identity not configured." };
+  }
+
+  const isLive = isLiveNetlifyIdentityConfigured();
+  if (isLive) {
+    console.info(`🚀 [Netlify Identity] Sending signup / verification email to ${params.email} via ${base}...`);
   }
 
   try {
@@ -64,10 +83,17 @@ export async function netlifySignup(params: {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (isLive) {
+        console.warn(`⚠️ [Netlify Identity] Signup notice for ${params.email}:`, data.msg || data.error_description || response.statusText);
+      }
       return {
         email: params.email,
         error: data.msg || data.error_description || "Netlify registration failed.",
       };
+    }
+
+    if (isLive) {
+      console.info(`✅ [Netlify Identity] Verification email successfully sent to ${params.email}! Check your inbox.`);
     }
 
     return { id: data.id, email: data.email };
@@ -133,6 +159,11 @@ export async function netlifyRecover(email: string): Promise<{ success: boolean;
     return { success: false, error: "Netlify Identity is not configured." };
   }
 
+  const isLive = isLiveNetlifyIdentityConfigured();
+  if (isLive) {
+    console.info(`🚀 [Netlify Identity] Sending recovery email to ${email} via ${base}...`);
+  }
+
   try {
     const response = await fetch(`${base}/recover`, {
       method: "POST",
@@ -142,10 +173,17 @@ export async function netlifyRecover(email: string): Promise<{ success: boolean;
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
+      if (isLive) {
+        console.warn(`⚠️ [Netlify Identity] Recover notice for ${email}:`, data.msg || data.error_description || response.statusText);
+      }
       return {
         success: false,
         error: data.msg || data.error_description || "Unable to send recovery email.",
       };
+    }
+
+    if (isLive) {
+      console.info(`✅ [Netlify Identity] Recovery email successfully sent to ${email}! Check your inbox.`);
     }
 
     return { success: true };
@@ -153,6 +191,30 @@ export async function netlifyRecover(email: string): Promise<{ success: boolean;
     console.error("Netlify recover error:", err);
     return { success: false, error: "Network error contacting Netlify Identity." };
   }
+}
+
+export async function netlifyTriggerEmailVerification(params: {
+  email: string;
+  password?: string;
+  name?: string;
+  username?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const email = params.email.trim().toLowerCase();
+
+  // 1. Try signup first: In Netlify GoTrue, POST /signup creates the user and dispatches confirmation email
+  const signupResult = await netlifySignup({
+    email,
+    password: params.password || randomBytes(16).toString("hex"),
+    name: params.name,
+    username: params.username,
+  });
+
+  if (!signupResult.error) {
+    return { success: true };
+  }
+
+  // 2. If user already exists in Netlify Identity, trigger recovery email
+  return await netlifyRecover(email);
 }
 
 export async function netlifyResetPassword(params: {

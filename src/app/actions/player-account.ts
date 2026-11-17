@@ -27,6 +27,7 @@ import {
   isNetlifyIdentityConfigured,
   netlifyRecover,
   netlifyResetPassword,
+  netlifyTriggerEmailVerification,
 } from "@/lib/auth/netlify-gotrue";
 
 const PASSWORD_HASH_COST = 12;
@@ -129,7 +130,12 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
         createdAt: new Date(),
       });
 
-      await netlifyRecover(emailToSave).catch(() => {});
+      await netlifyTriggerEmailVerification({
+        email: emailToSave,
+        password: parsed.data.password,
+        name: parsed.data.name,
+        username: parsed.data.username,
+      }).catch(() => {});
     }
 
     const token = await createPlayerSession(accountId);
@@ -593,7 +599,11 @@ export async function updatePlayerEmailAction(
     });
 
     // Dispatch Netlify recovery / verification email
-    await netlifyRecover(email).catch(() => {});
+    await netlifyTriggerEmailVerification({
+      email,
+      name: currentAccount?.name,
+      username: currentAccount?.username,
+    }).catch(() => {});
 
     // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(

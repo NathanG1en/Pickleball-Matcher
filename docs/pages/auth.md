@@ -24,8 +24,8 @@ The authentication and account recovery system uses **Netlify Identity (GoTrue)*
    - On password reset, `resetPasswordAction` updates the password in Netlify Identity and updates the PostgreSQL account hash.
 
 3. **Local Development Setup**:
-   - **Offline / Mock Mode (Default)**: If `NETLIFY_IDENTITY_URL` is not configured in `.env.local`, actions log a clear banner in the server terminal with direct reset/verification links, and provide on-screen testing buttons.
-   - **Connected Mode (Live Emails from Localhost)**: Setting `NETLIFY_IDENTITY_URL=https://<your-site>.netlify.app/.netlify/identity` in `.env.local` directs all local recovery requests to your live Netlify Identity service, triggering real outbound emails to inboxes.
+   - **Offline / Fallback Mode**: If `NETLIFY_IDENTITY_URL` is not configured in `.env.local`, actions route through the built-in local emulator with terminal logs and on-screen testing links.
+   - **Connected Mode (Real Outbound Emails from Localhost)**: Setting `NETLIFY_IDENTITY_URL=https://<your-site>.netlify.app/.netlify/identity` in `.env.local` routes all signup confirmations, recovery emails, and email updates to your live Netlify Identity service. Netlify's cloud infrastructure immediately delivers real emails to your personal inbox.
 
 4. **Production Netlify Configuration**:
    - In Netlify Dashboard: **Site configuration > Identity > Enable Identity**.
