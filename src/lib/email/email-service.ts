@@ -38,9 +38,13 @@ export async function sendEmail({ to, subject, html, text }: SendEmailParams): P
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as { message?: string; name?: string };
       console.error("[Email Service - Delivery Error]", errorData);
-      return { success: false, error: "Failed to dispatch email via provider." };
+      const errorMessage =
+        errorData?.message && typeof errorData.message === "string"
+          ? errorData.message
+          : "Failed to dispatch email via provider.";
+      return { success: false, error: errorMessage };
     }
 
     const data = (await response.json()) as { id?: string };
