@@ -12,6 +12,8 @@ export function ForgotPasswordForm() {
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [localDevUrl, setLocalDevUrl] = useState<string | null>(null);
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setPending(true);
@@ -23,6 +25,7 @@ export function ForgotPasswordForm() {
     if (result.ok) {
       setSubmitted(true);
       setMessage(result.data.message);
+      setLocalDevUrl(result.data.localDevUrl ?? null);
       return;
     }
 
@@ -35,6 +38,17 @@ export function ForgotPasswordForm() {
         <Alert variant="success" size="md">
           {message}
         </Alert>
+        {localDevUrl && (
+          <div className="rounded-xl border-2 border-black bg-[#ccff00] p-3 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000]">
+            <p className="font-black uppercase tracking-wider text-[11px]">Local Development Link:</p>
+            <Link
+              href={localDevUrl}
+              className="mt-1 inline-block underline font-black text-black break-all"
+            >
+              Click here to reset your password →
+            </Link>
+          </div>
+        )}
         <p className="text-sm font-medium text-neutral-700">
           Be sure to check your spam folder if you don&apos;t see the email within a couple of minutes.
         </p>

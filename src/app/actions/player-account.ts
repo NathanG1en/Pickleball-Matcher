@@ -24,13 +24,25 @@ import {
   verifyEmailSchema,
 } from "@/lib/validation/group";
 import {
+  isNetlifyIdentityConfigured,
   netlifyRecover,
   netlifyResetPassword,
 } from "@/lib/auth/netlify-gotrue";
+import {
+  sendEmailVerificationEmail,
+  sendPasswordResetEmail,
+} from "@/lib/email/email-service";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
 const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
+
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.URL) return process.env.URL.replace(/\/$/, "");
+  return "http://localhost:3000";
+}
 
 export type PlayerActionResult<T = void> =
   | { ok: true; data: T }
@@ -108,6 +120,25 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       createdAt: new Date(),
     };
     await repository.createPlayerAccount(account);
+
+    if (emailToSave) {
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createEmailVerificationToken({
+        id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId,
+        email: emailToSave,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        createdAt: new Date(),
+      });
+
+      await sendEmailVerificationEmail({
+        to: emailToSave,
+        name: parsed.data.name,
+        verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
+      });
+    }
 
     const token = await createPlayerSession(accountId);
     try {
@@ -423,7 +454,9 @@ export async function loginWithNetlifyIdentityAction(
   }
 }
 
-export async function requestPasswordResetAction(input: unknown): Promise<PlayerActionResult<{ message: string }>> {
+export async function requestPasswordResetAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ message: string; localDevUrl?: string }>> {
   const parsed = requestPasswordResetSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Enter a valid username or email address." };
@@ -431,22 +464,45 @@ export async function requestPasswordResetAction(input: unknown): Promise<Player
   const identifier = parsed.data.identifier.toLowerCase();
   try {
     const repository = getActionRepository();
-    let email = identifier;
-    if (!identifier.includes("@")) {
-      const account = await repository.getPlayerAccountByUsername(identifier);
-      if (account?.email) {
-        email = account.email;
+    let account = await repository.getPlayerAccountByUsername(identifier);
+    if (!account && identifier.includes("@")) {
+      account = await repository.getPlayerAccountByEmail(identifier);
+    }
+
+    let localDevUrl: string | undefined;
+
+    if (account && account.email) {
+      await repository.deletePasswordResetTokensForAccount(account.id);
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createPasswordResetToken({
+        id: `rst_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId: account.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        createdAt: new Date(),
+      });
+
+      const resetUrl = `${getAppBaseUrl()}/reset-password?token=${rawToken}`;
+      const sendRes = await sendPasswordResetEmail({
+        to: account.email,
+        name: account.name,
+        resetUrl,
+      });
+      if (sendRes.localDevUrl) {
+        localDevUrl = sendRes.localDevUrl;
       }
     }
 
-    if (email.includes("@")) {
-      await netlifyRecover(email);
+    if (isNetlifyIdentityConfigured() && identifier.includes("@")) {
+      await netlifyRecover(identifier).catch(() => {});
     }
 
     return {
       ok: true,
       data: {
         message: "If an account matches that username or email address, we've sent a password reset link.",
+        localDevUrl,
       },
     };
   } catch {
@@ -463,16 +519,33 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
     return { ok: false, error: "Password must be 72 bytes or fewer." };
   }
   try {
-    const result = await netlifyResetPassword({
-      token: parsed.data.token,
-      password: parsed.data.password,
-    });
+    const repository = getActionRepository();
+    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
+    const tokenRecord = await repository.getPasswordResetToken(tokenHash);
 
-    if (!result.success) {
+    if (tokenRecord) {
+      if (new Date() > tokenRecord.expiresAt) {
+        return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
+      }
+      const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+      await repository.updatePlayerAccountPassword(tokenRecord.accountId, newHash);
+      await repository.deletePasswordResetToken(tokenRecord.id);
+      return { ok: true, data: { success: true } };
+    }
+
+    if (isNetlifyIdentityConfigured()) {
+      const result = await netlifyResetPassword({
+        token: parsed.data.token,
+        password: parsed.data.password,
+      });
+
+      if (result.success) {
+        return { ok: true, data: { success: true } };
+      }
       return { ok: false, error: result.error || "Unable to reset password. Please try again." };
     }
 
-    return { ok: true, data: { success: true } };
+    return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
   } catch {
     return { ok: false, error: "Unable to reset password. Please try again." };
   }
@@ -480,7 +553,7 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
 
 export async function updatePlayerEmailAction(
   input: unknown,
-): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string }>> {
+): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string; localDevUrl?: string }>> {
   const parsed = updatePlayerEmailSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -526,6 +599,20 @@ export async function updatePlayerEmailAction(
       createdAt: new Date(),
     });
 
+    const verifyUrl = `${getAppBaseUrl()}/verify-email?token=${rawToken}`;
+    const emailResult = await sendEmailVerificationEmail({
+      to: email,
+      name: currentAccount?.name || "Player",
+      verifyUrl,
+    });
+
+    if (!emailResult.success) {
+      return {
+        ok: false,
+        error: emailResult.error || "Failed to deliver verification email. Please check your email configuration.",
+      };
+    }
+
     // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(
       accountId,
@@ -546,6 +633,7 @@ export async function updatePlayerEmailAction(
         email,
         verificationRequired: true,
         verificationToken: rawToken,
+        localDevUrl: emailResult.localDevUrl,
       },
     };
   } catch (error) {
@@ -568,7 +656,7 @@ export async function updatePlayerEmailAction(
 export const updateRecoveryEmailAction = updatePlayerEmailAction;
 
 export async function resendVerificationEmailAction(): Promise<
-  PlayerActionResult<{ email: string; verificationToken?: string }>
+  PlayerActionResult<{ email: string; verificationToken?: string; localDevUrl?: string }>
 > {
   try {
     const accountId = await requirePlayer();
@@ -590,11 +678,26 @@ export async function resendVerificationEmailAction(): Promise<
       createdAt: new Date(),
     });
 
+    const verifyUrl = `${getAppBaseUrl()}/verify-email?token=${rawToken}`;
+    const emailResult = await sendEmailVerificationEmail({
+      to: account.email,
+      name: account.name,
+      verifyUrl,
+    });
+
+    if (!emailResult.success) {
+      return {
+        ok: false,
+        error: emailResult.error || "Failed to deliver verification email. Please check your email configuration.",
+      };
+    }
+
     return {
       ok: true,
       data: {
         email: account.email,
         verificationToken: rawToken,
+        localDevUrl: emailResult.localDevUrl,
       },
     };
   } catch (error) {

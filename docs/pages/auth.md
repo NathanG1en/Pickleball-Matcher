@@ -1,13 +1,34 @@
-# Authentication & Netlify Identity — `/player-login`, `/player-signup`, `/forgot-password`, `/reset-password`
+# Authentication, Email Delivery & Identity — `/player-login`, `/player-signup`, `/forgot-password`, `/reset-password`, `/verify-email`
 
-The authentication system handles player onboarding, credential verification, headless Netlify Identity (GoTrue) integration, Google OAuth, and player session management without any third-party popups or modals.
+The authentication system handles player onboarding, credential verification, email delivery (local console mock, Resend, or Cloudflare Email Sending), headless Netlify Identity (GoTrue) integration, Google OAuth, and player session management.
 
 ## Overview & Routing
 
 - **Sign In (`/player-login`)**: Offers a 1-click **"Continue with Google"** button alongside a native credentials form accepting `username` or `email` and `password`. Includes a "Forgot password?" link directing to `/forgot-password`, and preserves the target return path (`?next=...`).
-- **Sign Up (`/player-signup`)**: Native player registration featuring **"Continue with Google"** and custom registration capturing `username`, display `name`, optional `email`, `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating.
-- **Forgot Password (`/forgot-password`)**: Native input form for player email that dispatches password recovery emails via Netlify GoTrue (`/.netlify/identity/recover`), eliminating custom SMTP and DNS setup requirements.
-- **Reset Password (`/reset-password`)**: Custom password reset form allowing players to enter and confirm their new password when arriving with a `#recovery_token=...` or `?token=...`.
+- **Sign Up (`/player-signup`)**: Native player registration featuring **"Continue with Google"** and custom registration capturing `username`, display `name`, optional `email`, `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating. If an email is supplied, a verification token is created and a verification email is dispatched.
+- **Forgot Password (`/forgot-password`)**: Native input form for username or email. Generates a database-backed password reset token (`password_reset_tokens`), sends a reset email with an actionable URL (`/reset-password?token=...`), and supports Netlify Identity recovery as a secondary provider. In local development, the reset link is printed to the terminal console and displayed directly on screen.
+- **Reset Password (`/reset-password`)**: Custom password reset form allowing players to enter and confirm their new password using either a database token (`?token=...`) or Netlify Identity recovery token (`#recovery_token=...`).
+- **Verify Email (`/verify-email`)**: Verification screen where users confirm their recovery email token (`?token=...`). On confirmation, sets `email_verified = true` in PostgreSQL and deletes the token.
+- **Recovery Email Banner (`RecoveryEmailBanner`)**: Persistent notice on `/` and `/players` prompting players without a connected or verified recovery email to add one, with 1-click resend and local verification shortcuts.
+
+## Email Delivery Architecture (`src/lib/email/email-service.ts`)
+
+1. **Local Development (Zero-Config)**:
+   - When no external email provider API key is configured, emails are dispatched to the server terminal console with recipient, subject, and direct action URLs:
+     ```
+     ══════════════════════════════════════════════════════════════════════════════
+     📬 [LOCAL DEV EMAIL DISPATCH]
+        To:         athlete@example.com
+        Subject:    Verify your Pickleball Matcher recovery email
+        👉 Link:    http://localhost:3000/verify-email?token=...
+     ══════════════════════════════════════════════════════════════════════════════
+     ```
+   - In addition, server actions return `localDevUrl` and `verificationToken` so developers can click "Verify Now →" directly in the UI.
+
+2. **Production Providers**:
+   - **Resend API (`RESEND_API_KEY`)**: Universal REST-based dispatch (`https://api.resend.com/emails`) that runs identically in Node.js, Cloudflare Workers, and Netlify Functions. Configured via `RESEND_API_KEY` and optional `RESEND_FROM_EMAIL`.
+   - **Cloudflare Email Sending (`CLOUDFLARE_EMAIL_TOKEN` & `CLOUDFLARE_ACCOUNT_ID`)**: Native transactional email support via Cloudflare Email Sending REST API.
+   - **Netlify Identity (GoTrue)**: Secondary authentication and password recovery provider when deployed to Netlify with Identity enabled.
 
 ## Headless Netlify Identity (GoTrue) Integration
 
@@ -22,10 +43,3 @@ The authentication system handles player onboarding, credential verification, he
    - Detects URL hash fragments:
      - `#access_token=...`: Decodes the identity JWT payload, extracts player profile/email, calls `loginWithNetlifyIdentityAction` to link or auto-provision the player account in PostgreSQL, sets the `player_session` cookie, and cleans the URL hash.
      - `#recovery_token=...`: Intercepts recovery email links and redirects the user to `/reset-password?token=...` with the token preserved.
-4. **Session Linking (`loginWithNetlifyIdentityAction`)**:
-   - Dispatched automatically on Google OAuth callback.
-   - If an existing account matches `email`, links the session to that account.
-   - If not, auto-provisions a new player account with intermediate rating (1000 Elo), unique username, and verified email status.
-   - Issues a signed JWT session cookie (`player_session`, 30-day expiry) and redirects to the intended destination (`next` or `/`).
-5. **Password Recovery & Email Delivery**:
-   - Netlify Identity GoTrue delivers recovery emails directly through Netlify's built-in mailers without requiring custom domain DKIM/SPF records.
