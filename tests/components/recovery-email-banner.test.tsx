@@ -21,6 +21,7 @@ describe("RecoveryEmailBanner", () => {
 
     expect(html).toContain("Action Required · Recovery Email Unverified");
     expect(html).toContain("player@example.com");
+    expect(html).toContain("Resend Link");
     expect(html).toContain("Change Email");
     expect(html).toContain("Dismiss");
   });

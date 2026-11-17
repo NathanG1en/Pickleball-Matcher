@@ -9,7 +9,7 @@ The authentication and account recovery system uses **Netlify Identity (GoTrue)*
 - **Forgot Password (`/forgot-password`)**: Native input form for username or email. Dispatches a password recovery email via Netlify Identity (`/.netlify/identity/recover`). When running in local development without a connected Netlify Identity instance, prints the recovery link to the terminal and displays a local shortcut.
 - **Reset Password (`/reset-password`)**: Custom password reset form allowing players to enter and confirm their new password when arriving with a `#recovery_token=...` or `?token=...`.
 - **Verify Email (`/verify-email`)**: Verification screen where users confirm their recovery email token (`?token=...`).
-- **Recovery Email Banner (`RecoveryEmailBanner`)**: Persistent notice on `/` and `/players` prompting players without a connected or verified recovery email to connect one, with local verification shortcuts.
+- **Recovery Email Banner (`RecoveryEmailBanner`)**: Persistent notice on `/` and `/players` prompting players without a connected or verified recovery email to connect one, with 1-click resend and local verification shortcuts.
 
 ## Netlify Identity (GoTrue) Architecture (`src/lib/auth/netlify-gotrue.ts`)
 

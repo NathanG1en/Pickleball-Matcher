@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  resendVerificationEmailAction,
   updatePlayerEmailAction,
   updatePlayerPasswordAction,
 } from "@/app/actions/player-account";
@@ -170,6 +171,7 @@ export function UserSettingsModal({
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -243,6 +245,26 @@ export function UserSettingsModal({
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    setEmailError(null);
+    try {
+      const res = await resendVerificationEmailAction();
+      if (!res.ok) {
+        setEmailError(res.error ?? "Failed to resend verification link.");
+        return;
+      }
+      if (res.data.verificationToken) {
+        setVerificationToken(res.data.verificationToken);
+      }
+      showToast("Verification link sent! Check your inbox.");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Failed to resend verification link.");
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
 
@@ -495,8 +517,17 @@ export function UserSettingsModal({
                   <p className="text-[11px] font-bold text-amber-800">
                     Your email address requires verification. An email update requires re-verification before it can be used for account recovery.
                   </p>
-                  {verificationToken && (
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={resendingVerification}
+                      onClick={handleResendVerification}
+                      data-testid="settings-resend-verification-button"
+                      className="rounded-lg border border-black bg-neutral-100 px-2.5 py-1 text-[11px] font-black uppercase text-black hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                    >
+                      {resendingVerification ? "Sending…" : "Resend Verification Link"}
+                    </button>
+                    {verificationToken && (
                       <Link
                         href={`/verify-email?token=${verificationToken}`}
                         data-testid="settings-verify-now-link"
@@ -504,8 +535,8 @@ export function UserSettingsModal({
                       >
                         Verify Now →
                       </Link>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
