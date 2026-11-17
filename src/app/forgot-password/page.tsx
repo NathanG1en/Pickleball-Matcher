@@ -14,11 +14,10 @@ export default function ForgotPasswordPage() {
         </Link>
         <h1 className="mb-2 font-display text-3xl font-black uppercase">Forgot Password</h1>
         <p className="mb-6 text-sm font-bold text-neutral-700">
-          Enter your username or email address and we&apos;ll send you a link to reset your password.
+          We&apos;ll send a password recovery link to your registered email address.
         </p>
         <ForgotPasswordForm />
       </section>
     </main>
   );
 }
-

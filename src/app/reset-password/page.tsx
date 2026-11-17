@@ -20,11 +20,10 @@ export default async function ResetPasswordPage({
         </Link>
         <h1 className="mb-2 font-display text-3xl font-black uppercase">Set New Password</h1>
         <p className="mb-6 text-sm font-bold text-neutral-700">
-          Enter your new password below to secure your account.
+          Choose a new password with at least 10 characters.
         </p>
         <ResetPasswordForm token={token} />
       </section>
     </main>
   );
 }
-

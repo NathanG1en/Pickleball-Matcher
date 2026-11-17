@@ -65,7 +65,7 @@ export function PlayerSignupForm({ initialNext }: { initialNext?: string } = {})
       initialRating: initialRatingElo,
     });
     if (result.ok) {
-      router.push(getReturnPath() ?? "/players/groups");
+      router.push(initialNext ?? getReturnPath() ?? "/players/groups");
       router.refresh();
       return;
     }

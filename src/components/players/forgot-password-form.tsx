@@ -83,12 +83,14 @@ export function ForgotPasswordForm() {
         {pending ? "Sending Link…" : "Send Reset Link"}
       </Button>
 
-      <p className="text-center text-sm font-bold text-neutral-700">
-        Remember your password?{" "}
-        <Link href="/player-login" className="underline">
-          Sign In
+      <div className="pt-2 text-center">
+        <Link
+          href="/player-login"
+          className="text-xs font-bold text-neutral-600 hover:text-black hover:underline"
+        >
+          ← Back to Sign In
         </Link>
-      </p>
+      </div>
     </form>
   );
 }

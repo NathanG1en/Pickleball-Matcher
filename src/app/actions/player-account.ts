@@ -11,30 +11,26 @@ import {
   joinAsGuestSchema,
   joinGroupInviteSchema,
   joinPublicGroupSchema,
+  loginWithNetlifyIdentitySchema,
   playerLoginSchema,
   playerSignupSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
+  updatePlayerEmailSchema,
   updatePlayerGenderSchema,
+  updatePlayerPasswordSchema,
   updatePlayerProfileSchema,
   updatePlayerUsernameSchema,
-  updateRecoveryEmailSchema,
   verifyEmailSchema,
 } from "@/lib/validation/group";
 import {
-  sendEmailVerificationEmail,
-  sendPasswordResetEmail,
-} from "@/lib/email/email-service";
+  netlifyRecover,
+  netlifyResetPassword,
+} from "@/lib/auth/netlify-gotrue";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
 const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
-
-function getAppBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
-  return "http://localhost:3000";
-}
 
 export type PlayerActionResult<T = void> =
   | { ok: true; data: T }
@@ -113,24 +109,6 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
     };
     await repository.createPlayerAccount(account);
 
-    if (emailToSave) {
-      const rawToken = randomBytes(32).toString("hex");
-      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-      await repository.createEmailVerificationToken({
-        id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
-        accountId,
-        email: emailToSave,
-        tokenHash,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
-      });
-      await sendEmailVerificationEmail({
-        to: emailToSave,
-        name: parsed.data.name,
-        verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
-      });
-    }
-
     const token = await createPlayerSession(accountId);
     try {
       (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
@@ -148,12 +126,21 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
 
 export async function playerLoginAction(input: unknown): Promise<PlayerActionResult<{ accountId: string }>> {
   const parsed = playerLoginSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Enter a valid username and password." };
+  if (!parsed.success) return { ok: false, error: "Enter a valid username or email and password." };
   try {
+    const rawIdentifier = (
+      parsed.data.identifier ??
+      parsed.data.email ??
+      parsed.data.username ??
+      ""
+    ).trim().toLowerCase();
     const repository = getActionRepository();
-    const account = await repository.getPlayerAccountByUsername(parsed.data.username.toLowerCase());
+    let account = await repository.getPlayerAccountByUsername(rawIdentifier);
+    if (!account) {
+      account = await repository.getPlayerAccountByEmail(rawIdentifier);
+    }
     const validPassword = await compare(parsed.data.password, account?.passwordHash ?? DUMMY_PASSWORD_HASH);
-    if (!account || !validPassword) return { ok: false, error: "Unable to sign in. Check your username and password." };
+    if (!account || !validPassword) return { ok: false, error: "Unable to sign in. Check your username or email and password." };
     const token = await createPlayerSession(account.id);
     try {
       (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
@@ -162,7 +149,7 @@ export async function playerLoginAction(input: unknown): Promise<PlayerActionRes
     }
     return { ok: true, data: { accountId: account.id } };
   } catch {
-    return { ok: false, error: "Unable to sign in. Check your username and password." };
+    return { ok: false, error: "Unable to sign in. Check your username or email and password." };
   }
 }
 
@@ -376,6 +363,66 @@ export async function joinAsGuestAction(
   }
 }
 
+export async function loginWithNetlifyIdentityAction(
+  input: unknown
+): Promise<PlayerActionResult<{ accountId: string }>> {
+  const parsed = loginWithNetlifyIdentitySchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid Netlify Identity authentication." };
+  }
+
+  const email = parsed.data.email.trim().toLowerCase();
+  const repository = getActionRepository();
+
+  try {
+    let account = await repository.getPlayerAccountByEmail(email);
+
+    if (!account) {
+      const baseUsername = email
+        .split("@")[0]
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .slice(0, 18)
+        .padEnd(3, "0")
+        .toLowerCase();
+
+      let uniqueUsername = baseUsername;
+      let counter = 1;
+      while (await repository.getPlayerAccountByUsername(uniqueUsername)) {
+        uniqueUsername = `${baseUsername.slice(0, 14)}_${counter}`;
+        counter++;
+      }
+
+      const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+      const newAccount = {
+        id: accountId,
+        username: uniqueUsername,
+        name: parsed.data.name?.trim() || uniqueUsername,
+        gender: undefined,
+        skillLevel: "intermediate" as const,
+        initialRating: 1000,
+        email,
+        emailVerified: true,
+        passwordHash: null,
+        createdAt: new Date(),
+      };
+      await repository.createPlayerAccount(newAccount);
+      account = newAccount;
+    }
+
+    const token = await createPlayerSession(account.id);
+    try {
+      (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
+    } catch {
+      // Non-request test contexts.
+    }
+
+    return { ok: true, data: { accountId: account.id } };
+  } catch (error) {
+    console.error("loginWithNetlifyIdentityAction error:", error);
+    return { ok: false, error: "Failed to authenticate with Netlify Identity." };
+  }
+}
+
 export async function requestPasswordResetAction(input: unknown): Promise<PlayerActionResult<{ message: string }>> {
   const parsed = requestPasswordResetSchema.safeParse(input);
   if (!parsed.success) {
@@ -384,34 +431,22 @@ export async function requestPasswordResetAction(input: unknown): Promise<Player
   const identifier = parsed.data.identifier.toLowerCase();
   try {
     const repository = getActionRepository();
-    let account = await repository.getPlayerAccountByUsername(identifier);
-    if (!account && identifier.includes("@")) {
-      account = await repository.getPlayerAccountByEmail(identifier);
+    let email = identifier;
+    if (!identifier.includes("@")) {
+      const account = await repository.getPlayerAccountByUsername(identifier);
+      if (account?.email) {
+        email = account.email;
+      }
     }
 
-    if (account && account.email) {
-      await repository.deletePasswordResetTokensForAccount(account.id);
-      const rawToken = randomBytes(32).toString("hex");
-      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-      await repository.createPasswordResetToken({
-        id: `rst_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
-        accountId: account.id,
-        tokenHash,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-        createdAt: new Date(),
-      });
-
-      await sendPasswordResetEmail({
-        to: account.email,
-        name: account.name,
-        resetUrl: `${getAppBaseUrl()}/reset-password?token=${rawToken}`,
-      });
+    if (email.includes("@")) {
+      await netlifyRecover(email);
     }
 
     return {
       ok: true,
       data: {
-        message: "If an account matches that username or email address with recovery configured, we've sent a password reset link.",
+        message: "If an account matches that username or email address, we've sent a password reset link.",
       },
     };
   } catch {
@@ -428,17 +463,14 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
     return { ok: false, error: "Password must be 72 bytes or fewer." };
   }
   try {
-    const repository = getActionRepository();
-    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
-    const tokenRecord = await repository.getPasswordResetToken(tokenHash);
+    const result = await netlifyResetPassword({
+      token: parsed.data.token,
+      password: parsed.data.password,
+    });
 
-    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
-      return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
+    if (!result.success) {
+      return { ok: false, error: result.error || "Unable to reset password. Please try again." };
     }
-
-    const newPasswordHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
-    await repository.updatePlayerAccountPassword(tokenRecord.accountId, newPasswordHash);
-    await repository.deletePasswordResetToken(tokenRecord.id);
 
     return { ok: true, data: { success: true } };
   } catch {
@@ -446,60 +478,96 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
   }
 }
 
-export async function updateRecoveryEmailAction(input: unknown): Promise<PlayerActionResult<{ email: string }>> {
-  const parsed = updateRecoveryEmailSchema.safeParse(input);
+export async function updatePlayerEmailAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string }>> {
+  const parsed = updatePlayerEmailSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: "Enter a valid email address.", fieldErrors: parsed.error.flatten().fieldErrors };
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Enter a valid email address.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
+  const email = parsed.data.email.trim().toLowerCase();
   try {
     const accountId = await requirePlayer();
     const repository = getActionRepository();
-    const account = await repository.getPlayerAccount(accountId);
-    if (!account) throw new Error("Player account not found.");
-    const normalizedEmail = parsed.data.email.toLowerCase();
-
-    const existing = await repository.getPlayerAccountByEmail(normalizedEmail);
-    if (existing && existing.id !== account.id) {
+    const existing = await repository.getPlayerAccountByEmail(email);
+    if (existing && existing.id !== accountId) {
       return {
         ok: false,
         error: "That email is already registered to another account.",
-        fieldErrors: { email: ["That email is already registered."] },
+        fieldErrors: { email: ["That email is already registered to another account."] },
+      };
+    }
+    const currentAccount = await repository.getPlayerAccount(accountId);
+    const isSameEmail = currentAccount?.email?.trim().toLowerCase() === email;
+    if (isSameEmail) {
+      return {
+        ok: false,
+        error: "New email address must be different from current email address.",
+        fieldErrors: { email: ["New email address must be different from current email address."] },
       };
     }
 
-    await repository.updatePlayerAccountEmail(account.id, normalizedEmail, false);
+    // Delete existing verification tokens for this account
+    await repository.deleteEmailVerificationTokensForAccount(accountId);
 
-    await repository.deleteEmailVerificationTokensForAccount(account.id);
+    // Generate a fresh email verification token
     const rawToken = randomBytes(32).toString("hex");
     const tokenHash = createHash("sha256").update(rawToken).digest("hex");
     await repository.createEmailVerificationToken({
-      id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
-      accountId: account.id,
-      email: normalizedEmail,
+      id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      accountId,
+      email,
       tokenHash,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       createdAt: new Date(),
     });
 
-    await sendEmailVerificationEmail({
-      to: normalizedEmail,
-      name: account.name,
-      verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
-    });
-
+    // Update email and reset verification status to false (must be re-verified)
+    await repository.updatePlayerAccountEmail(
+      accountId,
+      email,
+      false,
+    );
     try {
       revalidatePath("/players");
-      revalidatePath("/");
+      if (currentAccount?.username) {
+        revalidatePath(`/players/${encodeURIComponent(currentAccount.username)}`);
+      }
     } catch {
       // Non-request test contexts.
     }
-    return { ok: true, data: { email: normalizedEmail } };
+    return {
+      ok: true,
+      data: {
+        email,
+        verificationRequired: true,
+        verificationToken: rawToken,
+      },
+    };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Unable to update recovery email." };
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")
+    ) {
+      return {
+        ok: false,
+        error: "That email is already registered to another account.",
+        fieldErrors: { email: ["That email is already registered to another account."] },
+      };
+    }
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update email." };
   }
 }
 
-export async function verifyEmailAction(input: unknown): Promise<PlayerActionResult<{ email: string }>> {
+export async function verifyEmailAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ email: string }>> {
   const parsed = verifyEmailSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Invalid verification link." };
@@ -528,38 +596,47 @@ export async function verifyEmailAction(input: unknown): Promise<PlayerActionRes
   }
 }
 
-export async function resendVerificationEmailAction(): Promise<PlayerActionResult<void>> {
+export async function updatePlayerPasswordAction(
+  input: unknown,
+): Promise<PlayerActionResult<void>> {
+  const parsed = updatePlayerPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Please check password requirements.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+  if (Buffer.byteLength(parsed.data.newPassword, "utf8") > 72) {
+    return {
+      ok: false,
+      error: "Password must be 72 bytes or fewer.",
+      fieldErrors: { newPassword: ["Password must be 72 bytes or fewer."] },
+    };
+  }
   try {
     const accountId = await requirePlayer();
     const repository = getActionRepository();
     const account = await repository.getPlayerAccount(accountId);
-    if (!account) throw new Error("Player account not found.");
-    if (!account.email) {
-      return { ok: false, error: "No recovery email found. Please add an email address first." };
+    if (!account) {
+      return { ok: false, error: "Player account not found." };
     }
-    if (account.emailVerified) {
-      return { ok: true, data: undefined };
+
+    if (account.passwordHash) {
+      const isMatch = await compare(parsed.data.currentPassword, account.passwordHash);
+      if (!isMatch) {
+        return {
+          ok: false,
+          error: "Current password is incorrect.",
+          fieldErrors: { currentPassword: ["Current password is incorrect."] },
+        };
+      }
     }
-    await repository.deleteEmailVerificationTokensForAccount(account.id);
-    const rawToken = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-    await repository.createEmailVerificationToken({
-      id: `vtok_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
-      accountId: account.id,
-      email: account.email,
-      tokenHash,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      createdAt: new Date(),
-    });
 
-    await sendEmailVerificationEmail({
-      to: account.email,
-      name: account.name,
-      verifyUrl: `${getAppBaseUrl()}/verify-email?token=${rawToken}`,
-    });
-
+    const newHash = await hash(parsed.data.newPassword, PASSWORD_HASH_COST);
+    await repository.updatePlayerAccountPassword(accountId, newHash);
     return { ok: true, data: undefined };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Unable to send verification email." };
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to update password." };
   }
 }

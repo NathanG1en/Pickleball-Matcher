@@ -127,18 +127,30 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(10, "Password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
 }).strict();
 
-export const updateRecoveryEmailSchema = z.object({
+export const loginWithNetlifyIdentitySchema = z.object({
+  id: z.string().min(1, "User ID is required."),
   email: z.string().trim().email("Enter a valid email address.").max(254),
+  name: z.string().trim().max(80).optional(),
+  token: z.string().optional(),
 }).strict();
 
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, "Verification token is required."),
-}).strict();
-
-export const playerLoginSchema = z.object({
-  username: z.string().trim().min(3).max(24),
-  password: z.string().min(1).max(72),
-}).strict();
+export const playerLoginSchema = z
+  .object({
+    username: z.string().trim().min(1).max(254).optional(),
+    email: z.string().trim().min(1).max(254).optional(),
+    identifier: z.string().trim().min(1).max(254).optional(),
+    password: z.string().min(1).max(72),
+  })
+  .strict()
+  .refine(
+    (data) => {
+      const id = data.identifier ?? data.email ?? data.username;
+      return typeof id === "string" && id.trim().length >= 3;
+    },
+    {
+      message: "Enter a valid username or email address.",
+    }
+  );
 
 export const updatePlayerProfileSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
@@ -154,6 +166,26 @@ export const updatePlayerGenderSchema = z.object({
 export const updatePlayerUsernameSchema = z.object({
   username: usernameFieldSchema,
 }).strict();
+
+export const updatePlayerEmailSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address.").max(254),
+}).strict();
+
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1, "Verification token is required."),
+}).strict();
+
+export const updatePlayerPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required.").max(72),
+    newPassword: z.string().min(10, "New password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
+    confirmPassword: z.string().min(1, "Confirm your new password.").max(72),
+  })
+  .strict()
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 export const joinPublicGroupSchema = z.object({
   groupId: entityIdSchema,

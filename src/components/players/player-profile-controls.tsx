@@ -16,98 +16,45 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
-import { LockIcon, GlobeIcon, InfoIcon, UsersIcon, ChevronDownIcon } from "@/components/ui/icons";
+import { LockIcon, GlobeIcon, InfoIcon, UsersIcon } from "@/components/ui/icons";
 import { useTooltipPosition } from "@/components/ui/use-tooltip-position";
 import { AccountOptionsMenu } from "@/components/players/account-options-menu";
-import type { ProfileVisibilityLevel, ProfileVisibilitySettings } from "@/lib/domain/types";
 import {
-  parseProfileVisibilitySettings,
-  PROFILE_VISIBILITY_RANKS,
-  clampVisibilityLevel,
-} from "@/lib/privacy/profile-visibility";
+  PORTION_CONFIGS,
+  UserSettingsModal,
+  VISIBILITY_LEVEL_OPTIONS,
+} from "@/components/players/user-settings-modal";
+import type { ProfileVisibilitySettings } from "@/lib/domain/types";
+import { parseProfileVisibilitySettings } from "@/lib/privacy/profile-visibility";
 
-export { AccountOptionsMenu };
+export { AccountOptionsMenu, PORTION_CONFIGS, UserSettingsModal, VISIBILITY_LEVEL_OPTIONS };
 
-const PORTION_CONFIGS: {
-  key: keyof ProfileVisibilitySettings;
-  label: string;
-  optionDescriptions: Record<ProfileVisibilityLevel, string>;
-}[] = [
-  {
-    key: "profile",
-    label: "Profile Page",
-    optionDescriptions: {
-      everyone: "Anyone can search for your profile and view your profile page.",
-      group_members: "Only athletes in your shared groups can view your profile page.",
-      only_you: "Your profile is completely private and hidden from search.",
-    },
-  },
-  {
-    key: "activities",
-    label: "Activities & Past Sessions",
-    optionDescriptions: {
-      everyone: "Anyone viewing your profile can see your past session and match history.",
-      group_members: "Only athletes in your shared groups can see your past session history.",
-      only_you: "Only you can see your past session and match history.",
-    },
-  },
-  {
-    key: "ratingStats",
-    label: "Rating & Stats",
-    optionDescriptions: {
-      everyone: "Anyone can view your DUPR rating, skill tier, win/loss stats, and rating chart.",
-      group_members: "Only athletes in your shared groups can view your rating and stats.",
-      only_you: "Only you can view your rating and stats.",
-    },
-  },
-  {
-    key: "chemistry",
-    label: "Chemistry Spotlight",
-    optionDescriptions: {
-      everyone: "Anyone can view your best partner synergy and chemistry scores.",
-      group_members: "Only athletes in your shared groups can view your partner synergy scores.",
-      only_you: "Only you can view your partner synergy scores.",
-    },
-  },
-  {
-    key: "groups",
-    label: "Groups",
-    optionDescriptions: {
-      everyone: "Anyone can view the groups and clubs you have joined.",
-      group_members: "Only athletes in your shared groups can view your joined groups.",
-      only_you: "Only you can view your joined groups.",
-    },
-  },
-];
-
-const VISIBILITY_LEVEL_OPTIONS: {
-  value: ProfileVisibilityLevel;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}[] = [
-  { value: "everyone", label: "Everyone", icon: GlobeIcon },
-  { value: "group_members", label: "Group Members", icon: UsersIcon },
-  { value: "only_you", label: "Only You", icon: LockIcon },
-];
 
 export function PlayerProfileHeader({
   backButton,
   initialName,
   initialUsername,
   initialGender,
+  initialEmail,
+  initialEmailVerified,
+  hasPassword = true,
   initialRating,
   currentRating,
   rating,
   initialIsPublic = true,
   initialVisibilitySettings,
   initialEditing = false,
-  initialPrivacySectionOpen = true,
+  initialSettingsModalOpen = false,
+  initialSettingsTab = "account",
   initialOpenDrawers = {},
 }: {
   backButton?: React.ReactNode;
   initialName: string;
   initialUsername: string;
   initialGender?: "male" | "female" | null;
+  initialEmail?: string | null;
+  initialEmailVerified?: boolean;
+  hasPassword?: boolean;
   skillLevel?: string;
   initialRating?: number;
   currentRating?: number;
@@ -116,15 +63,20 @@ export function PlayerProfileHeader({
   initialVisibilitySettings?: ProfileVisibilitySettings;
   initialEditing?: boolean;
   initialPrivacySectionOpen?: boolean;
+  initialSettingsModalOpen?: boolean;
+  initialSettingsTab?: "account" | "privacy";
   initialOpenDrawers?: Record<string, boolean>;
 }) {
   const displayRating = currentRating ?? rating ?? initialRating ?? 1000;
   const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(initialEditing);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(initialSettingsModalOpen);
   const [name, setName] = useState(initialName);
   const [username, setUsername] = useState(initialUsername);
   const [gender, setGender] = useState<"male" | "female" | null | undefined>(initialGender);
+  const [email, setEmail] = useState(initialEmail ?? "");
+  const [emailVerified, setEmailVerified] = useState(initialEmailVerified ?? false);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [visibilitySettings, setVisibilitySettings] = useState<ProfileVisibilitySettings>(
     () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
@@ -136,11 +88,6 @@ export function PlayerProfileHeader({
   const [genderInput, setGenderInput] = useState<"male" | "female">(
     initialGender === "female" ? "female" : "male",
   );
-  const [visibilityInput, setVisibilityInput] = useState<ProfileVisibilitySettings>(
-    () => parseProfileVisibilitySettings(initialVisibilitySettings, initialIsPublic),
-  );
-  const [isPrivacySectionOpen, setIsPrivacySectionOpen] = useState(initialPrivacySectionOpen);
-  const [openDrawers, setOpenDrawers] = useState<Record<string, boolean>>(initialOpenDrawers);
 
   const [availability, setAvailability] = useState<{ query: string; available: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -188,37 +135,32 @@ export function PlayerProfileHeader({
     };
   }, [usernameInput, isEditing, username]);
 
-  const toggleDrawer = (key: string) => {
-    setOpenDrawers((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
   const handleEnterEditMode = () => {
     setNameInput(name);
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
-    setVisibilityInput(visibilitySettings);
-    setIsPrivacySectionOpen(true);
-    setOpenDrawers({});
     setSaveError(null);
     setAvailability(null);
     setIsEditing(true);
   };
 
-  const handleCancelClick = () => {
-    const hasChanges =
-      nameInput.trim() !== name.trim() ||
-      cleanUsernameInput !== username.toLowerCase() ||
-      genderInput !== (gender ?? "male") ||
-      visibilityInput.profile !== visibilitySettings.profile ||
-      visibilityInput.activities !== visibilitySettings.activities ||
-      visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
-      visibilityInput.chemistry !== visibilitySettings.chemistry ||
-      visibilityInput.groups !== visibilitySettings.groups;
+  const trimmedName = nameInput.trim();
+  const hasProfileChanges =
+    trimmedName !== name.trim() ||
+    cleanUsernameInput !== username.toLowerCase() ||
+    genderInput !== (gender ?? "male");
 
-    if (hasChanges) {
+  const isFormValid =
+    Boolean(trimmedName) &&
+    trimmedName.length <= 80 &&
+    Boolean(cleanUsernameInput) &&
+    cleanUsernameInput.length >= 3 &&
+    cleanUsernameInput.length <= 24 &&
+    /^[A-Za-z0-9_]+$/.test(cleanUsernameInput) &&
+    !isUsernameTaken;
+
+  const handleCancelClick = () => {
+    if (hasProfileChanges) {
       setShowDiscardConfirm(true);
     } else {
       handleDiscard();
@@ -229,28 +171,15 @@ export function PlayerProfileHeader({
     setNameInput(name);
     setUsernameInput(username);
     setGenderInput(gender === "female" ? "female" : "male");
-    setVisibilityInput(visibilitySettings);
-    setIsPrivacySectionOpen(true);
-    setOpenDrawers({});
     setSaveError(null);
     setAvailability(null);
     setShowDiscardConfirm(false);
     setIsEditing(false);
   };
 
-  const trimmedName = nameInput.trim();
-  const isFormValid =
-    Boolean(trimmedName) &&
-    trimmedName.length <= 80 &&
-    Boolean(cleanUsernameInput) &&
-    cleanUsernameInput.length >= 3 &&
-    cleanUsernameInput.length <= 24 &&
-    /^[A-Za-z0-9_]+$/.test(cleanUsernameInput) &&
-    !isUsernameTaken;
-
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (saving) return;
+    if (saving || !hasProfileChanges) return;
 
     if (!trimmedName) {
       setSaveError("Display name is required.");
@@ -303,32 +232,9 @@ export function PlayerProfileHeader({
         }
       }
 
-      const targetIsPublic = visibilityInput.profile !== "only_you";
-      const visibilityChanged =
-        targetIsPublic !== isPublic ||
-        visibilityInput.profile !== visibilitySettings.profile ||
-        visibilityInput.activities !== visibilitySettings.activities ||
-        visibilityInput.ratingStats !== visibilitySettings.ratingStats ||
-        visibilityInput.chemistry !== visibilitySettings.chemistry ||
-        visibilityInput.groups !== visibilitySettings.groups;
-
-      if (visibilityChanged) {
-        const privacyRes = await updatePlayerPrivacyAction({
-          isPublic: targetIsPublic,
-          visibilitySettings: visibilityInput,
-        });
-        if (!privacyRes.ok) {
-          setSaveError(privacyRes.error ?? "Failed to update privacy setting.");
-          setSaving(false);
-          return;
-        }
-      }
-
       setName(trimmedName);
       setUsername(cleanUsernameInput);
       setGender(genderInput);
-      setIsPublic(visibilityInput.profile !== "only_you");
-      setVisibilitySettings(visibilityInput);
       setIsEditing(false);
       setToastMessage("Profile updated successfully");
       if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
@@ -374,9 +280,9 @@ export function PlayerProfileHeader({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving || !isFormValid}
+                disabled={saving || !isFormValid || !hasProfileChanges}
                 data-testid="save-profile-button"
-                className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
               >
                 {saving ? "Saving…" : "Save Changes"}
               </button>
@@ -391,7 +297,7 @@ export function PlayerProfileHeader({
               >
                 Edit Profile
               </button>
-              <AccountOptionsMenu />
+              <AccountOptionsMenu onOpenSettings={() => setIsSettingsOpen(true)} />
             </>
           )}
         </div>
@@ -485,194 +391,6 @@ export function PlayerProfileHeader({
                 sizeVariant="sm"
               />
             </div>
-          </div>
-
-          {/* Privacy Controls · Granular portion visibility drawers */}
-          <div className="pt-3 border-t-2 border-neutral-200 space-y-3" data-testid="privacy-controls-section">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setIsPrivacySectionOpen((prev: boolean) => !prev)}
-                aria-expanded={isPrivacySectionOpen}
-                aria-controls="privacy-controls-content"
-                data-testid="toggle-privacy-section"
-                className="group flex w-full items-center justify-between rounded-xl px-1 py-1 text-left transition hover:bg-neutral-100 cursor-pointer"
-              >
-                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800">
-                  Privacy Controls
-                </h3>
-                <ChevronDownIcon
-                  className={`h-4 w-4 text-neutral-500 transition-transform duration-200 group-hover:text-black ${
-                    isPrivacySectionOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-            </div>
-
-            {isPrivacySectionOpen && (
-              <div id="privacy-controls-content" className="space-y-2.5">
-                {PORTION_CONFIGS.map((portion) => {
-                  const isOpen = Boolean(openDrawers[portion.key]);
-                  const currentSelected =
-                    VISIBILITY_LEVEL_OPTIONS.find(
-                      (opt) => opt.value === visibilityInput[portion.key],
-                    ) ?? VISIBILITY_LEVEL_OPTIONS[0];
-                  const CurrentIcon = currentSelected.icon;
-                  const currentCeiling = visibilityInput.profile;
-                  const isCapped = portion.key !== "profile" && currentCeiling !== "everyone";
-
-                  return (
-                    <div
-                      key={portion.key}
-                      data-testid={`portion-visibility-${portion.key}`}
-                      className="rounded-2xl border-2 border-black bg-white overflow-hidden transition-all shadow-[2px_2px_0px_0px_#000]"
-                    >
-                      {/* Drawer Toggle Header */}
-                      <button
-                        type="button"
-                        onClick={() => toggleDrawer(portion.key)}
-                        aria-expanded={isOpen}
-                        aria-controls={`drawer-content-${portion.key}`}
-                        data-testid={`toggle-drawer-${portion.key}`}
-                        className="flex w-full items-center justify-between gap-3 p-3 text-left transition hover:bg-neutral-50 cursor-pointer"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <span className="block text-xs font-black uppercase text-black">
-                            {portion.label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-neutral-100 px-2.5 py-0.5 text-[11px] font-bold text-neutral-700">
-                            <CurrentIcon className="h-3 w-3 shrink-0" />
-                            <span>{currentSelected.label}</span>
-                          </span>
-                          <ChevronDownIcon
-                            className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </div>
-                      </button>
-
-                      {/* Drawer Content */}
-                      {isOpen && (
-                        <div
-                          id={`drawer-content-${portion.key}`}
-                          className="border-t-2 border-neutral-100 bg-neutral-50/60 p-3 space-y-2"
-                        >
-                          {isCapped && (
-                            <p className="text-[10px] font-bold text-neutral-500 mb-1">
-                              Visibility ceiling: {currentCeiling === "only_you" ? "Only You" : "Group Members"} (from Profile Page)
-                            </p>
-                          )}
-                          <div
-                            className="space-y-1.5"
-                            role="radiogroup"
-                            aria-label={`${portion.label} visibility`}
-                          >
-                            {VISIBILITY_LEVEL_OPTIONS.map((opt) => {
-                              const isSelected = visibilityInput[portion.key] === opt.value;
-                              const Icon = opt.icon;
-                              const isExceedingCeiling =
-                                portion.key !== "profile" &&
-                                PROFILE_VISIBILITY_RANKS[opt.value] >
-                                  PROFILE_VISIBILITY_RANKS[currentCeiling];
-                              const optionDesc = portion.optionDescriptions[opt.value];
-
-                              return (
-                                <button
-                                  key={opt.value}
-                                  type="button"
-                                  role="radio"
-                                  aria-checked={isSelected}
-                                  aria-label={`${portion.label}: ${opt.label}. ${optionDesc}`}
-                                  aria-disabled={isExceedingCeiling}
-                                  disabled={isExceedingCeiling}
-                                  title={
-                                    isExceedingCeiling
-                                      ? `Limited by Profile Page (${
-                                          currentCeiling === "only_you"
-                                            ? "Only You"
-                                            : "Group Members"
-                                        })`
-                                      : undefined
-                                  }
-                                  data-testid={`${portion.key}-visibility-${opt.value}`}
-                                  onClick={() => {
-                                    if (isExceedingCeiling) return;
-                                    if (portion.key === "profile") {
-                                      const newProfile = opt.value;
-                                      setVisibilityInput({
-                                        profile: newProfile,
-                                        activities: clampVisibilityLevel(
-                                          visibilityInput.activities,
-                                          newProfile,
-                                        ),
-                                        ratingStats: clampVisibilityLevel(
-                                          visibilityInput.ratingStats,
-                                          newProfile,
-                                        ),
-                                        chemistry: clampVisibilityLevel(
-                                          visibilityInput.chemistry,
-                                          newProfile,
-                                        ),
-                                        groups: clampVisibilityLevel(
-                                          visibilityInput.groups,
-                                          newProfile,
-                                        ),
-                                      });
-                                    } else {
-                                      setVisibilityInput({
-                                        ...visibilityInput,
-                                        [portion.key]: opt.value,
-                                      });
-                                    }
-                                  }}
-                                  className={`flex w-full items-center justify-between gap-3 rounded-xl border-2 p-2.5 text-left transition-all ${
-                                    isExceedingCeiling
-                                      ? "border-neutral-200 bg-neutral-100/60 opacity-40 cursor-not-allowed"
-                                      : isSelected
-                                      ? "border-black bg-white shadow-[1.5px_1.5px_0px_0px_#000] cursor-pointer"
-                                      : "border-neutral-200 bg-white hover:border-black/50 hover:bg-neutral-50 cursor-pointer"
-                                  }`}
-                                >
-                                  {/* Left: Option Label & Description */}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <Icon className="h-3.5 w-3.5 shrink-0 text-black" />
-                                      <span className="text-xs font-black uppercase text-black">
-                                        {opt.label}
-                                      </span>
-                                    </div>
-                                    <p className="mt-0.5 text-[11px] font-normal text-neutral-600 leading-snug">
-                                      {optionDesc}
-                                    </p>
-                                  </div>
-
-                                  {/* Right: Radio Button (turns green when selected) */}
-                                  <div
-                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                                      isSelected
-                                        ? "border-black bg-[#ccff00] shadow-[1px_1px_0px_0px_#000]"
-                                        : "border-neutral-400 bg-white"
-                                    }`}
-                                    aria-hidden="true"
-                                  >
-                                    {isSelected && (
-                                      <div className="h-2 w-2 rounded-full bg-black" />
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {saveError && (
@@ -811,6 +529,27 @@ export function PlayerProfileHeader({
         cancelText="Keep Editing"
         confirmVariant="danger"
         confirmDataTestId="confirm-discard-button"
+      />
+
+      {/* User Settings Modal */}
+      <UserSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        initialTab={initialSettingsTab}
+        initialEmail={email}
+        initialEmailVerified={emailVerified}
+        hasPassword={hasPassword}
+        initialVisibilitySettings={visibilitySettings}
+        initialIsPublic={isPublic}
+        initialOpenDrawers={initialOpenDrawers}
+        onProfilePrivacyUpdated={(newSettings, newIsPublic) => {
+          setVisibilitySettings(newSettings);
+          setIsPublic(newIsPublic);
+        }}
+        onEmailUpdated={(newEmail) => {
+          setEmail(newEmail);
+          setEmailVerified(false);
+        }}
       />
 
       {/* Success Toast */}

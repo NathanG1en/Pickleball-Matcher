@@ -512,17 +512,19 @@ test.describe("Permissions and Security Workflow", () => {
       name: "Private Legend",
     });
 
-    // Make privateUser private via their profile page
+    // Make privateUser private via their profile page settings modal
     await privatePage.goto("/players");
-    await privatePage.getByRole("button", { name: "Edit Profile" }).click();
+    await privatePage.locator("[data-testid='account-options-menu-button']").click();
+    await privatePage.locator("[data-testid='settings-menu-item']").click();
+    await privatePage.locator("[data-testid='tab-privacy']").click();
     const profileDrawer = privatePage.locator("[data-testid='toggle-drawer-profile']");
     await expect(profileDrawer).toBeVisible();
     await profileDrawer.click();
     const onlyYouOption = privatePage.locator("[data-testid='profile-visibility-only_you']");
     await expect(onlyYouOption).toBeVisible();
     await onlyYouOption.click();
-    await privatePage.getByRole("button", { name: "Save Changes" }).click();
-    await expect(privatePage.getByText("Profile updated successfully")).toBeVisible();
+    await privatePage.locator("[data-testid='save-privacy-settings-button']").click();
+    await expect(privatePage.getByText("Privacy settings updated")).toBeVisible();
 
     // 2. In the host page, create a test group with unique name
     const groupName = `Profile Visibility Group ${Date.now()}`;
@@ -848,17 +850,19 @@ test("find players workflow from homepage shows public and private players with 
   const pageB = await contextB.newPage();
   const userB = await createAndSignInPlayer(pageB);
 
-  // Switch User B to private
+  // Switch User B to private via settings modal
   await pageB.goto("/players");
-  await pageB.getByRole("button", { name: "Edit Profile" }).click();
+  await pageB.locator("[data-testid='account-options-menu-button']").click();
+  await pageB.locator("[data-testid='settings-menu-item']").click();
+  await pageB.locator("[data-testid='tab-privacy']").click();
   const profileDrawerB = pageB.locator("[data-testid='toggle-drawer-profile']");
   await expect(profileDrawerB).toBeVisible();
   await profileDrawerB.click();
   const onlyYouOptionB = pageB.locator("[data-testid='profile-visibility-only_you']");
   await expect(onlyYouOptionB).toBeVisible();
   await onlyYouOptionB.click();
-  await pageB.getByRole("button", { name: "Save Changes" }).click();
-  await expect(pageB.getByText("Profile updated successfully")).toBeVisible();
+  await pageB.locator("[data-testid='save-privacy-settings-button']").click();
+  await expect(pageB.getByText("Privacy settings updated")).toBeVisible();
   await contextB.close();
 
   // 3. User A goes to home page
