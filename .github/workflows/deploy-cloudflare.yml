@@ -5,6 +5,7 @@ on:
     branches:
       - development
       - fix/cloudflare-database-runtime
+      - cloudflare
 
 concurrency:
   group: deploy-cloudflare-${{ github.ref }}
