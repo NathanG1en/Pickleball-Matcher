@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   deletePlayerSchema,
-  loginWithNetlifyIdentitySchema,
+  loginWithSocialAuthSchema,
   playerLoginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
@@ -93,10 +93,10 @@ describe("playerLoginSchema", () => {
   });
 });
 
-describe("loginWithNetlifyIdentitySchema", () => {
-  it("accepts valid Netlify Identity payloads", () => {
+describe("loginWithSocialAuthSchema", () => {
+  it("accepts valid social auth payloads", () => {
     expect(
-      loginWithNetlifyIdentitySchema.safeParse({
+      loginWithSocialAuthSchema.safeParse({
         id: "usr_123",
         email: "player@example.com",
         name: "Pickle Player",
@@ -105,7 +105,7 @@ describe("loginWithNetlifyIdentitySchema", () => {
     ).toBe(true);
 
     expect(
-      loginWithNetlifyIdentitySchema.safeParse({
+      loginWithSocialAuthSchema.safeParse({
         id: "usr_123",
         email: "player@example.com",
       }).success
@@ -114,14 +114,14 @@ describe("loginWithNetlifyIdentitySchema", () => {
 
   it("rejects invalid email or empty id", () => {
     expect(
-      loginWithNetlifyIdentitySchema.safeParse({
+      loginWithSocialAuthSchema.safeParse({
         id: "",
         email: "player@example.com",
       }).success
     ).toBe(false);
 
     expect(
-      loginWithNetlifyIdentitySchema.safeParse({
+      loginWithSocialAuthSchema.safeParse({
         id: "usr_123",
         email: "not-an-email",
       }).success

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loginWithNetlifyIdentityAction, playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
+import { loginWithSocialAuthAction, playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
@@ -171,29 +171,29 @@ describe("player account authentication", () => {
     });
   });
 
-  it("authenticates and provisions a new player with Netlify Identity", async () => {
+  it("authenticates and provisions a new player with social auth", async () => {
     vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
     const repository = new InMemoryRepositories();
     setActionRepository(repository);
 
-    const result = await loginWithNetlifyIdentityAction({
-      id: "netlify_user_123",
-      email: "NetlifyPlayer@example.com",
-      name: "Netlify Player",
+    const result = await loginWithSocialAuthAction({
+      id: "social_user_123",
+      email: "SocialPlayer@example.com",
+      name: "Social Player",
       token: "dummy.jwt.token",
     });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const account = await repository.getPlayerAccountByEmail("netlifyplayer@example.com");
+    const account = await repository.getPlayerAccountByEmail("socialplayer@example.com");
     expect(account).not.toBeNull();
-    expect(account?.name).toBe("Netlify Player");
+    expect(account?.name).toBe("Social Player");
     expect(account?.emailVerified).toBe(true);
     expect(account?.initialRating).toBe(1000);
   });
 
-  it("links to existing account when authenticating with Netlify Identity", async () => {
+  it("links to existing account when authenticating with social auth", async () => {
     vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
     const repository = new InMemoryRepositories();
     setActionRepository(repository);
@@ -208,8 +208,8 @@ describe("player account authentication", () => {
       initialRating: 1100,
     });
 
-    const result = await loginWithNetlifyIdentityAction({
-      id: "netlify_existing_id",
+    const result = await loginWithSocialAuthAction({
+      id: "social_existing_id",
       email: "EXISTING@example.com",
       name: "Updated Name",
     });

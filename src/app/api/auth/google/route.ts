@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNetlifyIdentityUrl } from "@/lib/auth/netlify-gotrue";
+import { getNeonAuthBaseUrl } from "@/lib/auth/neon-auth";
 
 function sanitizeReturnPath(path: string | null): string | null {
   if (!path) return null;
@@ -19,13 +19,14 @@ export async function GET(request: NextRequest) {
     loginUrl.searchParams.set("next", next);
   }
 
-  const netlifyUrl = getNetlifyIdentityUrl();
-  if (netlifyUrl) {
-    const authUrl = `${netlifyUrl}/authorize?provider=google`;
+  const neonUrl = getNeonAuthBaseUrl();
+  if (neonUrl) {
+    const callbackUrl = encodeURIComponent(`${origin}/api/auth/callback/google${next ? `?next=${encodeURIComponent(next)}` : ""}`);
+    const authUrl = `${neonUrl}/sign-in/social?provider=google&callbackURL=${callbackUrl}`;
     return NextResponse.redirect(authUrl);
   }
 
-  loginUrl.searchParams.set("error", "Google authentication is not configured yet. Enable Google in Netlify Identity settings.");
+  loginUrl.searchParams.set("error", "Google authentication is not configured yet. Configure Google OAuth in Neon Auth settings.");
   return NextResponse.redirect(loginUrl);
 }
 

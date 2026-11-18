@@ -11,7 +11,7 @@ import {
   joinAsGuestSchema,
   joinGroupInviteSchema,
   joinPublicGroupSchema,
-  loginWithNetlifyIdentitySchema,
+  loginWithSocialAuthSchema,
   playerLoginSchema,
   playerSignupSchema,
   requestPasswordResetSchema,
@@ -23,13 +23,6 @@ import {
   updatePlayerUsernameSchema,
   verifyEmailSchema,
 } from "@/lib/validation/group";
-import {
-  isNetlifyIdentityConfigured,
-  netlifyRecover,
-  netlifyResetPassword,
-  netlifyTriggerEmailVerification,
-  netlifyVerifyEmailToken,
-} from "@/lib/auth/netlify-gotrue";
 import {
   isNeonAuthConfigured,
   neonResetPasswordWithOtp,
@@ -143,13 +136,6 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
           email: emailToSave,
           password: parsed.data.password,
           name: parsed.data.name,
-        }).catch(() => {});
-      } else {
-        await netlifyTriggerEmailVerification({
-          email: emailToSave,
-          password: parsed.data.password,
-          name: parsed.data.name,
-          username: parsed.data.username,
         }).catch(() => {});
       }
     }
@@ -408,12 +394,12 @@ export async function joinAsGuestAction(
   }
 }
 
-export async function loginWithNetlifyIdentityAction(
+export async function loginWithSocialAuthAction(
   input: unknown
 ): Promise<PlayerActionResult<{ accountId: string }>> {
-  const parsed = loginWithNetlifyIdentitySchema.safeParse(input);
+  const parsed = loginWithSocialAuthSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: "Invalid Netlify Identity authentication." };
+    return { ok: false, error: "Invalid social authentication payload." };
   }
 
   const email = parsed.data.email.trim().toLowerCase();
@@ -463,8 +449,8 @@ export async function loginWithNetlifyIdentityAction(
 
     return { ok: true, data: { accountId: account.id } };
   } catch (error) {
-    console.error("loginWithNetlifyIdentityAction error:", error);
-    return { ok: false, error: "Failed to authenticate with Netlify Identity." };
+    console.error("loginWithSocialAuthAction error:", error);
+    return { ok: false, error: "Failed to authenticate with social provider." };
   }
 }
 
@@ -488,8 +474,6 @@ export async function requestPasswordResetAction(
     if (account && account.email) {
       if (isNeonAuthConfigured()) {
         await neonSendPasswordResetOtp(account.email).catch(() => {});
-      } else {
-        await netlifyRecover(account.email).catch(() => {});
       }
 
       await repository.deletePasswordResetTokensForAccount(account.id);
@@ -509,8 +493,6 @@ export async function requestPasswordResetAction(
     } else if (identifier.includes("@")) {
       if (isNeonAuthConfigured()) {
         await neonSendPasswordResetOtp(identifier).catch(() => {});
-      } else {
-        await netlifyRecover(identifier).catch(() => {});
       }
     }
 
@@ -578,24 +560,7 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
       }
     }
 
-    if (isNetlifyIdentityConfigured()) {
-      const result = await netlifyResetPassword({
-        token: parsed.data.token,
-        password: parsed.data.password,
-      });
 
-      if (result.success) {
-        if (result.email) {
-          const account = await repository.getPlayerAccountByEmail(result.email);
-          if (account) {
-            const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
-            await repository.updatePlayerAccountPassword(account.id, newHash);
-          }
-        }
-        return { ok: true, data: { success: true } };
-      }
-      return { ok: false, error: result.error || "Unable to reset password. Please try again." };
-    }
 
     return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
   } catch {
@@ -651,17 +616,11 @@ export async function updatePlayerEmailAction(
       createdAt: new Date(),
     });
 
-    // Dispatch Neon / Netlify recovery / verification email
+    // Dispatch Neon recovery / verification email
     if (isNeonAuthConfigured()) {
       await neonTriggerEmailVerification({
         email,
         name: currentAccount?.name,
-      }).catch(() => {});
-    } else {
-      await netlifyTriggerEmailVerification({
-        email,
-        name: currentAccount?.name,
-        username: currentAccount?.username,
       }).catch(() => {});
     }
 
@@ -736,17 +695,11 @@ export async function resendVerificationEmailAction(): Promise<
       createdAt: new Date(),
     });
 
-    // Dispatch Neon / Netlify verification / recovery email
+    // Dispatch Neon verification / recovery email
     if (isNeonAuthConfigured()) {
       await neonTriggerEmailVerification({
         email: account.email,
         name: account.name,
-      }).catch(() => {});
-    } else {
-      await netlifyTriggerEmailVerification({
-        email: account.email,
-        name: account.name,
-        username: account.username,
       }).catch(() => {});
     }
 
@@ -829,23 +782,7 @@ export async function verifyEmailAction(
       }
     }
 
-    // Fallback: Verify Netlify Identity confirmation / recovery token
-    const netlifyRes = await netlifyVerifyEmailToken(parsed.data.token);
-    if (netlifyRes.success && netlifyRes.email) {
-      const accountByEmail = await repository.getPlayerAccountByEmail(netlifyRes.email);
-      const activeId = await getActivePlayerAccountId();
-      const targetAccountId = accountByEmail?.id || activeId;
-      if (targetAccountId) {
-        await repository.updatePlayerAccountEmail(targetAccountId, netlifyRes.email, true);
-        try {
-          revalidatePath("/players");
-          revalidatePath("/");
-        } catch {
-          // Non-request test contexts.
-        }
-        return { ok: true, data: { email: netlifyRes.email } };
-      }
-    }
+
 
     return { ok: false, error: "This email verification link is invalid or has expired." };
   } catch {
