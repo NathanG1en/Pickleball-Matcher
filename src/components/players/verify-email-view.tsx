@@ -58,12 +58,22 @@ export function VerifyEmailView({ token, email }: { token?: string; email?: stri
   if (!token) {
     return (
       <div className="space-y-4 text-left">
-        <div
-          role="alert"
-          className="rounded-xl border-2 border-red-500 bg-red-100 p-3 text-xs font-bold text-red-900"
-        >
-          Missing verification token. Please check your verification link.
-        </div>
+        {!email ? (
+          <div
+            role="alert"
+            className="rounded-xl border-2 border-red-500 bg-red-100 p-3 text-xs font-bold text-red-900"
+          >
+            Missing verification token. Please check your verification link.
+          </div>
+        ) : (
+          <div
+            role="status"
+            className="rounded-xl border-2 border-black bg-neutral-100 p-3 text-xs font-bold text-neutral-800 shadow-[2px_2px_0px_0px_#000]"
+          >
+            Enter the 6-digit verification code sent to{" "}
+            <span className="font-black text-black">{email}</span>.
+          </div>
+        )}
 
         {error && (
           <Alert variant="danger" size="md">

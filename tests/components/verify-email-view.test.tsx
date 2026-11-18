@@ -21,5 +21,12 @@ describe("VerifyEmailView", () => {
     expect(html).toContain("Have a 6-digit code?");
     expect(html).toContain("Verify Code");
   });
+
+  it("renders instructional prompt instead of missing token error when email is provided", () => {
+    const html = renderToStaticMarkup(<VerifyEmailView email="player@example.com" />);
+    expect(html).not.toContain("Missing verification token");
+    expect(html).toContain("player@example.com");
+    expect(html).toContain("Have a 6-digit code?");
+  });
 });
 
