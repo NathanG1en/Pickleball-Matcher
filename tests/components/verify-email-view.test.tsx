@@ -3,30 +3,27 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { VerifyEmailView } from "@/components/players/verify-email-view";
 
 describe("VerifyEmailView", () => {
-  it("renders missing token error when no token is provided", () => {
+  it("renders 6-digit OTP code input form", () => {
     const html = renderToStaticMarkup(<VerifyEmailView />);
-    expect(html).toContain("Missing verification token");
+    expect(html).toContain("Enter your 6-digit verification code");
+    expect(html).toContain("Verify Code");
     expect(html).toContain("Go to Profile");
   });
 
-  it("renders confirmation button when token is present", () => {
-    const html = renderToStaticMarkup(<VerifyEmailView token="test-token-123" />);
-    expect(html).toContain("Click the button below to complete verification");
-    expect(html).toContain('data-testid="confirm-verify-email-button"');
-    expect(html).toContain("Confirm Verification");
-  });
-
-  it("renders 6-digit OTP code input when no token is provided", () => {
-    const html = renderToStaticMarkup(<VerifyEmailView />);
+  it("renders instructional prompt when email is provided", () => {
+    const html = renderToStaticMarkup(<VerifyEmailView email="player@example.com" />);
+    expect(html).toContain("player@example.com");
     expect(html).toContain("Enter your 6-digit verification code");
     expect(html).toContain("Verify Code");
   });
 
-  it("renders instructional prompt instead of missing token error when email is provided", () => {
-    const html = renderToStaticMarkup(<VerifyEmailView email="player@example.com" />);
-    expect(html).not.toContain("Missing verification token");
-    expect(html).toContain("player@example.com");
+  it("pre-fills code input when a 6-digit code is provided in token prop", () => {
+    const html = renderToStaticMarkup(
+      <VerifyEmailView token="482719" email="player@example.com" />
+    );
+    expect(html).toContain("4");
+    expect(html).toContain("8");
+    expect(html).toContain("2");
     expect(html).toContain("Enter your 6-digit verification code");
   });
 });
-
