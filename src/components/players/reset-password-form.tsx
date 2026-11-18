@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { resetPasswordAction } from "@/app/actions/player-account";
-import { Alert, Button, FormField, Input, VisibilityToggle } from "@/components/ui";
+import { Alert, Button, FormField, Input, OtpInput, VisibilityToggle } from "@/components/ui";
 
 export function ResetPasswordForm({ token, email }: { token?: string; email?: string }) {
   const [password, setPassword] = useState("");
@@ -81,20 +81,19 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
         )}
 
         <form onSubmit={submit} className="rounded-2xl border-2 border-black bg-white p-4 space-y-3 shadow-[3px_3px_0px_0px_#000]">
-          <p className="text-xs font-black uppercase tracking-wider text-neutral-800">
-            Have a 6-digit reset code?
-          </p>
-          <FormField id="reset-code-input" label="Reset Code">
-            <Input
-              id="reset-code-input"
-              required
-              maxLength={8}
-              value={code}
-              onChange={(e) => setCode(e.target.value.trim())}
-              placeholder="e.g. 123456"
-              className="text-center font-mono text-lg tracking-widest uppercase font-bold"
-            />
-          </FormField>
+          <div className="space-y-1 text-center">
+            <p className="text-xs font-black uppercase tracking-wider text-neutral-800 text-left sm:text-center">
+              Enter your 6-digit reset code.
+            </p>
+            <div className="flex justify-center my-2">
+              <OtpInput
+                id="reset-code-input"
+                value={code}
+                onChange={setCode}
+                disabled={pending}
+              />
+            </div>
+          </div>
           {!email && (
             <FormField id="reset-email-input" label="Email Address">
               <Input

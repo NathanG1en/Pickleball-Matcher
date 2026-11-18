@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { verifyEmailAction } from "@/app/actions/player-account";
-import { Alert, Button, FormField, Input } from "@/components/ui";
+import { Alert, Button, FormField, Input, OtpInput } from "@/components/ui";
 
 export function VerifyEmailView({ token, email }: { token?: string; email?: string }) {
   const [pending, setPending] = useState(false);
@@ -86,39 +86,45 @@ export function VerifyEmailView({ token, email }: { token?: string; email?: stri
             e.preventDefault();
             handleVerify(manualCode, manualEmail);
           }}
-          className="rounded-2xl border-2 border-black bg-white p-4 space-y-3 shadow-[3px_3px_0px_0px_#000]"
+          className="rounded-2xl border-2 border-black bg-white p-4 sm:p-5 space-y-4 shadow-[3px_3px_0px_0px_#000] text-center"
         >
-          <p className="text-xs font-black uppercase tracking-wider text-neutral-800">
-            Have a 6-digit code?
-          </p>
-          <FormField id="verify-email-otp" label="Verification Code">
-            <Input
+          <div className="text-left sm:text-center">
+            <p className="text-xs font-black uppercase tracking-wider text-neutral-800">
+              Enter your 6-digit verification code.
+            </p>
+          </div>
+
+          <div className="flex justify-center my-2">
+            <OtpInput
               id="verify-email-otp"
-              required
-              maxLength={8}
               value={manualCode}
-              onChange={(e) => setManualCode(e.target.value.trim())}
-              placeholder="e.g. 123456"
-              className="text-center font-mono text-lg tracking-widest uppercase font-bold"
+              onChange={setManualCode}
+              onComplete={(code) => handleVerify(code, manualEmail)}
+              autoFocus
+              disabled={pending}
             />
-          </FormField>
+          </div>
+
           {!email && (
-            <FormField id="verify-email-address" label="Email Address">
-              <Input
-                id="verify-email-address"
-                type="email"
-                required
-                value={manualEmail}
-                onChange={(e) => setManualEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </FormField>
+            <div className="text-left">
+              <FormField id="verify-email-address" label="Email Address">
+                <Input
+                  id="verify-email-address"
+                  type="email"
+                  required
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </FormField>
+            </div>
           )}
+
           <Button
             type="submit"
             variant="primary"
             size="md"
-            disabled={pending || !manualCode.trim()}
+            disabled={pending || manualCode.trim().length !== 6}
             className="w-full font-display uppercase font-black"
           >
             {pending ? "Verifying…" : "Verify Code"}

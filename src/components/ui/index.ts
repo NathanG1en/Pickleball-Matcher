@@ -18,3 +18,4 @@ export * from "./client-date-time";
 export * from "./use-tooltip-position";
 export * from "./toast";
 export * from "./custom-dropdown";
+export * from "./otp-input";
