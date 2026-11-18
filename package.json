@@ -21,7 +21,8 @@
     "preview:worker": "opennextjs-cloudflare build && wrangler dev",
     "deploy:worker": "opennextjs-cloudflare build && wrangler deploy",
     "maintenance:correct-rating": "tsx scripts/maintenance/correct-rating.ts",
-    "test:maintenance": "node scripts/test-maintenance.mjs"
+    "test:maintenance": "node scripts/test-maintenance.mjs",
+    "auth:reset-email": "node scripts/reset-auth-email.mjs"
   },
   "keywords": [],
   "license": "UNLICENSED",
