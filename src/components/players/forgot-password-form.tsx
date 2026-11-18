@@ -12,6 +12,8 @@ export function ForgotPasswordForm() {
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [localDevUrl, setLocalDevUrl] = useState<string | null>(null);
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setPending(true);
@@ -23,6 +25,7 @@ export function ForgotPasswordForm() {
     if (result.ok) {
       setSubmitted(true);
       setMessage(result.data.message);
+      setLocalDevUrl(result.data.localDevUrl ?? null);
       return;
     }
 
@@ -35,15 +38,32 @@ export function ForgotPasswordForm() {
         <Alert variant="success" size="md">
           {message}
         </Alert>
+        {localDevUrl && (
+          <div className="rounded-xl border-2 border-black bg-[#ccff00] p-3 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000]">
+            <p className="font-black uppercase tracking-wider text-[11px]">Local Development Link:</p>
+            <Link
+              href={localDevUrl}
+              className="mt-1 inline-block underline font-black text-black break-all"
+            >
+              Click here to reset your password →
+            </Link>
+          </div>
+        )}
         <p className="text-sm font-medium text-neutral-700">
           Be sure to check your spam folder if you don&apos;t see the email within a couple of minutes.
         </p>
-        <div className="pt-2 text-center">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+          <Link
+            href={`/reset-password${identifier.includes("@") ? `?email=${encodeURIComponent(identifier)}` : ""}`}
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+          >
+            Enter Reset Code →
+          </Link>
           <Link
             href="/player-login"
-            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-white px-4 py-2 font-display text-sm font-black uppercase text-black hover:bg-neutral-100"
           >
-            Back to Sign In →
+            Back to Sign In
           </Link>
         </div>
       </div>

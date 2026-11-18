@@ -7,11 +7,12 @@ import { revalidatePath } from "next/cache";
 import { getActionRepository, getActivePlayerAccountId, requirePlayer } from "@/app/actions/action-context";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
 import { recordGuestPlayer } from "@/lib/auth/guest-session";
+import { clearPendingGoogleSignup, readPendingGoogleSignup } from "@/lib/auth/pending-google-signup";
 import {
+  completeGoogleSignupSchema,
   joinAsGuestSchema,
   joinGroupInviteSchema,
   joinPublicGroupSchema,
-  loginWithNetlifyIdentitySchema,
   playerLoginSchema,
   playerSignupSchema,
   requestPasswordResetSchema,
@@ -24,13 +25,23 @@ import {
   verifyEmailSchema,
 } from "@/lib/validation/group";
 import {
-  netlifyRecover,
-  netlifyResetPassword,
-} from "@/lib/auth/netlify-gotrue";
+  isNeonAuthConfigured,
+  neonResetPasswordWithOtp,
+  neonSendPasswordResetOtp,
+  neonTriggerEmailVerification,
+  neonVerifyEmailOtp,
+} from "@/lib/auth/neon-auth";
 
 const PASSWORD_HASH_COST = 12;
 const DUMMY_PASSWORD_HASH = "$2b$12$yoKkl6R41eRMnWhvkZXPwee8aIS8qKjN5GbU0DiCsria7Dpjo5rDC";
 const DEFAULT_RATING = { beginner: 900, intermediate: 1_000, advanced: 1_100 } as const;
+
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.URL) return process.env.URL.replace(/\/$/, "");
+  return "http://localhost:3000";
+}
 
 export type PlayerActionResult<T = void> =
   | { ok: true; data: T }
@@ -109,6 +120,27 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
     };
     await repository.createPlayerAccount(account);
 
+    if (emailToSave) {
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createEmailVerificationToken({
+        id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId,
+        email: emailToSave,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        createdAt: new Date(),
+      });
+
+      if (isNeonAuthConfigured()) {
+        await neonTriggerEmailVerification({
+          email: emailToSave,
+          password: parsed.data.password,
+          name: parsed.data.name,
+        }).catch(() => {});
+      }
+    }
+
     const token = await createPlayerSession(accountId);
     try {
       (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
@@ -121,6 +153,61 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       return { ok: false, error: "That username or email is already taken.", fieldErrors: { username: ["That username is already taken."] } };
     }
     return { ok: false, error: error instanceof Error ? error.message : "Unable to create player account." };
+  }
+}
+
+/**
+ * Creates the account for a first-time Google sign-in once the player has picked a username,
+ * gender and skill level. The email is read from the signed pending sign-up cookie that the Google
+ * return page set, so the browser can't choose which email the account gets.
+ */
+export async function completeGoogleSignupAction(input: unknown): Promise<PlayerActionResult<{ accountId: string }>> {
+  const pending = await readPendingGoogleSignup();
+  if (!pending) {
+    return { ok: false, error: "Your Google sign-in timed out. Go back and choose Continue with Google again." };
+  }
+  const parsed = completeGoogleSignupSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Please check your player details and try again.", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const repository = getActionRepository();
+  const username = parsed.data.username.toLowerCase();
+  try {
+    // Someone may have taken the email (or username) since Google sign-in started.
+    const existingForEmail = await repository.getPlayerAccountByEmail(pending.email);
+    if (existingForEmail) {
+      await clearPendingGoogleSignup();
+      const token = await createPlayerSession(existingForEmail.id);
+      (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
+      return { ok: true, data: { accountId: existingForEmail.id } };
+    }
+    if (await repository.getPlayerAccountByUsername(username)) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+    }
+
+    const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    await repository.createPlayerAccount({
+      id: accountId,
+      username,
+      name: parsed.data.name,
+      gender: parsed.data.gender,
+      passwordHash: null,
+      skillLevel: parsed.data.skillLevel,
+      initialRating: parsed.data.initialRating,
+      email: pending.email,
+      emailVerified: true,
+      createdAt: new Date(),
+    });
+    await clearPendingGoogleSignup();
+    const token = await createPlayerSession(accountId);
+    (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
+    return { ok: true, data: { accountId } };
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+    }
+    return { ok: false, error: "Couldn't create your account. Please try again." };
   }
 }
 
@@ -363,67 +450,9 @@ export async function joinAsGuestAction(
   }
 }
 
-export async function loginWithNetlifyIdentityAction(
-  input: unknown
-): Promise<PlayerActionResult<{ accountId: string }>> {
-  const parsed = loginWithNetlifyIdentitySchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: "Invalid Netlify Identity authentication." };
-  }
-
-  const email = parsed.data.email.trim().toLowerCase();
-  const repository = getActionRepository();
-
-  try {
-    let account = await repository.getPlayerAccountByEmail(email);
-
-    if (!account) {
-      const baseUsername = email
-        .split("@")[0]
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .slice(0, 18)
-        .padEnd(3, "0")
-        .toLowerCase();
-
-      let uniqueUsername = baseUsername;
-      let counter = 1;
-      while (await repository.getPlayerAccountByUsername(uniqueUsername)) {
-        uniqueUsername = `${baseUsername.slice(0, 14)}_${counter}`;
-        counter++;
-      }
-
-      const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-      const newAccount = {
-        id: accountId,
-        username: uniqueUsername,
-        name: parsed.data.name?.trim() || uniqueUsername,
-        gender: undefined,
-        skillLevel: "intermediate" as const,
-        initialRating: 1000,
-        email,
-        emailVerified: true,
-        passwordHash: null,
-        createdAt: new Date(),
-      };
-      await repository.createPlayerAccount(newAccount);
-      account = newAccount;
-    }
-
-    const token = await createPlayerSession(account.id);
-    try {
-      (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
-    } catch {
-      // Non-request test contexts.
-    }
-
-    return { ok: true, data: { accountId: account.id } };
-  } catch (error) {
-    console.error("loginWithNetlifyIdentityAction error:", error);
-    return { ok: false, error: "Failed to authenticate with Netlify Identity." };
-  }
-}
-
-export async function requestPasswordResetAction(input: unknown): Promise<PlayerActionResult<{ message: string }>> {
+export async function requestPasswordResetAction(
+  input: unknown,
+): Promise<PlayerActionResult<{ message: string; localDevUrl?: string }>> {
   const parsed = requestPasswordResetSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Enter a valid username or email address." };
@@ -431,22 +460,43 @@ export async function requestPasswordResetAction(input: unknown): Promise<Player
   const identifier = parsed.data.identifier.toLowerCase();
   try {
     const repository = getActionRepository();
-    let email = identifier;
-    if (!identifier.includes("@")) {
-      const account = await repository.getPlayerAccountByUsername(identifier);
-      if (account?.email) {
-        email = account.email;
-      }
+    let account = await repository.getPlayerAccountByUsername(identifier);
+    if (!account && identifier.includes("@")) {
+      account = await repository.getPlayerAccountByEmail(identifier);
     }
 
-    if (email.includes("@")) {
-      await netlifyRecover(email);
+    let localDevUrl: string | undefined;
+
+    if (account && account.email) {
+      if (isNeonAuthConfigured()) {
+        await neonSendPasswordResetOtp(account.email).catch(() => {});
+      }
+
+      await repository.deletePasswordResetTokensForAccount(account.id);
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      await repository.createPasswordResetToken({
+        id: `rst_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+        accountId: account.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        createdAt: new Date(),
+      });
+
+      if (process.env.NODE_ENV !== "production") {
+        localDevUrl = `${getAppBaseUrl()}/reset-password?token=${rawToken}`;
+      }
+    } else if (identifier.includes("@")) {
+      if (isNeonAuthConfigured()) {
+        await neonSendPasswordResetOtp(identifier).catch(() => {});
+      }
     }
 
     return {
       ok: true,
       data: {
         message: "If an account matches that username or email address, we've sent a password reset link.",
+        localDevUrl,
       },
     };
   } catch {
@@ -463,16 +513,52 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
     return { ok: false, error: "Password must be 72 bytes or fewer." };
   }
   try {
-    const result = await netlifyResetPassword({
-      token: parsed.data.token,
-      password: parsed.data.password,
-    });
+    const repository = getActionRepository();
+    const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
+    const tokenRecord = await repository.getPasswordResetToken(tokenHash);
 
-    if (!result.success) {
-      return { ok: false, error: result.error || "Unable to reset password. Please try again." };
+    if (tokenRecord) {
+      if (new Date() > tokenRecord.expiresAt) {
+        return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
+      }
+      const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+      await repository.updatePlayerAccountPassword(tokenRecord.accountId, newHash);
+      await repository.deletePasswordResetToken(tokenRecord.id);
+      return { ok: true, data: { success: true } };
     }
 
-    return { ok: true, data: { success: true } };
+    if (isNeonAuthConfigured()) {
+      let targetEmail = parsed.data.email;
+      let targetAccountId: string | undefined;
+      if (targetEmail) {
+        const acc = await repository.getPlayerAccountByEmail(targetEmail);
+        targetAccountId = acc?.id;
+      } else {
+        const activeId = await getActivePlayerAccountId();
+        if (activeId) {
+          const acc = await repository.getPlayerAccount(activeId);
+          targetEmail = acc?.email || undefined;
+          targetAccountId = activeId;
+        }
+      }
+
+      if (targetEmail && targetAccountId) {
+        const neonRes = await neonResetPasswordWithOtp({
+          email: targetEmail,
+          otp: parsed.data.token,
+          password: parsed.data.password,
+        });
+        if (neonRes.success) {
+          const newHash = await hash(parsed.data.password, PASSWORD_HASH_COST);
+          await repository.updatePlayerAccountPassword(targetAccountId, newHash);
+          return { ok: true, data: { success: true } };
+        }
+      }
+    }
+
+
+
+    return { ok: false, error: "This password reset link is invalid or has expired. Please request a new one." };
   } catch {
     return { ok: false, error: "Unable to reset password. Please try again." };
   }
@@ -480,7 +566,7 @@ export async function resetPasswordAction(input: unknown): Promise<PlayerActionR
 
 export async function updatePlayerEmailAction(
   input: unknown,
-): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string }>> {
+): Promise<PlayerActionResult<{ email: string; verificationRequired?: boolean; verificationToken?: string; localDevUrl?: string }>> {
   const parsed = updatePlayerEmailSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -526,6 +612,14 @@ export async function updatePlayerEmailAction(
       createdAt: new Date(),
     });
 
+    // Dispatch Neon recovery / verification email
+    if (isNeonAuthConfigured()) {
+      await neonTriggerEmailVerification({
+        email,
+        name: currentAccount?.name,
+      }).catch(() => {});
+    }
+
     // Update email and reset verification status to false (must be re-verified)
     await repository.updatePlayerAccountEmail(
       accountId,
@@ -540,12 +634,19 @@ export async function updatePlayerEmailAction(
     } catch {
       // Non-request test contexts.
     }
+
+    const localDevUrl =
+      process.env.NODE_ENV !== "production"
+        ? `${getAppBaseUrl()}/verify-email?token=${rawToken}`
+        : undefined;
+
     return {
       ok: true,
       data: {
         email,
         verificationRequired: true,
-        verificationToken: rawToken,
+        verificationToken: process.env.NODE_ENV === "test" ? rawToken : undefined,
+        localDevUrl,
       },
     };
   } catch (error) {
@@ -565,6 +666,57 @@ export async function updatePlayerEmailAction(
   }
 }
 
+export const updateRecoveryEmailAction = updatePlayerEmailAction;
+
+export async function resendVerificationEmailAction(): Promise<
+  PlayerActionResult<{ email: string; verificationToken?: string; localDevUrl?: string }>
+> {
+  try {
+    const accountId = await requirePlayer();
+    const repository = getActionRepository();
+    const account = await repository.getPlayerAccount(accountId);
+    if (!account?.email) {
+      return { ok: false, error: "No recovery email attached to this account." };
+    }
+
+    await repository.deleteEmailVerificationTokensForAccount(accountId);
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await repository.createEmailVerificationToken({
+      id: `evt_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      accountId,
+      email: account.email,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      createdAt: new Date(),
+    });
+
+    // Dispatch Neon verification / recovery email
+    if (isNeonAuthConfigured()) {
+      await neonTriggerEmailVerification({
+        email: account.email,
+        name: account.name,
+      }).catch(() => {});
+    }
+
+    const localDevUrl =
+      process.env.NODE_ENV !== "production"
+        ? `${getAppBaseUrl()}/verify-email?token=${rawToken}`
+        : undefined;
+
+    return {
+      ok: true,
+      data: {
+        email: account.email,
+        verificationToken: process.env.NODE_ENV === "test" ? rawToken : undefined,
+        localDevUrl,
+      },
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unable to resend verification email." };
+  }
+}
+
 export async function verifyEmailAction(
   input: unknown,
 ): Promise<PlayerActionResult<{ email: string }>> {
@@ -577,20 +729,58 @@ export async function verifyEmailAction(
     const tokenHash = createHash("sha256").update(parsed.data.token).digest("hex");
     const tokenRecord = await repository.getEmailVerificationToken(tokenHash);
 
-    if (!tokenRecord || new Date() > tokenRecord.expiresAt) {
-      return { ok: false, error: "This email verification link is invalid or has expired." };
+    if (tokenRecord && new Date() <= tokenRecord.expiresAt) {
+      await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
+      await repository.deleteEmailVerificationToken(tokenRecord.id);
+
+      try {
+        revalidatePath("/players");
+        revalidatePath("/");
+      } catch {
+        // Non-request test contexts.
+      }
+      return { ok: true, data: { email: tokenRecord.email } };
     }
 
-    await repository.updatePlayerAccountEmail(tokenRecord.accountId, tokenRecord.email, true);
-    await repository.deleteEmailVerificationToken(tokenRecord.id);
+    // Fallback: Verify Neon Auth 6-digit OTP code
+    if (isNeonAuthConfigured()) {
+      let targetEmail = parsed.data.email;
+      let targetAccountId: string | undefined;
+      if (targetEmail) {
+        const acc = await repository.getPlayerAccountByEmail(targetEmail);
+        targetAccountId = acc?.id;
+      } else {
+        const activeId = await getActivePlayerAccountId();
+        if (activeId) {
+          const acc = await repository.getPlayerAccount(activeId);
+          targetEmail = acc?.email || undefined;
+          targetAccountId = activeId;
+        }
+      }
 
-    try {
-      revalidatePath("/players");
-      revalidatePath("/");
-    } catch {
-      // Non-request test contexts.
+      if (targetEmail) {
+        const neonRes = await neonVerifyEmailOtp({
+          email: targetEmail,
+          otp: parsed.data.token,
+        });
+        if (neonRes.success) {
+          if (targetAccountId) {
+            await repository.updatePlayerAccountEmail(targetAccountId, targetEmail, true);
+          }
+          try {
+            revalidatePath("/players");
+            revalidatePath("/");
+          } catch {
+            // Non-request test contexts.
+          }
+          return { ok: true, data: { email: targetEmail } };
+        }
+      }
     }
-    return { ok: true, data: { email: tokenRecord.email } };
+
+
+
+    return { ok: false, error: "This email verification link is invalid or has expired." };
   } catch {
     return { ok: false, error: "Unable to verify email." };
   }
@@ -623,6 +813,13 @@ export async function updatePlayerPasswordAction(
     }
 
     if (account.passwordHash) {
+      if (!parsed.data.currentPassword) {
+        return {
+          ok: false,
+          error: "Current password is required.",
+          fieldErrors: { currentPassword: ["Current password is required."] },
+        };
+      }
       const isMatch = await compare(parsed.data.currentPassword, account.passwordHash);
       if (!isMatch) {
         return {

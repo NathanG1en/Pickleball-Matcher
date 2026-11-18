@@ -2,38 +2,52 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { verifyEmailAction } from "@/app/actions/player-account";
+import { resendVerificationEmailAction, verifyEmailAction } from "@/app/actions/player-account";
+import { Alert, Button, FormField, Input, OtpInput, isCompleteOtp } from "@/components/ui";
 
-export function VerifyEmailView({ token }: { token?: string }) {
+const headingClass = "mb-2 px-8 font-display text-2xl sm:text-3xl font-black uppercase text-black";
+
+export function VerifyEmailView({
+  token,
+  email,
+  canResend = false,
+}: {
+  token?: string;
+  email?: string;
+  /** True when a player is signed in, so a fresh code can be sent to their recovery email. */
+  canResend?: boolean;
+}) {
   const [pending, setPending] = useState(false);
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shakeSignal, setShakeSignal] = useState(0);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
-  if (!token) {
-    return (
-      <div className="space-y-4 text-left">
-        <div
-          role="alert"
-          className="rounded-xl border-2 border-red-500 bg-red-100 p-3 text-xs font-bold text-red-900"
-        >
-          Missing verification token. Please check your verification link.
-        </div>
-        <div className="pt-2 text-center">
-          <Link
-            href="/players"
-            className="inline-block rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 font-display text-sm font-black uppercase text-black hover:bg-neutral-100"
-          >
-            Go to Profile →
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // If a 6-digit code was provided in token, pre-fill it
+  const initialCode = token && /^\d{6}$/.test(token.trim()) ? token.trim() : "";
+  const [manualCode, setManualCode] = useState(initialCode);
+  const [manualEmail, setManualEmail] = useState(email || "");
 
-  const handleVerify = async () => {
+  const fail = (message: string) => {
+    setError(message);
+    setShakeSignal((count) => count + 1);
+  };
+
+  const handleVerify = async (codeToUse?: string, emailToUse?: string) => {
+    const effectiveCode = (codeToUse || manualCode || "").trim();
+    const effectiveEmail = (emailToUse || manualEmail || email || "").trim();
+
+    if (!isCompleteOtp(effectiveCode)) {
+      fail("Fill in all 6 digits of the code.");
+      return;
+    }
+
     setPending(true);
     setError(null);
-    const result = await verifyEmailAction({ token });
+    const result = await verifyEmailAction({
+      token: effectiveCode,
+      ...(effectiveEmail ? { email: effectiveEmail } : {}),
+    });
     setPending(false);
 
     if (result.ok) {
@@ -41,58 +55,136 @@ export function VerifyEmailView({ token }: { token?: string }) {
       return;
     }
 
+    fail(result.error);
+  };
+
+  const handleResend = async () => {
+    setResendState("sending");
+    setError(null);
+    const result = await resendVerificationEmailAction();
+    if (result.ok) {
+      setManualCode("");
+      setResendState("sent");
+      return;
+    }
+    setResendState("idle");
     setError(result.error);
   };
 
   if (verifiedEmail) {
     return (
-      <div className="space-y-4 text-left">
+      <div className="space-y-4">
         <div
-          role="status"
-          className="rounded-xl border-2 border-black bg-[#ccff00] p-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000]"
+          aria-hidden="true"
+          className="verify-success-badge mx-auto flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black bg-[#ccff00] text-3xl font-black text-black shadow-[3px_3px_0px_0px_#000]"
         >
-          {verifiedEmail} has been verified successfully!
+          ✓
         </div>
-        <p className="text-xs font-bold text-neutral-700">
-          Your email address has been confirmed and can now be used for account recovery.
-        </p>
-        <div className="pt-2 text-center">
-          <Link
-            href="/players"
-            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
-          >
-            Go to Profile →
-          </Link>
+        <div role="status">
+          <h1 className={headingClass}>Email verified!</h1>
+          <p className="text-sm font-bold text-neutral-700">
+            <span className="font-black text-black [overflow-wrap:anywhere]">{verifiedEmail}</span> can now get you back into your account.
+          </p>
         </div>
+        <Link
+          href="/players"
+          className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-5 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+        >
+          Go to Profile →
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 text-center">
+    <div className="space-y-5">
+      <div>
+        <h1 className={headingClass}>Verify Email</h1>
+        <p className="text-sm font-bold text-neutral-700">
+          {email ? (
+            <>
+              We sent a 6-digit code to
+              <span className="block font-black text-black [overflow-wrap:anywhere]">{email}</span>
+            </>
+          ) : (
+            "Enter the 6-digit code from your verification email."
+          )}
+        </p>
+      </div>
+
       {error && (
-        <div
-          role="alert"
-          className="rounded-xl border-2 border-red-500 bg-red-100 p-3 text-xs font-bold text-red-900 text-left"
-        >
+        <Alert variant="danger" size="md" className="text-left">
           {error}
-        </div>
+        </Alert>
       )}
 
-      <p className="text-xs font-bold text-neutral-700">
-        Click the button below to complete verification of your new email address.
-      </p>
-
-      <button
-        type="button"
-        disabled={pending}
-        onClick={handleVerify}
-        data-testid="confirm-verify-email-button"
-        className="w-full rounded-xl border-2 border-black bg-[#ccff00] px-4 py-3 font-display text-base font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleVerify(manualCode, manualEmail);
+        }}
+        className="space-y-4"
       >
-        {pending ? "Verifying…" : "Confirm Verification"}
-      </button>
+        <OtpInput
+          id="verify-email-otp"
+          value={manualCode}
+          onChange={(next) => {
+            setManualCode(next);
+            if (error) setError(null);
+          }}
+          onComplete={(code) => handleVerify(code, manualEmail)}
+          autoFocus
+          disabled={pending}
+          status={pending ? "checking" : "idle"}
+          shakeSignal={shakeSignal}
+        />
+
+        {!email && (
+          <div className="text-left">
+            <FormField id="verify-email-address" label="Email Address">
+              <Input
+                id="verify-email-address"
+                type="email"
+                required
+                value={manualEmail}
+                onChange={(e) => setManualEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </FormField>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          disabled={pending || !isCompleteOtp(manualCode)}
+          className="min-h-11 w-full font-display uppercase font-black"
+        >
+          {pending ? "Checking…" : "Verify Code"}
+        </Button>
+      </form>
+
+      {canResend && (
+        <p aria-live="polite" className="text-sm font-bold text-neutral-700">
+          {resendState === "sent" ? (
+            <span data-testid="verify-email-resent">Fresh code on its way. Check your inbox.</span>
+          ) : (
+            <>
+              Didn&apos;t get it?{" "}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendState === "sending"}
+                data-testid="verify-email-resend"
+                className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60"
+              >
+                {resendState === "sending" ? "Sending…" : "Send a new code"}
+              </button>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }
-

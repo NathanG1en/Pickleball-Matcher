@@ -5,11 +5,13 @@ import PlayerProfilePage from "@/app/players/page";
 import {
   checkUsernameAvailabilityAction,
   leavePublicGroupAction,
+  resendVerificationEmailAction,
   updatePlayerEmailAction,
   updatePlayerGenderAction,
   updatePlayerPasswordAction,
   updatePlayerProfileAction,
   updatePlayerUsernameAction,
+  updateRecoveryEmailAction,
   verifyEmailAction,
 } from "@/app/actions/player-account";
 import { AccountOptionsMenu, LeaveGroupButton, PlayerProfileHeader, UserSettingsModal } from "@/components/players/player-profile-controls";
@@ -1012,18 +1014,33 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    // Email section with unverified badge and disabled save when unchanged
-    expect(htmlUnverified).toContain("Email Address");
+    // Email section: short badge, the code boxes right there, resend under them, empty change field
+    expect(htmlUnverified).toContain(">Email</h3>");
     expect(htmlUnverified).toContain("athlete@example.com");
     expect(htmlUnverified).toContain('data-testid="email-unverified-badge"');
-    expect(htmlUnverified).toContain("Unverified · Re-verification Required");
-    expect(htmlUnverified).toContain('data-testid="settings-email-input"');
-    expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-email-button"/);
-    expect(htmlUnverified).toContain("disabled:cursor-not-allowed");
-    expect(htmlUnverified).toContain("disabled:hover:bg-neutral-200");
+    expect(htmlUnverified).toMatch(/data-testid="email-unverified-badge"[^>]*>Not verified</);
+    // The status sits with the address and uses the app's palette, not Tailwind's stock amber
+    expect(htmlUnverified.indexOf("athlete@example.com")).toBeLessThan(htmlUnverified.indexOf('data-testid="email-unverified-badge"'));
+    expect(htmlUnverified).not.toMatch(/amber-\d00/);
+    expect(htmlUnverified).not.toContain("Re-verification");
+    expect(htmlUnverified).toContain("Enter the 6-digit code we sent.");
+    expect(htmlUnverified).toContain('id="settings-email-otp"');
+    expect(htmlUnverified.match(/aria-label="Digit \d of 6"/g)).toHaveLength(6);
+    expect(htmlUnverified).toMatch(/data-testid="settings-resend-verification-button"[^>]*>Resend code</);
+    expect(htmlUnverified.indexOf('id="settings-email-otp"')).toBeLessThan(htmlUnverified.indexOf("Resend code"));
+    // Changing the email is tucked behind a small "Change" link until asked for
+    expect(htmlUnverified).toMatch(/data-testid="settings-change-email-button"[^>]*>Change</);
+    expect(htmlUnverified).not.toContain('data-testid="settings-email-input"');
+    expect(htmlUnverified).not.toContain('data-testid="save-email-button"');
+
+    // Header: just the title and a close button that can't be pushed out of the dialog
+    expect(htmlUnverified).not.toContain("Manage your account");
+    expect(htmlUnverified).not.toContain("aria-describedby");
+    expect(htmlUnverified).toMatch(/aria-label="Close settings"[^>]*data-testid="settings-close-button"[^>]*class="[^"]*shrink-0/);
 
     // Password section with current, new, and confirm, eye visibility buttons, and disabled save when unchanged
-    expect(htmlUnverified).toContain("Password");
+    expect(htmlUnverified).toContain(">Change Password</h3>");
+    expect(htmlUnverified).not.toContain("keep your player account secure");
     expect(htmlUnverified).toContain('data-testid="settings-current-password"');
     expect(htmlUnverified).toContain('data-testid="settings-new-password"');
     expect(htmlUnverified).toContain('data-testid="settings-confirm-password"');
@@ -1045,6 +1062,29 @@ describe("PlayerProfilePage and Group Leaving", () => {
     );
     expect(htmlVerified).toContain('data-testid="email-verified-badge"');
     expect(htmlVerified).toContain("Verified");
+    expect(htmlVerified).not.toContain('data-testid="settings-email-verify"');
+    expect(htmlVerified).not.toContain("Resend code");
+
+    // An account made with Google has no password yet: it sets one, with no old one to enter
+    const htmlNoPassword = renderToStaticMarkup(
+      <UserSettingsModal isOpen={true} onClose={() => {}} initialTab="account" initialEmail="athlete@example.com" hasPassword={false} />
+    );
+    expect(htmlNoPassword).toContain(">Set Password</h3>");
+    expect(htmlNoPassword).not.toContain('data-testid="settings-current-password"');
+    expect(htmlNoPassword).toContain('data-testid="settings-new-password"');
+    expect(htmlNoPassword).toContain(">Set Password</button>");
+    expect(htmlNoPassword).not.toContain("sign in directly with your email");
+    // An account with a password always gives the current one first
+    expect(htmlUnverified).toContain('data-testid="settings-current-password"');
+    expect(htmlUnverified).toContain(">Update Password</button>");
+
+    // No email yet
+    const htmlNoEmail = renderToStaticMarkup(
+      <UserSettingsModal isOpen={true} onClose={() => {}} initialTab="account" initialEmail="" hasPassword={true} />
+    );
+    expect(htmlNoEmail).toContain("No email yet");
+    expect(htmlNoEmail).toMatch(/data-testid="settings-change-email-button"[^>]*>Add</);
+    expect(htmlNoEmail).not.toContain('data-testid="settings-email-verify"');
   });
 
   it("validateEmailFormat catches inputs lacking @ or domain and accepts valid emails", () => {
@@ -1245,6 +1285,48 @@ describe("PlayerProfilePage and Group Leaving", () => {
     }
   });
 
+  it("updateRecoveryEmailAction and resendVerificationEmailAction handle recovery email workflow", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "recovery_user",
+          name: "Recovery User",
+          email: null,
+          emailVerified: false,
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    // Resend fails when no email is attached yet
+    const failResend = await resendVerificationEmailAction();
+    expect(failResend.ok).toBe(false);
+
+    // Set recovery email
+    const updateRes = await updateRecoveryEmailAction({ email: "recovery@example.com" });
+    expect(updateRes.ok).toBe(true);
+    if (updateRes.ok) {
+      expect(updateRes.data.email).toBe("recovery@example.com");
+      expect(updateRes.data.verificationToken).toBeDefined();
+    }
+
+    // Resend succeeds now that an email is attached
+    const successResend = await resendVerificationEmailAction();
+    expect(successResend.ok).toBe(true);
+    if (successResend.ok) {
+      expect(successResend.data.email).toBe("recovery@example.com");
+      expect(successResend.data.verificationToken).toBeDefined();
+    }
+
+    const updated = await repository.getPlayerAccount(testAccountId);
+    expect(updated?.email).toBe("recovery@example.com");
+    expect(updated?.emailVerified).toBe(false);
+  });
+
   it("PlayerProfileHeader disables Save Changes button when in edit mode and no fields have been modified", () => {
     const htmlUnchanged = renderToStaticMarkup(
       <PlayerProfileHeader
@@ -1292,6 +1374,13 @@ describe("PlayerProfilePage and Group Leaving", () => {
     });
     expect(shortRes.ok).toBe(false);
 
+    // An account with a password must give it, even though the field is optional for others
+    const missingCurrentRes = await updatePlayerPasswordAction({
+      newPassword: "new-super-password-123",
+      confirmPassword: "new-super-password-123",
+    });
+    expect(missingCurrentRes).toMatchObject({ ok: false, error: "Current password is required." });
+
     // Rejects when current password is wrong
     const wrongCurrentRes = await updatePlayerPasswordAction({
       currentPassword: "wrong-current-password",
@@ -1312,7 +1401,32 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const updated = await repository.getPlayerAccount(testAccountId);
     expect(updated?.passwordHash).not.toBe(initialHash);
   });
+
+  it("updatePlayerPasswordAction lets an account made with Google set a first password without a current one", async () => {
+    const repository = new InMemoryRepositories({
+      playerAccounts: [
+        {
+          id: testAccountId,
+          username: "google_user",
+          name: "Google User",
+          passwordHash: null,
+          skillLevel: "intermediate",
+          initialRating: 1000,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    setActionRepository(repository);
+
+    const res = await updatePlayerPasswordAction({
+      newPassword: "first-password-123",
+      confirmPassword: "first-password-123",
+    });
+    expect(res.ok).toBe(true);
+    expect((await repository.getPlayerAccount(testAccountId))?.passwordHash).toBeTruthy();
+
+    // Once it has a password, changing it needs that password
+    const again = await updatePlayerPasswordAction({ newPassword: "second-password-123", confirmPassword: "second-password-123" });
+    expect(again).toMatchObject({ ok: false, error: "Current password is required." });
+  });
 });
-
-
-

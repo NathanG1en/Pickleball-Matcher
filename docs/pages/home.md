@@ -53,7 +53,7 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - **Recovery Email Banner**: If the player does not have a verified recovery email, a persistent banner appears above the hero prompting them to verify or update their email address to safeguard their account for automated password recovery. Surfaces live delivery feedback and clear error states if the email provider fails to dispatch.
+  - **Recovery email banner**: above the hero while the player has no verified recovery email. It's one compact strip. With an unverified email it shows a yellow envelope tile, **Recovery email not verified**, the email, **Resend code · Change email** and **Enter code →** on the right (on a phone, the links and button share a row). With no email it reads **Add a recovery email** with **Add email →** and **Not now**. See [auth.md](auth.md).
   - Refined hero section containing "FAIR ROUNDS. FRESH PARTNERS.", subtitle, pickleball divider, and the compact profile footer row (**Playing as @username** and **View Profile →**).
   - **Your groups** listing showing all active groups.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).

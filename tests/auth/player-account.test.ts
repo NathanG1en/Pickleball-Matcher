@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loginWithNetlifyIdentityAction, playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
+import * as playerAccountActions from "@/app/actions/player-account";
+import { playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
@@ -171,53 +172,9 @@ describe("player account authentication", () => {
     });
   });
 
-  it("authenticates and provisions a new player with Netlify Identity", async () => {
-    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
-    const repository = new InMemoryRepositories();
-    setActionRepository(repository);
-
-    const result = await loginWithNetlifyIdentityAction({
-      id: "netlify_user_123",
-      email: "NetlifyPlayer@example.com",
-      name: "Netlify Player",
-      token: "dummy.jwt.token",
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const account = await repository.getPlayerAccountByEmail("netlifyplayer@example.com");
-    expect(account).not.toBeNull();
-    expect(account?.name).toBe("Netlify Player");
-    expect(account?.emailVerified).toBe(true);
-    expect(account?.initialRating).toBe(1000);
-  });
-
-  it("links to existing account when authenticating with Netlify Identity", async () => {
-    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
-    const repository = new InMemoryRepositories();
-    setActionRepository(repository);
-
-    await playerSignupAction({
-      username: "existing_player",
-      name: "Existing Player",
-      email: "existing@example.com",
-      password: "secure-password-123",
-      skillLevel: "advanced",
-      customRating: false,
-      initialRating: 1100,
-    });
-
-    const result = await loginWithNetlifyIdentityAction({
-      id: "netlify_existing_id",
-      email: "EXISTING@example.com",
-      name: "Updated Name",
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const account = await repository.getPlayerAccountByUsername("existing_player");
-    expect(result.data.accountId).toBe(account?.id);
+  it("does not expose a server action that signs in by email alone", () => {
+    // Anyone can call an exported server action, so an email-only sign-in action would let a
+    // visitor sign in as any player. Google sign-in finishes on the server from the Neon session.
+    expect("loginWithSocialAuthAction" in playerAccountActions).toBe(false);
   });
 });

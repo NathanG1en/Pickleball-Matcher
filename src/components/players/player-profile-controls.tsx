@@ -550,6 +550,7 @@ export function PlayerProfileHeader({
           setEmail(newEmail);
           setEmailVerified(false);
         }}
+        onEmailVerified={() => setEmailVerified(true)}
       />
 
       {/* Success Toast */}

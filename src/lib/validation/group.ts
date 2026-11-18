@@ -118,6 +118,15 @@ export const playerSignupSchema = z.object({
     .transform(normalizeInitialRating),
 }).strict();
 
+/** "Finish your profile" after a first Google sign-in. The email comes from Google, not this form. */
+export const completeGoogleSignupSchema = z.object({
+  username: usernameFieldSchema,
+  name: z.string().trim().min(1, "Enter a display name.").max(80),
+  gender: z.enum(["male", "female"], { message: "Choose male or female." }),
+  skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+  initialRating: playerSignupSchema.shape.initialRating,
+}).strict();
+
 export const requestPasswordResetSchema = z.object({
   identifier: z.string().trim().min(1, "Enter your username or email address."),
 }).strict();
@@ -125,13 +134,7 @@ export const requestPasswordResetSchema = z.object({
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required."),
   password: z.string().min(10, "Password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
-}).strict();
-
-export const loginWithNetlifyIdentitySchema = z.object({
-  id: z.string().min(1, "User ID is required."),
-  email: z.string().trim().email("Enter a valid email address.").max(254),
-  name: z.string().trim().max(80).optional(),
-  token: z.string().optional(),
+  email: z.string().trim().email().optional(),
 }).strict();
 
 export const playerLoginSchema = z
@@ -173,11 +176,14 @@ export const updatePlayerEmailSchema = z.object({
 
 export const verifyEmailSchema = z.object({
   token: z.string().trim().min(1, "Verification token is required."),
+  email: z.string().trim().email().optional(),
 }).strict();
 
 export const updatePlayerPasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required.").max(72),
+    // Optional here: an account made with Google has no password yet. The action requires it
+    // whenever the account already has one.
+    currentPassword: z.string().max(72).default(""),
     newPassword: z.string().min(10, "New password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
     confirmPassword: z.string().min(1, "Confirm your new password.").max(72),
   })

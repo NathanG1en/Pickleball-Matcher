@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   deletePlayerSchema,
-  loginWithNetlifyIdentitySchema,
   playerLoginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
@@ -88,42 +87,6 @@ describe("playerLoginSchema", () => {
         username: "rally_champ",
         password: "password123",
         unknownProp: "bad",
-      }).success
-    ).toBe(false);
-  });
-});
-
-describe("loginWithNetlifyIdentitySchema", () => {
-  it("accepts valid Netlify Identity payloads", () => {
-    expect(
-      loginWithNetlifyIdentitySchema.safeParse({
-        id: "usr_123",
-        email: "player@example.com",
-        name: "Pickle Player",
-        token: "jwt.token.here",
-      }).success
-    ).toBe(true);
-
-    expect(
-      loginWithNetlifyIdentitySchema.safeParse({
-        id: "usr_123",
-        email: "player@example.com",
-      }).success
-    ).toBe(true);
-  });
-
-  it("rejects invalid email or empty id", () => {
-    expect(
-      loginWithNetlifyIdentitySchema.safeParse({
-        id: "",
-        email: "player@example.com",
-      }).success
-    ).toBe(false);
-
-    expect(
-      loginWithNetlifyIdentitySchema.safeParse({
-        id: "usr_123",
-        email: "not-an-email",
       }).success
     ).toBe(false);
   });

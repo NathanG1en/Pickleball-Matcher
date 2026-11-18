@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+import { neonAuthClient } from "@/lib/auth/neon-client";
 
 interface GoogleAuthButtonProps {
   label?: string;
@@ -8,22 +9,60 @@ interface GoogleAuthButtonProps {
   className?: string;
 }
 
+/**
+ * Starts Google sign-in through Neon Auth. The SDK posts to `/api/auth/sign-in/social` (proxied to
+ * Neon Auth, which sets the sign-in challenge cookie) and then sends the browser to Google. Google
+ * returns to `/auth/google/complete`, which signs the player in.
+ */
 export function GoogleAuthButton({
   label = "Continue with Google",
   next,
   className = "",
 }: GoogleAuthButtonProps) {
-  const query = next ? `?next=${encodeURIComponent(next)}` : "";
-  const href = `/api/auth/google${query}`;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startGoogleSignIn = async () => {
+    setPending(true);
+    setError(null);
+    const origin = window.location.origin;
+    const query = next ? `?next=${encodeURIComponent(next)}` : "";
+    const loginWithError = new URL("/player-login", origin);
+    if (next) loginWithError.searchParams.set("next", next);
+    loginWithError.searchParams.set("error", "Google sign-in was cancelled or failed. Please try again.");
+    try {
+      const result = await neonAuthClient.signIn.social({
+        provider: "google",
+        callbackURL: `${origin}/auth/google/complete${query}`,
+        errorCallbackURL: loginWithError.toString(),
+      });
+      if (result?.error) throw new Error(result.error.message ?? "Google sign-in is unavailable.");
+      // On success the SDK is already navigating to Google; keep the button busy until it leaves.
+    } catch (err) {
+      console.error("Google sign-in could not start", err);
+      setError("Google sign-in is unavailable right now. Use your username and password instead.");
+      setPending(false);
+    }
+  };
 
   return (
-    <Link
-      href={href}
-      className={`flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-black uppercase tracking-wide text-black shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all ${className}`}
-    >
-      <GoogleIcon className="h-5 w-5 shrink-0" />
-      <span>{label}</span>
-    </Link>
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={startGoogleSignIn}
+        disabled={pending}
+        data-testid="google-sign-in-button"
+        className={`flex min-h-11 w-full items-center justify-center gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-black uppercase tracking-wide text-black shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:cursor-wait disabled:opacity-70 ${className}`}
+      >
+        <GoogleIcon className="h-5 w-5 shrink-0" />
+        <span>{pending ? "Opening Google…" : label}</span>
+      </button>
+      {error && (
+        <p role="alert" className="text-center text-sm font-bold text-[#b91c1c]">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 

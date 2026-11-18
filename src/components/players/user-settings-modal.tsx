@@ -2,11 +2,19 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updatePlayerEmailAction, updatePlayerPasswordAction } from "@/app/actions/player-account";
+import {
+  resendVerificationEmailAction,
+  updatePlayerEmailAction,
+  updatePlayerPasswordAction,
+  verifyEmailAction,
+} from "@/app/actions/player-account";
+import { OtpInput, isCompleteOtp } from "@/components/ui/otp-input";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { Toast } from "@/components/ui/toast";
 import {
   AlertCircleSolidIcon,
+  CheckIcon,
+  XIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
@@ -125,6 +133,7 @@ export interface UserSettingsModalProps {
   initialOpenDrawers?: Record<string, boolean>;
   onProfilePrivacyUpdated?: (newSettings: ProfileVisibilitySettings, isPublic: boolean) => void;
   onEmailUpdated?: (newEmail: string) => void;
+  onEmailVerified?: (email: string) => void;
 }
 
 export function UserSettingsModal({
@@ -139,11 +148,11 @@ export function UserSettingsModal({
   initialOpenDrawers = {},
   onProfilePrivacyUpdated,
   onEmailUpdated,
+  onEmailVerified,
 }: UserSettingsModalProps) {
   const router = useRouter();
   const generatedId = useId();
   const titleId = `${generatedId}-title`;
-  const descId = `${generatedId}-desc`;
   const [activeTab, setActiveTab] = useState<"account" | "privacy">(initialTab);
 
   // Handle escape key
@@ -160,13 +169,25 @@ export function UserSettingsModal({
 
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
-  const [newEmail, setNewEmail] = useState(initialEmail ?? "");
+  const [newEmail, setNewEmail] = useState("");
+  // The change/add field stays tucked away until asked for; most visits only verify or read.
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(initialEmailVerified ?? false);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  // Code boxes for an unverified email. `codeRequest` changes each time a code is sent, which
+  // re-mounts the boxes empty and focused, ready for the new code.
+  const [emailCode, setEmailCode] = useState("");
+  const [codeRequest, setCodeRequest] = useState(0);
+  const [codeChecking, setCodeChecking] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeShake, setCodeShake] = useState(0);
 
-  // Password form state
+  // Password form state. Whether the account has a password is kept here too, so setting a first
+  // password switches the section to Change Password straight away.
+  const [accountHasPassword, setAccountHasPassword] = useState(hasPassword);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -197,7 +218,7 @@ export function UserSettingsModal({
   const trimmedCurrentEmail = currentEmail.trim().toLowerCase();
   const emailValidation = validateEmailFormat(newEmail);
   const isEmailValid = emailValidation.isValid;
-  const showEmailError = emailTouched && !isEmailValid;
+  const showEmailError = emailTouched && Boolean(newEmail.trim()) && !isEmailValid;
   const hasEmailChanges =
     isEmailValid && Boolean(trimmedNewEmail) && trimmedNewEmail !== trimmedCurrentEmail;
 
@@ -206,7 +227,7 @@ export function UserSettingsModal({
   );
 
   const showCurrentPasswordError =
-    currentPasswordError || (currentPasswordTouched && hasPassword && !currentPassword.trim());
+    currentPasswordError || (currentPasswordTouched && accountHasPassword && !currentPassword.trim());
   const showNewPasswordError =
     newPasswordTouched && Boolean(newPassword) && newPassword.length < 10;
   const showConfirmPasswordError =
@@ -215,7 +236,7 @@ export function UserSettingsModal({
     confirmPassword !== newPassword;
 
   const hasPasswordChanges =
-    (!hasPassword || Boolean(currentPassword.trim())) &&
+    (!accountHasPassword || Boolean(currentPassword.trim())) &&
     newPassword.length >= 10 &&
     Boolean(confirmPassword) &&
     confirmPassword === newPassword;
@@ -240,6 +261,49 @@ export function UserSettingsModal({
     }));
   };
 
+  const handleResendVerification = async () => {
+    setResendState("sending");
+    setCodeError(null);
+    try {
+      const res = await resendVerificationEmailAction();
+      if (!res.ok) {
+        setCodeError(res.error ?? "Couldn't send a new code.");
+        setResendState("idle");
+        return;
+      }
+      setEmailCode("");
+      setCodeRequest((count) => count + 1);
+      setResendState("sent");
+    } catch {
+      setCodeError("Couldn't send a new code.");
+      setResendState("idle");
+    }
+  };
+
+  const handleVerifyCode = async (code: string) => {
+    if (codeChecking || !isCompleteOtp(code) || !currentEmail) return;
+    setCodeChecking(true);
+    setCodeError(null);
+    try {
+      const res = await verifyEmailAction({ token: code, email: currentEmail });
+      if (res.ok) {
+        setIsEmailVerified(true);
+        setEmailCode("");
+        onEmailVerified?.(res.data.email);
+        showToast("Email verified");
+        router.refresh();
+        return;
+      }
+      setCodeError("That code didn't work. Check it, or send a new one.");
+      setCodeShake((count) => count + 1);
+    } catch {
+      setCodeError("Couldn't check the code. Try again.");
+    } finally {
+      setCodeChecking(false);
+    }
+  };
+
+
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (emailSaving || !hasEmailChanges) return;
@@ -256,9 +320,15 @@ export function UserSettingsModal({
       }
 
       setCurrentEmail(trimmedNewEmail);
+      setNewEmail("");
+      setEmailTouched(false);
+      setIsEditingEmail(false);
       setIsEmailVerified(false);
+      setEmailCode("");
+      setCodeError(null);
+      setResendState("idle");
+      setCodeRequest((count) => count + 1);
       onEmailUpdated?.(trimmedNewEmail);
-      showToast("Email updated. Please verify your new email address.");
       router.refresh();
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : "Failed to update email.");
@@ -271,7 +341,7 @@ export function UserSettingsModal({
     e.preventDefault();
     if (passwordSaving || !hasPasswordChanges) return;
 
-    if (hasPassword && !currentPassword.trim()) {
+    if (accountHasPassword && !currentPassword.trim()) {
       setCurrentPasswordError("Current password is required.");
       return;
     }
@@ -320,7 +390,9 @@ export function UserSettingsModal({
       setConfirmPasswordTouched(false);
       setCurrentPasswordError(null);
       setPasswordGeneralError(null);
-      showToast("Password updated successfully");
+      showToast(accountHasPassword ? "Password updated" : "Password set");
+      setAccountHasPassword(true);
+      router.refresh();
     } catch (err) {
       setPasswordGeneralError(err instanceof Error ? err.message : "Failed to update password.");
     } finally {
@@ -363,7 +435,6 @@ export function UserSettingsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      aria-describedby={descId}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -373,25 +444,22 @@ export function UserSettingsModal({
     >
       <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] rounded-3xl border-[3px] border-black bg-[#FFFDF7] text-black shadow-[8px_8px_0px_0px_#000] overflow-hidden">
         {/* Fixed Header */}
-        <div className="flex items-center justify-between border-b-[2.5px] border-black px-6 py-4 sm:px-7 sm:py-5 bg-[#FFFDF7] shrink-0">
-          <div>
-            <h2
-              id={titleId}
-              className="font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-black"
-            >
-              Settings
-            </h2>
-            <p id={descId} className="text-xs font-bold text-neutral-600 truncate max-w-md">
-              Manage your account security, credentials, and profile privacy.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3 border-b-[2.5px] border-black px-6 py-4 sm:px-7 sm:py-5 bg-[#FFFDF7] shrink-0">
+          <h2
+            id={titleId}
+            className="min-w-0 font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-black"
+          >
+            Settings
+          </h2>
+          {/* shrink-0 so nothing in the header can push the close button out of the dialog */}
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close settings dialog"
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-lg font-black leading-none hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors"
+            aria-label="Close settings"
+            data-testid="settings-close-button"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-black hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors before:absolute before:-inset-1 before:content-['']"
           >
-            ×
+            <XIcon className="h-5 w-5" />
           </button>
         </div>
 
@@ -448,53 +516,97 @@ export function UserSettingsModal({
             className={activeTab === "account" ? "space-y-6" : "hidden"}
           >
           {/* Email Section */}
-          <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
+          <section className="space-y-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                  Email Address
-                </h3>
-                {currentEmail ? (
-                  isEmailVerified ? (
+                <h3 className="text-sm font-black uppercase tracking-wider text-black">Email</h3>
+                {!isEditingEmail && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingEmail(true)}
+                    data-testid="settings-change-email-button"
+                    className="-my-2 inline-flex min-h-11 items-center text-sm font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00]"
+                  >
+                    {currentEmail ? "Change" : "Add"}
+                  </button>
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-sm font-black text-black [overflow-wrap:anywhere]">
+                  {currentEmail || <span className="font-bold text-neutral-600">No email yet</span>}
+                </p>
+                {currentEmail &&
+                  (isEmailVerified ? (
                     <span
                       data-testid="email-verified-badge"
-                      className="inline-flex items-center rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black"
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
                     >
+                      <CheckIcon className="h-3 w-3" aria-hidden="true" />
                       Verified
                     </span>
                   ) : (
                     <span
                       data-testid="email-unverified-badge"
-                      className="inline-flex items-center rounded-full border border-amber-500 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
+                      className="inline-flex items-center rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
                     >
-                      Unverified · Re-verification Required
+                      Not verified
                     </span>
-                  )
-                ) : null}
+                  ))}
               </div>
-              <p className="mt-0.5 text-xs font-bold text-neutral-600">
-                {currentEmail ? (
-                  <>
-                    Current email: <span className="text-black font-black">{currentEmail}</span>
-                  </>
-                ) : (
-                  "No email address linked to your account."
-                )}
-              </p>
-              {currentEmail && !isEmailVerified && (
-                <p className="mt-1 text-[11px] font-bold text-amber-800">
-                  Your email address requires verification. An email update requires re-verification before it can be used for account recovery.
-                </p>
-              )}
             </div>
 
-            <form onSubmit={handleUpdateEmail} noValidate className="space-y-3">
+            {currentEmail && !isEmailVerified && (
+              <div data-testid="settings-email-verify" className="space-y-3 border-t-2 border-dashed border-neutral-200 pt-4">
+                <p className="text-sm font-bold text-neutral-700">Enter the 6-digit code we sent.</p>
+                <OtpInput
+                  key={codeRequest}
+                  id="settings-email-otp"
+                  ariaLabel="Email verification code"
+                  value={emailCode}
+                  onChange={(next) => {
+                    setEmailCode(next);
+                    if (codeError) setCodeError(null);
+                  }}
+                  onComplete={handleVerifyCode}
+                  autoFocus={codeRequest > 0}
+                  disabled={codeChecking}
+                  status={codeChecking ? "checking" : "idle"}
+                  shakeSignal={codeShake}
+                />
+                {codeError && (
+                  <p role="alert" data-testid="settings-email-code-error" className="text-center text-xs font-bold text-red-600">
+                    {codeError}
+                  </p>
+                )}
+                <p aria-live="polite" className="text-center text-xs font-bold text-neutral-600">
+                  {resendState === "sent" ? (
+                    <span data-testid="settings-email-code-resent">New code sent.</span>
+                  ) : (
+                    <>
+                      Didn&apos;t get it?{" "}
+                      <button
+                        type="button"
+                        disabled={resendState === "sending"}
+                        onClick={handleResendVerification}
+                        data-testid="settings-resend-verification-button"
+                        className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60"
+                      >
+                        {resendState === "sending" ? "Sending…" : "Resend code"}
+                      </button>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {isEditingEmail && (
+            <form onSubmit={handleUpdateEmail} noValidate data-testid="settings-email-form" className="space-y-3 border-t-2 border-dashed border-neutral-200 pt-4">
               <div className="space-y-1">
                 <label
                   htmlFor="settings-email-input"
                   className="block text-xs font-black uppercase tracking-wider text-neutral-700"
                 >
-                  New Email Address
+                  {currentEmail ? "New email" : "Email"}
                 </label>
                 <input
                   id="settings-email-input"
@@ -506,7 +618,9 @@ export function UserSettingsModal({
                     setEmailError(null);
                   }}
                   onBlur={() => setEmailTouched(true)}
-                  placeholder="athlete@example.com"
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="you@example.com"
                   className={`w-full rounded-xl border-2 ${
                     showEmailError
                       ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
@@ -535,34 +649,43 @@ export function UserSettingsModal({
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingEmail(false);
+                    setNewEmail("");
+                    setEmailTouched(false);
+                    setEmailError(null);
+                  }}
+                  className="inline-flex min-h-11 items-center text-xs font-black uppercase text-neutral-700 underline decoration-2 underline-offset-4 hover:text-black"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={emailSaving || !hasEmailChanges}
                   data-testid="save-email-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {emailSaving ? "Saving…" : "Update Email"}
+                  {emailSaving ? "Sending…" : "Send code"}
                 </button>
               </div>
             </form>
+            )}
           </section>
 
           {/* Password Section */}
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                Password
+                {accountHasPassword ? "Change Password" : "Set Password"}
               </h3>
-              <p className="mt-0.5 text-xs font-bold text-neutral-600">
-                {hasPassword
-                  ? "Update your password to keep your player account secure."
-                  : "Set a password so you can sign in directly with your email and password."}
-              </p>
             </div>
 
             <form onSubmit={handleUpdatePassword} noValidate className="space-y-3">
-              {/* Current Password */}
+              {/* Current Password: asked for only when the account already has one */}
+              {accountHasPassword && (
               <div className="space-y-1">
                 <label
                   htmlFor="settings-current-password"
@@ -614,6 +737,7 @@ export function UserSettingsModal({
                   </div>
                 )}
               </div>
+              )}
 
               {/* New Password */}
               <div className="space-y-1">
@@ -737,7 +861,7 @@ export function UserSettingsModal({
                   data-testid="save-password-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {passwordSaving ? "Updating…" : "Update Password"}
+                  {passwordSaving ? "Saving…" : accountHasPassword ? "Update Password" : "Set Password"}
                 </button>
               </div>
             </form>
