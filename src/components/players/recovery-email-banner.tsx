@@ -136,7 +136,7 @@ export function RecoveryEmailBanner({
                 href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
                 className="font-black text-black underline underline-offset-2"
               >
-                Verify Now →
+                {verificationToken ? "Verify Now →" : "Enter Code →"}
               </Link>
             </div>
           </Alert>
@@ -233,7 +233,7 @@ export function RecoveryEmailBanner({
               href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
               className="font-black text-black underline underline-offset-2"
             >
-              Verify Now →
+              {verificationToken ? "Verify Now →" : "Enter Code →"}
             </Link>
           </div>
         </Alert>
