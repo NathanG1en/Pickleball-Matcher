@@ -28,8 +28,9 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **Let's play →:** creates the account with the Google email, already verified, and no password; signs the player in; then continues to `?next=` (default `/players/groups`). The email always comes from the signed cookie, never from the form.
   - **No pending Google sign-in:** visiting without one, or after it expires, returns to `/player-login` with "Your Google sign-in timed out. Please try again."
 - **Recovery Email Banner (`RecoveryEmailBanner`)**: A short notice on `/` and `/players`. It's hidden once the recovery email is verified.
+  - **Layout:** one compact strip. On desktop: an envelope icon tile, the title with the email under it, small links under that, and the main button on the right. On a phone, the links and the button share one row under the icon and text.
   - **Unverified email:**
-    - **Text:** **Recovery email not verified** and "Check <email> for your 6-digit verification code."
+    - **Text:** **Recovery email not verified** with the email under it, beside a yellow envelope-with-alert tile.
     - **Enter code →:** opens `/verify-email?email=<email>`.
     - **Resend code:** sends a fresh code and changes to "New code sent."
     - **Change email:** opens one email field with **Send code** and **Cancel**. Saving shows the banner again for the new address.
