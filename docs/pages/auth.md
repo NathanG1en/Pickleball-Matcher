@@ -13,7 +13,7 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **Paste and autofill:** a pasted or autofilled code fills every box. Every box is marked as a one-time code, so the browser offers codes (iOS and macOS Safari can pull them from Messages and Mail) rather than saved email addresses. The focused box lifts and turns lime, and each digit pops in as it lands.
   - **Checking:** a code is checked as soon as it's complete, when the last box is typed, or when a whole code is pasted. Fixing a middle digit of an already complete code waits for **Verify Code**, so retyping doesn't resend it after every digit. The boxes bounce in a wave while it's checked. **Verify Code** works too. A wrong code shakes the boxes and shows an error. The digits stay, and focus returns to the first box, so retyping overwrites them from the start. A 6-digit `?token=` pre-fills the boxes; a long link token is ignored.
   - **Didn't get it? Send a new code:** shown only to a signed-in player. It sends a fresh code to their recovery email, clears the boxes and says "Fresh code on its way. Check your inbox."
-  - **Go to Profile →:** a text link back to `/players` for anyone who wants to verify later.
+  - **Leaving:** the × in the corner returns home. There's no separate link under the form.
   - **Success:** the card swaps to a bouncing lime check, the heading **Email verified!**, one line ("<email> can now get you back into your account.") and a **Go to Profile →** button. No separate notification box.
   - **Motion:** all of it is skipped when the device asks for reduced motion.
 - **Sending verification codes**: adding, changing or resending a recovery email asks Neon Auth for a code first, then signs the email up.

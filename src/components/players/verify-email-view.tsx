@@ -165,34 +165,26 @@ export function VerifyEmailView({
         </Button>
       </form>
 
-      <div className="space-y-1 text-sm font-bold text-neutral-700">
-        {canResend && (
-          <p aria-live="polite">
-            {resendState === "sent" ? (
-              <span data-testid="verify-email-resent">Fresh code on its way. Check your inbox.</span>
-            ) : (
-              <>
-                Didn&apos;t get it?{" "}
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={resendState === "sending"}
-                  data-testid="verify-email-resend"
-                  className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60"
-                >
-                  {resendState === "sending" ? "Sending…" : "Send a new code"}
-                </button>
-              </>
-            )}
-          </p>
-        )}
-        <Link
-          href="/players"
-          className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00]"
-        >
-          Go to Profile →
-        </Link>
-      </div>
+      {canResend && (
+        <p aria-live="polite" className="text-sm font-bold text-neutral-700">
+          {resendState === "sent" ? (
+            <span data-testid="verify-email-resent">Fresh code on its way. Check your inbox.</span>
+          ) : (
+            <>
+              Didn&apos;t get it?{" "}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendState === "sending"}
+                data-testid="verify-email-resend"
+                className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60"
+              >
+                {resendState === "sending" ? "Sending…" : "Send a new code"}
+              </button>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }
