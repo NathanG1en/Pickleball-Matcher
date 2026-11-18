@@ -183,11 +183,15 @@ export function OtpInput({
           ref={(element) => {
             inputRefs.current[idx] = element;
           }}
-          id={idx === 0 ? id : `${id}-${idx}`}
+          // Only the first box carries the id (for labels). The others have none, because browsers
+          // guess field types from ids: "verify-email-otp-1" made Chrome offer saved email addresses.
+          id={idx === 0 ? id : undefined}
           name={name ? `${name}-${idx}` : undefined}
           type="text"
           inputMode="numeric"
-          autoComplete={idx === 0 ? "one-time-code" : "off"}
+          // Every box is marked as a one-time code. Chrome ignores "off" for address autofill, and
+          // this tells it (and iOS/macOS code autofill) what the box is for.
+          autoComplete="one-time-code"
           pattern="[0-9]*"
           value={slot}
           onChange={(event) => handleChange(idx, event)}

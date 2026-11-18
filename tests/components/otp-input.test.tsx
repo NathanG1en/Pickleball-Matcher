@@ -14,8 +14,11 @@ describe("OtpInput", () => {
     expect(inputs).toHaveLength(6);
     expect(inputs[0]).toContain('aria-label="Digit 1 of 6"');
     expect(inputs[5]).toContain('aria-label="Digit 6 of 6"');
-    // Only the first box offers one-time-code autofill, which fills every box at once.
-    expect(html.match(/autoComplete="one-time-code"|autocomplete="one-time-code"/g)).toHaveLength(1);
+    // Every box is a one-time code, so browsers offer the code (which fills every box) and never
+    // saved addresses; only the first box has an id, so "email" in it can't fool autofill either.
+    expect(inputs.every((input) => /autocomplete="one-time-code"/i.test(input))).toBe(true);
+    expect(inputs.filter((input) => / id="/.test(input))).toHaveLength(1);
+    expect(html).not.toMatch(/autocomplete="off"/i);
     // The boxes share the width, so six fit a 320px phone.
     expect(html).toContain("grid-template-columns:repeat(6, minmax(0, 1fr))");
   });
