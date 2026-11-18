@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   resendVerificationEmailAction,
   updatePlayerEmailAction,
   updatePlayerPasswordAction,
+  verifyEmailAction,
 } from "@/app/actions/player-account";
+import { OtpInput, isCompleteOtp } from "@/components/ui/otp-input";
 import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { Toast } from "@/components/ui/toast";
 import {
@@ -130,6 +131,7 @@ export interface UserSettingsModalProps {
   initialOpenDrawers?: Record<string, boolean>;
   onProfilePrivacyUpdated?: (newSettings: ProfileVisibilitySettings, isPublic: boolean) => void;
   onEmailUpdated?: (newEmail: string) => void;
+  onEmailVerified?: (email: string) => void;
 }
 
 export function UserSettingsModal({
@@ -144,6 +146,7 @@ export function UserSettingsModal({
   initialOpenDrawers = {},
   onProfilePrivacyUpdated,
   onEmailUpdated,
+  onEmailVerified,
 }: UserSettingsModalProps) {
   const router = useRouter();
   const generatedId = useId();
@@ -165,13 +168,19 @@ export function UserSettingsModal({
 
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
-  const [newEmail, setNewEmail] = useState(initialEmail ?? "");
+  const [newEmail, setNewEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(initialEmailVerified ?? false);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
-  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  // Code boxes for an unverified email. `codeRequest` changes each time a code is sent, which
+  // re-mounts the boxes empty and focused, ready for the new code.
+  const [emailCode, setEmailCode] = useState("");
+  const [codeRequest, setCodeRequest] = useState(0);
+  const [codeChecking, setCodeChecking] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeShake, setCodeShake] = useState(0);
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -204,7 +213,7 @@ export function UserSettingsModal({
   const trimmedCurrentEmail = currentEmail.trim().toLowerCase();
   const emailValidation = validateEmailFormat(newEmail);
   const isEmailValid = emailValidation.isValid;
-  const showEmailError = emailTouched && !isEmailValid;
+  const showEmailError = emailTouched && Boolean(newEmail.trim()) && !isEmailValid;
   const hasEmailChanges =
     isEmailValid && Boolean(trimmedNewEmail) && trimmedNewEmail !== trimmedCurrentEmail;
 
@@ -248,22 +257,44 @@ export function UserSettingsModal({
   };
 
   const handleResendVerification = async () => {
-    setResendingVerification(true);
-    setEmailError(null);
+    setResendState("sending");
+    setCodeError(null);
     try {
       const res = await resendVerificationEmailAction();
       if (!res.ok) {
-        setEmailError(res.error ?? "Failed to resend verification link.");
+        setCodeError(res.error ?? "Couldn't send a new code.");
+        setResendState("idle");
         return;
       }
-      if (res.data.verificationToken) {
-        setVerificationToken(res.data.verificationToken);
+      setEmailCode("");
+      setCodeRequest((count) => count + 1);
+      setResendState("sent");
+    } catch {
+      setCodeError("Couldn't send a new code.");
+      setResendState("idle");
+    }
+  };
+
+  const handleVerifyCode = async (code: string) => {
+    if (codeChecking || !isCompleteOtp(code) || !currentEmail) return;
+    setCodeChecking(true);
+    setCodeError(null);
+    try {
+      const res = await verifyEmailAction({ token: code, email: currentEmail });
+      if (res.ok) {
+        setIsEmailVerified(true);
+        setEmailCode("");
+        onEmailVerified?.(res.data.email);
+        showToast("Email verified");
+        router.refresh();
+        return;
       }
-      showToast("Verification link sent! Check your inbox.");
-    } catch (err) {
-      setEmailError(err instanceof Error ? err.message : "Failed to resend verification link.");
+      setCodeError("That code didn't work. Check it, or send a new one.");
+      setCodeShake((count) => count + 1);
+    } catch {
+      setCodeError("Couldn't check the code. Try again.");
     } finally {
-      setResendingVerification(false);
+      setCodeChecking(false);
     }
   };
 
@@ -284,12 +315,14 @@ export function UserSettingsModal({
       }
 
       setCurrentEmail(trimmedNewEmail);
+      setNewEmail("");
+      setEmailTouched(false);
       setIsEmailVerified(false);
-      if (res.data.verificationToken) {
-        setVerificationToken(res.data.verificationToken);
-      }
+      setEmailCode("");
+      setCodeError(null);
+      setResendState("idle");
+      setCodeRequest((count) => count + 1);
       onEmailUpdated?.(trimmedNewEmail);
-      showToast("Email updated. Please verify your new email address.");
       router.refresh();
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : "Failed to update email.");
@@ -479,12 +512,10 @@ export function UserSettingsModal({
             className={activeTab === "account" ? "space-y-6" : "hidden"}
           >
           {/* Email Section */}
-          <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
+          <section className="space-y-4 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                  Email Address
-                </h3>
+                <h3 className="text-sm font-black uppercase tracking-wider text-black">Email</h3>
                 {currentEmail ? (
                   isEmailVerified ? (
                     <span
@@ -498,48 +529,59 @@ export function UserSettingsModal({
                       data-testid="email-unverified-badge"
                       className="inline-flex items-center rounded-full border border-amber-500 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
                     >
-                      Unverified · Re-verification Required
+                      Unverified
                     </span>
                   )
                 ) : null}
               </div>
-              <p className="mt-0.5 text-xs font-bold text-neutral-600">
-                {currentEmail ? (
-                  <>
-                    Current email: <span className="text-black font-black">{currentEmail}</span>
-                  </>
-                ) : (
-                  "No email address linked to your account."
-                )}
+              <p className="mt-1 text-sm font-black text-black [overflow-wrap:anywhere]">
+                {currentEmail || <span className="font-bold text-neutral-600">No email yet</span>}
               </p>
-              {currentEmail && !isEmailVerified && (
-                <div className="mt-2 space-y-2">
-                  <p className="text-[11px] font-bold text-amber-800">
-                    Your email address requires verification. An email update requires re-verification before it can be used for account recovery.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={resendingVerification}
-                      onClick={handleResendVerification}
-                      data-testid="settings-resend-verification-button"
-                      className="rounded-lg border border-black bg-neutral-100 px-2.5 py-1 text-[11px] font-black uppercase text-black hover:bg-neutral-200 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
-                    >
-                      {resendingVerification ? "Sending…" : "Resend Verification Link"}
-                    </button>
-                    {verificationToken && (
-                      <Link
-                        href={`/verify-email?token=${verificationToken}&email=${encodeURIComponent(currentEmail || "")}`}
-                        data-testid="settings-verify-now-link"
-                        className="text-[11px] font-black text-black underline underline-offset-2 hover:text-neutral-800"
-                      >
-                        Verify Now →
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
+
+            {currentEmail && !isEmailVerified && (
+              <div data-testid="settings-email-verify" className="space-y-3 border-t-2 border-dashed border-neutral-200 pt-4">
+                <p className="text-sm font-bold text-neutral-700">Enter the 6-digit code we sent.</p>
+                <OtpInput
+                  key={codeRequest}
+                  id="settings-email-otp"
+                  ariaLabel="Email verification code"
+                  value={emailCode}
+                  onChange={(next) => {
+                    setEmailCode(next);
+                    if (codeError) setCodeError(null);
+                  }}
+                  onComplete={handleVerifyCode}
+                  autoFocus={codeRequest > 0}
+                  disabled={codeChecking}
+                  status={codeChecking ? "checking" : "idle"}
+                  shakeSignal={codeShake}
+                />
+                {codeError && (
+                  <p role="alert" data-testid="settings-email-code-error" className="text-center text-xs font-bold text-red-600">
+                    {codeError}
+                  </p>
+                )}
+                <p aria-live="polite" className="text-center text-xs font-bold text-neutral-600">
+                  {resendState === "sent" ? (
+                    <span data-testid="settings-email-code-resent">New code sent.</span>
+                  ) : (
+                    <>
+                      Didn&apos;t get it?{" "}
+                      <button
+                        type="button"
+                        disabled={resendState === "sending"}
+                        onClick={handleResendVerification}
+                        data-testid="settings-resend-verification-button"
+                        className="inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60"
+                      >
+                        {resendState === "sending" ? "Sending…" : "Resend code"}
+                      </button>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleUpdateEmail} noValidate className="space-y-3">
               <div className="space-y-1">
@@ -547,7 +589,7 @@ export function UserSettingsModal({
                   htmlFor="settings-email-input"
                   className="block text-xs font-black uppercase tracking-wider text-neutral-700"
                 >
-                  New Email Address
+                  {currentEmail ? "Change email" : "Add email"}
                 </label>
                 <input
                   id="settings-email-input"
@@ -559,7 +601,8 @@ export function UserSettingsModal({
                     setEmailError(null);
                   }}
                   onBlur={() => setEmailTouched(true)}
-                  placeholder="athlete@example.com"
+                  autoComplete="email"
+                  placeholder="you@example.com"
                   className={`w-full rounded-xl border-2 ${
                     showEmailError
                       ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
@@ -595,7 +638,7 @@ export function UserSettingsModal({
                   data-testid="save-email-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {emailSaving ? "Saving…" : "Update Email"}
+                  {emailSaving ? "Sending…" : "Send code"}
                 </button>
               </div>
             </form>

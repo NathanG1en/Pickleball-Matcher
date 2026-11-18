@@ -1014,12 +1014,20 @@ describe("PlayerProfilePage and Group Leaving", () => {
       />
     );
 
-    // Email section with unverified badge and disabled save when unchanged
-    expect(htmlUnverified).toContain("Email Address");
+    // Email section: short badge, the code boxes right there, resend under them, empty change field
+    expect(htmlUnverified).toContain(">Email</h3>");
     expect(htmlUnverified).toContain("athlete@example.com");
     expect(htmlUnverified).toContain('data-testid="email-unverified-badge"');
-    expect(htmlUnverified).toContain("Unverified · Re-verification Required");
-    expect(htmlUnverified).toContain('data-testid="settings-email-input"');
+    expect(htmlUnverified).toMatch(/data-testid="email-unverified-badge"[^>]*>Unverified</);
+    expect(htmlUnverified).not.toContain("Re-verification");
+    expect(htmlUnverified).toContain("Enter the 6-digit code we sent.");
+    expect(htmlUnverified).toContain('id="settings-email-otp"');
+    expect(htmlUnverified.match(/aria-label="Digit \d of 6"/g)).toHaveLength(6);
+    expect(htmlUnverified).toMatch(/data-testid="settings-resend-verification-button"[^>]*>Resend code</);
+    expect(htmlUnverified.indexOf('id="settings-email-otp"')).toBeLessThan(htmlUnverified.indexOf("Resend code"));
+    expect(htmlUnverified).toContain("Change email");
+    expect(htmlUnverified).toMatch(/data-testid="settings-email-input"[^>]*value=""/);
+    expect(htmlUnverified).toContain(">Send code</button>");
     expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-email-button"/);
     expect(htmlUnverified).toContain("disabled:cursor-not-allowed");
     expect(htmlUnverified).toContain("disabled:hover:bg-neutral-200");
@@ -1047,6 +1055,16 @@ describe("PlayerProfilePage and Group Leaving", () => {
     );
     expect(htmlVerified).toContain('data-testid="email-verified-badge"');
     expect(htmlVerified).toContain("Verified");
+    expect(htmlVerified).not.toContain('data-testid="settings-email-verify"');
+    expect(htmlVerified).not.toContain("Resend code");
+
+    // No email yet
+    const htmlNoEmail = renderToStaticMarkup(
+      <UserSettingsModal isOpen={true} onClose={() => {}} initialTab="account" initialEmail="" hasPassword={true} />
+    );
+    expect(htmlNoEmail).toContain("No email yet");
+    expect(htmlNoEmail).toContain("Add email");
+    expect(htmlNoEmail).not.toContain('data-testid="settings-email-verify"');
   });
 
   it("validateEmailFormat catches inputs lacking @ or domain and accepts valid emails", () => {
