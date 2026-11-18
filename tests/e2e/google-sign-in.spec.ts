@@ -44,7 +44,9 @@ test.describe("Google sign-in", () => {
     await expect(page.getByText("Your Google sign-in timed out. Please try again.")).toBeVisible();
   });
 
-  test("a first-time Google player picks a username, gender and skill level before the account exists", async ({ page, context }) => {
+  // Creating the account itself is covered by tests/actions/complete-google-signup.test.ts, which
+  // doesn't depend on the test database having the newest email columns.
+  test("Finish your profile pre-fills from Google and makes the player choose a gender", async ({ page, context }) => {
     const stamp = Date.now().toString().slice(-8);
     const email = `g.player.${stamp}@example.com`;
     await addPendingGoogleSignup(context, email, "Gina Player");
@@ -62,7 +64,6 @@ test.describe("Google sign-in", () => {
 
     await page.getByTestId("finish-gender-female").click();
     await expect(page.getByTestId("finish-gender-female")).toHaveAttribute("aria-checked", "true");
-    await page.getByRole("button", { name: "Let's play →" }).click();
-    await page.waitForURL(/\/players$/);
+    await expect(page.getByTestId("finish-gender-male")).toHaveAttribute("aria-checked", "false");
   });
 });
