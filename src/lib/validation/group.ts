@@ -128,13 +128,6 @@ export const resetPasswordSchema = z.object({
   email: z.string().trim().email().optional(),
 }).strict();
 
-export const loginWithSocialAuthSchema = z.object({
-  id: z.string().min(1, "User ID is required."),
-  email: z.string().trim().email("Enter a valid email address.").max(254),
-  name: z.string().trim().max(80).optional(),
-  token: z.string().optional(),
-}).strict();
-
 export const playerLoginSchema = z
   .object({
     username: z.string().trim().min(1).max(254).optional(),

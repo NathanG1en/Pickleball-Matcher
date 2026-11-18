@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loginWithSocialAuthAction, playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
+import * as playerAccountActions from "@/app/actions/player-account";
+import { playerLoginAction, playerSignupAction } from "@/app/actions/player-account";
+import { findOrCreatePlayerForVerifiedEmail } from "@/lib/auth/social-sign-in";
 import { setActionRepository } from "@/app/actions/action-context";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 
@@ -171,29 +173,28 @@ describe("player account authentication", () => {
     });
   });
 
-  it("authenticates and provisions a new player with social auth", async () => {
-    vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
-    const repository = new InMemoryRepositories();
-    setActionRepository(repository);
+  it("does not expose a server action that signs in by email alone", () => {
+    // Anyone can call an exported server action, so an email-only sign-in action would let a
+    // visitor sign in as any player. Google sign-in finishes on the server from the Neon session.
+    expect("loginWithSocialAuthAction" in playerAccountActions).toBe(false);
+  });
 
-    const result = await loginWithSocialAuthAction({
-      id: "social_user_123",
+  it("provisions a new player for a Google-verified email", async () => {
+    const repository = new InMemoryRepositories();
+
+    const accountId = await findOrCreatePlayerForVerifiedEmail(repository, {
       email: "SocialPlayer@example.com",
       name: "Social Player",
-      token: "dummy.jwt.token",
     });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
     const account = await repository.getPlayerAccountByEmail("socialplayer@example.com");
-    expect(account).not.toBeNull();
+    expect(account?.id).toBe(accountId);
     expect(account?.name).toBe("Social Player");
     expect(account?.emailVerified).toBe(true);
     expect(account?.initialRating).toBe(1000);
   });
 
-  it("links to existing account when authenticating with social auth", async () => {
+  it("signs a Google-verified email into the existing account with that email", async () => {
     vi.stubEnv("PLAYER_SESSION_SECRET", "player-session-secret-for-auth-tests-32-bytes");
     const repository = new InMemoryRepositories();
     setActionRepository(repository);
@@ -208,16 +209,12 @@ describe("player account authentication", () => {
       initialRating: 1100,
     });
 
-    const result = await loginWithSocialAuthAction({
-      id: "social_existing_id",
+    const accountId = await findOrCreatePlayerForVerifiedEmail(repository, {
       email: "EXISTING@example.com",
       name: "Updated Name",
     });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
     const account = await repository.getPlayerAccountByUsername("existing_player");
-    expect(result.data.accountId).toBe(account?.id);
+    expect(accountId).toBe(account?.id);
   });
 });

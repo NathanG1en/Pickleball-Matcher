@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   deletePlayerSchema,
-  loginWithSocialAuthSchema,
   playerLoginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
@@ -88,42 +87,6 @@ describe("playerLoginSchema", () => {
         username: "rally_champ",
         password: "password123",
         unknownProp: "bad",
-      }).success
-    ).toBe(false);
-  });
-});
-
-describe("loginWithSocialAuthSchema", () => {
-  it("accepts valid social auth payloads", () => {
-    expect(
-      loginWithSocialAuthSchema.safeParse({
-        id: "usr_123",
-        email: "player@example.com",
-        name: "Pickle Player",
-        token: "jwt.token.here",
-      }).success
-    ).toBe(true);
-
-    expect(
-      loginWithSocialAuthSchema.safeParse({
-        id: "usr_123",
-        email: "player@example.com",
-      }).success
-    ).toBe(true);
-  });
-
-  it("rejects invalid email or empty id", () => {
-    expect(
-      loginWithSocialAuthSchema.safeParse({
-        id: "",
-        email: "player@example.com",
-      }).success
-    ).toBe(false);
-
-    expect(
-      loginWithSocialAuthSchema.safeParse({
-        id: "usr_123",
-        email: "not-an-email",
       }).success
     ).toBe(false);
   });

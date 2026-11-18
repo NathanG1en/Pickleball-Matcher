@@ -11,7 +11,6 @@ import {
   joinAsGuestSchema,
   joinGroupInviteSchema,
   joinPublicGroupSchema,
-  loginWithSocialAuthSchema,
   playerLoginSchema,
   playerSignupSchema,
   requestPasswordResetSchema,
@@ -391,66 +390,6 @@ export async function joinAsGuestAction(
   } catch (error) {
     console.error("joinAsGuestAction failed", error);
     return { ok: false, error: "We couldn't add you to this group right now. Please try again in a moment." };
-  }
-}
-
-export async function loginWithSocialAuthAction(
-  input: unknown
-): Promise<PlayerActionResult<{ accountId: string }>> {
-  const parsed = loginWithSocialAuthSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: "Invalid social authentication payload." };
-  }
-
-  const email = parsed.data.email.trim().toLowerCase();
-  const repository = getActionRepository();
-
-  try {
-    let account = await repository.getPlayerAccountByEmail(email);
-
-    if (!account) {
-      const baseUsername = email
-        .split("@")[0]
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .slice(0, 18)
-        .padEnd(3, "0")
-        .toLowerCase();
-
-      let uniqueUsername = baseUsername;
-      let counter = 1;
-      while (await repository.getPlayerAccountByUsername(uniqueUsername)) {
-        uniqueUsername = `${baseUsername.slice(0, 14)}_${counter}`;
-        counter++;
-      }
-
-      const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-      const newAccount = {
-        id: accountId,
-        username: uniqueUsername,
-        name: parsed.data.name?.trim() || uniqueUsername,
-        gender: undefined,
-        skillLevel: "intermediate" as const,
-        initialRating: 1000,
-        email,
-        emailVerified: true,
-        passwordHash: null,
-        createdAt: new Date(),
-      };
-      await repository.createPlayerAccount(newAccount);
-      account = newAccount;
-    }
-
-    const token = await createPlayerSession(account.id);
-    try {
-      (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
-    } catch {
-      // Non-request test contexts.
-    }
-
-    return { ok: true, data: { accountId: account.id } };
-  } catch (error) {
-    console.error("loginWithSocialAuthAction error:", error);
-    return { ok: false, error: "Failed to authenticate with social provider." };
   }
 }
 

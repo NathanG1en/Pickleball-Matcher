@@ -40,6 +40,11 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
 - **OTP Verification & Password Recovery**:
   - `/verify-email` verifies 6-digit codes via Neon Auth's `/email-otp/verify-email` and updates `player_accounts.email_verified = true`.
   - `/reset-password` resets credentials via Neon Auth's `/email-otp/reset-password` and updates the bcrypt password hash in `player_accounts`.
-- **Social & OAuth Authentication**:
-  - Headless OAuth handling supported via `loginWithSocialAuthAction` in `src/app/actions/player-account.ts`, linking social identities with local player accounts.
+- **Continue with Google** (on `/player-login`):
+  1. **Starting:** the button calls Neon Auth's client SDK (`signIn.social`). It posts to `/api/auth/sign-in/social`, which the `[...path]` route proxies to Neon Auth; Neon sets a sign-in challenge cookie and sends the browser to Google. While it starts, the button reads "Opening Google…". If it can't start, a red line suggests the username and password form instead.
+  2. **Coming back:** Google returns through Neon Auth to `/auth/google/complete?neon_auth_session_verifier=…`. `src/proxy.ts` runs Neon's middleware on that one path only, swaps the verifier for a Neon session cookie, and reloads the page without it.
+  3. **Signing in:** the `/auth/google/complete` route reads the Google email from the Neon session. It signs into the player account with that email, or creates one (username from the email, verified email, starting rating 1000), sets the player session cookie, and continues to `?next=` (default `/`).
+  4. **Failures:** a cancelled sign-in, a missing session or an unverified Google email returns to `/player-login` with a red error.
+  - **Safety:** accounts are matched only by an email read from the server-side Neon session. There is no server action that signs in by an email the browser sends.
+  - **Neon Auth settings:** the Google provider must be enabled, using Neon's shared credentials or your own client. Localhost must be allowed for local development, and each deployed domain must be a trusted origin.
 
