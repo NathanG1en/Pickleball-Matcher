@@ -649,7 +649,7 @@ export async function updatePlayerEmailAction(
       data: {
         email,
         verificationRequired: true,
-        verificationToken: process.env.NODE_ENV !== "production" ? rawToken : undefined,
+        verificationToken: process.env.NODE_ENV === "test" ? rawToken : undefined,
         localDevUrl,
       },
     };
@@ -712,7 +712,7 @@ export async function resendVerificationEmailAction(): Promise<
       ok: true,
       data: {
         email: account.email,
-        verificationToken: process.env.NODE_ENV !== "production" ? rawToken : undefined,
+        verificationToken: process.env.NODE_ENV === "test" ? rawToken : undefined,
         localDevUrl,
       },
     };

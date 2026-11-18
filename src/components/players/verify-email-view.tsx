@@ -167,6 +167,31 @@ export function VerifyEmailView({ token, email }: { token?: string; email?: stri
       >
         {pending ? "Verifying…" : "Confirm Verification"}
       </button>
+
+      <div className="pt-4 border-t-2 border-dashed border-neutral-300 space-y-3">
+        <p className="text-xs font-black uppercase tracking-wider text-neutral-800">
+          Or enter your 6-digit code:
+        </p>
+        <div className="flex justify-center my-2">
+          <OtpInput
+            id="verify-email-otp-fallback"
+            value={manualCode}
+            onChange={setManualCode}
+            onComplete={(code) => handleVerify(code, manualEmail || email)}
+            disabled={pending}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending || manualCode.trim().length !== 6}
+          onClick={() => handleVerify(manualCode, manualEmail || email)}
+          className="w-full font-display uppercase font-black"
+        >
+          {pending ? "Verifying…" : "Verify Code"}
+        </Button>
+      </div>
     </div>
   );
 }

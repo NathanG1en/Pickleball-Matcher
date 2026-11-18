@@ -53,7 +53,7 @@ export function RecoveryEmailBanner({
         setVerificationToken(result.data.verificationToken);
       }
       setSuccessMessage(
-        `Recovery email updated to ${result.data.email}. A verification link has been prepared!`,
+        `Recovery email updated to ${result.data.email}. A 6-digit verification code has been sent!`,
       );
       return;
     }
@@ -73,7 +73,7 @@ export function RecoveryEmailBanner({
       if (result.data.verificationToken) {
         setVerificationToken(result.data.verificationToken);
       }
-      setSuccessMessage("A fresh verification link has been sent to your email.");
+      setSuccessMessage("A fresh verification code has been sent to your email.");
       return;
     }
 
@@ -133,10 +133,10 @@ export function RecoveryEmailBanner({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span>{successMessage}</span>
               <Link
-                href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
+                href={`/verify-email?email=${encodeURIComponent(currentEmail ?? "")}`}
                 className="font-black text-black underline underline-offset-2"
               >
-                {verificationToken ? "Verify Now →" : "Enter Code →"}
+                Enter Code →
               </Link>
             </div>
           </Alert>
@@ -230,10 +230,10 @@ export function RecoveryEmailBanner({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span>{successMessage}</span>
             <Link
-              href={`/verify-email?${verificationToken ? `token=${verificationToken}&` : ""}email=${encodeURIComponent(currentEmail ?? "")}`}
+              href={`/verify-email?email=${encodeURIComponent(currentEmail ?? "")}`}
               className="font-black text-black underline underline-offset-2"
             >
-              {verificationToken ? "Verify Now →" : "Enter Code →"}
+              Enter Code →
             </Link>
           </div>
         </Alert>
