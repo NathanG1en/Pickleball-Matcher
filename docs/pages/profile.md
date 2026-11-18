@@ -61,13 +61,13 @@ Clicking the three dots (`···`) in the profile header opens the account actio
   - **Change / Add:** opens an empty, focused field with **Cancel** and **Send code**. Sending switches the section to the new address, marks it not verified, closes the field and shows empty, focused code boxes for the code just sent.
     - **Send code** is disabled until the field holds a valid email that differs from the current one.
     - **Validation:** a malformed address is flagged when the field loses focus, with a red outline and a message under it. An empty field isn't flagged.
-- **Change Password**:
+- **Change Password** (or **Set Password** for an account made with Google, which has none yet):
   - The heading is the only text. Each field has an eye toggle to show or hide what's typed.
-    - **Current Password**: always required. A wrong one shows "Current password is incorrect." under the box.
+    - **Current Password**: shown and required only when the account has a password. A wrong one shows "Current password is incorrect." under the box.
     - **New Password**: at least 10 characters, up to 72 bytes. Fewer than 10 is flagged in red when the field loses focus.
     - **Confirm New Password**: must match. A mismatch shows "Confirm password must match the new password."
-  - **Update Password** is enabled once the current password is filled in and the new password is long enough and confirmed. The new password is hashed with bcrypt (cost 12).
-  - An account made with Google has no password to enter here; it sets one through **Forgot password** on the sign-in page.
+  - **Update Password** (or **Set Password**) is enabled once the new password is long enough and confirmed, plus the current password when there is one. The new password is hashed with bcrypt (cost 12).
+  - **After setting a first password:** the section switches to **Change Password** right away. From then on the server requires the current password to change it, and refuses an empty one with "Current password is required."
 
 ### 2. Privacy Tab
 Single unified source of truth for visibility, organized as collapsible drawers per profile portion:

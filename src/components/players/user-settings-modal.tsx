@@ -185,7 +185,9 @@ export function UserSettingsModal({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [codeShake, setCodeShake] = useState(0);
 
-  // Password form state
+  // Password form state. Whether the account has a password is kept here too, so setting a first
+  // password switches the section to Change Password straight away.
+  const [accountHasPassword, setAccountHasPassword] = useState(hasPassword);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -225,7 +227,7 @@ export function UserSettingsModal({
   );
 
   const showCurrentPasswordError =
-    currentPasswordError || (currentPasswordTouched && hasPassword && !currentPassword.trim());
+    currentPasswordError || (currentPasswordTouched && accountHasPassword && !currentPassword.trim());
   const showNewPasswordError =
     newPasswordTouched && Boolean(newPassword) && newPassword.length < 10;
   const showConfirmPasswordError =
@@ -234,7 +236,7 @@ export function UserSettingsModal({
     confirmPassword !== newPassword;
 
   const hasPasswordChanges =
-    (!hasPassword || Boolean(currentPassword.trim())) &&
+    (!accountHasPassword || Boolean(currentPassword.trim())) &&
     newPassword.length >= 10 &&
     Boolean(confirmPassword) &&
     confirmPassword === newPassword;
@@ -339,7 +341,7 @@ export function UserSettingsModal({
     e.preventDefault();
     if (passwordSaving || !hasPasswordChanges) return;
 
-    if (hasPassword && !currentPassword.trim()) {
+    if (accountHasPassword && !currentPassword.trim()) {
       setCurrentPasswordError("Current password is required.");
       return;
     }
@@ -388,7 +390,9 @@ export function UserSettingsModal({
       setConfirmPasswordTouched(false);
       setCurrentPasswordError(null);
       setPasswordGeneralError(null);
-      showToast("Password updated successfully");
+      showToast(accountHasPassword ? "Password updated" : "Password set");
+      setAccountHasPassword(true);
+      router.refresh();
     } catch (err) {
       setPasswordGeneralError(err instanceof Error ? err.message : "Failed to update password.");
     } finally {
@@ -675,12 +679,13 @@ export function UserSettingsModal({
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                Change Password
+                {accountHasPassword ? "Change Password" : "Set Password"}
               </h3>
             </div>
 
             <form onSubmit={handleUpdatePassword} noValidate className="space-y-3">
-              {/* Current Password */}
+              {/* Current Password: asked for only when the account already has one */}
+              {accountHasPassword && (
               <div className="space-y-1">
                 <label
                   htmlFor="settings-current-password"
@@ -732,6 +737,7 @@ export function UserSettingsModal({
                   </div>
                 )}
               </div>
+              )}
 
               {/* New Password */}
               <div className="space-y-1">
@@ -855,7 +861,7 @@ export function UserSettingsModal({
                   data-testid="save-password-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {passwordSaving ? "Updating…" : "Update Password"}
+                  {passwordSaving ? "Saving…" : accountHasPassword ? "Update Password" : "Set Password"}
                 </button>
               </div>
             </form>

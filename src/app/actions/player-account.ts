@@ -813,6 +813,13 @@ export async function updatePlayerPasswordAction(
     }
 
     if (account.passwordHash) {
+      if (!parsed.data.currentPassword) {
+        return {
+          ok: false,
+          error: "Current password is required.",
+          fieldErrors: { currentPassword: ["Current password is required."] },
+        };
+      }
       const isMatch = await compare(parsed.data.currentPassword, account.passwordHash);
       if (!isMatch) {
         return {
