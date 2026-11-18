@@ -33,6 +33,26 @@ These fixes come from an Impeccable pass on `/verify-email`. The automated detec
 |---|---|
 | ![Before](../../output/playwright/verify-email-2026-11-17/before/verify-email-small.png) | ![After](../../output/playwright/verify-email-2026-11-17/after/verify-email-small.png) |
 
+## Second pass: bounce, tappable boxes, shorter success
+
+| Mid-typing (tapped back to box 2) | Wrong code | Verified |
+|---|---|---|
+| ![Typing](../../output/playwright/verify-email-2026-11-17/bounce/verify-typing.png) | ![Wrong code](../../output/playwright/verify-email-2026-11-17/bounce/verify-wrong-code.png) | ![Verified](../../output/playwright/verify-email-2026-11-17/bounce/verify-success.png) |
+
+- **Tap or arrow to any box:** the input is now six real boxes instead of one hidden field.
+  - **Moving:** tap a box, or use ← → (Home/End). Typing replaces that digit and moves on.
+  - **Backspace:** clears the box, or in an empty box steps back and clears the one before. Clearing a middle box leaves a gap rather than sliding the later digits over.
+  - **Paste and autofill:** a pasted or autofilled code still fills every box.
+- **Bounce:**
+  - **While typing:** the focused box lifts, and each digit springs in.
+  - **While checking:** the boxes bounce in a ball-like wave.
+  - **Wrong code:** shakes the row.
+  - **Success:** a lime check drops in and bounces.
+  - **Reduced motion:** all of this is skipped when the device asks for it.
+- **Shorter success:** the lime notification box and the extra paragraph are gone. The heading itself becomes **Email verified!**, followed by one line and the button.
+- **Retyping after a wrong code:** focus goes back to the first box. Fixing digits of an already complete code doesn't resend it after every keystroke. It sends when you type the last box, paste a whole code, or press **Verify Code**.
+- **How the success screenshot was made:** none of the local test databases has the new email tables yet. The script rewrote the server's "wrong code" reply into a success in the browser, so the success screen in the picture is the real component.
+
 ## Not changed
 - **Disabled Verify Code button:** still the shared pale-lime style. Colour contrast is still deferred.
 - **Reset Password layout:** that page keeps its own boxed form. Only the shared code input changed there.

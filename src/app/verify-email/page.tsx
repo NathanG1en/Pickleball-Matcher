@@ -23,9 +23,6 @@ export default async function VerifyEmailPage({
         >
           ×
         </Link>
-        <h1 className="mb-2 px-8 font-display text-2xl sm:text-3xl font-black uppercase text-black">
-          Verify Email
-        </h1>
         <VerifyEmailView token={token} email={email} canResend={canResend} />
       </section>
     </main>

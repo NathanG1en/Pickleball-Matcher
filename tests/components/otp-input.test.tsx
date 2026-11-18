@@ -1,43 +1,53 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { OtpInput } from "@/components/ui/otp-input";
+import { OtpInput, isCompleteOtp } from "@/components/ui/otp-input";
+
+const digitInputs = (html: string) => html.match(/<input[^>]*>/g) ?? [];
 
 describe("OtpInput", () => {
-  it("renders 6 segmented slots by default", () => {
-    const html = renderToStaticMarkup(
-      <OtpInput value="" onChange={() => {}} />
-    );
-
+  it("renders one labelled box per digit inside a named group", () => {
+    const html = renderToStaticMarkup(<OtpInput value="" onChange={() => {}} />);
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="6-digit verification code"');
     expect(html).toContain('data-testid="otp-input"');
-    // Six fluid slots sharing the width, so they never overflow a narrow card
-    expect(html.match(/aspect-\[4\/5\]/g)).toHaveLength(6);
+    const inputs = digitInputs(html);
+    expect(inputs).toHaveLength(6);
+    expect(inputs[0]).toContain('aria-label="Digit 1 of 6"');
+    expect(inputs[5]).toContain('aria-label="Digit 6 of 6"');
+    // Only the first box offers one-time-code autofill, which fills every box at once.
+    expect(html.match(/autoComplete="one-time-code"|autocomplete="one-time-code"/g)).toHaveLength(1);
+    // The boxes share the width, so six fit a 320px phone.
     expect(html).toContain("grid-template-columns:repeat(6, minmax(0, 1fr))");
-    expect(html).not.toMatch(/\bw-11\b/);
   });
 
-  it("renders partially filled digits in the corresponding slots", () => {
-    const html = renderToStaticMarkup(
-      <OtpInput value="482" onChange={() => {}} />
-    );
-
-    expect(html).toContain("4");
-    expect(html).toContain("8");
-    expect(html).toContain("2");
+  it("shows each digit in its own box and keeps a cleared middle box empty", () => {
+    const inputs = digitInputs(renderToStaticMarkup(<OtpInput value="48 7" onChange={() => {}} />));
+    expect(inputs.map((input) => input.match(/value="([^"]*)"/)?.[1])).toEqual(["4", "8", "", "7", "", ""]);
+    expect(inputs[2]).toContain('data-filled="false"');
+    expect(inputs[3]).toContain('data-filled="true"');
   });
 
-  it("highlights the next empty slot through focus-within, without waiting for React focus events", () => {
-    const html = renderToStaticMarkup(<OtpInput value="48" onChange={() => {}} />);
-    expect(html.match(/group-focus-within:bg-\[#ccff00\]/g)).toHaveLength(1);
-    const slots = html.split('aspect-[4/5]').slice(1);
-    expect(slots[2]).toContain("group-focus-within:bg-[#ccff00]");
+  it("auto-focuses the first empty box", () => {
+    const inputs = digitInputs(renderToStaticMarkup(<OtpInput value="48" onChange={() => {}} autoFocus />));
+    expect(inputs.findIndex((input) => /autofocus/i.test(input))).toBe(2);
+  });
+
+  it("marks the group while checking so the boxes can wave", () => {
+    expect(renderToStaticMarkup(<OtpInput value="123456" onChange={() => {}} status="checking" />)).toContain('data-state="checking"');
   });
 
   it("renders custom length when provided", () => {
-    const html = renderToStaticMarkup(
-      <OtpInput value="1234" length={4} onChange={() => {}} />
-    );
-
-    expect(html.match(/aspect-\[4\/5\]/g)).toHaveLength(4);
+    const html = renderToStaticMarkup(<OtpInput value="1234" length={4} onChange={() => {}} />);
+    expect(digitInputs(html)).toHaveLength(4);
     expect(html).toContain("grid-template-columns:repeat(4, minmax(0, 1fr))");
+  });
+});
+
+describe("isCompleteOtp", () => {
+  it("needs every box filled with a digit", () => {
+    expect(isCompleteOtp("123456")).toBe(true);
+    expect(isCompleteOtp("12 456")).toBe(false);
+    expect(isCompleteOtp("12345")).toBe(false);
+    expect(isCompleteOtp("1234", 4)).toBe(true);
   });
 });

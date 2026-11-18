@@ -5,6 +5,7 @@ import { VerifyEmailView } from "@/components/players/verify-email-view";
 describe("VerifyEmailView", () => {
   it("renders the 6-digit code form with an email field when no email is known", () => {
     const html = renderToStaticMarkup(<VerifyEmailView />);
+    expect(html).toContain("Verify Email</h1>");
     expect(html).toContain("Enter the 6-digit code from your verification email.");
     expect(html).toContain('id="verify-email-otp"');
     expect(html).toContain('id="verify-email-address"');
@@ -32,13 +33,15 @@ describe("VerifyEmailView", () => {
     const html = renderToStaticMarkup(
       <VerifyEmailView token="482719" email="player@example.com" />
     );
-    expect(html).toContain('value="482719"');
+    const values = [...html.matchAll(/<input[^>]*value="([^"]*)"/g)].map((match) => match[1]);
+    expect(values.slice(0, 6)).toEqual(["4", "8", "2", "7", "1", "9"]);
   });
 
   it("ignores a long link token instead of pre-filling it", () => {
     const html = renderToStaticMarkup(
       <VerifyEmailView token="1aef0b071a44bb434ec18563882c389e" email="player@example.com" />
     );
-    expect(html).toContain('value=""');
+    const values = [...html.matchAll(/<input[^>]*value="([^"]*)"/g)].map((match) => match[1]);
+    expect(values.slice(0, 6)).toEqual(["", "", "", "", "", ""]);
   });
 });

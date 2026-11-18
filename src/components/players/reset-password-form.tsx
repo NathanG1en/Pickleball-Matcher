@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { resetPasswordAction } from "@/app/actions/player-account";
-import { Alert, Button, FormField, Input, OtpInput, VisibilityToggle } from "@/components/ui";
+import { Alert, Button, FormField, Input, OtpInput, VisibilityToggle, isCompleteOtp } from "@/components/ui";
 
 export function ResetPasswordForm({ token, email }: { token?: string; email?: string }) {
   const [password, setPassword] = useState("");
@@ -20,6 +20,10 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
     const effectiveToken = (token || code).trim();
     if (!effectiveToken) {
       setError("Reset code is required.");
+      return;
+    }
+    if (!token && !isCompleteOtp(code)) {
+      setError("Fill in all 6 digits of the reset code.");
       return;
     }
     if (password !== confirmPassword) {

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { resendVerificationEmailAction, verifyEmailAction } from "@/app/actions/player-account";
-import { Alert, Button, FormField, Input, OtpInput } from "@/components/ui";
+import { Alert, Button, FormField, Input, OtpInput, isCompleteOtp } from "@/components/ui";
+
+const headingClass = "mb-2 px-8 font-display text-2xl sm:text-3xl font-black uppercase text-black";
 
 export function VerifyEmailView({
   token,
@@ -18,6 +20,7 @@ export function VerifyEmailView({
   const [pending, setPending] = useState(false);
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shakeSignal, setShakeSignal] = useState(0);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   // If a 6-digit code was provided in token, pre-fill it
@@ -25,12 +28,17 @@ export function VerifyEmailView({
   const [manualCode, setManualCode] = useState(initialCode);
   const [manualEmail, setManualEmail] = useState(email || "");
 
+  const fail = (message: string) => {
+    setError(message);
+    setShakeSignal((count) => count + 1);
+  };
+
   const handleVerify = async (codeToUse?: string, emailToUse?: string) => {
     const effectiveCode = (codeToUse || manualCode || "").trim();
     const effectiveEmail = (emailToUse || manualEmail || email || "").trim();
 
-    if (effectiveCode.length !== 6) {
-      setError("Please enter the complete 6-digit verification code.");
+    if (!isCompleteOtp(effectiveCode)) {
+      fail("Fill in all 6 digits of the code.");
       return;
     }
 
@@ -47,7 +55,7 @@ export function VerifyEmailView({
       return;
     }
 
-    setError(result.error);
+    fail(result.error);
   };
 
   const handleResend = async () => {
@@ -65,40 +73,44 @@ export function VerifyEmailView({
 
   if (verifiedEmail) {
     return (
-      <div className="space-y-4 text-left">
+      <div className="space-y-4">
         <div
-          role="status"
-          className="rounded-xl border-2 border-black bg-[#ccff00] p-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000]"
+          aria-hidden="true"
+          className="verify-success-badge mx-auto flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black bg-[#ccff00] text-3xl font-black text-black shadow-[3px_3px_0px_0px_#000]"
         >
-          {verifiedEmail} has been verified successfully!
+          ✓
         </div>
-        <p className="text-xs font-bold text-neutral-700">
-          Your email address has been confirmed and can now be used for account recovery.
-        </p>
-        <div className="pt-2 text-center">
-          <Link
-            href="/players"
-            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
-          >
-            Go to Profile →
-          </Link>
+        <div role="status">
+          <h1 className={headingClass}>Email verified!</h1>
+          <p className="text-sm font-bold text-neutral-700">
+            <span className="font-black text-black [overflow-wrap:anywhere]">{verifiedEmail}</span> can now get you back into your account.
+          </p>
         </div>
+        <Link
+          href="/players"
+          className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-5 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+        >
+          Go to Profile →
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <p className="text-sm font-bold text-neutral-700">
-        {email ? (
-          <>
-            We sent a 6-digit code to
-            <span className="block font-black text-black [overflow-wrap:anywhere]">{email}</span>
-          </>
-        ) : (
-          "Enter the 6-digit code from your verification email."
-        )}
-      </p>
+      <div>
+        <h1 className={headingClass}>Verify Email</h1>
+        <p className="text-sm font-bold text-neutral-700">
+          {email ? (
+            <>
+              We sent a 6-digit code to
+              <span className="block font-black text-black [overflow-wrap:anywhere]">{email}</span>
+            </>
+          ) : (
+            "Enter the 6-digit code from your verification email."
+          )}
+        </p>
+      </div>
 
       {error && (
         <Alert variant="danger" size="md" className="text-left">
@@ -116,10 +128,15 @@ export function VerifyEmailView({
         <OtpInput
           id="verify-email-otp"
           value={manualCode}
-          onChange={setManualCode}
+          onChange={(next) => {
+            setManualCode(next);
+            if (error) setError(null);
+          }}
           onComplete={(code) => handleVerify(code, manualEmail)}
           autoFocus
           disabled={pending}
+          status={pending ? "checking" : "idle"}
+          shakeSignal={shakeSignal}
         />
 
         {!email && (
@@ -141,10 +158,10 @@ export function VerifyEmailView({
           type="submit"
           variant="primary"
           size="md"
-          disabled={pending || manualCode.trim().length !== 6}
+          disabled={pending || !isCompleteOtp(manualCode)}
           className="min-h-11 w-full font-display uppercase font-black"
         >
-          {pending ? "Verifying…" : "Verify Code"}
+          {pending ? "Checking…" : "Verify Code"}
         </Button>
       </form>
 
@@ -152,7 +169,7 @@ export function VerifyEmailView({
         {canResend && (
           <p aria-live="polite">
             {resendState === "sent" ? (
-              <span data-testid="verify-email-resent">New code sent. Check your inbox.</span>
+              <span data-testid="verify-email-resent">Fresh code on its way. Check your inbox.</span>
             ) : (
               <>
                 Didn&apos;t get it?{" "}
