@@ -53,6 +53,19 @@ These fixes come from an Impeccable pass on `/verify-email`. The automated detec
 - **Retyping after a wrong code:** focus goes back to the first box. Fixing digits of an already complete code doesn't resend it after every keystroke. It sends when you type the last box, paste a whole code, or press **Verify Code**.
 - **How the success screenshot was made:** none of the local test databases has the new email tables yet. The script rewrote the server's "wrong code" reply into a success in the browser, so the success screen in the picture is the real component.
 
+## Recovery email banner
+
+The banner on Home and the profile is cut down to a heading, one line and three actions.
+- **Removed:** the "Action Required" label, the extra sentence, the Dismiss link and the success notice.
+- **Added:** an **Enter code →** button. Before, the only way to the code screen was a link that appeared after resending.
+- **No email yet:** the version for players without an email follows the same pattern.
+
+| Before | After: not verified | After: no email yet |
+|---|---|---|
+| ![Before](../../output/playwright/recovery-banner-2026-11-17/before/banner-unverified-mobile.png) | ![After](../../output/playwright/recovery-banner-2026-11-17/after/banner-unverified-mobile.png) | ![After](../../output/playwright/recovery-banner-2026-11-17/after/banner-no-email-mobile.png) |
+
+These screenshots render the banner on its own with the app's stylesheet. No local test database has the email columns yet, so it can't be shown on a real signed-in page.
+
 ## Not changed
 - **Disabled Verify Code button:** still the shared pale-lime style. Colour contrast is still deferred.
 - **Reset Password layout:** that page keeps its own boxed form. Only the shared code input changed there.

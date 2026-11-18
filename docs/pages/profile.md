@@ -16,7 +16,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Gender**: Displayed if configured (`Male` or `Female`).
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
    - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
-   - **Account Recovery Banner & Email Status**: When viewing one's own profile, if no recovery email is on file or if an email is pending verification, a dedicated recovery card prompts the player to add an email or resend verification. Once verified, the account is protected with automated password recovery.
+   - **Recovery email banner:** on one's own profile, while no recovery email is on file or it isn't verified yet. The unverified version reads **Recovery email not verified**, "Check <email> for your 6-digit verification code.", **Enter code →**, then **Resend code · Change email**. Hidden once verified. See [auth.md](auth.md).
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu (`···`) with "Settings" and "Log Out".
 2. **Chemistry Spotlight & Mutual Chemistry**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost. Placed in the top row alongside Performance Stats to maintain balanced card proportions.

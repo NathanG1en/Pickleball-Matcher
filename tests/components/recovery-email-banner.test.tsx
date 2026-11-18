@@ -2,28 +2,28 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
 
-describe("RecoveryEmailBanner", () => {
-  it("renders prompt to add recovery email when user has no email connected", () => {
-    const html = renderToStaticMarkup(
-      <RecoveryEmailBanner currentEmail={null} isVerified={false} />,
-    );
+const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\u2011/g, "-").replace(/\s+/g, " ").trim();
 
-    expect(html).toContain("Add Account Recovery Email");
-    expect(html).toContain("You don&#x27;t have a recovery email attached yet");
-    expect(html).toContain("Add Email");
-    expect(html).toContain("Remind me later");
+describe("RecoveryEmailBanner", () => {
+  it("asks for a recovery email in one short line when none is connected", () => {
+    const html = renderToStaticMarkup(<RecoveryEmailBanner currentEmail={null} isVerified={false} />);
+
+    expect(html).toContain("Add a recovery email");
+    expect(html).toContain("So you can reset your password if you forget it.");
+    expect(html).toContain("Add email →");
+    expect(html).toContain("Not now");
   });
 
-  it("renders unverified warning when user has an email that is not verified", () => {
-    const html = renderToStaticMarkup(
-      <RecoveryEmailBanner currentEmail="player@example.com" isVerified={false} />,
-    );
+  it("keeps the unverified notice to a heading, one line and three actions", () => {
+    const html = renderToStaticMarkup(<RecoveryEmailBanner currentEmail="player@example.com" isVerified={false} />);
 
-    expect(html).toContain("Action Required · Recovery Email Unverified");
-    expect(html).toContain("player@example.com");
-    expect(html).toContain("Resend Link");
-    expect(html).toContain("Change Email");
-    expect(html).toContain("Dismiss");
+    expect(text(html)).toBe(
+      "Recovery email not verified Check player@example.com for your 6-digit verification code. Enter code → Resend code · Change email",
+    );
+    expect(html).toContain('href="/verify-email?email=player%40example.com"');
+    // No eyebrow label, extra paragraph or dismiss link any more.
+    expect(html).not.toContain("Action Required");
+    expect(html).not.toContain("Dismiss");
   });
 
   it("renders nothing when user has a verified recovery email", () => {

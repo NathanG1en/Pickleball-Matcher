@@ -6,7 +6,7 @@ import {
   resendVerificationEmailAction,
   updatePlayerEmailAction,
 } from "@/app/actions/player-account";
-import { Alert, Button, FormField, Input } from "@/components/ui";
+import { Button, FormField, Input } from "@/components/ui";
 
 export interface RecoveryEmailBannerProps {
   currentEmail?: string | null;
@@ -14,6 +14,10 @@ export interface RecoveryEmailBannerProps {
   className?: string;
 }
 
+const linkButtonClass =
+  "inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60";
+
+/** A short nudge on Home and the profile: add a recovery email, or verify the one you added. */
 export function RecoveryEmailBanner({
   currentEmail: initialEmail,
   isVerified: initialVerified = false,
@@ -21,262 +25,151 @@ export function RecoveryEmailBanner({
 }: RecoveryEmailBannerProps) {
   const [currentEmail, setCurrentEmail] = useState(initialEmail);
   const [isVerified, setIsVerified] = useState(initialVerified);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<"save" | "resend" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
-  // If dismissed or user has verified email and banner is not explicitly opened
-  if (dismissed || (currentEmail && isVerified && !isOpen)) {
-    return null;
-  }
+  if (dismissed || (currentEmail && isVerified)) return null;
 
   const handleSaveEmail = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!emailInput.trim()) return;
-
-    setPending(true);
+    setPending("save");
     setError(null);
-    setSuccessMessage(null);
-    setVerificationToken(null);
-
     const result = await updatePlayerEmailAction({ email: emailInput.trim() });
-    setPending(false);
-
+    setPending(null);
     if (result.ok) {
+      // The banner itself now says where the code went, so no separate success message.
       setCurrentEmail(result.data.email);
       setIsVerified(false);
-      if (result.data.verificationToken) {
-        setVerificationToken(result.data.verificationToken);
-      }
-      setSuccessMessage(
-        `Recovery email updated to ${result.data.email}. A 6-digit verification code has been sent!`,
-      );
+      setIsEditing(false);
+      setResent(false);
       return;
     }
-
     setError(result.error);
   };
 
   const handleResend = async () => {
-    setPending(true);
+    setPending("resend");
     setError(null);
-    setSuccessMessage(null);
-
     const result = await resendVerificationEmailAction();
-    setPending(false);
-
-    if (result.ok) {
-      if (result.data.verificationToken) {
-        setVerificationToken(result.data.verificationToken);
-      }
-      setSuccessMessage("A fresh verification code has been sent to your email.");
-      return;
-    }
-
-    setError(result.error);
+    setPending(null);
+    if (result.ok) setResent(true);
+    else setError(result.error);
   };
 
-  // Case 1: User has an unverified email
-  if (currentEmail && !isVerified) {
+  const emailForm = (label: string, submitLabel: string) => (
+    <form onSubmit={handleSaveEmail} className="mt-3 space-y-3">
+      <FormField id="recovery-email-input" label={label}>
+        <Input
+          id="recovery-email-input"
+          type="email"
+          autoComplete="email"
+          required
+          autoFocus
+          value={emailInput}
+          onChange={(e) => setEmailInput(e.target.value)}
+          placeholder="you@example.com"
+        />
+      </FormField>
+      <div className="flex items-center gap-3">
+        <Button type="submit" variant="primary" size="sm" disabled={pending !== null || !emailInput.trim()} className="min-h-11 font-display uppercase">
+          {pending === "save" ? "Sending…" : submitLabel}
+        </Button>
+        <button type="button" onClick={() => setIsEditing(false)} className={`${linkButtonClass} text-sm`}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+
+  const errorLine = error && (
+    <p role="alert" className="mt-2 text-sm font-bold text-[#b91c1c]">
+      {error}
+    </p>
+  );
+
+  // An email was added but not verified yet.
+  if (currentEmail) {
     return (
-      <div
+      <section
+        aria-labelledby="recovery-email-heading"
+        data-testid="recovery-email-banner"
         className={`rounded-2xl border-[3px] border-black bg-[#FFF9E6] p-4 text-left shadow-[4px_4px_0px_0px_#000] sm:p-5 ${className}`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
-              <p className="text-xs font-black uppercase tracking-wider text-amber-900">
-                Action Required · Recovery Email Unverified
-              </p>
-            </div>
-            <p className="mt-1 text-sm font-bold text-neutral-800">
-              Please check <span className="font-black text-black">{currentEmail}</span> and verify your email address to protect your account.
+        <h2 id="recovery-email-heading" className="font-display text-lg font-black uppercase text-black">
+          Recovery email not verified
+        </h2>
+        <p className="mt-1 text-sm font-bold text-neutral-700">
+          Check <span className="font-black text-black [overflow-wrap:anywhere]">{currentEmail}</span> for your 6&#8209;digit
+          verification code.
+        </p>
+
+        {isEditing ? (
+          emailForm("New recovery email", "Send code")
+        ) : (
+          <>
+            <Link
+              href={`/verify-email?email=${encodeURIComponent(currentEmail)}`}
+              data-testid="recovery-email-enter-code"
+              className="mt-3 inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-4 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+            >
+              Enter code →
+            </Link>
+            <p aria-live="polite" className="mt-1 flex flex-wrap items-center gap-x-2 text-sm font-bold text-neutral-700">
+              {resent ? (
+                <span data-testid="recovery-email-resent" className="inline-flex min-h-11 items-center">New code sent.</span>
+              ) : (
+                <button type="button" onClick={handleResend} disabled={pending !== null} className={linkButtonClass}>
+                  {pending === "resend" ? "Sending…" : "Resend code"}
+                </button>
+              )}
+              <span aria-hidden="true">·</span>
+              <button type="button" onClick={() => setIsEditing(true)} className={linkButtonClass}>
+                Change email
+              </button>
             </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-              onClick={handleResend}
-              className="text-xs font-bold"
-            >
-              {pending ? "Sending…" : "Resend Link"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsOpen((prev) => !prev)}
-              className="text-xs font-bold"
-            >
-              {isOpen ? "Close" : "Change Email"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              className="text-xs font-bold text-neutral-500 hover:text-black underline px-1"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-
-        {successMessage && (
-          <Alert variant="success" size="sm" className="mt-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span>{successMessage}</span>
-              <Link
-                href={`/verify-email?email=${encodeURIComponent(currentEmail ?? "")}`}
-                className="font-black text-black underline underline-offset-2"
-              >
-                Enter Code →
-              </Link>
-            </div>
-          </Alert>
+          </>
         )}
-
-        {error && (
-          <Alert variant="danger" size="sm" className="mt-3">
-            {error}
-          </Alert>
-        )}
-
-        {isOpen && (
-          <form onSubmit={handleSaveEmail} className="mt-4 pt-4 border-t-2 border-dashed border-neutral-300 space-y-3">
-            <FormField id="change-recovery-email" label="Update Recovery Email">
-              <Input
-                id="change-recovery-email"
-                type="email"
-                required
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="new-email@example.com"
-              />
-            </FormField>
-            <div className="flex items-center gap-2">
-              <Button type="submit" variant="primary" size="sm" disabled={pending || !emailInput.trim()}>
-                {pending ? "Saving…" : "Update & Verify"}
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
+        {errorLine}
+      </section>
     );
   }
 
-  // Case 2: User has NO recovery email
+  // No recovery email yet.
   return (
-    <div
+    <section
+      aria-labelledby="recovery-email-heading"
+      data-testid="recovery-email-banner"
       className={`rounded-2xl border-[3px] border-black bg-[#FFFDF7] p-4 text-left shadow-[4px_4px_0px_0px_#000] sm:p-5 ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ccff00] border-2 border-black text-xs font-black">
-              !
-            </span>
-            <h3 className="font-display text-base font-black uppercase text-black">
-              Add Account Recovery Email
-            </h3>
-          </div>
-          <p className="text-xs font-bold text-neutral-700 max-w-xl">
-            You don&apos;t have a recovery email attached yet. Add an email address so you can reset your password if you ever forget it, or sign in with your email.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!isOpen ? (
-            <>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setIsOpen(true)}
-                className="font-display text-xs uppercase"
-              >
-                Add Email
-              </Button>
-              <button
-                type="button"
-                onClick={() => setDismissed(true)}
-                className="text-xs font-bold text-neutral-500 hover:text-black underline px-2 py-1"
-              >
-                Remind me later
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-xs font-bold text-neutral-500 hover:text-black underline"
-            >
-              Close
-            </button>
-          )}
-        </div>
-      </div>
+      <h2 id="recovery-email-heading" className="font-display text-lg font-black uppercase text-black">
+        Add a recovery email
+      </h2>
+      <p className="mt-1 text-sm font-bold text-neutral-700">So you can reset your password if you forget it.</p>
 
-      {successMessage && (
-        <Alert variant="success" size="sm" className="mt-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span>{successMessage}</span>
-            <Link
-              href={`/verify-email?email=${encodeURIComponent(currentEmail ?? "")}`}
-              className="font-black text-black underline underline-offset-2"
-            >
-              Enter Code →
-            </Link>
-          </div>
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="danger" size="sm" className="mt-3">
-          {error}
-        </Alert>
-      )}
-
-      {isOpen && (
-        <form onSubmit={handleSaveEmail} className="mt-4 pt-4 border-t-2 border-dashed border-neutral-300 space-y-3">
-          <FormField
-            id="new-recovery-email"
-            label="Recovery Email Address"
-            hint="We'll send a verification link to confirm this email."
+      {isEditing ? (
+        emailForm("Recovery email", "Send code")
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            className="min-h-11 font-display uppercase"
           >
-            <Input
-              id="new-recovery-email"
-              type="email"
-              required
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="you@example.com"
-            />
-          </FormField>
-          <div className="flex items-center gap-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={pending || !emailInput.trim()}
-              className="font-display text-xs uppercase"
-            >
-              {pending ? "Saving…" : "Save & Verify"}
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
+            Add email →
+          </Button>
+          <button type="button" onClick={() => setDismissed(true)} className={`${linkButtonClass} text-sm`}>
+            Not now
+          </button>
+        </div>
       )}
-    </div>
+      {errorLine}
+    </section>
   );
 }

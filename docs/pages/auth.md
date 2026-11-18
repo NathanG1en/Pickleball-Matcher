@@ -16,7 +16,17 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **Go to Profile →:** a text link back to `/players` for anyone who wants to verify later.
   - **Success:** the card swaps to a bouncing lime check, the heading **Email verified!**, one line ("<email> can now get you back into your account.") and a **Go to Profile →** button. No separate notification box.
   - **Motion:** all of it is skipped when the device asks for reduced motion.
-- **Recovery Email Banner (`RecoveryEmailBanner`)**: Persistent notice on `/` and `/players` prompting players without a connected or verified recovery email to connect one, with 1-click resend, direct links to `/verify-email`, and local verification shortcuts.
+- **Recovery Email Banner (`RecoveryEmailBanner`)**: A short notice on `/` and `/players`. It's hidden once the recovery email is verified.
+  - **Unverified email:**
+    - **Text:** **Recovery email not verified** and "Check <email> for your 6-digit verification code."
+    - **Enter code →:** opens `/verify-email?email=<email>`.
+    - **Resend code:** sends a fresh code and changes to "New code sent."
+    - **Change email:** opens one email field with **Send code** and **Cancel**. Saving shows the banner again for the new address.
+    - Errors show as one red line.
+  - **No email yet:**
+    - **Text:** **Add a recovery email** and "So you can reset your password if you forget it."
+    - **Add email →:** opens the same email field.
+    - **Not now:** hides the banner until the next visit.
 
 ## Authentication Architecture
 
