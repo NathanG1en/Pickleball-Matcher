@@ -11,6 +11,22 @@ test.describe("Verify Email code boxes", () => {
     await expect(page.getByTestId("verify-email-otp-digit-0")).toBeFocused();
   });
 
+  test("fits the screen under the navigation, centred, without scrolling", async ({ page }) => {
+    const layout = await page.evaluate(() => {
+      const main = document.querySelector("main[data-fill-screen]")!.getBoundingClientRect();
+      const card = document.querySelector("main[data-fill-screen] > section")!.getBoundingClientRect();
+      return {
+        pageScrolls: document.documentElement.scrollHeight > window.innerHeight,
+        mainBottom: Math.round(main.bottom),
+        viewport: window.innerHeight,
+        offCentre: Math.abs((card.top + card.bottom) / 2 - (main.top + main.bottom) / 2),
+      };
+    });
+    expect(layout.pageScrolls).toBe(false);
+    expect(layout.mainBottom).toBeLessThanOrEqual(layout.viewport);
+    expect(layout.offCentre).toBeLessThan(2);
+  });
+
   test("lets a player tap or arrow to any box to fix a digit", async ({ page }) => {
     await page.keyboard.type("123");
     expect(await digits(page)).toEqual(["1", "2", "3", "", "", ""]);
