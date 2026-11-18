@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { neonAuth } from "@/lib/auth/neon-server";
+import { getNeonAuth } from "@/lib/auth/neon-server";
 
 /**
  * Proxies the browser's Neon Auth calls, but only the ones Google sign-in needs.
@@ -11,21 +11,27 @@ import { neonAuth } from "@/lib/auth/neon-server";
  */
 const ALLOWED = new Set(["POST sign-in/social", "GET get-session", "POST sign-out"]);
 
-const handler = neonAuth.handler();
-type Handler = typeof handler.GET;
+type Handlers = ReturnType<ReturnType<typeof getNeonAuth>["handler"]>;
+type Handler = Handlers["GET"];
+type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-function allowOnly(method: string, forward: Handler): Handler {
+// Built on the first allowed request, so a missing Neon Auth setting fails that request with a
+// clear error instead of breaking the build.
+let handlers: Handlers | null = null;
+
+function allowOnly(method: Method): Handler {
   return (async (request: NextRequest, context: Parameters<Handler>[1]) => {
     const path = request.nextUrl.pathname.replace(/^\/api\/auth\/?/, "");
     if (!ALLOWED.has(`${method} ${path}`)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return forward(request, context);
+    handlers ??= getNeonAuth().handler();
+    return handlers[method](request, context);
   }) as Handler;
 }
 
-export const GET = allowOnly("GET", handler.GET);
-export const POST = allowOnly("POST", handler.POST);
-export const PUT = allowOnly("PUT", handler.PUT);
-export const DELETE = allowOnly("DELETE", handler.DELETE);
-export const PATCH = allowOnly("PATCH", handler.PATCH);
+export const GET = allowOnly("GET");
+export const POST = allowOnly("POST");
+export const PUT = allowOnly("PUT");
+export const DELETE = allowOnly("DELETE");
+export const PATCH = allowOnly("PATCH");

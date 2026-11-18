@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const forwarded = vi.fn(async () => new Response("forwarded", { status: 200 }));
 vi.mock("@/lib/auth/neon-server", () => ({
-  neonAuth: { handler: () => ({ GET: forwarded, POST: forwarded, PUT: forwarded, DELETE: forwarded, PATCH: forwarded }) },
+  getNeonAuth: () => ({ handler: () => ({ GET: forwarded, POST: forwarded, PUT: forwarded, DELETE: forwarded, PATCH: forwarded }) }),
 }));
 
 const route = await import("@/app/api/auth/[...path]/route");

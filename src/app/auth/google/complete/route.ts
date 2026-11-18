@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getActionRepository } from "@/app/actions/action-context";
-import { neonAuth } from "@/lib/auth/neon-server";
+import { getNeonAuth } from "@/lib/auth/neon-server";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
 import {
   createPendingGoogleSignupToken,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   let user: { email?: string | null; name?: string | null; emailVerified?: boolean } | undefined;
   try {
-    const { data } = await neonAuth.getSession();
+    const { data } = await getNeonAuth().getSession();
     user = data?.user;
   } catch (error) {
     console.error("Google sign-in: unable to read the Neon Auth session", error);

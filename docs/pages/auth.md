@@ -62,4 +62,7 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **The `/api/auth/*` proxy:** it forwards only `POST sign-in/social`, `GET get-session` and `POST sign-out`, and everything else returns 404. Neon's own email sign-in and sign-up aren't reachable on this domain, so a Neon session here can only come from Google.
   - **Neon users and passwords:** the app creates Neon users only to email verification codes. When no player password is involved, such as changing an email or resending, the Neon user gets a random password nobody knows.
   - **Neon Auth settings:** the Google provider must be enabled, using Neon's shared credentials or your own client. Localhost must be allowed for local development, and each deployed domain must be a trusted origin.
+  - **Required environment:** every deployment needs `NEON_AUTH_BASE_URL` (that environment's branch's Neon Auth URL) and `NEON_AUTH_COOKIE_SECRET` (a random value, at least 32 characters). There are no built-in fallbacks.
+    - **On first Google use without them:** the `/api/auth` request fails with "Neon Auth isn't configured", and the return page reports that sign-in didn't finish.
+    - **What still works:** everything else, including builds.
 
