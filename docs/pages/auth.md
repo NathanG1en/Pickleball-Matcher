@@ -16,6 +16,14 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **Go to Profile →:** a text link back to `/players` for anyone who wants to verify later.
   - **Success:** the card swaps to a bouncing lime check, the heading **Email verified!**, one line ("<email> can now get you back into your account.") and a **Go to Profile →** button. No separate notification box.
   - **Motion:** all of it is skipped when the device asks for reduced motion.
+- **Finish your profile (`/player-signup/finish`)**: Shown once, after a first Google sign-in, before the account exists.
+  - **Header:** "Signed in with Google as <email>".
+  - **Username:** pre-filled from the part of the email before the @, with `_1`, `_2`… if it's taken.
+  - **Display name:** pre-filled from Google.
+  - **Gender:** **Male** / **Female** buttons with no default. Submitting without one says "Choose male or female."
+  - **Starting skill level:** the same slider as sign-up, with "I know my exact rating" for a typed rating.
+  - **Let's play →:** creates the account with the Google email, already verified, and no password; signs the player in; then continues to `?next=` (default `/players/groups`). The email always comes from the signed cookie, never from the form.
+  - **No pending Google sign-in:** visiting without one, or after it expires, returns to `/player-login` with "Your Google sign-in timed out. Please try again."
 - **Recovery Email Banner (`RecoveryEmailBanner`)**: A short notice on `/` and `/players`. It's hidden once the recovery email is verified.
   - **Unverified email:**
     - **Text:** **Recovery email not verified** and "Check <email> for your 6-digit verification code."
@@ -43,7 +51,9 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
 - **Continue with Google** (on `/player-login`):
   1. **Starting:** the button calls Neon Auth's client SDK (`signIn.social`). It posts to `/api/auth/sign-in/social`, which the `[...path]` route proxies to Neon Auth; Neon sets a sign-in challenge cookie and sends the browser to Google. While it starts, the button reads "Opening Google…". If it can't start, a red line suggests the username and password form instead.
   2. **Coming back:** Google returns through Neon Auth to `/auth/google/complete?neon_auth_session_verifier=…`. `src/proxy.ts` runs Neon's middleware on that one path only, swaps the verifier for a Neon session cookie, and reloads the page without it.
-  3. **Signing in:** the `/auth/google/complete` route reads the Google email from the Neon session. It signs into the player account with that email, or creates one (username from the email, verified email, starting rating 1000), sets the player session cookie, and continues to `?next=` (default `/`).
+  3. **Signing in:** the `/auth/google/complete` route reads the Google email from the Neon session.
+     - **Existing player:** if a player already has that email, they're signed straight in and sent to `?next=` (default `/`).
+     - **First-time player:** no account is created yet. The verified email and Google name go into a signed, http-only `pending_google_signup` cookie (30 minutes), and the player goes to **Finish your profile** (`/player-signup/finish`).
   4. **Failures:** a cancelled sign-in, a missing session or an unverified Google email returns to `/player-login` with a red error.
   - **Safety:** accounts are matched only by an email read from the server-side Neon session. There is no server action that signs in by an email the browser sends.
   - **Neon Auth settings:** the Google provider must be enabled, using Neon's shared credentials or your own client. Localhost must be allowed for local development, and each deployed domain must be a trusted origin.

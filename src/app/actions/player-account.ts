@@ -7,7 +7,9 @@ import { revalidatePath } from "next/cache";
 import { getActionRepository, getActivePlayerAccountId, requirePlayer } from "@/app/actions/action-context";
 import { createPlayerSession, PLAYER_SESSION_COOKIE, playerSessionCookieOptions } from "@/lib/auth/player-session";
 import { recordGuestPlayer } from "@/lib/auth/guest-session";
+import { clearPendingGoogleSignup, readPendingGoogleSignup } from "@/lib/auth/pending-google-signup";
 import {
+  completeGoogleSignupSchema,
   joinAsGuestSchema,
   joinGroupInviteSchema,
   joinPublicGroupSchema,
@@ -151,6 +153,61 @@ export async function playerSignupAction(input: unknown): Promise<PlayerActionRe
       return { ok: false, error: "That username or email is already taken.", fieldErrors: { username: ["That username is already taken."] } };
     }
     return { ok: false, error: error instanceof Error ? error.message : "Unable to create player account." };
+  }
+}
+
+/**
+ * Creates the account for a first-time Google sign-in once the player has picked a username,
+ * gender and skill level. The email is read from the signed pending sign-up cookie that the Google
+ * return page set, so the browser can't choose which email the account gets.
+ */
+export async function completeGoogleSignupAction(input: unknown): Promise<PlayerActionResult<{ accountId: string }>> {
+  const pending = await readPendingGoogleSignup();
+  if (!pending) {
+    return { ok: false, error: "Your Google sign-in timed out. Go back and choose Continue with Google again." };
+  }
+  const parsed = completeGoogleSignupSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Please check your player details and try again.", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const repository = getActionRepository();
+  const username = parsed.data.username.toLowerCase();
+  try {
+    // Someone may have taken the email (or username) since Google sign-in started.
+    const existingForEmail = await repository.getPlayerAccountByEmail(pending.email);
+    if (existingForEmail) {
+      await clearPendingGoogleSignup();
+      const token = await createPlayerSession(existingForEmail.id);
+      (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
+      return { ok: true, data: { accountId: existingForEmail.id } };
+    }
+    if (await repository.getPlayerAccountByUsername(username)) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+    }
+
+    const accountId = `usr_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    await repository.createPlayerAccount({
+      id: accountId,
+      username,
+      name: parsed.data.name,
+      gender: parsed.data.gender,
+      passwordHash: null,
+      skillLevel: parsed.data.skillLevel,
+      initialRating: parsed.data.initialRating,
+      email: pending.email,
+      emailVerified: true,
+      createdAt: new Date(),
+    });
+    await clearPendingGoogleSignup();
+    const token = await createPlayerSession(accountId);
+    (await cookies()).set(PLAYER_SESSION_COOKIE, token, playerSessionCookieOptions);
+    return { ok: true, data: { accountId } };
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE")) {
+      return { ok: false, error: "That username is already taken.", fieldErrors: { username: ["That username is already taken."] } };
+    }
+    return { ok: false, error: "Couldn't create your account. Please try again." };
   }
 }
 

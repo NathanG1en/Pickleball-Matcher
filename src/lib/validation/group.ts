@@ -118,6 +118,15 @@ export const playerSignupSchema = z.object({
     .transform(normalizeInitialRating),
 }).strict();
 
+/** "Finish your profile" after a first Google sign-in. The email comes from Google, not this form. */
+export const completeGoogleSignupSchema = z.object({
+  username: usernameFieldSchema,
+  name: z.string().trim().min(1, "Enter a display name.").max(80),
+  gender: z.enum(["male", "female"], { message: "Choose male or female." }),
+  skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+  initialRating: playerSignupSchema.shape.initialRating,
+}).strict();
+
 export const requestPasswordResetSchema = z.object({
   identifier: z.string().trim().min(1, "Enter your username or email address."),
 }).strict();

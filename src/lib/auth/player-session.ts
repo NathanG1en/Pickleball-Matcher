@@ -8,7 +8,8 @@ const SESSION_ISSUER = "pickleball-matchmaker";
 const SESSION_AUDIENCE = "pickleball-player";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
-function getSecret(): Uint8Array {
+/** The key that signs player sessions; also signs the short-lived pending Google sign-up. */
+export function getSecret(): Uint8Array {
   const secret = process.env.PLAYER_SESSION_SECRET
     ?? process.env.ORGANIZER_SESSION_SECRET
     ?? process.env.SESSION_SECRET
