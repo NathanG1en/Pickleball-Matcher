@@ -39,7 +39,7 @@ describe("VerifyEmailView", () => {
 
   it("ignores a long link token instead of pre-filling it", () => {
     const html = renderToStaticMarkup(
-      <VerifyEmailView token="1aef0b071a44bb434ec18563882c389e" email="player@example.com" />
+      <VerifyEmailView token={"a".repeat(64)} email="player@example.com" />
     );
     const values = [...html.matchAll(/<input[^>]*value="([^"]*)"/g)].map((match) => match[1]);
     expect(values.slice(0, 6)).toEqual(["", "", "", "", "", ""]);
