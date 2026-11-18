@@ -66,4 +66,14 @@ test.describe("Google sign-in", () => {
     await expect(page.getByTestId("finish-gender-female")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByTestId("finish-gender-male")).toHaveAttribute("aria-checked", "false");
   });
+
+  test("the auth proxy only exposes what Google sign-in needs", async ({ request }) => {
+    // A Neon session on this domain is trusted by the Google return page, so Neon's own email
+    // sign-in and sign-up must not be reachable here.
+    for (const path of ["sign-in/email", "sign-up/email"]) {
+      const response = await request.post(`/api/auth/${path}`, { data: { email: "someone@example.com", password: "x".repeat(12) } });
+      expect(response.status()).toBe(404);
+    }
+    expect((await request.get("/api/auth/get-session")).status()).not.toBe(404);
+  });
 });

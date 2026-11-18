@@ -15,6 +15,12 @@ export function getNeonAuthBaseUrl(): string | null {
   return url.trim().replace(/\/$/, "");
 }
 
+function randomNeonPassword(): string {
+  const bytes = new Uint8Array(24);
+  globalThis.crypto.getRandomValues(bytes);
+  return `Np-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
 function getAppOrigin(): string {
   return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000";
 }
@@ -36,7 +42,9 @@ export async function neonSignup(params: {
       },
       body: JSON.stringify({
         email: params.email,
-        password: params.password || "TempPass123!Secure",
+        // Players sign in with the app's own password, never Neon's. A Neon user created only to
+        // send verification codes gets a random password nobody knows, so it can't be signed into.
+        password: params.password || randomNeonPassword(),
         name: params.name || params.email.split("@")[0],
       }),
     });
@@ -186,6 +194,16 @@ export async function neonResetPasswordWithOtp(params: {
   }
 }
 
+/**
+ * Emails a 6-digit verification code, whether or not Neon Auth already knows the email.
+ *
+ * Order matters. Neon Auth requires email verification, so sign-up for an email it already has
+ * answers with a generic "success" and sends nothing (it won't reveal which emails exist). That is
+ * why changing an email and then changing it back, or resending, used to send no code. So:
+ *   1. Ask for a code. If Neon knows the email, it creates and emails one; if not, it does nothing.
+ *   2. Sign up. A new email gets a Neon user and Neon emails the code; a known one is a no-op.
+ * Either way exactly one email goes out.
+ */
 export async function neonTriggerEmailVerification(params: {
   email: string;
   password?: string;
@@ -193,17 +211,16 @@ export async function neonTriggerEmailVerification(params: {
 }): Promise<{ success: boolean; error?: string }> {
   const email = params.email.trim().toLowerCase();
 
-  // 1. Try signup first: In Neon Auth, POST /sign-up/email creates the user and dispatches OTP
+  const otpResult = await neonSendVerificationOtp(email);
   const signupResult = await neonSignup({
     email,
     password: params.password,
     name: params.name,
   });
 
-  if (!signupResult.error) {
-    return { success: true };
+  if (!otpResult.success && signupResult.error) {
+    console.error(`[Neon Auth] Couldn't send a verification code: ${otpResult.error ?? signupResult.error}`);
+    return { success: false, error: otpResult.error ?? signupResult.error };
   }
-
-  // 2. If user already exists in Neon Auth, dispatch verification OTP
-  return await neonSendVerificationOtp(email);
+  return { success: true };
 }

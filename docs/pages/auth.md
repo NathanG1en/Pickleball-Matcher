@@ -16,6 +16,9 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
   - **Go to Profile →:** a text link back to `/players` for anyone who wants to verify later.
   - **Success:** the card swaps to a bouncing lime check, the heading **Email verified!**, one line ("<email> can now get you back into your account.") and a **Go to Profile →** button. No separate notification box.
   - **Motion:** all of it is skipped when the device asks for reduced motion.
+- **Sending verification codes**: adding, changing or resending a recovery email asks Neon Auth for a code first, then signs the email up.
+  - **Why this order:** with email verification required, Neon answers sign-up for an email it already knows with a generic success and sends nothing. Asking for a code first means changing an email and then changing it back, or resending to an email Neon already knows, still sends a code. A brand-new email gets its code from the sign-up instead, so there's exactly one email either way.
+  - **When Neon refuses both requests:** the server logs "[Neon Auth] Couldn't send a verification code".
 - **Finish your profile (`/player-signup/finish`)**: Shown once, after a first Google sign-in, before the account exists.
   - **Header:** "Signed in with Google as <email>".
   - **Username:** pre-filled from the part of the email before the @, with `_1`, `_2`… if it's taken.
@@ -56,5 +59,7 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
      - **First-time player:** no account is created yet. The verified email and Google name go into a signed, http-only `pending_google_signup` cookie (30 minutes), and the player goes to **Finish your profile** (`/player-signup/finish`).
   4. **Failures:** a cancelled sign-in, a missing session or an unverified Google email returns to `/player-login` with a red error.
   - **Safety:** accounts are matched only by an email read from the server-side Neon session. There is no server action that signs in by an email the browser sends.
+  - **The `/api/auth/*` proxy:** it forwards only `POST sign-in/social`, `GET get-session` and `POST sign-out`, and everything else returns 404. Neon's own email sign-in and sign-up aren't reachable on this domain, so a Neon session here can only come from Google.
+  - **Neon users and passwords:** the app creates Neon users only to email verification codes. When no player password is involved, such as changing an email or resending, the Neon user gets a random password nobody knows.
   - **Neon Auth settings:** the Google provider must be enabled, using Neon's shared credentials or your own client. Localhost must be allowed for local development, and each deployed domain must be a trusted origin.
 
