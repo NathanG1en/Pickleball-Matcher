@@ -49,7 +49,7 @@ Clicking the **Edit Profile** button switches the header into in-page edit mode:
 
 ## User Settings Modal (`···` Options Menu)
 
-Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal (styled consistently with the Group Settings dialog, featuring a fixed neo-brutalist header, sticky pill-style tab navigation, and scrollable content area), organized into tabbable categories:
+Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** opens the User Settings Modal. It's styled like the Group Settings dialog: a fixed header, pill tabs and a scrolling content area. The header holds just **Settings** and a round **×** close button, which stays in view at any width. Clicking outside the dialog or pressing Escape also closes it. It's organized into tabs:
 
 ### 1. Account & Security Tab
 - **Email**:
@@ -61,13 +61,12 @@ Clicking the three dots (`···`) in the profile header opens the account actio
   - **Change / Add:** opens an empty, focused field with **Cancel** and **Send code**. Sending switches the section to the new address, marks it not verified, closes the field and shows empty, focused code boxes for the code just sent.
     - **Send code** is disabled until the field holds a valid email that differs from the current one.
     - **Validation:** a malformed address is flagged when the field loses focus, with a red outline and a message under it. An empty field isn't flagged.
-- **Password**:
-  - Dedicated password management with three verification fields, each equipped with an eye toggle button (`EyeIcon` / `EyeOffIcon`) to view or obscure entered text:
-    - **Current Password**: Authenticates existing credentials via secure password comparison. If incorrect on submit, the box borders in red and displays "Current password is incorrect." directly underneath the box.
-    - **New Password**: Enforces strong credential requirements (at least 10 characters, up to 72 bytes). If blurred with fewer than 10 characters, borders in red with error text directly underneath.
-    - **Confirm New Password**: Ensures exact character match with the new password. If mismatched, borders in red with "Confirm password must match the new password." directly underneath.
-  - The **Update Password** button is only enabled when the confirm password matches the new password (with at least 10 characters) and the current password is provided, remaining disabled otherwise. Submitting verifies the current password with the server, updating the credential hash only when all criteria and credentials are verified.
-  - Password updates immediately hash the new password using bcrypt cost 12.
+- **Password** (**Set a password** for an account made with Google, which has none yet):
+  - The heading is the only text. Each field has an eye toggle to show or hide what's typed.
+    - **Current Password**: shown only when the account already has a password. A wrong one shows "Current password is incorrect." under the box; leaving it empty is refused with "Current password is required."
+    - **New Password**: at least 10 characters, up to 72 bytes. Fewer than 10 is flagged in red when the field loses focus.
+    - **Confirm New Password**: must match. A mismatch shows "Confirm password must match the new password."
+  - **Update Password** (or **Set Password**) is enabled once the new password is long enough and confirmed, plus the current password when there is one. The new password is hashed with bcrypt (cost 12).
 
 ### 2. Privacy Tab
 Single unified source of truth for visibility, organized as collapsible drawers per profile portion:

@@ -181,7 +181,9 @@ export const verifyEmailSchema = z.object({
 
 export const updatePlayerPasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required.").max(72),
+    // Optional here: an account made with Google has no password yet. The action requires it
+    // whenever the account already has one.
+    currentPassword: z.string().max(72).default(""),
     newPassword: z.string().min(10, "New password must be at least 10 characters.").max(72, "Password must be 72 bytes or fewer."),
     confirmPassword: z.string().min(1, "Confirm your new password.").max(72),
   })
