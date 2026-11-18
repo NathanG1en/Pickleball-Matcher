@@ -53,13 +53,14 @@ Clicking the three dots (`···`) in the profile header opens the account actio
 
 ### 1. Account & Security Tab
 - **Email**:
-  - **Header:** **Email** with a **Verified** or **Unverified** badge, then the email itself, or "No email yet".
+  - **Header:** **Email**, with a small **Change** link on the right (**Add** when there's no email).
+  - **Address:** the email itself, or "No email yet", followed by its status: a lime **✓ Verified** tag, or a yellow **Not verified** tag. Both are square-ish and black-bordered, like the rest of the app.
   - **Unverified email:** "Enter the 6-digit code we sent." with the code boxes from Verify Email right in the section.
-    - **Checking:** a complete code is checked straight away. A right code flips the badge to **Verified**, hides the boxes and shows an "Email verified" toast; a wrong one shakes the boxes and says "That code didn't work. Check it, or send a new one."
+    - **Checking:** a complete code is checked straight away. A right code switches the tag to **Verified**, hides the boxes and shows an "Email verified" toast. A wrong one shakes the boxes and says "That code didn't work. Check it, or send a new one."
     - **Didn't get it? Resend code:** sits under the boxes. It sends a fresh code, empties the boxes and changes to "New code sent."
-  - **Change email** (or **Add email**): an empty field and **Send code**. Sending switches the section to the new address and marks it unverified, then shows empty, focused code boxes for the code just sent.
+  - **Change / Add:** opens an empty, focused field with **Cancel** and **Send code**. Sending switches the section to the new address, marks it not verified, closes the field and shows empty, focused code boxes for the code just sent.
     - **Send code** is disabled until the field holds a valid email that differs from the current one.
-    - **Validation:** a malformed address is flagged when the field loses focus: a red outline and a message under it. An empty field isn't flagged.
+    - **Validation:** a malformed address is flagged when the field loses focus, with a red outline and a message under it. An empty field isn't flagged.
 - **Password**:
   - Dedicated password management with three verification fields, each equipped with an eye toggle button (`EyeIcon` / `EyeOffIcon`) to view or obscure entered text:
     - **Current Password**: Authenticates existing credentials via secure password comparison. If incorrect on submit, the box borders in red and displays "Current password is incorrect." directly underneath the box.

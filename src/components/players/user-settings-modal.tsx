@@ -13,6 +13,7 @@ import { updatePlayerPrivacyAction } from "@/app/actions/players";
 import { Toast } from "@/components/ui/toast";
 import {
   AlertCircleSolidIcon,
+  CheckIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
@@ -169,6 +170,8 @@ export function UserSettingsModal({
   // Email form state
   const [currentEmail, setCurrentEmail] = useState(initialEmail ?? "");
   const [newEmail, setNewEmail] = useState("");
+  // The change/add field stays tucked away until asked for; most visits only verify or read.
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(initialEmailVerified ?? false);
   const [emailSaving, setEmailSaving] = useState(false);
@@ -317,6 +320,7 @@ export function UserSettingsModal({
       setCurrentEmail(trimmedNewEmail);
       setNewEmail("");
       setEmailTouched(false);
+      setIsEditingEmail(false);
       setIsEmailVerified(false);
       setEmailCode("");
       setCodeError(null);
@@ -516,27 +520,39 @@ export function UserSettingsModal({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-black uppercase tracking-wider text-black">Email</h3>
-                {currentEmail ? (
-                  isEmailVerified ? (
+                {!isEditingEmail && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingEmail(true)}
+                    data-testid="settings-change-email-button"
+                    className="-my-2 inline-flex min-h-11 items-center text-sm font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00]"
+                  >
+                    {currentEmail ? "Change" : "Add"}
+                  </button>
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-sm font-black text-black [overflow-wrap:anywhere]">
+                  {currentEmail || <span className="font-bold text-neutral-600">No email yet</span>}
+                </p>
+                {currentEmail &&
+                  (isEmailVerified ? (
                     <span
                       data-testid="email-verified-badge"
-                      className="inline-flex items-center rounded-full border border-black bg-[#ccff00] px-2 py-0.5 text-[10px] font-black uppercase text-black"
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
                     >
+                      <CheckIcon className="h-3 w-3" aria-hidden="true" />
                       Verified
                     </span>
                   ) : (
                     <span
                       data-testid="email-unverified-badge"
-                      className="inline-flex items-center rounded-full border border-amber-500 bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900"
+                      className="inline-flex items-center rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
                     >
-                      Unverified
+                      Not verified
                     </span>
-                  )
-                ) : null}
+                  ))}
               </div>
-              <p className="mt-1 text-sm font-black text-black [overflow-wrap:anywhere]">
-                {currentEmail || <span className="font-bold text-neutral-600">No email yet</span>}
-              </p>
             </div>
 
             {currentEmail && !isEmailVerified && (
@@ -583,13 +599,14 @@ export function UserSettingsModal({
               </div>
             )}
 
-            <form onSubmit={handleUpdateEmail} noValidate className="space-y-3">
+            {isEditingEmail && (
+            <form onSubmit={handleUpdateEmail} noValidate data-testid="settings-email-form" className="space-y-3 border-t-2 border-dashed border-neutral-200 pt-4">
               <div className="space-y-1">
                 <label
                   htmlFor="settings-email-input"
                   className="block text-xs font-black uppercase tracking-wider text-neutral-700"
                 >
-                  {currentEmail ? "Change email" : "Add email"}
+                  {currentEmail ? "New email" : "Email"}
                 </label>
                 <input
                   id="settings-email-input"
@@ -602,6 +619,7 @@ export function UserSettingsModal({
                   }}
                   onBlur={() => setEmailTouched(true)}
                   autoComplete="email"
+                  autoFocus
                   placeholder="you@example.com"
                   className={`w-full rounded-xl border-2 ${
                     showEmailError
@@ -631,7 +649,19 @@ export function UserSettingsModal({
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingEmail(false);
+                    setNewEmail("");
+                    setEmailTouched(false);
+                    setEmailError(null);
+                  }}
+                  className="inline-flex min-h-11 items-center text-xs font-black uppercase text-neutral-700 underline decoration-2 underline-offset-4 hover:text-black"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={emailSaving || !hasEmailChanges}
@@ -642,6 +672,7 @@ export function UserSettingsModal({
                 </button>
               </div>
             </form>
+            )}
           </section>
 
           {/* Password Section */}

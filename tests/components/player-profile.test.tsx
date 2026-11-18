@@ -1018,19 +1018,20 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlUnverified).toContain(">Email</h3>");
     expect(htmlUnverified).toContain("athlete@example.com");
     expect(htmlUnverified).toContain('data-testid="email-unverified-badge"');
-    expect(htmlUnverified).toMatch(/data-testid="email-unverified-badge"[^>]*>Unverified</);
+    expect(htmlUnverified).toMatch(/data-testid="email-unverified-badge"[^>]*>Not verified</);
+    // The status sits with the address and uses the app's palette, not Tailwind's stock amber
+    expect(htmlUnverified.indexOf("athlete@example.com")).toBeLessThan(htmlUnverified.indexOf('data-testid="email-unverified-badge"'));
+    expect(htmlUnverified).not.toMatch(/amber-\d00/);
     expect(htmlUnverified).not.toContain("Re-verification");
     expect(htmlUnverified).toContain("Enter the 6-digit code we sent.");
     expect(htmlUnverified).toContain('id="settings-email-otp"');
     expect(htmlUnverified.match(/aria-label="Digit \d of 6"/g)).toHaveLength(6);
     expect(htmlUnverified).toMatch(/data-testid="settings-resend-verification-button"[^>]*>Resend code</);
     expect(htmlUnverified.indexOf('id="settings-email-otp"')).toBeLessThan(htmlUnverified.indexOf("Resend code"));
-    expect(htmlUnverified).toContain("Change email");
-    expect(htmlUnverified).toMatch(/data-testid="settings-email-input"[^>]*value=""/);
-    expect(htmlUnverified).toContain(">Send code</button>");
-    expect(htmlUnverified).toMatch(/<button[^>]*disabled=""[^>]*data-testid="save-email-button"/);
-    expect(htmlUnverified).toContain("disabled:cursor-not-allowed");
-    expect(htmlUnverified).toContain("disabled:hover:bg-neutral-200");
+    // Changing the email is tucked behind a small "Change" link until asked for
+    expect(htmlUnverified).toMatch(/data-testid="settings-change-email-button"[^>]*>Change</);
+    expect(htmlUnverified).not.toContain('data-testid="settings-email-input"');
+    expect(htmlUnverified).not.toContain('data-testid="save-email-button"');
 
     // Password section with current, new, and confirm, eye visibility buttons, and disabled save when unchanged
     expect(htmlUnverified).toContain("Password");
@@ -1063,7 +1064,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
       <UserSettingsModal isOpen={true} onClose={() => {}} initialTab="account" initialEmail="" hasPassword={true} />
     );
     expect(htmlNoEmail).toContain("No email yet");
-    expect(htmlNoEmail).toContain("Add email");
+    expect(htmlNoEmail).toMatch(/data-testid="settings-change-email-button"[^>]*>Add</);
     expect(htmlNoEmail).not.toContain('data-testid="settings-email-verify"');
   });
 
