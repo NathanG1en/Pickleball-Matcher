@@ -22,3 +22,6 @@ __pycache__/
 .marimo/
 analysis/*.db
 analysis/*.sqlite
+
+# Local-only maintenance script (wipes a player's Neon Auth link); not for the shared repo
+scripts/reset-auth-email.mjs
