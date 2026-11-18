@@ -8,7 +8,11 @@ The authentication and account recovery system uses **Neon Auth** (with built-in
 - **Sign Up (`/player-signup`)**: Native player registration capturing `username`, display `name`, optional `email`, `gender`, `password` (minimum 10 characters), and starting skill tier or custom DUPR rating. When an email is provided, automatically triggers email verification via Neon Auth.
 - **Forgot Password (`/forgot-password`)**: Native input form for username or email. Dispatches a password recovery email via Neon Auth (sending a 6-digit OTP code). When running in local development without a connected auth service, prints the recovery link to the terminal and displays a local shortcut. Upon request, provides a direct link to enter the 6-digit reset code (`/reset-password?email=...`).
 - **Reset Password (`/reset-password`)**: Custom password reset form allowing players to enter and confirm their new password. Supports arriving via local link (`?token=...`) or entering the 6-digit OTP reset code via the segmented OTP input.
-- **Verify Email (`/verify-email`)**: Verification screen featuring a dedicated 6-digit segmented OTP input with auto-advance where users enter the verification code received in their inbox, or confirm via local link (`?token=...`).
+- **Verify Email (`/verify-email`)**: One card with the **Verify Email** heading and a single line saying where the code went ("We sent a 6-digit code to <email>"). With no `?email=`, the line asks for the code from the verification email, and an Email Address field appears.
+  - **Code entry:** a 6-slot code input that submits on its own once the sixth digit is typed, then a full-width **Verify Code** button. The slots share the card's width, so all six fit on a 320px phone. A 6-digit `?token=` pre-fills the code; a long link token is ignored.
+  - **Didn't get it? Send a new code:** shown only to a signed-in player. It sends a fresh code to their recovery email, clears the slots and says "New code sent. Check your inbox."
+  - **Go to Profile →:** a text link back to `/players` for anyone who wants to verify later.
+  - **Success:** a lime confirmation naming the verified email, with **Go to Profile →**.
 - **Recovery Email Banner (`RecoveryEmailBanner`)**: Persistent notice on `/` and `/players` prompting players without a connected or verified recovery email to connect one, with 1-click resend, direct links to `/verify-email`, and local verification shortcuts.
 
 ## Authentication Architecture

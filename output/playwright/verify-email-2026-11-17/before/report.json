@@ -1,0 +1,32 @@
+{
+  "mobile": {
+    "otpLeft": 43,
+    "otpRight": 347,
+    "formLeft": 43,
+    "formRight": 347,
+    "cardLeft": 16,
+    "cardRight": 374,
+    "pageOverflow": false,
+    "otpOverflowsContainer": false
+  },
+  "desktop": {
+    "otpLeft": 471,
+    "otpRight": 809,
+    "formLeft": 483,
+    "formRight": 797,
+    "cardLeft": 448,
+    "cardRight": 832,
+    "pageOverflow": false,
+    "otpOverflowsContainer": true
+  },
+  "small": {
+    "otpLeft": 8,
+    "otpRight": 312,
+    "formLeft": 43,
+    "formRight": 277,
+    "cardLeft": 16,
+    "cardRight": 304,
+    "pageOverflow": false,
+    "otpOverflowsContainer": true
+  }
+}

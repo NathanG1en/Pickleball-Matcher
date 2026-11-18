@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 
 export interface OtpInputProps {
   value: string;
@@ -30,7 +30,6 @@ export function OtpInput({
   className = "",
 }: OtpInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isFocused, setIsFocused] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only accept numeric digits, up to `length` characters
@@ -51,7 +50,7 @@ export function OtpInput({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center select-none ${className}`}
+      className={`group relative mx-auto w-full max-w-xs select-none ${className}`}
       onClick={() => inputRef.current?.focus()}
     >
       {/* Real accessible input overlaying the slots */}
@@ -67,8 +66,6 @@ export function OtpInput({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
         disabled={disabled}
         autoFocus={autoFocus}
         aria-label={ariaLabel}
@@ -76,28 +73,32 @@ export function OtpInput({
         className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer caret-transparent"
       />
 
-      {/* Visual 6-box segmented display */}
-      <div className="flex items-center justify-center gap-2 sm:gap-2.5" aria-hidden="true">
+      {/* Visual segmented display: the slots share the available width, so six of them fit a 320px phone. */}
+      <div
+        className="grid gap-1.5 sm:gap-2"
+        style={{ gridTemplateColumns: `repeat(${length}, minmax(0, 1fr))` }}
+        aria-hidden="true"
+      >
         {Array.from({ length }).map((_, idx) => {
           const char = value[idx] || "";
-          // Active slot is the first empty slot, or the last slot if full
+          // Active slot is the first empty slot, or the last slot if full. It lights up through
+          // :focus-within so it also works when the browser auto-focuses before hydration.
           const isCurrent =
-            isFocused &&
-            !disabled &&
-            (idx === value.length || (idx === length - 1 && value.length === length));
+            !disabled && (idx === value.length || (idx === length - 1 && value.length === length));
 
           return (
             <div
               key={idx}
               className={`
-                w-11 h-13 sm:w-12 sm:h-14
+                aspect-[4/5] w-full min-w-0
                 flex items-center justify-center
                 border-2 sm:border-[2.5px] border-black
                 rounded-lg sm:rounded-xl
                 text-xl sm:text-2xl font-black font-mono text-black
                 transition-all duration-150
                 shadow-[2px_2px_0px_0px_#000]
-                ${isCurrent ? "bg-[#ccff00] ring-2 ring-black ring-offset-1 scale-[1.03]" : "bg-white"}
+                bg-white
+                ${isCurrent ? "group-focus-within:bg-[#ccff00] group-focus-within:ring-2 group-focus-within:ring-black group-focus-within:ring-offset-1" : ""}
                 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
               `}
             >

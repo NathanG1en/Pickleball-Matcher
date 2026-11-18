@@ -9,9 +9,10 @@ describe("OtpInput", () => {
     );
 
     expect(html).toContain('data-testid="otp-input"');
-    // Expect 6 slot boxes rendered
-    const slotMatches = html.match(/w-11 h-13/g);
-    expect(slotMatches).toHaveLength(6);
+    // Six fluid slots sharing the width, so they never overflow a narrow card
+    expect(html.match(/aspect-\[4\/5\]/g)).toHaveLength(6);
+    expect(html).toContain("grid-template-columns:repeat(6, minmax(0, 1fr))");
+    expect(html).not.toMatch(/\bw-11\b/);
   });
 
   it("renders partially filled digits in the corresponding slots", () => {
@@ -24,12 +25,19 @@ describe("OtpInput", () => {
     expect(html).toContain("2");
   });
 
+  it("highlights the next empty slot through focus-within, without waiting for React focus events", () => {
+    const html = renderToStaticMarkup(<OtpInput value="48" onChange={() => {}} />);
+    expect(html.match(/group-focus-within:bg-\[#ccff00\]/g)).toHaveLength(1);
+    const slots = html.split('aspect-[4/5]').slice(1);
+    expect(slots[2]).toContain("group-focus-within:bg-[#ccff00]");
+  });
+
   it("renders custom length when provided", () => {
     const html = renderToStaticMarkup(
       <OtpInput value="1234" length={4} onChange={() => {}} />
     );
 
-    const slotMatches = html.match(/w-11 h-13/g);
-    expect(slotMatches).toHaveLength(4);
+    expect(html.match(/aspect-\[4\/5\]/g)).toHaveLength(4);
+    expect(html).toContain("grid-template-columns:repeat(4, minmax(0, 1fr))");
   });
 });
