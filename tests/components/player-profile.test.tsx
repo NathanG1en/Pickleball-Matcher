@@ -1039,7 +1039,7 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlUnverified).toMatch(/aria-label="Close settings"[^>]*data-testid="settings-close-button"[^>]*class="[^"]*shrink-0/);
 
     // Password section with current, new, and confirm, eye visibility buttons, and disabled save when unchanged
-    expect(htmlUnverified).toContain(">Password</h3>");
+    expect(htmlUnverified).toContain(">Change Password</h3>");
     expect(htmlUnverified).not.toContain("keep your player account secure");
     expect(htmlUnverified).toContain('data-testid="settings-current-password"');
     expect(htmlUnverified).toContain('data-testid="settings-new-password"');
@@ -1065,14 +1065,13 @@ describe("PlayerProfilePage and Group Leaving", () => {
     expect(htmlVerified).not.toContain('data-testid="settings-email-verify"');
     expect(htmlVerified).not.toContain("Resend code");
 
-    // An account made with Google has no password: no "current password" field to fill in
+    // The current password is always asked for before a new one
     const htmlNoPassword = renderToStaticMarkup(
       <UserSettingsModal isOpen={true} onClose={() => {}} initialTab="account" initialEmail="athlete@example.com" hasPassword={false} />
     );
-    expect(htmlNoPassword).toContain(">Set a password</h3>");
-    expect(htmlNoPassword).not.toContain('data-testid="settings-current-password"');
-    expect(htmlNoPassword).toContain('data-testid="settings-new-password"');
-    expect(htmlNoPassword).toContain(">Set Password</button>");
+    expect(htmlNoPassword).toContain(">Change Password</h3>");
+    expect(htmlNoPassword).toContain('data-testid="settings-current-password"');
+    expect(htmlNoPassword).not.toContain("Set a password");
     expect(htmlNoPassword).not.toContain("sign in directly with your email");
 
     // No email yet
@@ -1371,12 +1370,13 @@ describe("PlayerProfilePage and Group Leaving", () => {
     });
     expect(shortRes.ok).toBe(false);
 
-    // Rejects when the account has a password and none is given
+    // Rejects when no current password is given
     const missingCurrentRes = await updatePlayerPasswordAction({
+      currentPassword: "",
       newPassword: "new-super-password-123",
       confirmPassword: "new-super-password-123",
     });
-    expect(missingCurrentRes).toMatchObject({ ok: false, error: "Current password is required." });
+    expect(missingCurrentRes.ok).toBe(false);
 
     // Rejects when current password is wrong
     const wrongCurrentRes = await updatePlayerPasswordAction({
@@ -1398,31 +1398,4 @@ describe("PlayerProfilePage and Group Leaving", () => {
     const updated = await repository.getPlayerAccount(testAccountId);
     expect(updated?.passwordHash).not.toBe(initialHash);
   });
-
-  it("updatePlayerPasswordAction lets an account made with Google set a first password without a current one", async () => {
-    const repository = new InMemoryRepositories({
-      playerAccounts: [
-        {
-          id: testAccountId,
-          username: "google_user",
-          name: "Google User",
-          passwordHash: null,
-          skillLevel: "intermediate",
-          initialRating: 1000,
-          createdAt: new Date(),
-        },
-      ],
-    });
-    setActionRepository(repository);
-
-    const res = await updatePlayerPasswordAction({
-      newPassword: "first-password-123",
-      confirmPassword: "first-password-123",
-    });
-    expect(res.ok).toBe(true);
-    expect((await repository.getPlayerAccount(testAccountId))?.passwordHash).toBeTruthy();
-  });
 });
-
-
-

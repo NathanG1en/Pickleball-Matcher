@@ -675,13 +675,12 @@ export function UserSettingsModal({
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                {hasPassword ? "Password" : "Set a password"}
+                Change Password
               </h3>
             </div>
 
             <form onSubmit={handleUpdatePassword} noValidate className="space-y-3">
-              {/* Current Password: only for an account that already has one */}
-              {hasPassword && (
+              {/* Current Password */}
               <div className="space-y-1">
                 <label
                   htmlFor="settings-current-password"
@@ -733,7 +732,6 @@ export function UserSettingsModal({
                   </div>
                 )}
               </div>
-              )}
 
               {/* New Password */}
               <div className="space-y-1">
@@ -857,7 +855,7 @@ export function UserSettingsModal({
                   data-testid="save-password-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {passwordSaving ? "Saving…" : hasPassword ? "Update Password" : "Set Password"}
+                  {passwordSaving ? "Updating…" : "Update Password"}
                 </button>
               </div>
             </form>
