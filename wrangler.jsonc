@@ -9,7 +9,7 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "NETLIFY_IDENTITY_URL": "https://db-pickleball.netlify.app",
-    "SESSION_COOKIE_SECURE": "true"
+    "SESSION_COOKIE_SECURE": "true",
+    "NEON_AUTH_BASE_URL": "https://ep-dry-hall-b4rk3uy7.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth"
   }
 }
