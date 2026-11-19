@@ -438,38 +438,19 @@ export function ResultsEntryView({
               </div>
 
               {/* Match Score Input Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
                 {/* Team 1 */}
                 <div
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
-                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black min-w-0">
-                      <span>{match.team1Names.join(" & ")}</span>
-                      {isViewerTeam1 && (
-                        <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
-                      )}
-                    </div>
-                    {canManage && !isCancelled && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectWinner(1)}
-                        disabled={isMatchSaving}
-                        data-testid={`court-${match.courtNumber}-team-1-winner-button`}
-                        aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
-                          isT1Winner
-                            ? "bg-black text-[#ccff00]"
-                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
-                        }`}
-                      >
-                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT1Winner ? "fill-current" : ""}`} />
-                        <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
-                      </button>
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
+                    <span>{match.team1Names.join(" & ")}</span>
+                    {isViewerTeam1 && (
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canManage ? (
                       <input
                         type="number"
@@ -497,40 +478,38 @@ export function ResultsEntryView({
                         </span>
                       )
                     )}
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(1)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-1-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT1Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT1Winner ? "fill-current" : ""}`} />
+                        <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Team 2 */}
                 <div
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
-                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black min-w-0">
-                      <span>{match.team2Names.join(" & ")}</span>
-                      {isViewerTeam2 && (
-                        <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
-                      )}
-                    </div>
-                    {canManage && !isCancelled && (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectWinner(2)}
-                        disabled={isMatchSaving}
-                        data-testid={`court-${match.courtNumber}-team-2-winner-button`}
-                        aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
-                          isT2Winner
-                            ? "bg-black text-[#ccff00]"
-                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
-                        }`}
-                      >
-                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT2Winner ? "fill-current" : ""}`} />
-                        <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
-                      </button>
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
+                    <span>{match.team2Names.join(" & ")}</span>
+                    {isViewerTeam2 && (
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canManage ? (
                       <input
                         type="number"
@@ -557,6 +536,23 @@ export function ResultsEntryView({
                           In Play
                         </span>
                       )
+                    )}
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(2)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-2-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT2Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT2Winner ? "fill-current" : ""}`} />
+                        <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
                     )}
                   </div>
                 </div>
