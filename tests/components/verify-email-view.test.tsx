@@ -10,7 +10,8 @@ describe("VerifyEmailView", () => {
     expect(html).toContain('id="verify-email-otp"');
     expect(html).toContain('id="verify-email-address"');
     expect(html).toContain("Verify Code");
-    expect(html).toContain("Go to Profile");
+    // The × in the corner is the way out; no second "Go to Profile" link under the form.
+    expect(html).not.toContain("Go to Profile");
   });
 
   it("says once where the code was sent, without a second instruction label", () => {

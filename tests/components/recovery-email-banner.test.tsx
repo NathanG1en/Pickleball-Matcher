@@ -8,18 +8,15 @@ describe("RecoveryEmailBanner", () => {
   it("asks for a recovery email in one short line when none is connected", () => {
     const html = renderToStaticMarkup(<RecoveryEmailBanner currentEmail={null} isVerified={false} />);
 
-    expect(html).toContain("Add a recovery email");
-    expect(html).toContain("So you can reset your password if you forget it.");
-    expect(html).toContain("Add email →");
-    expect(html).toContain("Not now");
+    expect(text(html)).toBe("Add a recovery email So you can reset your password if you forget it. Not now Add email →");
   });
 
-  it("keeps the unverified notice to a heading, one line and three actions", () => {
+  it("is one compact strip: title, the email, two small links and Enter code", () => {
     const html = renderToStaticMarkup(<RecoveryEmailBanner currentEmail="player@example.com" isVerified={false} />);
 
-    expect(text(html)).toBe(
-      "Recovery email not verified Check player@example.com for your 6-digit verification code. Enter code → Resend code · Change email",
-    );
+    expect(text(html)).toBe("Recovery email not verified player@example.com Resend code · Change email Enter code →");
+    // An envelope icon in a tile, hidden from screen readers since the heading says it all
+    expect(html).toMatch(/<span aria-hidden="true"[^>]*><svg/);
     expect(html).toContain('href="/verify-email?email=player%40example.com"');
     // No eyebrow label, extra paragraph or dismiss link any more.
     expect(html).not.toContain("Action Required");

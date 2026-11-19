@@ -16,7 +16,7 @@ The player profile page is where athletes can review their rating, track their g
    - **Gender**: Displayed if configured (`Male` or `Female`).
    - **Rating & Skill Tier**: Displays current DUPR rating (e.g., `3.75`) and skill tier (e.g., `Advanced Intermediate`). Hidden if the player has made their rating private.
    - **Visibility Badge**: Indicates the active account visibility tier (`Everyone`, `Group Members Only`, or `Only You`). Tooltip explains the three tiers: Everyone, Group Members, and Only You.
-   - **Recovery email banner:** on one's own profile, while no recovery email is on file or it isn't verified yet. The unverified version reads **Recovery email not verified**, "Check <email> for your 6-digit verification code.", **Enter code →**, then **Resend code · Change email**. Hidden once verified. See [auth.md](auth.md).
+   - **Recovery email banner:** on one's own profile, while no recovery email is on file or it isn't verified yet. The unverified version is one compact strip: a yellow envelope tile, **Recovery email not verified**, the email, **Resend code · Change email** and **Enter code →**. Hidden once verified. See [auth.md](auth.md).
    - **Owner Controls**: "Edit Profile" button to enter edit mode, and three-dot options menu (`···`) with "Settings" and "Log Out".
 2. **Chemistry Spotlight & Mutual Chemistry**:
    - **Best Partner**: Highlights the partner with whom the player shares the highest synergy score, along with matches played together and percentage synergy boost. Placed in the top row alongside Performance Stats to maintain balanced card proportions.
@@ -49,7 +49,7 @@ Clicking the **Edit Profile** button switches the header into in-page edit mode:
 
 ## User Settings Modal (`···` Options Menu)
 
-Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** displays the User Settings Modal (styled consistently with the Group Settings dialog, featuring a fixed neo-brutalist header, sticky pill-style tab navigation, and scrollable content area), organized into tabbable categories:
+Clicking the three dots (`···`) in the profile header opens the account actions dropdown, offering **Settings** and **Log Out**. Selecting **Settings** opens the User Settings Modal. It's styled like the Group Settings dialog: a fixed header, pill tabs and a scrolling content area. The header holds just **Settings** and a round **×** close button, which stays in view at any width. Clicking outside the dialog or pressing Escape also closes it. It's organized into tabs:
 
 ### 1. Account & Security Tab
 - **Email**:
@@ -61,13 +61,13 @@ Clicking the three dots (`···`) in the profile header opens the account actio
   - **Change / Add:** opens an empty, focused field with **Cancel** and **Send code**. Sending switches the section to the new address, marks it not verified, closes the field and shows empty, focused code boxes for the code just sent.
     - **Send code** is disabled until the field holds a valid email that differs from the current one.
     - **Validation:** a malformed address is flagged when the field loses focus, with a red outline and a message under it. An empty field isn't flagged.
-- **Password**:
-  - Dedicated password management with three verification fields, each equipped with an eye toggle button (`EyeIcon` / `EyeOffIcon`) to view or obscure entered text:
-    - **Current Password**: Authenticates existing credentials via secure password comparison. If incorrect on submit, the box borders in red and displays "Current password is incorrect." directly underneath the box.
-    - **New Password**: Enforces strong credential requirements (at least 10 characters, up to 72 bytes). If blurred with fewer than 10 characters, borders in red with error text directly underneath.
-    - **Confirm New Password**: Ensures exact character match with the new password. If mismatched, borders in red with "Confirm password must match the new password." directly underneath.
-  - The **Update Password** button is only enabled when the confirm password matches the new password (with at least 10 characters) and the current password is provided, remaining disabled otherwise. Submitting verifies the current password with the server, updating the credential hash only when all criteria and credentials are verified.
-  - Password updates immediately hash the new password using bcrypt cost 12.
+- **Change Password** (or **Set Password** for an account made with Google, which has none yet):
+  - The heading is the only text. Each field has an eye toggle to show or hide what's typed.
+    - **Current Password**: shown and required only when the account has a password. A wrong one shows "Current password is incorrect." under the box.
+    - **New Password**: at least 10 characters, up to 72 bytes. Fewer than 10 is flagged in red when the field loses focus.
+    - **Confirm New Password**: must match. A mismatch shows "Confirm password must match the new password."
+  - **Update Password** (or **Set Password**) is enabled once the new password is long enough and confirmed, plus the current password when there is one. The new password is hashed with bcrypt (cost 12).
+  - **After setting a first password:** the section switches to **Change Password** right away. From then on the server requires the current password to change it, and refuses an empty one with "Current password is required."
 
 ### 2. Privacy Tab
 Single unified source of truth for visibility, organized as collapsible drawers per profile portion:

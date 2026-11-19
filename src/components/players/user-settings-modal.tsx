@@ -14,6 +14,7 @@ import { Toast } from "@/components/ui/toast";
 import {
   AlertCircleSolidIcon,
   CheckIcon,
+  XIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
@@ -152,7 +153,6 @@ export function UserSettingsModal({
   const router = useRouter();
   const generatedId = useId();
   const titleId = `${generatedId}-title`;
-  const descId = `${generatedId}-desc`;
   const [activeTab, setActiveTab] = useState<"account" | "privacy">(initialTab);
 
   // Handle escape key
@@ -185,7 +185,9 @@ export function UserSettingsModal({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [codeShake, setCodeShake] = useState(0);
 
-  // Password form state
+  // Password form state. Whether the account has a password is kept here too, so setting a first
+  // password switches the section to Change Password straight away.
+  const [accountHasPassword, setAccountHasPassword] = useState(hasPassword);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -225,7 +227,7 @@ export function UserSettingsModal({
   );
 
   const showCurrentPasswordError =
-    currentPasswordError || (currentPasswordTouched && hasPassword && !currentPassword.trim());
+    currentPasswordError || (currentPasswordTouched && accountHasPassword && !currentPassword.trim());
   const showNewPasswordError =
     newPasswordTouched && Boolean(newPassword) && newPassword.length < 10;
   const showConfirmPasswordError =
@@ -234,7 +236,7 @@ export function UserSettingsModal({
     confirmPassword !== newPassword;
 
   const hasPasswordChanges =
-    (!hasPassword || Boolean(currentPassword.trim())) &&
+    (!accountHasPassword || Boolean(currentPassword.trim())) &&
     newPassword.length >= 10 &&
     Boolean(confirmPassword) &&
     confirmPassword === newPassword;
@@ -339,7 +341,7 @@ export function UserSettingsModal({
     e.preventDefault();
     if (passwordSaving || !hasPasswordChanges) return;
 
-    if (hasPassword && !currentPassword.trim()) {
+    if (accountHasPassword && !currentPassword.trim()) {
       setCurrentPasswordError("Current password is required.");
       return;
     }
@@ -388,7 +390,9 @@ export function UserSettingsModal({
       setConfirmPasswordTouched(false);
       setCurrentPasswordError(null);
       setPasswordGeneralError(null);
-      showToast("Password updated successfully");
+      showToast(accountHasPassword ? "Password updated" : "Password set");
+      setAccountHasPassword(true);
+      router.refresh();
     } catch (err) {
       setPasswordGeneralError(err instanceof Error ? err.message : "Failed to update password.");
     } finally {
@@ -431,7 +435,6 @@ export function UserSettingsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      aria-describedby={descId}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -441,25 +444,22 @@ export function UserSettingsModal({
     >
       <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] rounded-3xl border-[3px] border-black bg-[#FFFDF7] text-black shadow-[8px_8px_0px_0px_#000] overflow-hidden">
         {/* Fixed Header */}
-        <div className="flex items-center justify-between border-b-[2.5px] border-black px-6 py-4 sm:px-7 sm:py-5 bg-[#FFFDF7] shrink-0">
-          <div>
-            <h2
-              id={titleId}
-              className="font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-black"
-            >
-              Settings
-            </h2>
-            <p id={descId} className="text-xs font-bold text-neutral-600 truncate max-w-md">
-              Manage your account security, credentials, and profile privacy.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3 border-b-[2.5px] border-black px-6 py-4 sm:px-7 sm:py-5 bg-[#FFFDF7] shrink-0">
+          <h2
+            id={titleId}
+            className="min-w-0 font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-black"
+          >
+            Settings
+          </h2>
+          {/* shrink-0 so nothing in the header can push the close button out of the dialog */}
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close settings dialog"
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-lg font-black leading-none hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors"
+            aria-label="Close settings"
+            data-testid="settings-close-button"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-black hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors before:absolute before:-inset-1 before:content-['']"
           >
-            ×
+            <XIcon className="h-5 w-5" />
           </button>
         </div>
 
@@ -679,17 +679,13 @@ export function UserSettingsModal({
           <section className="space-y-3 rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_#000]">
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                Password
+                {accountHasPassword ? "Change Password" : "Set Password"}
               </h3>
-              <p className="mt-0.5 text-xs font-bold text-neutral-600">
-                {hasPassword
-                  ? "Update your password to keep your player account secure."
-                  : "Set a password so you can sign in directly with your email and password."}
-              </p>
             </div>
 
             <form onSubmit={handleUpdatePassword} noValidate className="space-y-3">
-              {/* Current Password */}
+              {/* Current Password: asked for only when the account already has one */}
+              {accountHasPassword && (
               <div className="space-y-1">
                 <label
                   htmlFor="settings-current-password"
@@ -741,6 +737,7 @@ export function UserSettingsModal({
                   </div>
                 )}
               </div>
+              )}
 
               {/* New Password */}
               <div className="space-y-1">
@@ -864,7 +861,7 @@ export function UserSettingsModal({
                   data-testid="save-password-button"
                   className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
-                  {passwordSaving ? "Updating…" : "Update Password"}
+                  {passwordSaving ? "Saving…" : accountHasPassword ? "Update Password" : "Set Password"}
                 </button>
               </div>
             </form>
