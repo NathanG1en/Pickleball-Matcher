@@ -5,7 +5,8 @@ export type DomainErrorCode =
   | "INVALID_COURT_COUNT"
   | "INCOMPATIBLE_PARTNERS"
   | "INVALID_RESULT"
-  | "UNRESOLVED_MATCHES";
+  | "UNRESOLVED_MATCHES"
+  | "NO_ALTERNATIVE";
 
 export class DomainError extends Error {
   readonly code: DomainErrorCode;

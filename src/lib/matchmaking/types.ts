@@ -138,6 +138,7 @@ export interface SittingSelectionInput {
 export interface SittingChoiceInput {
   readonly players: readonly MatchmakingPlayer[];
   readonly sitting: readonly PlayerId[];
+  readonly effectiveSitting?: readonly PlayerId[];
 }
 
 export interface GenerateRoundInput {

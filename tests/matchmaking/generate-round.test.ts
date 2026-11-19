@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_MATCHMAKING_CONFIG } from "@/lib/matchmaking/config";
-import { generateRound } from "@/lib/matchmaking/generate-round";
+import { candidateKey, generateRound, RESHUFFLE_SCORE_TOLERANCE } from "@/lib/matchmaking/generate-round";
 import { makePlayers } from "@/test-support/factories";
 
 const TEST_CONFIG = { ...DEFAULT_MATCHMAKING_CONFIG, iterations: 120 };
@@ -271,4 +271,110 @@ describe("generateRound", () => {
     expect(generateRound(historyInput)).toEqual(withHistory);
   });
 
+  describe("reshuffle behavior", () => {
+    it("produces different lineups with different seeds when alternatives exist, staying within score tolerance", () => {
+      const players = makePlayers(8);
+      const inputBase = {
+        players,
+        courts: 2,
+        pairHistory: [],
+        config: TEST_CONFIG,
+      };
+
+      const lineups = new Set<string>();
+      const scores: number[] = [];
+      const seeds = [10, 42, 99, 1337, 8888, 54321];
+
+      for (const seed of seeds) {
+        const result = generateRound({ ...inputBase, seed });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+
+        const key = candidateKey(result.value);
+        lineups.add(key);
+        scores.push(result.value.score);
+
+        // Verify round is valid: all 8 players allocated once
+        const assigned = result.value.courts.flatMap((c) => [...c.team1, ...c.team2]);
+        expect(assigned).toHaveLength(8);
+        expect(new Set(assigned).size).toBe(8);
+
+        // Verify same seed reproduces the exact same lineup
+        const duplicate = generateRound({ ...inputBase, seed });
+        expect(duplicate.ok).toBe(true);
+        if (!duplicate.ok) return;
+        expect(candidateKey(duplicate.value)).toBe(key);
+        expect(duplicate.value.score).toBe(result.value.score);
+      }
+
+      // Multiple distinct lineups must be generated across the seeds
+      expect(lineups.size).toBeGreaterThan(1);
+
+      // All chosen lineups must stay within RESHUFFLE_SCORE_TOLERANCE of the best candidate
+      const bestScore = Math.min(...scores);
+      for (const score of scores) {
+        expect(score).toBeLessThanOrEqual(bestScore + RESHUFFLE_SCORE_TOLERANCE);
+      }
+    });
+
+    it("returns identical lineup across seeds when only one valid/fair lineup exists", () => {
+      const players = makePlayers(2);
+      const inputBase = {
+        players,
+        courts: 1,
+        courtPlayerCounts: [2] as const,
+        pairHistory: [],
+        config: TEST_CONFIG,
+      };
+
+      const keys = new Set<string>();
+      for (const seed of [1, 2, 3, 4, 5]) {
+        const result = generateRound({ ...inputBase, seed });
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        keys.add(candidateKey(result.value));
+      }
+
+      expect(keys.size).toBe(1);
+    });
+
+    it("gives prior singles players the same next-round play priority as physical sitters", () => {
+      // 6 players, 2 courts: Court 1 has 4 players (doubles), Court 2 has 2 players (singles)
+      // player-1 sat out previously (satPreviousRound: true)
+      // player-2 played singles previously (satPreviousRound: true)
+      // player-3 through player-6 played doubles (satPreviousRound: false, gamesPlayed: 1)
+      const players = makePlayers(6).map((p, i) => {
+        if (i === 0) return { ...p, gamesPlayed: 0, eligibleRounds: 1, satPreviousRound: true };
+        if (i === 1) return { ...p, gamesPlayed: 0, eligibleRounds: 1, satPreviousRound: true, timesPlayedSingles: 1 };
+        return { ...p, gamesPlayed: 1, eligibleRounds: 1, satPreviousRound: false };
+      });
+
+      // Both player-1 (prior sitter) and player-2 (prior singles) should play doubles on Court 1
+      for (const seed of [1, 7, 21, 42, 99]) {
+        const result = generateRound({
+          players,
+          courts: 2,
+          courtPlayerCounts: [4, 2],
+          pairHistory: [],
+          config: TEST_CONFIG,
+          seed,
+        });
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+
+        const doublesCourt = result.value.courts.find((c) => c.matchType === "doubles");
+        expect(doublesCourt).toBeDefined();
+        const doublesPlayers = [...doublesCourt!.team1, ...doublesCourt!.team2];
+        expect(doublesPlayers).toContain("player-1");
+        expect(doublesPlayers).toContain("player-2");
+
+        const singlesCourt = result.value.courts.find((c) => c.matchType === "singles");
+        expect(singlesCourt).toBeDefined();
+        const singlesPlayers = [...singlesCourt!.team1, ...singlesCourt!.team2];
+        expect(singlesPlayers).not.toContain("player-1");
+        expect(singlesPlayers).not.toContain("player-2");
+      }
+    });
+  });
 });

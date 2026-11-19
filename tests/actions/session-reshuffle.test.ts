@@ -133,4 +133,44 @@ describe("reshuffleRoundAction", () => {
     if (res.ok) return;
     expect(res.error).toBe("Organizer authorization required.");
   });
+
+  it("keeps current round and reports when no alternative lineup exists", async () => {
+    // Session with only 2 players on 1 singles court (only 1 valid lineup possible)
+    repository.state.players = [
+      { id: "p1", groupId: "g1", name: "Player 1", initialRating: 1000, rating: 1000, ratedGamesPlayed: 0, active: true },
+      { id: "p2", groupId: "g1", name: "Player 2", initialRating: 1000, rating: 1000, ratedGamesPlayed: 0, active: true },
+    ];
+    repository.state.sessions = [{
+      ...sampleSession,
+      courtCount: 1,
+      courtPlayerCounts: [2],
+    }];
+    repository.state.matches = [{
+      ...sampleMatch,
+    }];
+    repository.state.matchPlayers = [
+      { matchId: "m_1", playerId: "p1", team: 1, ratingBefore: 1000, ratingAfter: 1000 },
+      { matchId: "m_1", playerId: "p2", team: 2, ratingBefore: 1000, ratingAfter: 1000 },
+    ];
+    repository.state.attendance = [
+      { sessionId: "ses_1", playerId: "p1", joinedRound: 1, leftRound: null },
+      { sessionId: "ses_1", playerId: "p2", joinedRound: 1, leftRound: null },
+    ];
+
+    const res = await reshuffleRoundAction({
+      groupId: "g1",
+      sessionId: "ses_1",
+      sessionVersion: 1,
+      roundId: "rnd_1",
+      roundVersion: 1,
+      seed: 99999,
+      idempotencyKey: "test_key_no_alt",
+    });
+
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.error).toBe("No alternative lineup was found. The current lineup remains the fairest available matchup.");
+    // Round must NOT be deleted
+    expect(repository.state.rounds.some((r) => r.id === "rnd_1")).toBe(true);
+  });
 });

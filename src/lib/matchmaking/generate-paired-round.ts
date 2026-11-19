@@ -1,4 +1,5 @@
 import { DEFAULT_MATCHMAKING_CONFIG } from "./config";
+import { RESHUFFLE_SCORE_TOLERANCE } from "./generate-round";
 import { buildPairHistoryIndex } from "./pairs";
 import { createSeededRandom } from "./random";
 import { scoreRound } from "./score-round";
@@ -69,7 +70,6 @@ export function generatePairedRound(input: GenerateRoundInput): GenerationResult
   const seating = allocate(0, benchCount, 0);
   if (!seating) return incompatible();
   const history = buildPairHistoryIndex(input.pairHistory);
-  const sittingPenalty = scoreSittingChoice({ players: input.players, sitting: seating.sitting });
   let best: { courts: CourtAssignment[]; breakdown: ReturnType<typeof scoreRound> } | null = null;
   const alternatives: { courts: CourtAssignment[]; breakdown: ReturnType<typeof scoreRound>; key: string }[] = [];
   const temperature = Math.max(0, input.temperature ?? 0);
@@ -84,24 +84,56 @@ export function generatePairedRound(input: GenerateRoundInput): GenerationResult
       team2: size === 4 ? doublesTeams.pop()! : [singles.pop()!],
       matchType: size === 4 ? "doubles" : size === 3 ? "team-vs-one" : "singles",
     }));
-    const breakdown = scoreRound({ courts, sitting: seating.sitting }, { players: input.players, pairHistory: history, config, sittingPenalty, tieBreak: random.next() * config.tieBreakMaximum, stayTogetherPairs: activePairs });
+    const nonstandard = courts
+      .filter((c) => c.matchType === "singles" || c.matchType === "team-vs-one" || c.team1.length + c.team2.length < 4)
+      .flatMap((c) => [...c.team1, ...c.team2]);
+    const effectiveSitting = [...seating.sitting, ...nonstandard];
+    const candidateSittingPenalty = scoreSittingChoice({
+      players: input.players,
+      sitting: seating.sitting,
+      effectiveSitting,
+    });
+    const breakdown = scoreRound(
+      { courts, sitting: seating.sitting },
+      {
+        players: input.players,
+        pairHistory: history,
+        config,
+        sittingPenalty: candidateSittingPenalty,
+        tieBreak: random.next() * config.tieBreakMaximum,
+        stayTogetherPairs: activePairs,
+      },
+    );
     if (!best || breakdown.total < best.breakdown.total) best = { courts, breakdown };
-    if (temperature > 0) {
-      const key = courts.map(c => [c.team1.slice().sort().join(","), c.team2.slice().sort().join(",")].sort().join("v")).sort().join(";");
-      if (!alternatives.some(candidate => candidate.key === key)) {
-        alternatives.push({ courts, breakdown, key });
-        alternatives.sort((a, b) => a.breakdown.total - b.breakdown.total);
-        if (alternatives.length > 30) alternatives.pop();
-      }
+    const key = courts.map(c => [c.team1.slice().sort().join(","), c.team2.slice().sort().join(",")].sort().join("v")).sort().join(";");
+    if (!alternatives.some(candidate => candidate.key === key)) {
+      alternatives.push({ courts, breakdown, key });
+      alternatives.sort((a, b) => a.breakdown.total - b.breakdown.total);
+      if (alternatives.length > 30) alternatives.pop();
     }
   }
-  if (temperature > 0 && alternatives.length) {
-    const weights = alternatives.map(candidate => Math.exp(-(candidate.breakdown.total - alternatives[0].breakdown.total) / (15 * temperature)));
-    let remaining = random.next() * weights.reduce((sum, weight) => sum + weight, 0);
-    best = alternatives[alternatives.length - 1];
-    for (let i = 0; i < alternatives.length; i++) {
-      remaining -= weights[i];
-      if (remaining <= 0) { best = alternatives[i]; break; }
+  const bestScore = alternatives.length ? alternatives[0].breakdown.total : (best?.breakdown.total ?? 0);
+  const nearBest = alternatives.filter(
+    (candidate) => candidate.breakdown.total <= bestScore + RESHUFFLE_SCORE_TOLERANCE,
+  );
+  if (nearBest.length > 1) {
+    if (temperature > 0) {
+      const weights = nearBest.map((candidate) =>
+        Math.exp(-(candidate.breakdown.total - bestScore) / (15 * temperature)),
+      );
+      let remaining = random.next() * weights.reduce((sum, weight) => sum + weight, 0);
+      best = nearBest[nearBest.length - 1];
+      for (let i = 0; i < nearBest.length; i++) {
+        remaining -= weights[i];
+        if (remaining <= 0) {
+          best = nearBest[i];
+          break;
+        }
+      }
+    } else {
+      const poolSubset = nearBest.slice(0, 10);
+      const index = random.integer(poolSubset.length);
+      best = poolSubset[index];
     }
   }
   return { ok: true, value: { courts: best!.courts, sitting: seating.sitting, seed, score: best!.breakdown.total, scoreBreakdown: best!.breakdown } };

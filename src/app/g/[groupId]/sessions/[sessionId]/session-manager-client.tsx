@@ -22,6 +22,7 @@ import {
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
 import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
+import { candidateKey } from "@/lib/matchmaking/generate-round";
 import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
@@ -701,7 +702,7 @@ export function SessionManagerClient({
         if (activeProposal && nextSeed === activeProposal.seed) {
           nextSeed = (nextSeed + 1) % 0xffff_ffff;
         }
-        const res = await proposeRoundAction({
+        let res = await proposeRoundAction({
           groupId,
           sessionId: currentSession.id,
           sessionVersion: currentSession.version,
@@ -709,11 +710,34 @@ export function SessionManagerClient({
           temperature: variety,
         });
         if (res.ok) {
+          const currentKey = activeProposal ? candidateKey(activeProposal) : "";
+          if (currentKey && candidateKey(res.data) === currentKey) {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const retrySeed = Math.floor(Math.random() * 0xffff_ffff);
+              const retryRes = await proposeRoundAction({
+                groupId,
+                sessionId: currentSession.id,
+                sessionVersion: currentSession.version,
+                seed: retrySeed,
+                temperature: variety,
+              });
+              if (retryRes.ok && candidateKey(retryRes.data) !== currentKey) {
+                res = retryRes;
+                break;
+              }
+            }
+          }
+
+          if (currentKey && candidateKey(res.data) === currentKey) {
+            setError("No alternative lineup was found. The current lineup remains the fairest available matchup.");
+            return;
+          }
+
           clearLineupDraft(lineupDraftKey(currentSession.id));
           saveLineupChoice(currentSession.id, {
             roundNumber: proposalRoundNumber,
             sessionVersion: currentSession.version,
-            seed: nextSeed,
+            seed: res.data.seed,
             temperature: variety,
           });
           setRegeneratedProposal(res.data);

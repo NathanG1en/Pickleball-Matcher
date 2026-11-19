@@ -69,12 +69,15 @@ function advancePlayers(
   players: readonly MatchmakingPlayer[],
   candidate: RoundCandidate,
 ): MatchmakingPlayer[] {
-  const sitting = new Set(candidate.sitting);
+  const nonstandard = candidate.courts
+    .filter((c) => c.matchType === "singles" || c.matchType === "team-vs-one" || c.team1.length + c.team2.length < 4)
+    .flatMap((c) => [...c.team1, ...c.team2]);
+  const effectiveSitting = new Set([...candidate.sitting, ...nonstandard]);
   return players.map((player) => ({
     ...player,
     eligibleRounds: player.eligibleRounds + 1,
-    gamesPlayed: player.gamesPlayed + (sitting.has(player.id) ? 0 : 1),
-    satPreviousRound: sitting.has(player.id),
+    gamesPlayed: player.gamesPlayed + (effectiveSitting.has(player.id) ? 0 : 1),
+    satPreviousRound: effectiveSitting.has(player.id),
   }));
 }
 
@@ -206,5 +209,42 @@ describe("matchmaking simulations", () => {
 
     durations.sort((first, second) => first - second);
     expect(durations[Math.floor(durations.length / 2)]).toBeLessThan(500);
+  });
+
+  it("rotates nonstandard matches so prior singles/2v1 players receive sit credit and play doubles next round", () => {
+    // 7 players, 2 courts: Court 1 doubles (4), Court 2 2v1 (3). 0 physical sitters.
+    // In each round, the 3 players who play 2v1 receive sit credit (effective sit).
+    // In the following round, they should NOT be assigned to 2v1 again.
+    let players = makePlayers(7, (index) => ({ rating: 1000 + index * 50 }));
+    const history = new Map<string, PairHistory>();
+
+    for (let round = 1; round <= 5; round++) {
+      const result = generateRound({
+        players,
+        courts: 2,
+        courtPlayerCounts: [4, 3],
+        pairHistory: [...history.values()],
+        config: SIMULATION_CONFIG,
+        seed: round * 100,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const nonstandardCourt = result.value.courts.find((c) => c.matchType === "team-vs-one");
+      expect(nonstandardCourt).toBeDefined();
+      const nonstandardPlayers = [...nonstandardCourt!.team1, ...nonstandardCourt!.team2];
+
+      // Any player who played 2v1 in the previous round (satPreviousRound: true)
+      // must NOT be assigned to 2v1 in this round!
+      for (const p of players) {
+        if (p.satPreviousRound) {
+          expect(nonstandardPlayers).not.toContain(p.id);
+        }
+      }
+
+      advanceHistory(history, result.value);
+      players = advancePlayers(players, result.value);
+    }
   });
 });

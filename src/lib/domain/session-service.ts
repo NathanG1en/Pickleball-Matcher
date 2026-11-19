@@ -21,7 +21,7 @@ import type {
   UpdateCourtConfigInput,
 } from "@/lib/domain/types";
 import { DEFAULT_MATCHMAKING_CONFIG } from "@/lib/matchmaking/config";
-import { generateRound } from "@/lib/matchmaking/generate-round";
+import { candidateKey, generateRound } from "@/lib/matchmaking/generate-round";
 import {
   matchmakingPlayers,
   sessionPairHistory,
@@ -721,32 +721,81 @@ export class SessionService {
       const rounds = await repository.listStartedRounds(sessionId);
       const latest = rounds.toSorted((a, b) => b.round.roundNumber - a.round.roundNumber)[0];
       if (!latest) throw new DomainError("INVALID_STATE", "There is no round to reshuffle.");
-      await repository.deleteRound(latest.round.id);
-      const updatedSession = {
-        ...session,
-        currentRoundNumber: Math.max(0, session.currentRoundNumber - 1),
-        version: session.version + 1,
-      };
-      await repository.updateSession(updatedSession);
-      await replayRatingsAndSynergies(session.groupId, repository);
 
-      const [players, attendance, remainingRounds] = await Promise.all([
+      const remainingRounds = rounds.filter((r) => r.round.id !== latest.round.id);
+      const [players, attendance] = await Promise.all([
         repository.listPlayers(session.groupId),
         repository.listAttendance(sessionId),
-        repository.listStartedRounds(sessionId),
       ]);
+      const targetRoundNumber = Math.max(0, session.currentRoundNumber - 1);
+      const activePlayers = matchmakingPlayers(
+        players,
+        attendance,
+        remainingRounds,
+        targetRoundNumber,
+        Boolean(session.stayTogetherPairs?.length),
+      );
+
       const result = generateRound({
-        players: matchmakingPlayers(players, attendance, remainingRounds, updatedSession.currentRoundNumber, Boolean(session.stayTogetherPairs?.length)),
+        players: activePlayers,
         courts: session.courtCount,
         courtPlayerCounts: session.courtPlayerCounts,
-      stayTogetherPairs: session.stayTogetherPairs,
+        stayTogetherPairs: session.stayTogetherPairs,
         pairHistory: sessionPairHistory(remainingRounds),
         config: DEFAULT_MATCHMAKING_CONFIG,
         seed,
         temperature,
       });
       if (!result.ok) throw new DomainError(result.error.code, result.error.message);
-      return result.value;
+
+      const latestCourts = latest.matches.map((m) => {
+        const members = latest.matchPlayers.filter((mp) => mp.matchId === m.id);
+        return {
+          courtNumber: m.courtNumber,
+          team1: members.filter((mp) => mp.team === 1).map((mp) => mp.playerId),
+          team2: members.filter((mp) => mp.team === 2).map((mp) => mp.playerId),
+        };
+      });
+      const latestKey = candidateKey({
+        courts: latestCourts,
+        sitting: latest.sits.map((s) => s.playerId),
+      });
+
+      let proposal = result.value;
+      if (candidateKey(proposal) === latestKey) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const retrySeed = (seed + (attempt + 1) * 7919 + 1013) % 0xffff_ffff;
+          const retryResult = generateRound({
+            players: activePlayers,
+            courts: session.courtCount,
+            courtPlayerCounts: session.courtPlayerCounts,
+            stayTogetherPairs: session.stayTogetherPairs,
+            pairHistory: sessionPairHistory(remainingRounds),
+            config: DEFAULT_MATCHMAKING_CONFIG,
+            seed: retrySeed,
+            temperature,
+          });
+          if (retryResult.ok && candidateKey(retryResult.value) !== latestKey) {
+            proposal = retryResult.value;
+            break;
+          }
+        }
+      }
+
+      if (candidateKey(proposal) === latestKey) {
+        throw new DomainError("NO_ALTERNATIVE", "No alternative lineup was found. The current lineup remains the fairest available matchup.");
+      }
+
+      await repository.deleteRound(latest.round.id);
+      const updatedSession = {
+        ...session,
+        currentRoundNumber: targetRoundNumber,
+        version: session.version + 1,
+      };
+      await repository.updateSession(updatedSession);
+      await replayRatingsAndSynergies(session.groupId, repository);
+
+      return proposal;
     });
   }
 

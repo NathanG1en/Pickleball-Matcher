@@ -74,7 +74,10 @@ function bestCourtPairing(
   return bestCourt;
 }
 
-function candidateKey(candidate: RoundCandidate): string {
+export function candidateKey(candidate: {
+  courts: readonly { team1: readonly string[]; team2: readonly string[] }[];
+  sitting: readonly string[];
+}): string {
   const courtsPart = candidate.courts
     .map((c) => {
       const t1 = [...c.team1].sort().join(",");
@@ -87,70 +90,95 @@ function candidateKey(candidate: RoundCandidate): string {
   return `${courtsPart}|${sitPart}`;
 }
 
+export function candidateEffectiveSitting(candidate: RoundCandidate): readonly PlayerId[] {
+  const nonstandard = candidate.courts
+    .filter((c) => c.matchType === "singles" || c.matchType === "team-vs-one" || c.team1.length + c.team2.length < 4)
+    .flatMap((c) => [...c.team1, ...c.team2]);
+  return [...candidate.sitting, ...nonstandard];
+}
+
+/** Maximum score difference above the best candidate to consider as an acceptable reshuffle alternative. */
+export const RESHUFFLE_SCORE_TOLERANCE = 5.0;
+
 interface ScoredCandidate {
   readonly candidate: RoundCandidate;
   readonly breakdown: ScoreBreakdown;
   readonly key: string;
 }
 
-class CandidatePool {
+export class CandidatePool {
   private pool: ScoredCandidate[] = [];
   private readonly maxPoolSize = 30;
 
   constructor(private readonly temperature: number) {}
 
   add(candidate: RoundCandidate, breakdown: ScoreBreakdown): void {
-    if (this.temperature <= 0) {
-      if (this.pool.length === 0 || breakdown.total < this.pool[0].breakdown.total) {
-        this.pool = [{ candidate, breakdown, key: "" }];
-      }
-      return;
-    }
-
     const key = candidateKey(candidate);
     const existingIndex = this.pool.findIndex((item) => item.key === key);
     if (existingIndex !== -1) {
       if (breakdown.total < this.pool[existingIndex].breakdown.total) {
         this.pool[existingIndex] = { candidate, breakdown, key };
-        this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+        this.sortPool();
       }
       return;
     }
 
     if (this.pool.length < this.maxPoolSize) {
       this.pool.push({ candidate, breakdown, key });
-      this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+      this.sortPool();
     } else if (breakdown.total < this.pool[this.pool.length - 1].breakdown.total) {
       this.pool[this.pool.length - 1] = { candidate, breakdown, key };
-      this.pool.sort((a, b) => a.breakdown.total - b.breakdown.total);
+      this.sortPool();
     }
   }
 
-  select(random: { next(): number }): ScoredCandidate {
+  private sortPool(): void {
+    this.pool.sort((a, b) => {
+      const scoreDiff = a.breakdown.total - b.breakdown.total;
+      if (Math.abs(scoreDiff) > 1e-9) return scoreDiff;
+      return a.key.localeCompare(b.key);
+    });
+  }
+
+  select(random: { next(): number; integer(maxExclusive: number): number }): ScoredCandidate {
     if (this.pool.length === 0) {
       throw new Error("Matchmaking configuration must evaluate at least one candidate");
     }
-    if (this.temperature <= 0 || this.pool.length === 1) {
+    if (this.pool.length === 1) {
       return this.pool[0];
     }
 
-    // Boltzmann selection with temperature
-    const scale = 15 * this.temperature;
     const bestScore = this.pool[0].breakdown.total;
-    const weights = this.pool.map((item) =>
-      Math.exp(-(item.breakdown.total - bestScore) / scale),
+    const nearBest = this.pool.filter(
+      (item) => item.breakdown.total <= bestScore + RESHUFFLE_SCORE_TOLERANCE,
     );
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-    const threshold = random.next() * totalWeight;
 
-    let cumulative = 0;
-    for (let i = 0; i < this.pool.length; i++) {
-      cumulative += weights[i];
-      if (cumulative >= threshold) {
-        return this.pool[i];
-      }
+    if (nearBest.length === 1) {
+      return nearBest[0];
     }
-    return this.pool[0];
+
+    if (this.temperature > 0) {
+      // Boltzmann selection with temperature
+      const scale = 15 * this.temperature;
+      const weights = nearBest.map((item) =>
+        Math.exp(-(item.breakdown.total - bestScore) / scale),
+      );
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+      const threshold = random.next() * totalWeight;
+
+      let cumulative = 0;
+      for (let i = 0; i < nearBest.length; i++) {
+        cumulative += weights[i];
+        if (cumulative >= threshold) {
+          return nearBest[i];
+        }
+      }
+      return nearBest[0];
+    }
+
+    const poolSubset = nearBest.slice(0, 10);
+    const index = random.integer(poolSubset.length);
+    return poolSubset[index];
   }
 }
 
@@ -224,7 +252,17 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
         }
       }
       const candidate = { courts, sitting };
-      const breakdown = scoreRound(candidate, { ...context, tieBreak: random.next() * config.tieBreakMaximum });
+      const effectiveSitting = candidateEffectiveSitting(candidate);
+      const candidateSittingPenalty = scoreSittingChoice({
+        players: input.players,
+        sitting,
+        effectiveSitting,
+      });
+      const breakdown = scoreRound(candidate, {
+        ...context,
+        sittingPenalty: candidateSittingPenalty,
+        tieBreak: random.next() * config.tieBreakMaximum,
+      });
       pool.add(candidate, breakdown);
     }
     const chosen = pool.select(random);
@@ -282,8 +320,15 @@ export function generateRound(input: GenerateRoundInput): GenerationResult {
     }
 
     const candidate = { courts, sitting };
+    const effectiveSitting = candidateEffectiveSitting(candidate);
+    const candidateSittingPenalty = scoreSittingChoice({
+      players: input.players,
+      sitting,
+      effectiveSitting,
+    });
     const breakdown = scoreRound(candidate, {
       ...context,
+      sittingPenalty: candidateSittingPenalty,
       tieBreak: random.next() * config.tieBreakMaximum,
     });
     pool.add(candidate, breakdown);
