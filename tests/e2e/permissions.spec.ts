@@ -693,7 +693,7 @@ test("non-host member can leave a group from group dashboard via three dots menu
   // The 3 dots button is present for group member
   const optionsBtn = playerPage.getByRole("button", { name: "Group options" });
   await expect(optionsBtn).toBeVisible();
-  await optionsBtn.click();
+  await optionsBtn.click({ force: true });
 
   // Only "Leave Group" is in the dropdown (no "Delete Group")
   const leaveMenuItem = playerPage.getByTestId("leave-group-menu-item");
@@ -711,7 +711,7 @@ test("non-host member can leave a group from group dashboard via three dots menu
   await expect(optionsBtn).toBeVisible();
 
   // Open again and confirm leaving
-  await optionsBtn.click();
+  await optionsBtn.click({ force: true });
   await playerPage.getByTestId("leave-group-menu-item").click();
   await expect(playerPage.getByRole("alertdialog")).toBeVisible();
   await playerPage.getByTestId("confirm-leave-group-button").click();

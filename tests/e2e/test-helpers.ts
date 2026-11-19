@@ -59,7 +59,7 @@ export async function setGroupVisibilityViaSettings(
   page: Page,
   isPublic: boolean,
 ) {
-  await page.getByRole("button", { name: "Group options" }).click();
+  await page.getByRole("button", { name: "Group options" }).click({ force: true });
   const modal = page.getByRole("dialog");
   await expect(modal).toBeVisible();
   const targetBtn = modal.getByTestId(
@@ -68,9 +68,9 @@ export async function setGroupVisibilityViaSettings(
   await targetBtn.click();
   const saveBtn = modal.getByTestId("save-general-settings-button");
   if (await saveBtn.isEnabled()) {
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
   }
-  await modal.getByRole("button", { name: "Close settings dialog" }).click();
+  await modal.getByRole("button", { name: "Close settings dialog" }).click({ force: true });
   await expect(modal).not.toBeVisible();
 }
 

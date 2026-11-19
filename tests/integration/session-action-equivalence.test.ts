@@ -6,8 +6,8 @@ import { resolve } from "node:path";
 import { expect, it } from "vitest";
 
 it("matches the frozen source after every session action with fixed IDs, clock, seeds, shared accounts and permissions", () => {
-  const archive = resolve("tests/fixtures/session-control-50adab8.tar.gz");
-  const manifest = JSON.parse(readFileSync(resolve("tests/fixtures/session-control-50adab8.json"), "utf8"));
+  const archive = resolve("tests/fixtures/session-control-70815af.tar.gz");
+  const manifest = JSON.parse(readFileSync(resolve("tests/fixtures/session-control-70815af.json"), "utf8"));
   expect(createHash("sha256").update(readFileSync(archive)).digest("hex")).toBe(manifest.sha256);
   const control = mkdtempSync(resolve(tmpdir(), "pickleball-session-control-"));
   const runner = resolve("tests/fixtures/session-action-oracle-runner.ts");

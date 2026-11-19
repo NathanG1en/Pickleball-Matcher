@@ -131,9 +131,7 @@ export function generatePairedRound(input: GenerateRoundInput): GenerationResult
         }
       }
     } else {
-      const poolSubset = nearBest.slice(0, 10);
-      const index = random.integer(poolSubset.length);
-      best = poolSubset[index];
+      best = alternatives[0];
     }
   }
   return { ok: true, value: { courts: best!.courts, sitting: seating.sitting, seed, score: best!.breakdown.total, scoreBreakdown: best!.breakdown } };

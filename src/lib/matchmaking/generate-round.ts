@@ -140,11 +140,11 @@ export class CandidatePool {
     });
   }
 
-  select(random: { next(): number; integer(maxExclusive: number): number }): ScoredCandidate {
+  select(random: { next(): number }): ScoredCandidate {
     if (this.pool.length === 0) {
       throw new Error("Matchmaking configuration must evaluate at least one candidate");
     }
-    if (this.pool.length === 1) {
+    if (this.temperature <= 0 || this.pool.length === 1) {
       return this.pool[0];
     }
 
@@ -157,28 +157,22 @@ export class CandidatePool {
       return nearBest[0];
     }
 
-    if (this.temperature > 0) {
-      // Boltzmann selection with temperature
-      const scale = 15 * this.temperature;
-      const weights = nearBest.map((item) =>
-        Math.exp(-(item.breakdown.total - bestScore) / scale),
-      );
-      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-      const threshold = random.next() * totalWeight;
+    // Boltzmann selection with temperature
+    const scale = 15 * this.temperature;
+    const weights = nearBest.map((item) =>
+      Math.exp(-(item.breakdown.total - bestScore) / scale),
+    );
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const threshold = random.next() * totalWeight;
 
-      let cumulative = 0;
-      for (let i = 0; i < nearBest.length; i++) {
-        cumulative += weights[i];
-        if (cumulative >= threshold) {
-          return nearBest[i];
-        }
+    let cumulative = 0;
+    for (let i = 0; i < nearBest.length; i++) {
+      cumulative += weights[i];
+      if (cumulative >= threshold) {
+        return nearBest[i];
       }
-      return nearBest[0];
     }
-
-    const poolSubset = nearBest.slice(0, 10);
-    const index = random.integer(poolSubset.length);
-    return poolSubset[index];
+    return nearBest[0];
   }
 }
 

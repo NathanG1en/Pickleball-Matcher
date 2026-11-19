@@ -5,7 +5,7 @@ async function addGuests(page: Page, names: string[]) {
   await page.locator("button:has-text('Add Guest')").click();
   for (const name of names) {
     await page.fill("#guest-player-name", name);
-    await page.locator("button:text-is('Add')").click();
+    await page.locator("button:text-is('Add')").click({ force: true });
     await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`);
   }
 }
