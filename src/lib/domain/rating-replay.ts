@@ -8,13 +8,14 @@ export function calculateRatingReplay(
 ) {
   const playerMap = new Map(players.map((player) => [player.id, player]));
 
-  const entityStates = new Map<string, { rating: number; ratedGamesPlayed: number }>();
+  const entityStates = new Map<string, { rating: number; ratedGamesPlayed: number; lastMatchAt: Date | null }>();
   for (const player of players) {
     const key = player.accountId ?? player.id;
     if (!entityStates.has(key)) {
       entityStates.set(key, {
         rating: player.initialRating,
         ratedGamesPlayed: 0,
+        lastMatchAt: null,
       });
     }
   }
@@ -34,32 +35,37 @@ export function calculateRatingReplay(
     }
     const team1 = match.team1.map((playerId) => {
       const key = playerMap.get(playerId)?.accountId ?? playerId;
-      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0 };
+      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0, lastMatchAt: null };
       return {
         id: playerId,
         rating: state.rating,
         ratedGames: state.ratedGamesPlayed,
+        lastMatchAt: state.lastMatchAt,
       };
     }) as [
-      { id: string; rating: number; ratedGames: number },
-      { id: string; rating: number; ratedGames: number },
+      { id: string; rating: number; ratedGames: number; lastMatchAt: Date | null },
+      { id: string; rating: number; ratedGames: number; lastMatchAt: Date | null },
     ];
     const team2 = match.team2.map((playerId) => {
       const key = playerMap.get(playerId)?.accountId ?? playerId;
-      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0 };
+      const state = entityStates.get(key) ?? { rating: 1_000, ratedGamesPlayed: 0, lastMatchAt: null };
       return {
         id: playerId,
         rating: state.rating,
         ratedGames: state.ratedGamesPlayed,
+        lastMatchAt: state.lastMatchAt,
       };
     }) as [
-      { id: string; rating: number; ratedGames: number },
-      { id: string; rating: number; ratedGames: number },
+      { id: string; rating: number; ratedGames: number; lastMatchAt: Date | null },
+      { id: string; rating: number; ratedGames: number; lastMatchAt: Date | null },
     ];
     const updates = rateMatch({
       team1,
       team2,
       winner: match.team1Score > match.team2Score ? 1 : 2,
+      team1Score: match.team1Score,
+      team2Score: match.team2Score,
+      completedAt: match.completedAt,
     });
     snapshots.set(
       match.id,
@@ -71,17 +77,18 @@ export function calculateRatingReplay(
     );
     for (const update of updates) {
       const key = playerMap.get(update.playerId)?.accountId ?? update.playerId;
-      const playerState = entityStates.get(key) ?? { rating: update.ratingBefore, ratedGamesPlayed: 0 };
+      const playerState = entityStates.get(key) ?? { rating: update.ratingBefore, ratedGamesPlayed: 0, lastMatchAt: null };
       entityStates.set(key, {
         rating: update.ratingAfter,
         ratedGamesPlayed: playerState.ratedGamesPlayed + 1,
+        lastMatchAt: match.completedAt,
       });
     }
   }
 
   const updatedPlayers = players.map((player) => {
     const key = player.accountId ?? player.id;
-    const state = entityStates.get(key) ?? { rating: player.initialRating, ratedGamesPlayed: 0 };
+    const state = entityStates.get(key) ?? { rating: player.initialRating, ratedGamesPlayed: 0, lastMatchAt: null };
     return {
       id: player.id,
       accountId: player.accountId,

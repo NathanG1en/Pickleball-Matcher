@@ -279,8 +279,8 @@ export interface ReplayMatch {
   readonly synergyEligible?: boolean;
   readonly status: "completed" | "cancelled";
   readonly completedAt: Date;
-  readonly team1: readonly [string, string];
-  readonly team2: readonly [string, string];
+  readonly team1: readonly string[];
+  readonly team2: readonly string[];
   readonly team1Score: number;
   readonly team2Score: number;
 }

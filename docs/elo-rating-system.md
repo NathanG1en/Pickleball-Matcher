@@ -61,47 +61,82 @@ $$E_2 = 1 - E_1$$
 
 ---
 
-### Step 3: Dynamic K-Factor (Provisional vs. Established)
-To help newer players reach their accurate rating quickly without destabilizing seasoned players, the system uses a 2-tier K-factor:
+### Step 3: Dynamic K-Factor (Gradual Decay & Inactivity Uncertainty)
+To help newer players reach their accurate rating quickly without destabilizing seasoned players, the system uses a smooth, continuous K-factor model with sensible documented bounds:
 
-- **Provisional (Placement Phase)**: $K = 40$ when a player has played fewer than 10 rated games (`ratedGames < 10`).
-- **Established Phase**: $K = 20$ once a player has played 10 or more rated games (`ratedGames \ge 10`).
+- **Bounds**: $K \in [20, 40]$ ($K_{\max} = 40$, $K_{\min} = 20$).
+- **Gradual Experience Decay**: Rather than an abrupt cliff at 10 games, base K decays exponentially as rated-game history grows:
 
-A team's effective K-factor is the average of both partners' individual K-factors:
+$$K_{\text{base}}(g) = K_{\min} + (K_{\max} - K_{\min}) \times e^{-g / 12}$$
 
-$$K_{\text{team}} = \frac{K_{\text{partner 1}} + K_{\text{partner 2}}}{2}$$
+  - At $g = 0$ (new player): $K_{\text{base}} = 40.0$.
+  - At $g = 5$: $K_{\text{base}} \approx 33.2$.
+  - At $g = 10$: $K_{\text{base}} \approx 28.7$.
+  - At $g = 20$: $K_{\text{base}} \approx 23.8$.
+  - At $g \ge 40$: $K_{\text{base}} \to 20.0$.
+
+- **Recency & Reliability (Inactivity Boost)**: Inactivity increases uncertainty about a player's current form, which increases responsiveness ($K$) without silently altering their rating:
+  - **Grace Period**: Inactivity $\le 14$ days incurs no uncertainty increase ($\text{boost} = 0$).
+  - **Uncertainty Scaling**: Beyond 14 days, uncertainty rises smoothly over a 30-day characteristic timescale toward $K_{\max}$:
+
+$$\text{boost}(\Delta t) = (K_{\max} - K_{\text{base}}) \times \left(1 - e^{-(\Delta t - 14) / 30}\right) \quad (\text{for } \Delta t > 14 \text{ days})$$
+
+$$K_{\text{effective}} = \min(K_{\max}, K_{\text{base}} + \text{boost})$$
+
+  - **No Rating Drift**: A dormant player's rating never moves toward 1,000 or any other value while inactive. The increased uncertainty only increases responsiveness ($K$) when they return and produce new match evidence.
+  - **Rapid Resensitization**: Immediately after completing their return match, their last-match timestamp resets, restoring active base K for subsequent games.
 
 ```typescript
-export function kFactor(ratedGames: number): 40 | 20 {
-  return ratedGames < 10 ? 40 : 20;
-}
-
-function commonTeamK(team: readonly [RatedPlayer, RatedPlayer]): number {
-  return (kFactor(team[0].ratedGames) + kFactor(team[1].ratedGames)) / 2;
+export function kFactor(
+  ratedGames: number,
+  options?: { daysInactive?: number | null } | number | null,
+): number {
+  const games = Math.max(0, ratedGames);
+  const baseK = K_MIN + (K_MAX - K_MIN) * Math.exp(-games / K_DECAY_RATE);
+  const daysInactive = ...;
+  if (daysInactive <= INACTIVITY_GRACE_DAYS) return baseK;
+  const uncertaintyFactor = 1 - Math.exp(-(daysInactive - INACTIVITY_GRACE_DAYS) / INACTIVITY_SCALE_DAYS);
+  return Math.min(K_MAX, baseK + (K_MAX - baseK) * uncertaintyFactor);
 }
 ```
 
 ---
 
-### Step 4: Rating Adjustment ($\Delta$)
-Upon match completion, actual scores are treated as a binary outcome ($S = 1$ for win, $S = 0$ for loss):
+### Step 4: Score Margin Multiplier ($M$)
+To make decisive wins count more than narrow squeakers while protecting ratings from blowout volatility, match outcomes incorporate a bounded diminishing-returns score margin multiplier:
 
-$$\Delta_{\text{team 1}} = K_{\text{team 1}} \times (S_1 - E_1)$$
+- **Baseline Margin ($d_0 = 4$)**: A typical pickleball game (e.g. 11–7, margin 4) produces a neutral multiplier of exactly $M = 1.00$.
+- **Bounds**: Multiplier is strictly clamped to $[0.6, 1.6]$.
+- **Diminishing Returns**: Uses a logarithmic curve so blowouts cannot trigger destabilizing rating swings:
 
-$$\Delta_{\text{team 2}} = K_{\text{team 2}} \times (S_2 - E_2)$$
+$$d = |S_1 - S_2|$$
 
-Both partners on each team receive their team's delta:
+$$M(d) = \text{clamp}\left(\frac{\ln(d + 2)}{\ln(6)}, 0.6, 1.6\right)$$
 
-$$R_{\text{player, new}} = R_{\text{player, old}} + \Delta_{\text{team}}$$
+  - **Narrow win ($d = 1$ or $2$, e.g. 11–9)**: $M \approx 0.61 - 0.77$.
+  - **Standard win ($d = 4$, e.g. 11–7)**: $M = 1.00$.
+  - **Decisive win ($d = 6$, e.g. 11–5)**: $M \approx 1.15$.
+  - **Shutout blowout ($d = 11$, e.g. 11–0)**: $M \approx 1.43$.
+  - **Extreme margin ($d \ge 16$)**: Clamped at upper limit $1.60$.
+  - **Invalid/tied/missing scores**: Fall back to $M = 1.00$ according to validation rules.
 
-#### Example
-- **Team 1** ($R_{\text{team}} = 1000$, both players established $K=20$) plays **Team 2** ($R_{\text{team}} = 1000$, both players established $K=20$).
-- Expected score $E_1 = 0.50$.
-- **Team 1 wins** ($S_1 = 1$):
-  - $\Delta_{\text{team 1}} = 20 \times (1 - 0.50) = +10$
-  - $\Delta_{\text{team 2}} = 20 \times (0 - 0.50) = -10$
-- Both players on Team 1 gain **+10 points**.
-- Both players on Team 2 lose **10 points**.
+---
+
+### Step 5: Player-Specific Rating Adjustment ($\Delta$) & Rating Conservation
+Unlike systems that assign both teammates a single averaged team K factor, each player receives an **individualized rating update** reflecting their own experience and reliability:
+
+$$\Delta_{1, i} = K_{1, i} \times (W_1 - E_1) \times M$$
+
+$$\Delta_{2, j} = K_{2, j} \times (W_2 - E_2) \times M = - K_{2, j} \times (W_1 - E_1) \times M$$
+
+$$R_{\text{player, new}} = R_{\text{player, old}} + \Delta_{\text{player}}$$
+
+#### Effect on Rating Conservation & Tradeoffs
+- **When all 4 players share identical K**: $\sum \Delta = 0$. The rating exchange is perfectly zero-sum.
+- **When partners have different experience**: A provisional player ($K=40$) paired with an established veteran ($K=20$) gains or loses more points than the veteran.
+- **Tradeoff Analysis**:
+  - *Advantage*: Prevents veteran ratings from being artificially destabilized by a newer partner's volatile calibration phase, while allowing the provisional player to converge quickly to their true skill.
+  - *Conservation Tradeoff*: Net rating points in a single match are not strictly zero-sum ($\sum \Delta \ne 0$). Across the population, ratings remain stable and bounded because expected win probabilities remain centered around population averages, and established players anchor the network.
 
 ---
 
@@ -111,6 +146,8 @@ Implementation reference: [`src/lib/domain/rating-replay.ts`](file:///Users/nath
 
 Instead of mutating player ratings permanently in place, the application uses an **event-sourced replay design**:
 
-1. **Deterministic Order**: When ratings are updated, all completed matches in the group are replayed chronologically (`first.completedAt - second.completedAt`).
-2. **Score Corrections & Cancellations**: If an organizer fixes an earlier score typo or cancels a previous match, [`replayRatings()`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-replay.ts#L5) recalculates the entire timeline starting from each player's `initialRating`.
-3. **Audit Trail**: Every match retains an explicit [`RatingSnapshot`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/types.ts#L100) record showing the player's rating before and after the match.
+1. **Deterministic Order**: All completed matches are replayed chronologically by `completedAt` timestamp, with ties broken deterministically by match ID (`first.id.localeCompare(second.id)`).
+2. **Exclusion of Non-Doubles Games**: Singles (1-vs-1) and 2-vs-1 matches do not affect doubles Elo ratings and are excluded from rating replays.
+3. **Inactivity Replay Without Schema Additions**: During chronological replay, each player's prior match timestamp is tracked in-memory, computing elapsed inactivity days without requiring extra database persistence or schema migrations.
+4. **Score Corrections & Cancellations**: If an organizer edits a score, fixes an error, or cancels a match, [`replayRatings()`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-replay.ts) recalculates the entire timeline starting from each player's `initialRating`.
+5. **Audit Trail**: Every match retains an explicit [`RatingSnapshot`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/types.ts) showing each participant's rating before and after the match.

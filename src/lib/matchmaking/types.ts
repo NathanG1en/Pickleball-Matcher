@@ -74,12 +74,17 @@ export interface RatedPlayer {
   readonly id: PlayerId;
   readonly rating: number;
   readonly ratedGames: number;
+  readonly lastMatchAt?: Date | string | null;
+  readonly daysInactive?: number | null;
 }
 
 export interface RatedMatchInput {
   readonly team1: readonly [RatedPlayer, RatedPlayer];
   readonly team2: readonly [RatedPlayer, RatedPlayer];
-  readonly winner: 1 | 2;
+  readonly winner?: 1 | 2;
+  readonly team1Score?: number | null;
+  readonly team2Score?: number | null;
+  readonly completedAt?: Date | string | null;
 }
 
 export interface PlayerRatingUpdate {
