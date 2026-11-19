@@ -308,7 +308,7 @@ export function SessionOptionsMenu({
               onChange={(e) => setRenameInput(e.target.value)}
               disabled={isPending}
               autoFocus
-              className="w-full p-2.5 rounded-xl border-2 border-black bg-white text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+              className="w-full p-2.5 rounded-xl border-2 border-black bg-white text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
             />
           </div>
 

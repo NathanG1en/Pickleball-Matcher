@@ -2270,20 +2270,24 @@ export function SessionManagerClient({
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team1}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
                                   placeholder="T1"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <span className="font-black text-black">–</span>
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team2}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
                                   placeholder="T2"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <Button
                                   type="button"
@@ -2525,20 +2529,24 @@ export function SessionManagerClient({
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team1}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
                                   placeholder="T1"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <span className="font-black text-black">–</span>
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team2}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
                                   placeholder="T2"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <Button
                                   type="button"
@@ -2720,7 +2728,7 @@ export function SessionManagerClient({
                             placeholder="Guest player name"
                             value={guestName}
                             onChange={(e) => setGuestName(e.target.value)}
-                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-base shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                           />
                           <div className="flex items-center gap-2 shrink-0">
                             <CustomDropdown
@@ -2771,7 +2779,7 @@ export function SessionManagerClient({
                       placeholder="Search attendance by name..."
                       aria-label="Search attendance"
                       data-testid="session-attendance-search"
-                      className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+                      className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-base font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
                     />
                     {attendanceSearchQuery && (
                       <button

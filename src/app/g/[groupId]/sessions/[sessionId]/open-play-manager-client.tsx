@@ -1900,12 +1900,14 @@ export function OpenPlayManagerClient({
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         min="0"
                         placeholder="e.g. 11"
                         value={t1Score}
                         onChange={(e) => setT1Score(e.target.value)}
                         aria-label={matchType === "singles" ? "Player 1 Score" : "Team 1 Score"}
-                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
+                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-base text-center"
                       />
                     </div>
                   </div>
@@ -1959,12 +1961,14 @@ export function OpenPlayManagerClient({
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         min="0"
                         placeholder="e.g. 9"
                         value={t2Score}
                         onChange={(e) => setT2Score(e.target.value)}
                         aria-label={matchType === "singles" ? "Player 2 Score" : "Team 2 Score"}
-                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center"
+                        className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-base text-center"
                       />
                     </div>
                   </div>
@@ -2083,11 +2087,13 @@ export function OpenPlayManagerClient({
                           <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
                           <input
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             aria-label={editMatchType === "singles" ? "Edit Player 1 Score" : "Edit Team 1 Score"}
                             value={editT1Score}
                             onChange={(e) => setEditT1Score(e.target.value)}
-                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-base"
                           />
                         </div>
                       </div>
@@ -2121,11 +2127,13 @@ export function OpenPlayManagerClient({
                           <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
                           <input
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             aria-label={editMatchType === "singles" ? "Edit Player 2 Score" : "Edit Team 2 Score"}
                             value={editT2Score}
                             onChange={(e) => setEditT2Score(e.target.value)}
-                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-sm"
+                            className="w-full p-1.5 rounded-lg border-2 border-black bg-white font-mono font-black text-center text-base"
                           />
                         </div>
                       </div>

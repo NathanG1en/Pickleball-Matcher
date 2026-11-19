@@ -41,7 +41,7 @@ export default async function FindPlayersPage({
             name="q"
             defaultValue={q}
             placeholder="Search by name or @username"
-            className="min-w-0 flex-1 rounded-xl border-2 border-black bg-white px-4 py-3 font-bold shadow-[3px_3px_0px_0px_#000]"
+            className="min-w-0 flex-1 rounded-xl border-2 border-black bg-white px-4 py-3 font-bold text-base shadow-[3px_3px_0px_0px_#000]"
           />
           <button
             type="submit"

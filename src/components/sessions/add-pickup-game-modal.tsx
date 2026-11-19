@@ -378,6 +378,8 @@ export function AddPickupGameModal({
                   <input
                     id="pickup-team-1-score"
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="0"
                     max="99"
                     placeholder="e.g. 11"
@@ -387,7 +389,7 @@ export function AddPickupGameModal({
                       setError(null);
                     }}
                     aria-label="Team 1 Score"
-                    className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center shadow-[1px_1px_0px_0px_#000] focus:shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                    className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-base text-center shadow-[1px_1px_0px_0px_#000] focus:shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                 </div>
               </div>
@@ -424,6 +426,8 @@ export function AddPickupGameModal({
                   <input
                     id="pickup-team-2-score"
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="0"
                     max="99"
                     placeholder="e.g. 9"
@@ -433,7 +437,7 @@ export function AddPickupGameModal({
                       setError(null);
                     }}
                     aria-label="Team 2 Score"
-                    className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-sm text-center shadow-[1px_1px_0px_0px_#000] focus:shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                    className="w-full p-2.5 rounded-xl border-2 border-black bg-white font-mono font-bold text-base text-center shadow-[1px_1px_0px_0px_#000] focus:shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                 </div>
               </div>

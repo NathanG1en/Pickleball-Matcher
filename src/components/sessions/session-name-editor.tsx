@@ -82,7 +82,7 @@ export function SessionNameEditor({
             maxLength={80}
             value={nameInput}
             onChange={(event) => setNameInput(event.target.value)}
-            className="min-w-0 max-w-xs rounded-xl border-2 border-black bg-white px-3 py-1.5 font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+            className="min-w-0 max-w-xs rounded-xl border-2 border-black bg-white px-3 py-1.5 font-bold text-base shadow-[2px_2px_0px_0px_#000] focus:outline-none"
             autoFocus
           />
           <Button

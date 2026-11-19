@@ -658,7 +658,7 @@ export function GroupOrganizersPanel({
                     placeholder="Find player by username"
                     autoComplete="off"
                     disabled={lookupPending}
-                    className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
+                    className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                   {isSearching && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-neutral-500 animate-pulse">
@@ -771,7 +771,7 @@ export function GroupOrganizersPanel({
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   placeholder="Guest player name"
-                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-base shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                 />
                 <div className="flex items-center gap-2 shrink-0">
                   <CustomDropdown
@@ -839,7 +839,7 @@ export function GroupOrganizersPanel({
               placeholder="Search roster by name or @username..."
               aria-label="Search roster"
               data-testid="roster-search-input"
-              className="w-full rounded-lg border-2 border-black bg-white px-3 py-1.5 text-xs font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-500"
+              className="w-full rounded-lg border-2 border-black bg-white px-3 py-1.5 text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-500"
             />
             {searchQuery && (
               <button

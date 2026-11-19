@@ -624,6 +624,8 @@ export function TemporaryGroupClient({
                           <input
                             aria-label={`Court ${court.courtNumber} team 1 score`}
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             step="1"
                             value={court.team1Score ?? ""}
@@ -642,6 +644,8 @@ export function TemporaryGroupClient({
                           <input
                             aria-label={`Court ${court.courtNumber} team 2 score`}
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             step="1"
                             value={court.team2Score ?? ""}

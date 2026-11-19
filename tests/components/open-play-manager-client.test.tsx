@@ -199,7 +199,7 @@ describe("OpenPlayManagerClient Component", () => {
 
     expect(html).toContain('aria-label="Team 1 Score"');
     expect(html).toContain('aria-label="Team 2 Score"');
-    expect(html).toContain("font-mono font-bold text-sm text-center");
+    expect(html).toContain("font-mono font-bold text-base text-center");
     expect(html).not.toContain("font-mono font-black text-lg text-center");
   });
 

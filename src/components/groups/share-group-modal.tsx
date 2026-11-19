@@ -113,7 +113,7 @@ export function ShareGroupModal({
               readOnly
               value={shareUrl}
               aria-label="Share group link"
-              className="flex-1 min-w-0 px-3 py-2 text-xs font-bold border-2 border-black rounded-xl bg-neutral-50 shadow-[2px_2px_0px_0px_#000] focus:outline-none select-all text-neutral-800"
+              className="flex-1 min-w-0 px-3 py-2 text-base font-bold border-2 border-black rounded-xl bg-neutral-50 shadow-[2px_2px_0px_0px_#000] focus:outline-none select-all text-neutral-800"
             />
             <button
               type="button"

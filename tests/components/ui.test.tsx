@@ -41,7 +41,7 @@ describe("Reusable UI Components", () => {
       expect(html).toContain("border-red-600");
       expect(html).toContain("bg-red-50");
       expect(html).toContain('aria-invalid="true"');
-      expect(html).toContain("text-sm");
+      expect(html).toContain("text-base");
     });
   });
 
