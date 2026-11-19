@@ -37,14 +37,14 @@ test("joining a new session without playing does not reset the rating graph", as
   await expect(page).toHaveURL(/\/sessions\/session_/);
   for (const route of ["/players", `/players/${hostUsername}`]) {
     await page.goto(route);
-    // Equal provisional teams gain 20 Elo: 1000 -> 1020, displayed as 3.55.
-    await expect(page.locator("header").first()).toContainText("3.55");
+    // Equal provisional teams gain rating according to point-share DUPR: 1000 -> 1014.555, displayed as 3.536.
+    await expect(page.locator("header").first()).toContainText("3.536");
     const lastPoint = page.getByTestId("rating-point-1");
-    await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.55 on /);
+    await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.536 on /);
     await lastPoint.click();
-    await expect(page.getByTestId("tooltip-rating")).toContainText("3.55");
+    await expect(page.getByTestId("tooltip-rating")).toContainText("3.536");
     await page.reload();
-    await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.55 on /);
+    await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.536 on /);
   }
   await page.screenshot({ path: testInfo.outputPath("rating-carried-forward.png"), fullPage: true });
 });

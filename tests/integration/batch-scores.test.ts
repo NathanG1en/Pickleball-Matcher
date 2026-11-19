@@ -48,10 +48,10 @@ it.each([4, 6])("saves %i courts with a constant SQL budget and correct rating s
   expect(results.map(match => match.id)).toEqual([...inputs].reverse().map(input => input.matchId));
   expect(results.every(match => match.status === "completed" && match.version === 2)).toBe(true);
   const players = await repository.listPlayers("batch-group");
-  expect(players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
-  expect(players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
+  expect(players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1014.5555555555555, ratedGamesPlayed: 1 });
+  expect(players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 985.4444444444445, ratedGamesPlayed: 1 });
   const rounds = await repository.listStartedRounds("batch-session");
-  expect(rounds[0].matchPlayers.find(member => member.playerId === "batch-player-0")).toMatchObject({ ratingBefore: 1000, ratingAfter: 1020 });
+  expect(rounds[0].matchPlayers.find(member => member.playerId === "batch-player-0")).toMatchObject({ ratingBefore: 1000, ratingAfter: 1014.5555555555555 });
   expect(queries).toBeLessThanOrEqual(8);
 });
 
@@ -83,7 +83,7 @@ it("rebuilds historical chemistry once while preserving timestamps and unrated c
   const later = new SessionService(repository, { now: () => new Date("2026-11-02T12:00:00Z"), nextId: kind => kind, nextSeed: () => 1 });
   await later.recordMultipleResults(saved.map(match => ({ matchId: match.id, team1Score: 0, team2Score: 11, matchVersion: match.version })));
   expect((await repository.getMatch(matches[0].id))?.completedAt).toEqual(batchNow);
-  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 975, ratedGamesPlayed: 1 });
+  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
   expect(await repository.getPlayerAccount("batch-account-4")).toMatchObject({ rating: 1000, ratedGamesPlayed: 0 });
   const pair = await repository.getPairSynergy("batch-account-0", "batch-account-1");
   expect(pair).toMatchObject({ matchesPlayed: 1, wins: 0 });
