@@ -61,19 +61,20 @@ $$E_2 = 1 - E_1$$
 
 ---
 
-### Step 3: Dynamic K-Factor (Gradual Decay & Inactivity Uncertainty)
+#### Step 3: Dynamic K-Factor (Gradual Decay & Inactivity Uncertainty)
 To help newer players reach their accurate rating quickly without destabilizing seasoned players, the system uses a smooth, continuous K-factor model with sensible documented bounds:
 
-- **Bounds**: $K \in [20, 40]$ ($K_{\max} = 40$, $K_{\min} = 20$).
+- **Bounds**: $K \in [16, 40]$ ($K_{\max} = 40$, $K_{\min} = 16$).
+  - **Established Baseline ($K_{\min} = 16$)**: Starting with $K = 16$ for seasoned players (rather than $20$) gives the new score-margin signal room to matter without making ratings overly reactive.
 - **Gradual Experience Decay**: Rather than an abrupt cliff at 10 games, base K decays exponentially as rated-game history grows:
 
-$$K_{\text{base}}(g) = K_{\min} + (K_{\max} - K_{\min}) \times e^{-g / 12}$$
+$$K_{\text{base}}(g) = K_{\min} + (K_{\max} - K_{\min}) \times e^{-g / 12} = 16 + 24 \times e^{-g / 12}$$
 
   - At $g = 0$ (new player): $K_{\text{base}} = 40.0$.
-  - At $g = 5$: $K_{\text{base}} \approx 33.2$.
-  - At $g = 10$: $K_{\text{base}} \approx 28.7$.
-  - At $g = 20$: $K_{\text{base}} \approx 23.8$.
-  - At $g \ge 40$: $K_{\text{base}} \to 20.0$.
+  - At $g = 5$: $K_{\text{base}} \approx 31.8$.
+  - At $g = 10$: $K_{\text{base}} \approx 26.4$.
+  - At $g = 20$: $K_{\text{base}} \approx 20.5$.
+  - At $g \ge 40$: $K_{\text{base}} \to 16.0$.
 
 - **Recency & Reliability (Inactivity Boost)**: Inactivity increases uncertainty about a player's current form, which increases responsiveness ($K$) without silently altering their rating:
   - **Grace Period**: Inactivity $\le 14$ days incurs no uncertainty increase ($\text{boost} = 0$).
@@ -106,18 +107,19 @@ export function kFactor(
 To make decisive wins count more than narrow squeakers while protecting ratings from blowout volatility, match outcomes incorporate a bounded diminishing-returns score margin multiplier:
 
 - **Baseline Margin ($d_0 = 4$)**: A typical pickleball game (e.g. 11–7, margin 4) produces a neutral multiplier of exactly $M = 1.00$.
-- **Bounds**: Multiplier is strictly clamped to $[0.6, 1.6]$.
-- **Diminishing Returns**: Uses a logarithmic curve so blowouts cannot trigger destabilizing rating swings:
+- **Blowout Cap ($M_{\max} = 1.25$)**: Capped so an 11–0 blowout win cannot produce a larger swing than the previous winner-only system allowed. For an established player ($K = 16$), the maximum blowout swing ($16 \times 1.25 \times 0.5 = 10.0$) matches the old $K = 20$ system's fixed swing ($20 \times 0.5 = 10.0$).
+- **Bounds**: Multiplier is strictly clamped to $[0.75, 1.25]$.
+- **Diminishing Returns**: Uses a logarithmic curve scaling smoothly between the baseline margin ($d_0 = 4$) and full blowout ($d = 11$):
 
 $$d = |S_1 - S_2|$$
 
-$$M(d) = \text{clamp}\left(\frac{\ln(d + 2)}{\ln(6)}, 0.6, 1.6\right)$$
+$$M(d) = \text{clamp}\left(1.0 + (M_{\max} - 1.0) \times \frac{\ln(d + 2) - \ln(6)}{\ln(13) - \ln(6)}, 0.75, 1.25\right)$$
 
-  - **Narrow win ($d = 1$ or $2$, e.g. 11–9)**: $M \approx 0.61 - 0.77$.
-  - **Standard win ($d = 4$, e.g. 11–7)**: $M = 1.00$.
-  - **Decisive win ($d = 6$, e.g. 11–5)**: $M \approx 1.15$.
-  - **Shutout blowout ($d = 11$, e.g. 11–0)**: $M \approx 1.43$.
-  - **Extreme margin ($d \ge 16$)**: Clamped at upper limit $1.60$.
+  - **Narrow win ($d = 1$, e.g. 11–10)**: $M \approx 0.776$ (swing $\approx 6.2$ pts for $K=16$).
+  - **Close win ($d = 2$, e.g. 11–9)**: $M \approx 0.869$ (swing $\approx 7.0$ pts for $K=16$).
+  - **Standard win ($d = 4$, e.g. 11–7)**: $M = 1.000$ (swing $= 8.0$ pts for $K=16$).
+  - **Decisive win ($d = 7$, e.g. 11–4)**: $M \approx 1.132$ (swing $\approx 9.1$ pts for $K=16$).
+  - **Shutout blowout ($d \ge 11$, e.g. 11–0)**: $M = 1.250$ (swing $= 10.0$ pts for $K=16$).
   - **Invalid/tied/missing scores**: Fall back to $M = 1.00$ according to validation rules.
 
 ---

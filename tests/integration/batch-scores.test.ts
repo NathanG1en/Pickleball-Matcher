@@ -83,7 +83,7 @@ it("rebuilds historical chemistry once while preserving timestamps and unrated c
   const later = new SessionService(repository, { now: () => new Date("2026-11-02T12:00:00Z"), nextId: kind => kind, nextSeed: () => 1 });
   await later.recordMultipleResults(saved.map(match => ({ matchId: match.id, team1Score: 0, team2Score: 11, matchVersion: match.version })));
   expect((await repository.getMatch(matches[0].id))?.completedAt).toEqual(batchNow);
-  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1000 - 40 * 0.5 * (Math.log(13) / Math.log(6)), ratedGamesPlayed: 1 });
+  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 975, ratedGamesPlayed: 1 });
   expect(await repository.getPlayerAccount("batch-account-4")).toMatchObject({ rating: 1000, ratedGamesPlayed: 0 });
   const pair = await repository.getPairSynergy("batch-account-0", "batch-account-1");
   expect(pair).toMatchObject({ matchesPlayed: 1, wins: 0 });

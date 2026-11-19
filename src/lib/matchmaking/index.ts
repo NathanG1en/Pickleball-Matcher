@@ -3,6 +3,7 @@ export { generateRound } from "@/lib/matchmaking/generate-round";
 export { pairKey } from "@/lib/matchmaking/pairs";
 export {
   BASE_MARGIN,
+  BLOWOUT_MARGIN,
   INACTIVITY_GRACE_DAYS,
   INACTIVITY_SCALE_DAYS,
   K_DECAY_RATE,

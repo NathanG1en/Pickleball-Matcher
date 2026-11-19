@@ -58,14 +58,14 @@ describe("kFactor: gradual decay and bounds", () => {
     expect(Math.abs(k10 - k11)).toBeLessThan(1.5);
   });
 
-  it("approaches K_MIN (20) for established players with many games", () => {
-    expect(kFactor(40)).toBeCloseTo(20.71, 1);
-    expect(kFactor(60)).toBeCloseTo(20.13, 1);
-    expect(kFactor(100)).toBeCloseTo(20.0, 1);
+  it("approaches K_MIN (16) for established players with many games", () => {
+    expect(kFactor(40)).toBeCloseTo(16.86, 1);
+    expect(kFactor(60)).toBeCloseTo(16.16, 1);
+    expect(kFactor(100)).toBeCloseTo(16.0, 1);
     expect(kFactor(100)).toBeGreaterThanOrEqual(K_MIN);
   });
 
-  it("keeps base K strictly bounded between K_MIN and K_MAX", () => {
+  it("keeps base K strictly bounded between K_MIN (16) and K_MAX (40)", () => {
     for (let games = -5; games <= 150; games += 5) {
       const k = kFactor(games);
       expect(k).toBeGreaterThanOrEqual(K_MIN);
@@ -117,17 +117,28 @@ describe("scoreMarginMultiplier", () => {
     const narrow2 = scoreMarginMultiplier(11, 9); // margin 2
     const narrow1 = scoreMarginMultiplier(11, 10); // margin 1
 
-    expect(narrow2).toBeCloseTo(0.7737, 3);
-    expect(narrow1).toBeCloseTo(0.6131, 3);
+    expect(narrow2).toBeCloseTo(0.8689, 3);
+    expect(narrow1).toBeCloseTo(0.7759, 3);
     expect(narrow1).toBeLessThan(narrow2);
     expect(narrow2).toBeLessThan(1.0);
     expect(narrow1).toBeGreaterThanOrEqual(MIN_MARGIN_MULTIPLIER);
   });
 
-  it("scales up for blowouts (e.g. 11-0)", () => {
+  it("scales up for blowouts (e.g. 11-0) to MAX_MARGIN_MULTIPLIER (1.25)", () => {
     const blowout = scoreMarginMultiplier(11, 0); // margin 11
-    expect(blowout).toBeCloseTo(1.4313, 3);
-    expect(blowout).toBeGreaterThan(1.0);
+    expect(blowout).toBe(1.25);
+    expect(blowout).toBe(MAX_MARGIN_MULTIPLIER);
+  });
+
+  it("caps the blowout swing so an established player (K=16) cannot exceed the old K=20 system's swing", () => {
+    const blowoutMultiplier = scoreMarginMultiplier(11, 0);
+    expect(blowoutMultiplier).toBe(1.25);
+
+    // Old system: established K=20, even win swing = 20 * 0.5 = 10.0
+    // New system: established K=16, blowout swing = 16 * 1.25 * 0.5 = 10.0
+    const oldSwing = 20 * 0.5;
+    const newBlowoutSwing = K_MIN * blowoutMultiplier * 0.5;
+    expect(newBlowoutSwing).toBe(oldSwing);
   });
 
   it("exhibits diminishing returns as margin grows", () => {
@@ -136,11 +147,11 @@ describe("scoreMarginMultiplier", () => {
     const m8 = scoreMarginMultiplier(11, 3); // margin 8
     const m11 = scoreMarginMultiplier(11, 0); // margin 11
 
-    // Difference between m2 and m5 is larger than difference between m8 and m11
+    // Diminishing returns: incremental gain decreases with larger margins
     expect(m5 - m2).toBeGreaterThan(m11 - m8);
   });
 
-  it("clamps to MIN_MARGIN_MULTIPLIER and MAX_MARGIN_MULTIPLIER bounds", () => {
+  it("clamps to MIN_MARGIN_MULTIPLIER (0.75) and MAX_MARGIN_MULTIPLIER (1.25) bounds", () => {
     expect(scoreMarginMultiplier(100, 0)).toBe(MAX_MARGIN_MULTIPLIER);
     expect(scoreMarginMultiplier(11, 11 - 1)).toBeGreaterThanOrEqual(MIN_MARGIN_MULTIPLIER);
   });

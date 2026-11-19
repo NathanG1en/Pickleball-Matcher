@@ -54,7 +54,7 @@ describe("batch score saving", () => {
     const pair = await repository.getPairSynergy("batch-account-0", "batch-account-1");
     expect(pair).toMatchObject({ matchesPlayed: 1, wins: 0 });
     expect(pair!.synergyScore).toBeLessThan(0);
-    expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1000 - 40 * 0.5 * (Math.log(13) / Math.log(6)), ratedGamesPlayed: 1 });
+    expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 975, ratedGamesPlayed: 1 });
   });
 
   it("saves unrated court scores without changing those players' ratings or snapshots", async () => {

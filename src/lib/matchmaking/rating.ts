@@ -5,14 +5,15 @@ import type {
 } from "@/lib/matchmaking/types";
 
 export const K_MAX = 40;
-export const K_MIN = 20;
+export const K_MIN = 16; // Established-player baseline gives score-margin room to matter without overreacting
 export const K_DECAY_RATE = 12; // Characteristic number of rated games for exponential K decay
 export const INACTIVITY_GRACE_DAYS = 14; // Inactivity up to 14 days causes no increase in uncertainty
 export const INACTIVITY_SCALE_DAYS = 30; // Characteristic timescale in days for uncertainty increase
 
 export const BASE_MARGIN = 4; // Margin of 4 points (standard 11-7 game) serves as baseline multiplier 1.0
-export const MIN_MARGIN_MULTIPLIER = 0.6; // Lower bound on margin multiplier for narrow wins (1-2 points)
-export const MAX_MARGIN_MULTIPLIER = 1.6; // Upper bound on margin multiplier for blowouts (11+ points)
+export const BLOWOUT_MARGIN = 11; // Margin of 11 points (standard 11-0 shutout) reaches upper margin cap
+export const MIN_MARGIN_MULTIPLIER = 0.75; // Lower bound on margin multiplier for narrow wins (1-2 points)
+export const MAX_MARGIN_MULTIPLIER = 1.25; // Capped so blowout swings for K=16 established players cannot exceed old K=20 (16 * 1.25 = 20)
 
 export function teamRating(ratings: readonly [number, number]): number {
   return (ratings[0] + ratings[1]) / 2;
@@ -72,7 +73,12 @@ export function scoreMarginMultiplier(
   }
 
   const margin = Math.abs(team1Score - team2Score);
-  const rawMultiplier = Math.log(margin + 2) / Math.log(BASE_MARGIN + 2);
+  const logBaseline = Math.log(BASE_MARGIN + 2);
+  const logBlowout = Math.log(BLOWOUT_MARGIN + 2);
+  const rawMultiplier =
+    1.0 +
+    (MAX_MARGIN_MULTIPLIER - 1.0) *
+      ((Math.log(margin + 2) - logBaseline) / (logBlowout - logBaseline));
   return Math.min(MAX_MARGIN_MULTIPLIER, Math.max(MIN_MARGIN_MULTIPLIER, rawMultiplier));
 }
 

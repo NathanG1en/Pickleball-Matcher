@@ -92,5 +92,5 @@ it("reloads authoritative history on the next transaction rather than reusing an
   await run();
   expect(history).toHaveBeenCalledTimes(2);
   expect(await repository.getPairSynergy("batch-account-0", "batch-account-1")).toMatchObject({ matchesPlayed: 1, wins: 0 });
-  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1000 - 40 * 0.5 * (Math.log(13) / Math.log(6)), ratedGamesPlayed: 1 });
+  expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 975, ratedGamesPlayed: 1 });
 });
