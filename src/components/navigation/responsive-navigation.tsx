@@ -49,6 +49,11 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
     };
   }, [accountMenuOpen]);
 
+  // Hide navigation entirely on player sign-in page so the card is centered in the full viewport without scrolling
+  if (pathname === "/player-login") {
+    return null;
+  }
+
   // Active route checking
   const isHomeActive = pathname === "/";
   const isGroupsActive =

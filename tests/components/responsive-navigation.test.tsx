@@ -126,4 +126,10 @@ describe("ResponsiveNavigation Component", () => {
     // Desktop header still renders for navigation, but mobile bottom nav is suppressed
     expect(html).not.toContain('aria-label="Mobile bottom navigation"');
   });
+
+  it("hides navigation entirely on /player-login to center the card without header scroll", () => {
+    currentPathname = "/player-login";
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={null} />);
+    expect(html).toBe("");
+  });
 });
