@@ -48,7 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen min-h-[100svh] flex flex-col">
         <ResponsiveNavigation playerAccount={playerAccount} />
         {/* A page marked data-fill-screen takes exactly the space left under the navigation (and
             above the phone tab bar); every other page lays out as before. */}
