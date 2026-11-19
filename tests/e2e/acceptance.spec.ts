@@ -156,8 +156,13 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     await expect(page.getByTestId("in-progress-warning-modal")).toBeVisible();
     await page.getByTestId("confirm-end-session-button").click();
 
-    // After ending session, user is redirected to group dashboard
-    await page.waitForURL(/\/g\/[^/]+$/);
+    // After ending session, user remains on the session page and sees the completed session summary
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible();
+    await expect(page.getByTestId("completed-session-full-view")).toBeVisible();
+
+    // Navigate to group dashboard to verify past sessions
+    const groupUrl = sessionUrl.replace(/\/sessions\/[^/]+$/, "");
+    await page.goto(groupUrl);
 
     // Expand past sessions list and navigate to full session summary
     const expandArrow = page.locator("[data-testid^='expand-session-arrow-']").first();

@@ -85,6 +85,6 @@ Each court is a card (`court-match-N`) with both teams and a score input for eac
 ### Ending a session
 
 - **From the session page:** the header **End** button is accessible to organizers even when games or score edits are in progress. Tapping it prompts for confirmation; if games are still in progress, an in-progress warning modal lists them first before discarding in-progress match drafts and finalizing the session. It reads "Ending…" only while the session is actually ending, not during other actions. Upon confirmation, the session state immediately transitions to completed, disallowing duplicate submissions while navigating.
-- **After ending:** the organizer lands on the group dashboard. The sign-off plays there, along with a **See the session summary** link. In Open Play, the summary and sign-off render directly in place upon ending with a return button to the group dashboard.
+- **After ending:** the organizer remains on the session page, which transitions directly to the completed session summary with the sign-off animation playing in place. A header back button returns to the group dashboard whenever desired.
 - **The summary:** the completed session shows totals, highlights and every round. Each player gets a "Your Session" panel with their wins and losses and their rating change, for example "Rating 3.5 → 3.56 (+0.06)". If they played no rated doubles games, it says their rating didn't change.
 

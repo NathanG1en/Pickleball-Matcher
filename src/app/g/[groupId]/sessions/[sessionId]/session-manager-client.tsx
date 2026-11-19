@@ -49,6 +49,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
+import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
@@ -309,6 +310,7 @@ export function SessionManagerClient({
   const [isMyAttendancePending, setIsMyAttendancePending] = useState(false);
   // Only an actual end-session request says "Ending…"; other actions just disable the button.
   const [isEnding, setIsEnding] = useState(false);
+  const [justEndedSession, setJustEndedSession] = useState(false);
   const [myAttendanceError, setMyAttendanceError] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -1385,7 +1387,7 @@ export function SessionManagerClient({
         markSessionEnded(groupId, currentSession.id);
         setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
         setScoreDrafts({});
-        router.replace(`/g/${groupId}`);
+        setJustEndedSession(true);
         router.refresh();
         return;
       } else {
@@ -1995,6 +1997,10 @@ export function SessionManagerClient({
       {/* Main Mode: Completed Session Full View OR Active Round Flow */}
       {isCompletedSession ? (
         <div className="space-y-6" data-testid="completed-session-full-view">
+          <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 text-sm font-bold">
+            <span>Session complete</span>
+            <SessionSignOff play={justEndedSession} groupId={groupId} sessionId={currentSession.id} />
+          </div>
           {/* Completed Session Overview Card */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
             <div className="flex items-start justify-between gap-3">

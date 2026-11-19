@@ -176,6 +176,9 @@ describe("SessionManagerClient Component", () => {
       />
     );
 
+    expect(html).toContain('data-testid="completed-session-full-view"');
+    expect(html).toContain("Session complete");
+    expect(html).toContain('data-testid="session-signoff"');
     expect(html).toContain('data-testid="personal-session-summary"');
     expect(html).toContain("Your Session");
     expect(html).toContain("Games Won");
