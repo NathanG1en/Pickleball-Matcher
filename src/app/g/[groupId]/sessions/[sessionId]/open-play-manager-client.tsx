@@ -16,6 +16,7 @@ import {
   sortPlayersWithPinned,
   usePinnedPlayerIds,
 } from "@/lib/storage/pinned-players";
+import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { useRouter } from "next/navigation";
 import {
   addOpenPlayGuestAction,
@@ -91,6 +92,12 @@ export function OpenPlayManagerClient({
   const isHydrated = useHydrated();
 
   // Local state for instant UI updates without waiting for router.refresh()
+  const [prevSession, setPrevSession] = useState(session);
+  const [currentSession, setCurrentSession] = useState(session);
+  if (session !== prevSession) {
+    setPrevSession(session);
+    setCurrentSession(session);
+  }
   const [sessionName, setSessionName] = useState(session.name ?? null);
   const formattedDate = isHydrated ? formatSessionDate(session.startedAt) : "";
   const initialSessionName = sessionName || formattedDate;
@@ -143,7 +150,7 @@ export function OpenPlayManagerClient({
     currentViewerPlayerId && presentPlayerIds.has(currentViewerPlayerId),
   );
 
-  const isSessionActive = session.status === "active";
+  const isSessionActive = currentSession.status === "active";
   const canManage = Boolean(isOrganizer || isHost);
   const canEditOrDelete = isSessionActive ? (canManage || isMember) : canManage;
 
@@ -466,7 +473,8 @@ export function OpenPlayManagerClient({
             return serverStartedRounds;
           });
 
-          if (serverSession.status === "completed" && session.status === "active") {
+          if (serverSession.status === "completed" && currentSession.status === "active") {
+            setCurrentSession(serverSession);
             router.refresh();
           }
         }
@@ -504,7 +512,7 @@ export function OpenPlayManagerClient({
         window.removeEventListener("online", handleOnline);
       }
     };
-  }, [groupId, session.id, isSessionActive, router, session.status]);
+  }, [groupId, session.id, isSessionActive, router, currentSession.status]);
 
   const showToast = (msg: string) => {
     if (guestPopupTimeoutRef.current !== null) {
@@ -1212,10 +1220,13 @@ export function OpenPlayManagerClient({
     setIsEnding(true);
     setError(null);
     try {
-      const res = await endOpenPlaySessionAction({ groupId, sessionId: session.id });
+      const res = await endOpenPlaySessionAction({ groupId, sessionId: currentSession.id });
       if (res.ok) {
+        markSessionEnded(groupId, currentSession.id);
+        setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
         setPickledGameId(null);
         setJustEndedSession(true);
+        router.refresh();
       } else {
         setError(res.error ?? "Failed to end session.");
       }

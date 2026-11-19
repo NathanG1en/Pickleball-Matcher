@@ -1371,7 +1371,6 @@ export function SessionManagerClient({
   };
 
   const executeEndSession = async () => {
-    if (hasUnsavedScores) return;
     setIsPending(true);
     setIsEnding(true);
     setError(null);
@@ -1384,8 +1383,11 @@ export function SessionManagerClient({
       });
       if (res.ok) {
         markSessionEnded(groupId, currentSession.id);
+        setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
+        setScoreDrafts({});
         router.replace(`/g/${groupId}`);
         router.refresh();
+        return;
       } else {
         setError(res.error);
       }
@@ -1398,7 +1400,6 @@ export function SessionManagerClient({
   };
 
   const handleEndSession = async () => {
-    if (hasUnsavedScores) return;
     if (inProgressMatches.length > 0) {
       const skipWarning =
         typeof window !== "undefined" &&
@@ -1425,6 +1426,7 @@ export function SessionManagerClient({
       }
     }
     setShowInProgressModal(false);
+    setScoreDrafts({});
     await executeEndSession();
   };
 
@@ -1672,7 +1674,7 @@ export function SessionManagerClient({
     }));
   };
 
-  const isCompletedSession = session.status === "completed";
+  const isCompletedSession = currentSession.status === "completed";
   const allSessionRounds = localStartedRounds;
   const totalSessionMatches = allSessionRounds.reduce((acc, r) => acc + r.matches.length, 0);
 

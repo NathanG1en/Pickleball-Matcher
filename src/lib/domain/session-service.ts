@@ -754,6 +754,9 @@ export class SessionService {
     return this.repository.transaction(async (repository) => {
       await repository.lockSynergyState();
       const session = await requiredSession(repository, sessionId);
+      if (session.status === "completed") {
+        return session;
+      }
       const startedRounds = await repository.listStartedRounds(sessionId);
       let hadUnfinishedMatches = false;
 
