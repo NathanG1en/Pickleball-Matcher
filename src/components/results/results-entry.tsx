@@ -5,7 +5,7 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShuffleIcon } from "@/components/ui/icons";
+import { CrownIcon, ShuffleIcon } from "@/components/ui/icons";
 
 import { ClientTime } from "@/components/ui/client-date-time";
 
@@ -165,6 +165,37 @@ function ViewerRoundCard({ state }: { state: NonNullable<ViewerRoundState> }) {
       ) : null}
     </section>
   );
+}
+
+export function calculateWinnerSelection(
+  team: 1 | 2,
+  currentScores: { team1: string; team2: string }
+): { team1: string; team2: string } {
+  if (team === 1) {
+    const curT2 = parseInt(currentScores.team2, 10);
+    return {
+      team1: "11",
+      team2: curT2 >= 11 ? "" : currentScores.team2,
+    };
+  } else {
+    const curT1 = parseInt(currentScores.team1, 10);
+    return {
+      team1: curT1 >= 11 ? "" : currentScores.team1,
+      team2: "11",
+    };
+  }
+}
+
+export function getMatchWinnerState(scores: { team1: string; team2: string }): {
+  isT1Winner: boolean;
+  isT2Winner: boolean;
+} {
+  const parsedT1 = parseInt(scores.team1, 10);
+  const parsedT2 = parseInt(scores.team2, 10);
+  return {
+    isT1Winner: !isNaN(parsedT1) && (isNaN(parsedT2) ? parsedT1 >= 11 : parsedT1 > parsedT2),
+    isT2Winner: !isNaN(parsedT2) && (isNaN(parsedT1) ? parsedT2 >= 11 : parsedT2 > parsedT1),
+  };
 }
 
 export function ResultsEntryView({
@@ -359,6 +390,19 @@ export function ResultsEntryView({
           const isViewerTeam1 = Boolean(viewerPlayerId && match.team1PlayerIds?.includes(viewerPlayerId));
           const isViewerTeam2 = Boolean(viewerPlayerId && match.team2PlayerIds?.includes(viewerPlayerId));
 
+          const { isT1Winner, isT2Winner } = getMatchWinnerState(matchScores);
+
+          const handleSelectWinner = (team: 1 | 2) => {
+            if (!canManage || isCancelled || isMatchSaving) return;
+            const next = calculateWinnerSelection(team, matchScores);
+            if (next.team1 !== matchScores.team1) {
+              onScoreChange?.(match.id, "team1", next.team1);
+            }
+            if (next.team2 !== matchScores.team2) {
+              onScoreChange?.(match.id, "team2", next.team2);
+            }
+          };
+
           return (
             <div
               key={match.id}
@@ -400,10 +444,29 @@ export function ResultsEntryView({
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
                   className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
-                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
-                    <span>{match.team1Names.join(" & ")}</span>
-                    {isViewerTeam1 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black min-w-0">
+                      <span>{match.team1Names.join(" & ")}</span>
+                      {isViewerTeam1 && (
+                        <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
+                      )}
+                    </div>
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(1)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-1-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT1Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT1Winner ? "fill-current" : ""}`} />
+                        <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -442,10 +505,29 @@ export function ResultsEntryView({
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
                   className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
-                  <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
-                    <span>{match.team2Names.join(" & ")}</span>
-                    {isViewerTeam2 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black min-w-0">
+                      <span>{match.team2Names.join(" & ")}</span>
+                      {isViewerTeam2 && (
+                        <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
+                      )}
+                    </div>
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(2)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-2-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT2Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT2Winner ? "fill-current" : ""}`} />
+                        <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
