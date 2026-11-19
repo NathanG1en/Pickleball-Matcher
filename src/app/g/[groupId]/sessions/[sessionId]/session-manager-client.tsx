@@ -1857,9 +1857,8 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={handleEndSession}
-                disabled={isPending || hasUnsavedScores}
+                disabled={isPending}
                 aria-label="End Session"
-                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 data-testid="end-session-button"
                 className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
