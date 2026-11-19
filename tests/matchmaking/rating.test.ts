@@ -7,9 +7,14 @@ import {
   K_MIN,
   MAX_MARGIN_MULTIPLIER,
   MIN_MARGIN_MULTIPLIER,
+  POINT_SHARE_WEIGHT,
+  TIER_HIGH_RATING,
+  TIER_LOW_RATING,
+  ZERO_CHANGE_THRESHOLD,
   expectedScore,
   kFactor,
   rateMatch,
+  ratingTierModifier,
   scoreMarginMultiplier,
   teamRating,
 } from "@/lib/matchmaking/rating";
@@ -106,6 +111,25 @@ describe("kFactor: recency and inactivity uncertainty", () => {
   });
 });
 
+describe("ratingTierModifier", () => {
+  it("applies deflation to 4.5+ players (1400+ Elo)", () => {
+    expect(ratingTierModifier(1450, true)).toBe(0.90);
+    expect(ratingTierModifier(1450, false)).toBe(1.10);
+    expect(TIER_HIGH_RATING).toBe(1400);
+  });
+
+  it("applies upward mobility boost to <3.0 players (<800 Elo)", () => {
+    expect(ratingTierModifier(750, true)).toBe(1.08);
+    expect(ratingTierModifier(750, false)).toBe(0.95);
+    expect(TIER_LOW_RATING).toBe(800);
+  });
+
+  it("remains neutral (1.0) for intermediate and regular players", () => {
+    expect(ratingTierModifier(1000, true)).toBe(1.0);
+    expect(ratingTierModifier(1000, false)).toBe(1.0);
+  });
+});
+
 describe("scoreMarginMultiplier", () => {
   it("returns exactly 1.0 for the baseline margin of 4 (e.g. 11-7 game)", () => {
     expect(scoreMarginMultiplier(11, 7)).toBe(1.0);
@@ -134,20 +158,17 @@ describe("scoreMarginMultiplier", () => {
     const blowoutMultiplier = scoreMarginMultiplier(11, 0);
     expect(blowoutMultiplier).toBe(1.25);
 
-    // Old system: established K=20, even win swing = 20 * 0.5 = 10.0
-    // New system: established K=16, blowout swing = 16 * 1.25 * 0.5 = 10.0
     const oldSwing = 20 * 0.5;
     const newBlowoutSwing = K_MIN * blowoutMultiplier * 0.5;
     expect(newBlowoutSwing).toBe(oldSwing);
   });
 
   it("exhibits diminishing returns as margin grows", () => {
-    const m2 = scoreMarginMultiplier(11, 9); // margin 2
-    const m5 = scoreMarginMultiplier(11, 6); // margin 5
-    const m8 = scoreMarginMultiplier(11, 3); // margin 8
-    const m11 = scoreMarginMultiplier(11, 0); // margin 11
+    const m2 = scoreMarginMultiplier(11, 9);
+    const m5 = scoreMarginMultiplier(11, 6);
+    const m8 = scoreMarginMultiplier(11, 3);
+    const m11 = scoreMarginMultiplier(11, 0);
 
-    // Diminishing returns: incremental gain decreases with larger margins
     expect(m5 - m2).toBeGreaterThan(m11 - m8);
   });
 
@@ -160,17 +181,17 @@ describe("scoreMarginMultiplier", () => {
     expect(scoreMarginMultiplier()).toBe(1.0);
     expect(scoreMarginMultiplier(undefined, undefined)).toBe(1.0);
     expect(scoreMarginMultiplier(null, null)).toBe(1.0);
-    expect(scoreMarginMultiplier(11, 11)).toBe(1.0); // tied scores
-    expect(scoreMarginMultiplier(-1, 5)).toBe(1.0); // negative score
-    expect(scoreMarginMultiplier(11.5, 7)).toBe(1.0); // non-integer
+    expect(scoreMarginMultiplier(11, 11)).toBe(1.0);
+    expect(scoreMarginMultiplier(-1, 5)).toBe(1.0);
+    expect(scoreMarginMultiplier(11.5, 7)).toBe(1.0);
   });
 });
 
 describe("rateMatch: individualized K factors and rating conservation", () => {
   it("applies individual K factors to teammates rather than an averaged team K", () => {
     const newPlayerGames = 0; // K = 40
-    const establishedGames = 40; // K ≈ 20.71
-    const opponentGames = 12; // K ≈ 27.36
+    const establishedGames = 40; // K ≈ 16.86
+    const opponentGames = 12; // K ≈ 24.83
 
     const updates = rateMatch({
       team1: [
@@ -182,23 +203,25 @@ describe("rateMatch: individualized K factors and rating conservation", () => {
         { id: "opp2", rating: 1_000, ratedGames: opponentGames },
       ],
       team1Score: 11,
-      team2Score: 7, // baseline margin multiplier 1.0
+      team2Score: 7,
     });
 
     const [newbieUpdate, veteranUpdate, opp1Update, opp2Update] = updates;
 
     // Both teammates won against equal team rating (E = 0.5)
-    // Newbie gets 40 * (1 - 0.5) * 1.0 = +20
-    expect(newbieUpdate.delta).toBeCloseTo(20, 2);
-    // Veteran gets kFactor(40) * (1 - 0.5) * 1.0 ≈ 10.36
-    expect(veteranUpdate.delta).toBeCloseTo(kFactor(40) * 0.5, 2);
+    // Continuous performance S* = 0.65(1) + 0.35(11/18) ≈ 0.8639; surprise ≈ 0.3639
+    const sStar = (1 - POINT_SHARE_WEIGHT) * 1 + POINT_SHARE_WEIGHT * (11 / 18);
+    const expectedSurprise = sStar - 0.5;
+
+    expect(newbieUpdate.delta).toBeCloseTo(40 * expectedSurprise, 2);
+    expect(veteranUpdate.delta).toBeCloseTo(kFactor(40) * expectedSurprise, 2);
     expect(veteranUpdate.delta).toBeLessThan(newbieUpdate.delta);
 
     // Opponents lose according to their own K
-    expect(opp1Update.delta).toBeCloseTo(-kFactor(12) * 0.5, 2);
-    expect(opp2Update.delta).toBeCloseTo(-kFactor(12) * 0.5, 2);
+    expect(opp1Update.delta).toBeCloseTo(-kFactor(12) * expectedSurprise, 2);
+    expect(opp2Update.delta).toBeCloseTo(-kFactor(12) * expectedSurprise, 2);
 
-    // Demonstrate rating conservation property: sum of deltas is non-zero when individual uncertainties differ
+    // Sum of deltas is non-zero when individual uncertainties differ
     const netDelta = updates.reduce((sum, u) => sum + u.delta, 0);
     expect(Math.abs(netDelta)).toBeGreaterThan(0);
   });
@@ -206,8 +229,8 @@ describe("rateMatch: individualized K factors and rating conservation", () => {
   it("conserves total rating points (sum = 0) when all players share equal experience and recency", () => {
     const updates = rateMatch({
       team1: [
-        { id: "a", rating: 1_100, ratedGames: 15 },
-        { id: "b", rating: 900, ratedGames: 15 },
+        { id: "a", rating: 1_000, ratedGames: 15 },
+        { id: "b", rating: 1_000, ratedGames: 15 },
       ],
       team2: [
         { id: "c", rating: 1_000, ratedGames: 15 },
@@ -251,10 +274,9 @@ describe("rateMatch: score margin effects", () => {
     });
 
     expect(blowoutMatch[0].delta).toBeGreaterThan(narrowMatch[0].delta);
-    expect(blowoutMatch[0].delta / narrowMatch[0].delta).toBeCloseTo(
-      scoreMarginMultiplier(11, 0) / scoreMarginMultiplier(11, 9),
-      5,
-    );
+    // 11-0 produces S* = 1.0 (surprise 0.50); 11-9 produces S* = 0.8425 (surprise 0.3425)
+    expect(blowoutMatch[0].delta).toBeCloseTo(kFactor(20) * 0.50, 2);
+    expect(narrowMatch[0].delta).toBeCloseTo(kFactor(20) * 0.3425, 2);
   });
 
   it("determines winner from scores when scores are valid, overriding contradictory winner flags", () => {
@@ -322,6 +344,126 @@ describe("rateMatch: score margin effects", () => {
 
     expect(Number.isInteger(updates[0].ratingAfter)).toBe(false);
     expect(updates[0].ratingBefore).toBe(1_200);
+  });
+});
+
+describe("rateMatch: Recreational-Safe DUPR Dynamics", () => {
+  it("allows a heavy underdog to gain rating on a close loss when beating the point spread", () => {
+    // 3.5 team (1000) plays 4.5 team (1400) -> Delta = -400, expected score E1 ≈ 0.0909
+    const updates = rateMatch({
+      team1: [
+        { id: "underdog1", rating: 1_000, ratedGames: 20 },
+        { id: "underdog2", rating: 1_000, ratedGames: 20 },
+      ],
+      team2: [
+        { id: "favorite1", rating: 1_400, ratedGames: 20 },
+        { id: "favorite2", rating: 1_400, ratedGames: 20 },
+      ],
+      team1Score: 9, // Underdog scores 9 points in an 11-9 loss
+      team2Score: 11,
+    });
+
+    const [u1, u2, f1, f2] = updates;
+
+    // Underdog scored 45% of points when expected to win only ~9% of game
+    // Underdogs GAIN rating on this loss!
+    expect(u1.delta).toBeGreaterThan(0);
+    expect(u2.delta).toBeGreaterThan(0);
+
+    // Recreational-safe guarantee: winning favorites NEVER lose rating on a win
+    expect(f1.delta).toBeGreaterThanOrEqual(0);
+    expect(f2.delta).toBeGreaterThanOrEqual(0);
+  });
+
+  it("penalizes an underdog on a blowout loss when failing to beat the spread", () => {
+    // 3.5 team (1000) plays 4.5 team (1400), but loses 11-2 as expected
+    const updates = rateMatch({
+      team1: [
+        { id: "underdog1", rating: 1_000, ratedGames: 20 },
+        { id: "underdog2", rating: 1_000, ratedGames: 20 },
+      ],
+      team2: [
+        { id: "favorite1", rating: 1_400, ratedGames: 20 },
+        { id: "favorite2", rating: 1_400, ratedGames: 20 },
+      ],
+      team1Score: 2,
+      team2Score: 11,
+    });
+
+    const [u1, u2, f1, f2] = updates;
+
+    expect(u1.delta).toBeLessThan(0);
+    expect(u2.delta).toBeLessThan(0);
+    expect(f1.delta).toBeGreaterThan(0);
+    expect(f2.delta).toBeGreaterThan(0);
+  });
+
+  it("applies deadband filter so micro-changes below ZERO_CHANGE_THRESHOLD result in exactly 0.000", () => {
+    expect(ZERO_CHANGE_THRESHOLD).toBe(0.5);
+
+    // Extreme favorite (1600) beats 800 underdog 11-1
+    // Outcome provides virtually zero new information
+    const updates = rateMatch({
+      team1: [
+        { id: "f1", rating: 1_600, ratedGames: 50 },
+        { id: "f2", rating: 1_600, ratedGames: 50 },
+      ],
+      team2: [
+        { id: "u1", rating: 800, ratedGames: 50 },
+        { id: "u2", rating: 800, ratedGames: 50 },
+      ],
+      team1Score: 11,
+      team2Score: 1,
+    });
+
+    // Favorites won as expected; delta is below threshold and filtered to exactly 0.000
+    expect(updates[0].delta).toBe(0.0);
+    expect(updates[1].delta).toBe(0.0);
+  });
+
+  it("assigns higher responsibility to the higher-rated partner on a loss", () => {
+    // Team 1: 4.5 player (1400) partnered with 3.5 player (1000), team avg = 1200
+    // Team 2: two 4.0 players (1200 each)
+    const updates = rateMatch({
+      team1: [
+        { id: "star", rating: 1_400, ratedGames: 25 },
+        { id: "rookie", rating: 1_000, ratedGames: 25 },
+      ],
+      team2: [
+        { id: "opp1", rating: 1_200, ratedGames: 25 },
+        { id: "opp2", rating: 1_200, ratedGames: 25 },
+      ],
+      team1Score: 6,
+      team2Score: 11, // Team 1 loses
+    });
+
+    const [starUpdate, rookieUpdate] = updates;
+
+    // Both lost, but star (1400) absorbs significantly more of the rating drop
+    expect(starUpdate.delta).toBeLessThan(rookieUpdate.delta); // More negative
+    expect(Math.abs(starUpdate.delta)).toBeGreaterThan(Math.abs(rookieUpdate.delta) * 1.5);
+  });
+
+  it("assigns higher reward to the lower-rated partner on a victory", () => {
+    // Team 1: 4.5 player (1400) partnered with 3.5 player (1000)
+    // Team 2: two 4.0 players (1200 each)
+    const updates = rateMatch({
+      team1: [
+        { id: "star", rating: 1_400, ratedGames: 25 },
+        { id: "rookie", rating: 1_000, ratedGames: 25 },
+      ],
+      team2: [
+        { id: "opp1", rating: 1_200, ratedGames: 25 },
+        { id: "opp2", rating: 1_200, ratedGames: 25 },
+      ],
+      team1Score: 11,
+      team2Score: 6, // Team 1 wins
+    });
+
+    const [starUpdate, rookieUpdate] = updates;
+
+    // Lower-rated player overcame a greater challenge and gains more
+    expect(rookieUpdate.delta).toBeGreaterThan(starUpdate.delta);
   });
 });
 

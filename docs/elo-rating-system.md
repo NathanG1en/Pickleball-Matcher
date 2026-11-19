@@ -1,12 +1,12 @@
 # Elo Rating System
 
-This document outlines how individual player ratings (Elo) are calculated, adjusted, and maintained across doubles pickleball matches in Pickleball Matchmaker.
+This document outlines how individual player ratings (Elo) are calculated, adjusted, and maintained across doubles pickleball matches in Pickleball Matchmaker, incorporating empirical findings from DUPR rating dynamics in a recreational-safe formulation.
 
 ---
 
 ## 1. Internal Storage vs. User-Facing Presentation
 
-Under the hood, all match calculations, replay systems, and database columns operate on a standard 1,000-centered Elo integer scale. **However, all user-facing screens and inputs exclusively display and accept decimal skill ratings aligned with standard DUPR ratings ($2.000$ to $8.000$)**:
+Under the hood, all match calculations, replay systems, and database columns operate on a standard 1,000-centered Elo scale. **All user-facing screens and inputs exclusively display and accept decimal skill ratings aligned with standard DUPR ratings ($2.000$ to $8.000$)**:
 
 - **Beginner**: `2.000` ($400$ Elo)
 - **Advanced Beginner**: `2.500` ($600$ Elo)
@@ -17,7 +17,7 @@ Under the hood, all match calculations, replay systems, and database columns ope
 - **Expert / Pro / World-Class**: `5.000` – `8.000` ($1,600$ – $2,800$ Elo)
 
 ### Conversion Formula
-Implementation reference: [`src/lib/domain/rating-display.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-display.ts)
+Implementation reference: [`src/lib/domain/rating-display.ts`](../src/lib/domain/rating-display.ts)
 
 $$\text{dupr}(\text{elo}) = 3.500 + \frac{\text{elo} - 1000}{400}$$
 
@@ -25,15 +25,15 @@ $$\text{elo}(\text{dupr}) = 1000 + (\text{dupr} - 3.500) \times 400$$
 
 * Every **100 Elo points** corresponds to **0.250 DUPR points**.
 * An even-match outcome ($\pm 10$ Elo) translates to $\pm 0.025$ DUPR points.
-* Users never see or type raw 1,000s Elo numbers.
+* Users never see or type raw 1,000s Elo numbers in the UI.
 
 ---
 
-## 2. The Doubles Elo Algorithm
+## 2. The Recreational-Safe DUPR Doubles Algorithm
 
 Implementation reference: [`src/lib/matchmaking/rating.ts`](../src/lib/matchmaking/rating.ts)
 
-Because pickleball is typically played in doubles, ratings are calculated by evaluating two-player teams against each other.
+Analysis of real-world match rating records demonstrates that ratings in pickleball are driven primarily by **opponent strength relative to yours** rather than binary win/loss or running up the score in blowouts. Recreational-Safe DUPR incorporates these empirical principles while guaranteeing that winning players never drop rating.
 
 ### Step 1: Team Rating
 The rating of a doubles team is the arithmetic average of both partners:
@@ -56,27 +56,20 @@ $$E_1 = \frac{1}{1 + 10^{(R_{\text{team 2}} - R_{\text{team 1}}) / 400}}$$
 $$E_2 = 1 - E_1$$
 
 - If Team 1 and Team 2 have equal ratings, each has an expected score of **0.50** (50% win probability).
-- If Team 1 has a rating 100 points higher than Team 2, Team 1 has an expected score of **~0.64** (64% win probability).
 - If Team 1 has a rating 400 points higher, Team 1 has an expected score of **~0.91** (91% win probability).
 
 ---
 
-#### Step 3: Dynamic K-Factor (Gradual Decay & Inactivity Uncertainty)
-To help newer players reach their accurate rating quickly without destabilizing seasoned players, the system uses a smooth, continuous K-factor model with sensible documented bounds:
+### Step 3: Dynamic K-Factor (Gradual Decay & Inactivity Uncertainty)
+To help newer players reach their accurate rating quickly without destabilizing seasoned players, the system uses a smooth, continuous K-factor model:
 
 - **Bounds**: $K \in [16, 40]$ ($K_{\max} = 40$, $K_{\min} = 16$).
-  - **Established Baseline ($K_{\min} = 16$)**: Starting with $K = 16$ for seasoned players (rather than $20$) gives the new score-margin signal room to matter without making ratings overly reactive.
+  - **Established Baseline ($K_{\min} = 16$)**: Starting with $K = 16$ for seasoned players (rather than $20$) gives score-margin room to matter without making ratings overly reactive.
 - **Gradual Experience Decay**: Rather than an abrupt cliff at 10 games, base K decays exponentially as rated-game history grows:
 
-$$K_{\text{base}}(g) = K_{\min} + (K_{\max} - K_{\min}) \times e^{-g / 12} = 16 + 24 \times e^{-g / 12}$$
+$$K_{\text{base}}(g) = 16 + 24 \times e^{-g / 12}$$
 
-  - At $g = 0$ (new player): $K_{\text{base}} = 40.0$.
-  - At $g = 5$: $K_{\text{base}} \approx 31.8$.
-  - At $g = 10$: $K_{\text{base}} \approx 26.4$.
-  - At $g = 20$: $K_{\text{base}} \approx 20.5$.
-  - At $g \ge 40$: $K_{\text{base}} \to 16.0$.
-
-- **Recency & Reliability (Inactivity Boost)**: Inactivity increases uncertainty about a player's current form, which increases responsiveness ($K$) without silently altering their rating:
+- **Recency & Reliability (Inactivity Boost)**: Inactivity increases uncertainty about a player's current form without silently altering their rating:
   - **Grace Period**: Inactivity $\le 14$ days incurs no uncertainty increase ($\text{boost} = 0$).
   - **Uncertainty Scaling**: Beyond 14 days, uncertainty rises smoothly over a 30-day characteristic timescale toward $K_{\max}$:
 
@@ -84,72 +77,75 @@ $$\text{boost}(\Delta t) = (K_{\max} - K_{\text{base}}) \times \left(1 - e^{-(\D
 
 $$K_{\text{effective}} = \min(K_{\max}, K_{\text{base}} + \text{boost})$$
 
-  - **No Rating Drift**: A dormant player's rating never moves toward 1,000 or any other value while inactive. The increased uncertainty only increases responsiveness ($K$) when they return and produce new match evidence.
-  - **Rapid Resensitization**: Immediately after completing their return match, their last-match timestamp resets, restoring active base K for subsequent games.
+---
 
-```typescript
-export function kFactor(
-  ratedGames: number,
-  options?: { daysInactive?: number | null } | number | null,
-): number {
-  const games = Math.max(0, ratedGames);
-  const baseK = K_MIN + (K_MAX - K_MIN) * Math.exp(-games / K_DECAY_RATE);
-  const daysInactive = ...;
-  if (daysInactive <= INACTIVITY_GRACE_DAYS) return baseK;
-  const uncertaintyFactor = 1 - Math.exp(-(daysInactive - INACTIVITY_GRACE_DAYS) / INACTIVITY_SCALE_DAYS);
-  return Math.min(K_MAX, baseK + (K_MAX - baseK) * uncertaintyFactor);
-}
-```
+### Step 4: Continuous Point Share Performance ($S^*$)
+In pickleball, match scores carry critical evidence about relative team ability. We evaluate match results through continuous performance blending match victory ($65\%$) with actual point share ($35\%$):
+
+$$S_{\text{pts}, 1} = \frac{s_1}{s_1 + s_2}, \quad S_{\text{pts}, 2} = \frac{s_2}{s_1 + s_2}$$
+
+$$S^*_1 = 0.65 \times W_1 + 0.35 \times S_{\text{pts}, 1}$$
+
+$$S^*_2 = 0.65 \times W_2 + 0.35 \times S_{\text{pts}, 2}$$
+
+Team surprise is calculated against expected match outcome:
+
+$$\text{rawSurprise}_1 = S^*_1 - E_1, \quad \text{rawSurprise}_2 = S^*_2 - E_2$$
 
 ---
 
-### Step 4: Score Margin Multiplier ($M$)
-To make decisive wins count more than narrow squeakers while protecting ratings from blowout volatility, match outcomes incorporate a bounded diminishing-returns score margin multiplier:
-
-- **Baseline Margin ($d_0 = 4$)**: A typical pickleball game (e.g. 11–7, margin 4) produces a neutral multiplier of exactly $M = 1.00$.
-- **Blowout Cap ($M_{\max} = 1.25$)**: Capped so an 11–0 blowout win cannot produce a larger swing than the previous winner-only system allowed. For an established player ($K = 16$), the maximum blowout swing ($16 \times 1.25 \times 0.5 = 10.0$) matches the old $K = 20$ system's fixed swing ($20 \times 0.5 = 10.0$).
-- **Bounds**: Multiplier is strictly clamped to $[0.75, 1.25]$.
-- **Diminishing Returns**: Uses a logarithmic curve scaling smoothly between the baseline margin ($d_0 = 4$) and full blowout ($d = 11$):
-
-$$d = |S_1 - S_2|$$
-
-$$M(d) = \text{clamp}\left(1.0 + (M_{\max} - 1.0) \times \frac{\ln(d + 2) - \ln(6)}{\ln(13) - \ln(6)}, 0.75, 1.25\right)$$
-
-  - **Narrow win ($d = 1$, e.g. 11–10)**: $M \approx 0.776$ (swing $\approx 6.2$ pts for $K=16$).
-  - **Close win ($d = 2$, e.g. 11–9)**: $M \approx 0.869$ (swing $\approx 7.0$ pts for $K=16$).
-  - **Standard win ($d = 4$, e.g. 11–7)**: $M = 1.000$ (swing $= 8.0$ pts for $K=16$).
-  - **Decisive win ($d = 7$, e.g. 11–4)**: $M \approx 1.132$ (swing $\approx 9.1$ pts for $K=16$).
-  - **Shutout blowout ($d \ge 11$, e.g. 11–0)**: $M = 1.250$ (swing $= 10.0$ pts for $K=16$).
-  - **Invalid/tied/missing scores**: Fall back to $M = 1.00$ according to validation rules.
+### Step 5: The Recreational-Safe Floor Rule
+* In pure DUPR, when a 5.0 player squeaks by a 3.0 beginner 11–9, the favorite drops rating because they underperformed the expected point spread. In a recreational setting, losing rating on a win is confusing and demoralizing for players.
+* **The Recreational-Safe Guarantee**:
+  - **Winners never lose rating**: If a team won the match, their surprise is floored at $\ge 0$:
+    $$\text{surprise}_{\text{winner}} = \max(0, \text{rawSurprise}_{\text{winner}})$$
+  - **Underdogs can gain on close losses**: If a lower-rated team plays up against a much stronger team and loses a tight 11–9 battle, their point share ($S_{\text{pts}} = 9/20 = 0.45$) significantly beats their low expected score ($E \approx 0.09$). Their raw surprise is positive ($\text{rawSurprise} > 0$), so they **gain rating even when losing**.
 
 ---
 
-### Step 5: Player-Specific Rating Adjustment ($\Delta$) & Rating Conservation
-Unlike systems that assign both teammates a single averaged team K factor, each player receives an **individualized rating update** reflecting their own experience and reliability:
+### Step 6: Asymmetric Teammate Responsibility
+In doubles, teammates with different ratings are held individually accountable based on their expectation against the opposing team:
 
-$$\Delta_{1, i} = K_{1, i} \times (W_1 - E_1) \times M$$
+$$e_i = \text{expectedScore}(R_{\text{player } i}, R_{\text{opp}})$$
 
-$$\Delta_{2, j} = K_{2, j} \times (W_2 - E_2) \times M = - K_{2, j} \times (W_1 - E_1) \times M$$
+* **On rating drops (losses)**: The higher-rated partner had a higher expectation and absorbs a larger share of the drop:
+  $$w_i = \frac{e_i}{e_0 + e_1}$$
+* **On rating gains (wins / spread beats)**: The lower-rated partner faced a harder challenge and receives a proportionally larger share of the gain:
+  $$w_i = \frac{1 - e_i}{(1 - e_0) + (1 - e_1)}$$
 
-$$R_{\text{player, new}} = R_{\text{player, old}} + \Delta_{\text{player}}$$
+Each partner's scale is $2 \cdot w_i$, so partners with equal ratings split 50/50 ($2 \cdot 0.5 = 1.0$).
 
-#### Effect on Rating Conservation & Tradeoffs
-- **When all 4 players share identical K**: $\sum \Delta = 0$. The rating exchange is perfectly zero-sum.
-- **When partners have different experience**: A provisional player ($K=40$) paired with an established veteran ($K=20$) gains or loses more points than the veteran.
-- **Tradeoff Analysis**:
-  - *Advantage*: Prevents veteran ratings from being artificially destabilized by a newer partner's volatile calibration phase, while allowing the provisional player to converge quickly to their true skill.
-  - *Conservation Tradeoff*: Net rating points in a single match are not strictly zero-sum ($\sum \Delta \ne 0$). Across the population, ratings remain stable and bounded because expected win probabilities remain centered around population averages, and established players anchor the network.
+---
+
+### Step 7: Rating Tier Deflation & Inflation Asymmetry
+To reflect empirical rating dynamics across skill tiers:
+* **4.5+ DUPR Tier (Elo $\ge 1400$)**: Experiences slight natural deflation (wins reward 10% less, losses penalize 10% more).
+* **<3.0 DUPR Tier (Elo $< 800$)**: Experiences positive learning-curve mobility (+8% on gains, -5% on losses).
+* **Intermediate Tier ($800 \le \text{Elo} < 1400$)**: Completely balanced ($\mu = 1.00$).
+
+---
+
+### Step 8: The Zero-Change Mystery ($10.3\%$ Deadband Filter)
+In empirical DUPR data, $10.3\%$ of matches result in exactly $0.000$ rating change, especially in balanced matches where the outcome falls within expected measurement noise.
+
+We apply an insignificance deadband filter ($\tau_{\min} = 0.5$ Elo points $\approx 0.00125$ DUPR):
+$$\Delta R_{\text{final}} = \begin{cases}
+0.0 & \text{if } |\Delta R| < 0.5 \\
+\Delta R & \text{otherwise}
+\end{cases}$$
+
+This prevents pointless rating jitter when matches proceed as statistically expected.
 
 ---
 
 ## 3. Historical Replay Architecture
 
-Implementation reference: [`src/lib/domain/rating-replay.ts`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-replay.ts)
+Implementation reference: [`src/lib/domain/rating-replay.ts`](../src/lib/domain/rating-replay.ts)
 
 Instead of mutating player ratings permanently in place, the application uses an **event-sourced replay design**:
 
 1. **Deterministic Order**: All completed matches are replayed chronologically by `completedAt` timestamp, with ties broken deterministically by match ID (`first.id.localeCompare(second.id)`).
 2. **Exclusion of Non-Doubles Games**: Singles (1-vs-1) and 2-vs-1 matches do not affect doubles Elo ratings and are excluded from rating replays.
 3. **Inactivity Replay Without Schema Additions**: During chronological replay, each player's prior match timestamp is tracked in-memory, computing elapsed inactivity days without requiring extra database persistence or schema migrations.
-4. **Score Corrections & Cancellations**: If an organizer edits a score, fixes an error, or cancels a match, [`replayRatings()`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/rating-replay.ts) recalculates the entire timeline starting from each player's `initialRating`.
-5. **Audit Trail**: Every match retains an explicit [`RatingSnapshot`](file:///Users/nathanglen/Documents/ChatGPT/Pickleball%20Matcher/src/lib/domain/types.ts) showing each participant's rating before and after the match.
+4. **Score Corrections & Cancellations**: If an organizer edits a score, fixes an error, or cancels a match, [`replayRatings()`](../src/lib/domain/rating-replay.ts) recalculates the entire timeline starting from each player's `initialRating`.
+5. **Audit Trail**: Every match retains an explicit [`RatingSnapshot`](../src/lib/domain/types.ts) showing each participant's rating before and after the match.

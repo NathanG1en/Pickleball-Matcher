@@ -309,7 +309,7 @@ describe("replayRatings", () => {
     const ratingAfterMatch1 = replayAfterMatch1.players.find((p) => p.id === "a")!.rating;
 
     // During the 90 days of inactivity, no rating drift occurs (ratings are solely match-driven)
-    expect(ratingAfterMatch1).toBe(1_020);
+    expect(ratingAfterMatch1).toBeCloseTo(1014.56, 1);
 
     const fullReplay = calculateRatingReplay(players, [match1, match2, match3]);
     const snapMatch2 = fullReplay.snapshots.get("match-2")!;
