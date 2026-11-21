@@ -35,14 +35,18 @@ Implementation reference: [`src/lib/matchmaking/rating.ts`](../src/lib/matchmaki
 
 Analysis of real-world match rating records demonstrates that ratings in pickleball are driven primarily by **opponent strength relative to yours** rather than binary win/loss or running up the score in blowouts. Recreational-Safe DUPR incorporates these empirical principles while guaranteeing that winning players never drop rating.
 
-### Step 1: Team Rating
-The rating of a doubles team is the arithmetic average of both partners:
+### Step 1: Team Rating (Weak-Link Weighting)
+In doubles pickleball, opponents naturally target and isolate the lower-rated player (80–90% of shots directed at the weaker link). Rather than assuming a naive 50/50 arithmetic average, the effective team rating is skewed toward the lower-rated partner ($65\%$ weight on weaker player, $35\%$ on stronger player):
 
-$$R_{\text{team}} = \frac{R_{\text{player 1}} + R_{\text{player 2}}}{2}$$
+$$R_{\text{team}} = R_{\text{weak}} + 0.35 \times (R_{\text{strong}} - R_{\text{weak}})$$
 
 ```typescript
+export const WEAK_LINK_WEIGHT = 0.35;
+
 export function teamRating(ratings: readonly [number, number]): number {
-  return (ratings[0] + ratings[1]) / 2;
+  const rMin = Math.min(ratings[0], ratings[1]);
+  const rMax = Math.max(ratings[0], ratings[1]);
+  return rMin + WEAK_LINK_WEIGHT * (rMax - rMin);
 }
 ```
 
@@ -103,15 +107,14 @@ $$\text{rawSurprise}_1 = S^*_1 - E_1, \quad \text{rawSurprise}_2 = S^*_2 - E_2$$
 
 ---
 
-### Step 6: Asymmetric Teammate Responsibility
-In doubles, teammates with different ratings are held individually accountable based on their expectation against the opposing team:
+### Step 6: Teammate Responsibility & Carrier Shielding
+In doubles, teammates with different ratings receive individualized adjustments based on their expectation against the opposing team:
 
 $$e_i = \text{expectedScore}(R_{\text{player } i}, R_{\text{opp}})$$
 
-* **On rating drops (losses)**: The higher-rated partner had a higher expectation and absorbs a larger share of the drop:
-  $$w_i = \frac{e_i}{e_0 + e_1}$$
 * **On rating gains (wins / spread beats)**: The lower-rated partner faced a harder challenge and receives a proportionally larger share of the gain:
   $$w_i = \frac{1 - e_i}{(1 - e_0) + (1 - e_1)}$$
+* **On rating drops (losses)**: Both partners share the loss drop equally ($w_0 = w_1 = 0.5$). This **shields the higher-rated carrier**: because opponents naturally isolate the weaker partner, the stronger player cannot touch the ball enough to carry the match alone. Blaming the higher-rated partner for the loss would unfairly penalize them for mentoring or partnering with lower-rated friends.
 
 Each partner's scale is $2 \cdot w_i$, so partners with equal ratings split 50/50 ($2 \cdot 0.5 = 1.0$).
 

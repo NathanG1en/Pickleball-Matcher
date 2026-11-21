@@ -26,8 +26,14 @@ export const BLOWOUT_MARGIN = 11;
 export const MIN_MARGIN_MULTIPLIER = 0.75;
 export const MAX_MARGIN_MULTIPLIER = 1.25;
 
+// Doubles weak-link weighting: lower-rated partner represents 65% of the effective team capability,
+// reflecting targeting and the anchor effect in doubles play (higher-rated partner contributes 35%).
+export const WEAK_LINK_WEIGHT = 0.35;
+
 export function teamRating(ratings: readonly [number, number]): number {
-  return (ratings[0] + ratings[1]) / 2;
+  const rMin = Math.min(ratings[0], ratings[1]);
+  const rMax = Math.max(ratings[0], ratings[1]);
+  return rMin + WEAK_LINK_WEIGHT * (rMax - rMin);
 }
 
 export function expectedScore(ratingA: number, ratingB: number): number {
@@ -130,27 +136,26 @@ function resolvePlayerDaysInactive(
 /**
  * Calculates individual partner responsibility weights based on their individual expected scores (E_i)
  * against the opposing team rating.
- * - On team rating drops (losses), higher-rated partner had a higher expectation and absorbs more drop.
- * - On team rating gains (wins / spread beats), lower-rated partner faced a harder challenge and gets more gain.
+ * - On team rating gains (wins / spread beats), the lower-rated partner faced a harder challenge and gets more gain.
+ * - On team rating drops (losses), both partners share the drop equally (0.5, 0.5) to avoid doubly penalizing
+ *   the higher-rated player who was already burdened by opponents isolating/targeting their lower-rated partner.
  */
 function teammateResponsibilityWeights(
   team: readonly [RatedPlayer, RatedPlayer],
   oppRating: number,
   isGain: boolean,
 ): readonly [number, number] {
-  const e0 = expectedScore(team[0].rating, oppRating);
-  const e1 = expectedScore(team[1].rating, oppRating);
-
   if (isGain) {
+    const e0 = expectedScore(team[0].rating, oppRating);
+    const e1 = expectedScore(team[1].rating, oppRating);
     const inv0 = 1 - e0;
     const inv1 = 1 - e1;
     const sum = inv0 + inv1;
     if (sum <= 0) return [0.5, 0.5];
     return [inv0 / sum, inv1 / sum];
   } else {
-    const sum = e0 + e1;
-    if (sum <= 0) return [0.5, 0.5];
-    return [e0 / sum, e1 / sum];
+    // Loss: equal split (0.5, 0.5) protects the higher-rated partner from bearing excess blame for the weak-link loss.
+    return [0.5, 0.5];
   }
 }
 

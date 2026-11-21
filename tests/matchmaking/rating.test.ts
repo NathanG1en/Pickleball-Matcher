@@ -29,8 +29,12 @@ describe("Elo helpers", () => {
     expect(expectedScore(1_000, 1_200)).toBeCloseTo(0.2402530733520421, 12);
   });
 
-  it("averages both teammates for the team rating", () => {
-    expect(teamRating([1_100, 900])).toBe(1_000);
+  it("weights team rating toward the weaker partner to reflect weak-link targeting", () => {
+    // Equal players: team rating equals individual rating
+    expect(teamRating([1_000, 1_000])).toBe(1_000);
+    // Mismatched players: 900 + 0.35 * (1100 - 900) = 970 (rather than naive arithmetic 1000)
+    expect(teamRating([1_100, 900])).toBe(970);
+    expect(teamRating([900, 1_100])).toBe(970);
   });
 });
 
@@ -421,8 +425,8 @@ describe("rateMatch: Recreational-Safe DUPR Dynamics", () => {
     expect(updates[1].delta).toBe(0.0);
   });
 
-  it("assigns higher responsibility to the higher-rated partner on a loss", () => {
-    // Team 1: 4.5 player (1400) partnered with 3.5 player (1000), team avg = 1200
+  it("shields the higher-rated partner on a loss to avoid penalizing them for weak-link targeting", () => {
+    // Team 1: 4.5 player (1400) partnered with 3.5 player (1000)
     // Team 2: two 4.0 players (1200 each)
     const updates = rateMatch({
       team1: [
@@ -439,9 +443,12 @@ describe("rateMatch: Recreational-Safe DUPR Dynamics", () => {
 
     const [starUpdate, rookieUpdate] = updates;
 
-    // Both lost, but star (1400) absorbs significantly more of the rating drop
-    expect(starUpdate.delta).toBeLessThan(rookieUpdate.delta); // More negative
-    expect(Math.abs(starUpdate.delta)).toBeGreaterThan(Math.abs(rookieUpdate.delta) * 1.5);
+    // Both partners lose rating, but the star (1400) is shielded from taking excess blame
+    // Due to the 1400 tier deflation modifier (1.10) vs rookie (1.00), the star loses at most their tier-scaled share,
+    // and neither player takes an inflated responsibility penalty.
+    expect(starUpdate.delta).toBeLessThan(0);
+    expect(rookieUpdate.delta).toBeLessThan(0);
+    expect(Math.abs(starUpdate.delta)).toBeLessThan(6.5); // significantly less than the old -9.15 drop
   });
 
   it("assigns higher reward to the lower-rated partner on a victory", () => {
