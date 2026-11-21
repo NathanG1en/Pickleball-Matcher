@@ -71,7 +71,6 @@ import { useHydrated } from "@/lib/utils/hydration";
 import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
 import { readScoreDrafts, scoreDraftsKey, writeScoreDrafts } from "@/lib/rounds/score-drafts";
 import { buildPlayCounts } from "@/lib/sessions/play-count";
-import { PlayCountPanel } from "@/components/sessions/play-count-panel";
 import { useLiveSessionSync } from "@/lib/sessions/use-live-session-sync";
 
 export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together" | "preferences";
@@ -2379,88 +2378,96 @@ export function SessionManagerClient({
       ) : (
         <>
           {/* Main Mode: Round In Progress (Score Entry) OR Proposed Round */}
-          {isRoundInProgress ? (
-            <ResultsEntryView
-              pickledMatchId={pickledMatchId}
-              roundId={latestStarted.round.id}
-              roundNumber={latestStarted.round.roundNumber}
-              courtCount={currentSession.courtCount}
-              sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
-              sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
-              viewerPlayerId={currentViewerPlayerId}
-              matches={scoreEntries}
-              fieldErrors={fieldErrors}
-              isPending={isPending}
-              savingMatchIds={savingMatchIds}
-              onSubmitResult={canManage ? handleSaveResult : undefined}
-              onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
-              onNextRound={canManage ? handleNextRound : undefined}
-              onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
-              isGeneratingRound={isGeneratingRound}
-              canManage={canManage}
-              scoreDrafts={scoreDrafts}
-              onScoreChange={handleScoreChange}
-              hasUnsavedScores={hasUnsavedScores}
-              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
-              onSaveAllScores={canManage ? handleSaveAllScores : undefined}
-              onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
-              upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
-              playerNames={playerNames}
-              confirmMatchups={confirmMatchups}
-            />
-          ) : activeProposal ? (
-            <CurrentRoundView
-              draftKey={lineupDraftKey(session.id)}
-              draftContext={`${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`}
-              round={{
-                id: `proposal_${activeProposal.seed}`,
-                roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
-                status: "proposed",
-                seed: activeProposal.seed,
-              }}
-              courts={activeProposal.courts.map((c) => ({
-                courtNumber: c.courtNumber,
-                team1: c.team1,
-                team2: c.team2,
-              }))}
-              sittingPlayerIds={activeProposal.sitting}
-              playerNames={playerNames}
-              playerAccounts={playerAccounts}
-              isPending={isPending}
-              currentViewerPlayerId={currentViewerPlayerId}
-              pairSynergies={pairSynergies}
-              isOrganizer={isOrganizer}
-              isGeneratingRound={isGeneratingRound}
-              canRegenerate={Boolean(canManage)}
-              onRegenerate={canManage ? () => handleRegenerate() : undefined}
-              onStartRound={canManage ? handleStartRound : undefined}
-              canManage={canManage}
-              matchmakingVariety={matchmakingVariety}
-              onChangeMatchmakingVariety={handleChangeVariety}
-              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
-              confirmMatchups={confirmMatchups}
-            />
-          ) : (
-            <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
-              <p className="font-display text-xl font-black uppercase text-black">
-                {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
-              </p>
-              {canManage ? (
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-                    {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
-                    + Add Game
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm font-bold text-neutral-600">
-                  The organizer has not started the next round yet.
+          {(() => {
+            const playCountRows =
+              currentSession.status === "active" && localStartedRounds.length > 0
+                ? buildPlayCounts(localStartedRounds, currentAttendance)
+                : undefined;
+            return isRoundInProgress ? (
+              <ResultsEntryView
+                pickledMatchId={pickledMatchId}
+                roundId={latestStarted.round.id}
+                roundNumber={latestStarted.round.roundNumber}
+                courtCount={currentSession.courtCount}
+                sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
+                sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
+                viewerPlayerId={currentViewerPlayerId}
+                matches={scoreEntries}
+                fieldErrors={fieldErrors}
+                isPending={isPending}
+                savingMatchIds={savingMatchIds}
+                onSubmitResult={canManage ? handleSaveResult : undefined}
+                onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
+                onNextRound={canManage ? handleNextRound : undefined}
+                onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
+                isGeneratingRound={isGeneratingRound}
+                canManage={canManage}
+                scoreDrafts={scoreDrafts}
+                onScoreChange={handleScoreChange}
+                hasUnsavedScores={hasUnsavedScores}
+                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                onSaveAllScores={canManage ? handleSaveAllScores : undefined}
+                onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
+                upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
+                playerNames={playerNames}
+                confirmMatchups={confirmMatchups}
+                playCountRows={playCountRows}
+              />
+            ) : activeProposal ? (
+              <CurrentRoundView
+                draftKey={lineupDraftKey(session.id)}
+                draftContext={`${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`}
+                round={{
+                  id: `proposal_${activeProposal.seed}`,
+                  roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
+                  status: "proposed",
+                  seed: activeProposal.seed,
+                }}
+                courts={activeProposal.courts.map((c) => ({
+                  courtNumber: c.courtNumber,
+                  team1: c.team1,
+                  team2: c.team2,
+                }))}
+                sittingPlayerIds={activeProposal.sitting}
+                playerNames={playerNames}
+                playerAccounts={playerAccounts}
+                isPending={isPending}
+                currentViewerPlayerId={currentViewerPlayerId}
+                pairSynergies={pairSynergies}
+                isOrganizer={isOrganizer}
+                isGeneratingRound={isGeneratingRound}
+                canRegenerate={Boolean(canManage)}
+                onRegenerate={canManage ? () => handleRegenerate() : undefined}
+                onStartRound={canManage ? handleStartRound : undefined}
+                canManage={canManage}
+                matchmakingVariety={matchmakingVariety}
+                onChangeMatchmakingVariety={handleChangeVariety}
+                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                confirmMatchups={confirmMatchups}
+                playCountRows={playCountRows}
+              />
+            ) : (
+              <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <p className="font-display text-xl font-black uppercase text-black">
+                  {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
                 </p>
-              )}
-            </div>
-          )}
+                {canManage ? (
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                      {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
+                      + Add Game
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-neutral-600">
+                    The organizer has not started the next round yet.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* A player's own way to head home early without leaving the group */}
           {!canManage && viewerAttendance && currentSession.status === "active" && (
@@ -2490,15 +2497,6 @@ export function SessionManagerClient({
                 <p role="alert" className="w-full text-xs font-black text-black">{myAttendanceError}</p>
               )}
             </section>
-          )}
-
-          {/* Running fairness tally, collapsed by default */}
-          {currentSession.status === "active" && localStartedRounds.length > 0 && (
-            <PlayCountPanel
-              rows={buildPlayCounts(localStartedRounds, currentAttendance)}
-              playerNames={playerNames}
-              viewerPlayerId={currentViewerPlayerId}
-            />
           )}
 
           {/* Past Rounds Accordion / List */}

@@ -130,6 +130,28 @@ describe("ResultsEntryView Component", () => {
     expect(html).not.toContain("+ Add Pickup Game");
   });
 
+  it("renders expandable games played and rounds sat out tally within sitting section when playCountRows is provided", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        sittingNames={["George", "Hannah"]}
+        canManage={true}
+        playCountRows={[
+          { playerId: "p1", played: 1, sat: 0 },
+          { playerId: "p2", played: 0, sat: 1 },
+        ]}
+      />
+    );
+
+    expect(html).toContain("Sitting Out:");
+    expect(html).toContain("George, Hannah");
+    expect(html).toContain('data-testid="play-count"');
+    expect(html).toContain("Games played · rounds sat out");
+  });
+
   it("renders Pickup Game badge when courtNumber exceeds courtCount", () => {
     const pickupMatches = [
       ...sampleMatches,

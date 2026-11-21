@@ -43,7 +43,7 @@ Players (members who are not organizers) get a read-only view of the session.
 
 ### Games played · rounds sat out
 
-While a session is running, a collapsed **Games played · rounds sat out** panel sits below the courts, for organizers and players alike.
+While a session is running, a collapsed **Games played · rounds sat out** panel is available as an expandable section within the sitting out section, for organizers and players alike.
 - Opening it lists everyone checked in, plus anyone who has already played or sat. Each person shows the games they played (cancelled games don't count) and the rounds they sat out.
 - The people most owed a game are listed first. The viewer's own row is highlighted.
 

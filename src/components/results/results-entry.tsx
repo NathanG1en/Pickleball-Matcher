@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { CrownIcon, ShuffleIcon } from "@/components/ui/icons";
 
 import { ClientTime } from "@/components/ui/client-date-time";
+import { PlayCountPanel } from "@/components/sessions/play-count-panel";
+import type { PlayCountRow } from "@/lib/sessions/play-count";
 
 import type { RoundProposal } from "@/lib/domain/types";
 
@@ -57,6 +59,7 @@ export interface ResultsEntryViewProps {
   /** The roster player using this device, when they are on the session roster. */
   readonly viewerPlayerId?: string | null;
   readonly sittingPlayerIds?: readonly string[];
+  readonly playCountRows?: readonly PlayCountRow[];
 }
 
 /** What cancelling this match throws away, for the confirmation dialog. */
@@ -224,6 +227,7 @@ export function ResultsEntryView({
   confirmMatchups = false,
   viewerPlayerId = null,
   sittingPlayerIds = [],
+  playCountRows,
 }: ResultsEntryViewProps) {
   const viewerState = getViewerRoundState(matches, viewerPlayerId, sittingPlayerIds);
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
@@ -323,11 +327,22 @@ export function ResultsEntryView({
       {/* The viewer's own assignment, pinned above the courts for players */}
       {!canManage && viewerState && <ViewerRoundCard key={`${roundNumber}-${viewerState.kind}`} state={viewerState} />}
 
-      {/* Sitting Out Action Bar */}
-      {sittingNames && sittingNames.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
-          <span className="text-xs font-black text-black">{sittingNames.join(", ")}</span>
+      {/* Sitting Out Section */}
+      {((sittingNames && sittingNames.length > 0) || (playCountRows && playCountRows.length > 0)) && (
+        <div data-testid="sitting-out-panel" className="space-y-3 p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
+            <span className="text-xs font-black text-black">
+              {sittingNames && sittingNames.length > 0 ? sittingNames.join(", ") : "None"}
+            </span>
+          </div>
+          {playCountRows && playCountRows.length > 0 && (
+            <PlayCountPanel
+              rows={playCountRows}
+              playerNames={playerNames}
+              viewerPlayerId={viewerPlayerId}
+            />
+          )}
         </div>
       )}
 
