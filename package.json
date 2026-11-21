@@ -21,6 +21,7 @@
     "preview:worker": "opennextjs-cloudflare build && wrangler dev",
     "deploy:worker": "opennextjs-cloudflare build && wrangler deploy",
     "maintenance:correct-rating": "tsx scripts/maintenance/correct-rating.ts",
+    "maintenance:replay": "tsx scripts/maintenance/run-global-replay.ts",
     "test:maintenance": "node scripts/test-maintenance.mjs"
   },
   "keywords": [],
