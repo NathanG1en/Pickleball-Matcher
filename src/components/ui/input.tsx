@@ -11,7 +11,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       "w-full rounded-xl border-2 font-bold text-black focus:outline-none transition-shadow disabled:opacity-50 disabled:cursor-not-allowed";
 
     const sizeClasses = {
-      sm: "px-3 py-2 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000]",
+      sm: "px-3 py-2 text-base shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000]",
       md: "px-4 py-3 text-base shadow-[3px_3px_0px_0px_#000] focus:shadow-[5px_5px_0px_0px_#000]",
     };
 

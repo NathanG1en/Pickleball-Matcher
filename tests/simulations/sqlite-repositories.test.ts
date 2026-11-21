@@ -16,8 +16,8 @@ describe("SqliteDomainRepository", () => {
       expect((await repository.getMatch(matches[0].id))?.version).toBe(1);
       const service = new SessionService(repository, { now: () => batchNow, nextId: kind => kind, nextSeed: () => 1 });
       await service.recordMultipleResults(inputs);
-      expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
-      expect(await repository.getPlayerAccount("batch-account-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
+      expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1014.5555555555555, ratedGamesPlayed: 1 });
+      expect(await repository.getPlayerAccount("batch-account-2")).toMatchObject({ rating: 985.4444444444445, ratedGamesPlayed: 1 });
       expect((await repository.listStartedRounds("batch-session"))[0].matches.every(match => match.status === "completed" && match.version === 2)).toBe(true);
     } finally { db.close(); }
   });

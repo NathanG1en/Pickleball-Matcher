@@ -41,6 +41,22 @@ describe("CurrentRoundView Component", () => {
     expect(html).toContain("Evan");
   });
 
+  it("renders expandable games played and rounds sat out tally within sitting section when playCountRows is provided", () => {
+    const html = renderToStaticMarkup(
+      <CurrentRoundView
+        {...sampleProps}
+        playCountRows={[
+          { playerId: "p1", played: 1, sat: 0 },
+          { playerId: "p5", played: 0, sat: 1 },
+        ]}
+      />
+    );
+
+    expect(html).toContain("Sitting this round");
+    expect(html).toContain('data-testid="play-count"');
+    expect(html).toContain("Games played · rounds sat out");
+  });
+
   it("shows reshuffle only when canRegenerate is true", () => {
     const proposedHtml = renderToStaticMarkup(
       <CurrentRoundView {...sampleProps} canRegenerate={true} />

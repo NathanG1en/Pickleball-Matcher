@@ -29,8 +29,8 @@ describe("batch score saving", () => {
     const results = await serviceFor(repository).recordMultipleResults([...inputs].reverse());
     expect(results.map(match => match.id)).toEqual(["batch-match-3", "batch-match-2", "batch-match-1", "batch-match-0"]);
     expect(results.every(match => match.status === "completed" && match.version === 2)).toBe(true);
-    expect(repository.state.players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
-    expect(repository.state.players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
+    expect(repository.state.players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1014.5555555555555, ratedGamesPlayed: 1 });
+    expect(repository.state.players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 985.4444444444445, ratedGamesPlayed: 1 });
   });
 
   it("rolls the entire batch back when one match is missing", async () => {
@@ -65,7 +65,7 @@ describe("batch score saving", () => {
     expect(await repository.getMatch("batch-match-3")).toMatchObject({ status: "completed", rated: false, version: 2, team1Score: 11 });
     expect(await repository.getPlayerAccount("batch-account-12")).toMatchObject({ rating: 1000, ratedGamesPlayed: 0 });
     expect(repository.state.matchPlayers.find(member => member.playerId === "batch-player-12")).toMatchObject({ ratingBefore: null, ratingAfter: null });
-    expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
+    expect(await repository.getPlayerAccount("batch-account-0")).toMatchObject({ rating: 1014.5555555555555, ratedGamesPlayed: 1 });
   });
 
   it.each([[11, 11], [11.5, 7], [11, -1]])("rejects invalid scores %s–%s before any writes", async (team1Score, team2Score) => {

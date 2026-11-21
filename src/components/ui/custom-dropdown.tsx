@@ -177,7 +177,7 @@ export function CustomDropdown({
           onChange={(e) => onChange(e.target.value)}
           tabIndex={-1}
           aria-label={computedAriaLabel}
-          className="absolute inset-0 w-full h-full opacity-0 pointer-events-none -z-10"
+          className="absolute inset-0 w-full h-full opacity-0 pointer-events-none -z-10 text-base"
         >
           {placeholder && !options.some((opt) => opt.value === "") && (
             <option value="">{placeholder}</option>

@@ -365,7 +365,7 @@ export function OrganizersTab({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter roster by player name or @username..."
               aria-label="Filter roster players"
-              className="w-full rounded-xl border-2 border-black bg-white pl-9 pr-3.5 py-2 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-400"
+              className="w-full rounded-xl border-2 border-black bg-white pl-9 pr-3.5 py-2 text-base font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-400"
             />
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
             {searchQuery && (

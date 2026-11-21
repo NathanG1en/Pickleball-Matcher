@@ -328,7 +328,7 @@ export function PlayerProfileHeader({
                 maxLength={80}
                 value={nameInput}
                 onChange={(event) => setNameInput(event.target.value)}
-                className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-base font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
                 autoFocus
               />
             </div>
@@ -357,7 +357,7 @@ export function PlayerProfileHeader({
                     setUsernameInput(val);
                   }}
                   aria-invalid={isUsernameTaken}
-                  className={`w-full rounded-xl pl-7 pr-3 py-2 text-sm font-bold focus:outline-none ${
+                  className={`w-full rounded-xl pl-7 pr-3 py-2 text-base font-bold focus:outline-none ${
                     isUsernameTaken
                       ? "border-2 border-red-600 bg-red-50 text-red-900"
                       : "border-2 border-black bg-white text-black focus:ring-2 focus:ring-black"
@@ -734,7 +734,7 @@ export function PlayerNameEditor({ initialName }: { initialName: string }) {
           maxLength={80}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="min-w-0 flex-1 rounded-xl border-2 border-black px-3 py-2 font-bold"
+          className="min-w-0 flex-1 rounded-xl border-2 border-black px-3 py-2 font-bold text-base"
         />
         <Button type="submit" variant="primary" disabled={pending || !name.trim()}>
           {pending ? "Saving…" : "Save"}

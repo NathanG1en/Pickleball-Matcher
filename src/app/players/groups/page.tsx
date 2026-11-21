@@ -28,7 +28,7 @@ export default async function PublicGroupsPage({ searchParams }: { searchParams:
 
         <form action="/players/groups" className="flex gap-2">
           <label htmlFor="group-search" className="sr-only">Search public groups</label>
-          <input id="group-search" name="q" defaultValue={q} placeholder="Search by group name" className="min-w-0 flex-1 rounded-xl border-2 border-black bg-white px-4 py-3 font-bold shadow-[3px_3px_0px_0px_#000]" />
+          <input id="group-search" name="q" defaultValue={q} placeholder="Search by group name" className="min-w-0 flex-1 rounded-xl border-2 border-black bg-white px-4 py-3 font-bold text-base shadow-[3px_3px_0px_0px_#000]" />
           <button className="rounded-xl border-2 border-black bg-[#ccff00] px-4 font-black uppercase shadow-[3px_3px_0px_0px_#000]">Search</button>
         </form>
         <PublicGroupList groups={groups} isSignedIn={true} query={q} />

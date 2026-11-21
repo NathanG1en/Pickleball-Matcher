@@ -14,6 +14,8 @@ vi.mock("@/app/actions/player-account", () => ({
   playerLoginAction: vi.fn(),
 }));
 
+import PlayerLoginPage from "@/app/player-login/page";
+
 describe("PlayerLoginForm", () => {
   it("renders username or email input with proper label and placeholder", () => {
     const html = renderToStaticMarkup(<PlayerLoginForm />);
@@ -32,6 +34,19 @@ describe("PlayerLoginForm", () => {
     );
 
     expect(html).toContain("Unable to sign in. Check your username or email and password.");
+  });
+});
+
+describe("PlayerLoginPage layout", () => {
+  it("renders with data-fill-screen and vertical centering without min-h-screen overflow", async () => {
+    const jsx = await PlayerLoginPage({});
+    const html = renderToStaticMarkup(jsx);
+
+    expect(html).toContain("data-fill-screen");
+    expect(html).toContain("flex flex-1 items-center justify-center");
+    expect(html).toContain("my-auto");
+    expect(html).not.toContain("min-h-screen");
+    expect(html).toContain("Player Sign In");
   });
 });
 

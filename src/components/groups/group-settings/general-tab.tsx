@@ -144,7 +144,7 @@ export function GeneralTab({
               if (statusMessage) setStatusMessage(null);
             }}
             placeholder="Enter group name"
-            className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] disabled:bg-neutral-100 disabled:text-neutral-500 disabled:cursor-not-allowed transition-shadow"
+            className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] disabled:bg-neutral-100 disabled:text-neutral-500 disabled:cursor-not-allowed transition-shadow"
           />
           {!canEditGroupName && (
             <p className="text-[11px] font-semibold text-neutral-500">
@@ -242,7 +242,7 @@ export function GeneralTab({
               readOnly
               value={groupId}
               aria-label="Group ID"
-              className="flex-1 min-w-0 rounded-xl border-2 border-black bg-neutral-100 px-3.5 py-2 font-mono text-xs font-bold text-neutral-800 shadow-[2px_2px_0px_0px_#000] focus:outline-none select-all"
+              className="flex-1 min-w-0 rounded-xl border-2 border-black bg-neutral-100 px-3.5 py-2 font-mono text-base font-bold text-neutral-800 shadow-[2px_2px_0px_0px_#000] focus:outline-none select-all"
             />
             <button
               type="button"

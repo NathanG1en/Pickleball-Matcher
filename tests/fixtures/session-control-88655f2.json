@@ -1,6 +1,6 @@
 {
-  "commit": "50adab88bb10cff8d482e3bfc791da61b1557f44",
-  "sha256": "f9217fe4f69a7c6e85fa159fd12e51c2a91c33b9fa8daab3e892b6ae307bd019",
+  "commit": "88655f24b8e0aded9f60bcd464efb4b6aa03df18",
+  "sha256": "b88951fac2253a6bea8283f5c51a98c8c21c23b879ec28b2bab5e400adf2beb0",
   "paths": [
     "src",
     "tsconfig.json",

@@ -75,7 +75,7 @@ test.describe("Corrections and Replay Workflow", () => {
     // Now correct the score to 11-9
     await court1Team2.fill("9");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
-    await expect(page.getByTestId("end-session-button")).toBeDisabled();
+    await expect(page.getByTestId("end-session-button")).toBeEnabled();
     await expect(page.getByRole("status").filter({ hasText: "Save or revert" })).toContainText("Save or revert your score changes before continuing.");
 
     // Reverting to the stored score clears the guard without a save.
@@ -93,7 +93,7 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
     await expect(court1Team2).toHaveValue("11");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
-    await expect(page.getByTestId("end-session-button")).toBeDisabled();
+    await expect(page.getByTestId("end-session-button")).toBeEnabled();
 
     await court1Team2.fill("9");
     await page.locator("[data-testid='court-match-1'] button:has-text('Update Score')").click();
@@ -218,7 +218,7 @@ test.describe("Corrections and Replay Workflow", () => {
     test.setTimeout(45000);
     // 1. Create group and roster
     const groupName = `End Session Warning ${Date.now()}`;
-    await createTestGroup(page, groupName);
+    const { groupId } = await createTestGroup(page, groupName);
 
     const addGuestButton = page.locator("button:has-text('Add Guest')");
     await addGuestButton.click();
@@ -276,8 +276,9 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.check("[data-testid='do-not-ask-again-checkbox']");
     await page.click("[data-testid='confirm-end-session-button']");
 
-    // 8. User redirected to group dashboard
-    await page.waitForURL(/\/g\/[^/]+$/);
+    // 8. User remains on session summary page
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible();
+    await page.goto(`/g/${groupId}`);
 
     // Verify session is ended on group page - does NOT say "Resume Session"
     await expect(page.locator("text=Resume Session")).not.toBeVisible();
@@ -460,7 +461,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     }
     page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("end-session-button").click();
-    await expect(page).toHaveURL(`/g/${groupId}`);
+    await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
     const art = page.getByTestId("session-signoff");
     await expect(art).toBeInViewport();
     await expect(art).toHaveAttribute("aria-hidden", "true");
@@ -474,7 +475,6 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.reload();
     await expect(art).toHaveAttribute("data-motion", "still");
     expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
-    await page.goto(sessionUrl);
     await expect(page.getByTestId("completed-session-full-view")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
     await page.goto(`/g/${groupId}`);

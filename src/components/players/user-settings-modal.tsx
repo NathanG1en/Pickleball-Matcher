@@ -625,7 +625,7 @@ export function UserSettingsModal({
                     showEmailError
                       ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
                       : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
-                  } px-3 py-2 text-sm font-bold`}
+                  } px-3 py-2 text-base font-bold`}
                 />
                 {showEmailError && (
                   <div
@@ -710,7 +710,7 @@ export function UserSettingsModal({
                       showCurrentPasswordError
                         ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
                         : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
-                    } px-3 py-2 pr-10 text-sm font-bold`}
+                    } px-3 py-2 pr-10 text-base font-bold`}
                   />
                   <button
                     type="button"
@@ -763,7 +763,7 @@ export function UserSettingsModal({
                       showNewPasswordError
                         ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
                         : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
-                    } px-3 py-2 pr-10 text-sm font-bold`}
+                    } px-3 py-2 pr-10 text-base font-bold`}
                   />
                   <button
                     type="button"
@@ -815,7 +815,7 @@ export function UserSettingsModal({
                       showConfirmPasswordError
                         ? "border-red-500 bg-white text-red-600 outline-none ring-0 focus:border-red-500 focus:outline-none focus:ring-0"
                         : "border-black bg-white text-black outline-none focus:outline-none focus:ring-2 focus:ring-black"
-                    } px-3 py-2 pr-10 text-sm font-bold`}
+                    } px-3 py-2 pr-10 text-base font-bold`}
                   />
                   <button
                     type="button"

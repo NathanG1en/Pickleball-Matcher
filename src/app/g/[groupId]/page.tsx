@@ -166,10 +166,10 @@ export default async function GroupDashboardPage({
   );
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 pb-24 text-black">
+    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-2xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-6 pb-24 text-black min-w-0 w-full max-w-full">
       <RecentGroupTracker groupId={groupId} groupName={group.name} isPartOfGroup={isPartOfGroup} />
       {/* Group Header */}
-      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8">
+      <header className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-8 min-w-0 max-w-full overflow-hidden">
         <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-2">
             <ShareGroupButton groupId={groupId} groupName={group.name} />
@@ -189,7 +189,7 @@ export default async function GroupDashboardPage({
             ) : null}
           </div>
         </div>
-        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase text-black tracking-tight truncate">
+        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-black uppercase text-black tracking-tight truncate min-w-0">
           {group.name}
         </h1>
         <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
@@ -217,9 +217,9 @@ export default async function GroupDashboardPage({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[auto_1fr] gap-6 lg:gap-8 items-start min-w-0 w-full">
         {/* Primary action: first on mobile so organizers can start or resume play without scrolling past the roster */}
-        <div className="lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-1">
+        <div className="lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-1 min-w-0 w-full">
           {!isPartOfGroup ? (
             <GroupJoinCard
               groupId={groupId}
@@ -446,7 +446,7 @@ export default async function GroupDashboardPage({
         </div>
 
         {/* Organizers and Roster panel: after the primary action on mobile, right column on desktop */}
-        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:col-start-8 xl:col-start-9 lg:row-start-1 lg:row-span-2">
+        <div className="space-y-6 lg:col-span-5 xl:col-span-4 lg:col-start-8 xl:col-start-9 lg:row-start-1 lg:row-span-2 min-w-0 w-full">
           <GroupOrganizersPanel
             groupId={groupId}
             groupName={group.name}
@@ -462,7 +462,7 @@ export default async function GroupDashboardPage({
         </div>
 
         {isPartOfGroup && (
-          <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-2">
+          <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-2 min-w-0 w-full">
           {/* Tournaments Section */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">

@@ -401,7 +401,7 @@ export function AttendanceManager({
               placeholder="Search players by name..."
               aria-label="Search players"
               data-testid="attendance-player-search"
-              className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+              className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-base font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
             />
             {searchQuery && (
               <button
@@ -523,7 +523,7 @@ export function AttendanceManager({
                   placeholder="Guest player name"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                  className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-base shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                 />
                 <div className="flex items-center gap-2 shrink-0">
                   <CustomDropdown

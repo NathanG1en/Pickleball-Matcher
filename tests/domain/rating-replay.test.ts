@@ -207,4 +207,134 @@ describe("replayRatings", () => {
     expect(updatedG1Alice?.rating).toBe(updatedAccount?.rating);
     expect(updatedG2Alice?.rating).toBe(updatedAccount?.rating);
   });
+
+  it("excludes singles (1v1) and team-vs-one (2v1) matches from rating updates and snapshots", () => {
+    const mixedHistory = [
+      {
+        id: "match-singles",
+        groupId: "group-1",
+        status: "completed" as const,
+        completedAt: new Date("2026-10-06T12:00:00.000Z"),
+        team1: ["a"],
+        team2: ["c"],
+        team1Score: 11,
+        team2Score: 7,
+      },
+      {
+        id: "match-2v1",
+        groupId: "group-1",
+        status: "completed" as const,
+        completedAt: new Date("2026-10-06T12:05:00.000Z"),
+        team1: ["a", "b"],
+        team2: ["c"],
+        team1Score: 11,
+        team2Score: 7,
+      },
+    ];
+
+    const replay = calculateRatingReplay(players, mixedHistory);
+
+    expect(replay.snapshots.has("match-singles")).toBe(false);
+    expect(replay.snapshots.has("match-2v1")).toBe(false);
+    expect(replay.players.every((p) => p.rating === 1_000)).toBe(true);
+    expect(replay.players.every((p) => p.ratedGamesPlayed === 0)).toBe(true);
+  });
+
+  it("incorporates score margin into rating replay deltas", () => {
+    const blowoutMatch = {
+      id: "blowout",
+      groupId: "group-1",
+      status: "completed" as const,
+      completedAt: new Date("2026-10-06T12:00:00.000Z"),
+      team1: ["a", "b"] as const,
+      team2: ["c", "d"] as const,
+      team1Score: 11,
+      team2Score: 0,
+    };
+    const narrowMatch = {
+      id: "narrow",
+      groupId: "group-1",
+      status: "completed" as const,
+      completedAt: new Date("2026-10-06T12:00:00.000Z"),
+      team1: ["a", "b"] as const,
+      team2: ["c", "d"] as const,
+      team1Score: 11,
+      team2Score: 9,
+    };
+
+    const blowoutReplay = calculateRatingReplay(players, [blowoutMatch]);
+    const narrowReplay = calculateRatingReplay(players, [narrowMatch]);
+
+    const blowoutWinnerRating = blowoutReplay.players.find((p) => p.id === "a")!.rating;
+    const narrowWinnerRating = narrowReplay.players.find((p) => p.id === "a")!.rating;
+
+    expect(blowoutWinnerRating).toBeGreaterThan(narrowWinnerRating);
+  });
+
+  it("tracks inactivity across matches without moving ratings during inactivity", () => {
+    const match1 = {
+      id: "match-1",
+      groupId: "group-1",
+      status: "completed" as const,
+      completedAt: new Date("2026-06-01T12:00:00.000Z"),
+      team1: ["a", "b"] as const,
+      team2: ["c", "d"] as const,
+      team1Score: 11,
+      team2Score: 7,
+    };
+    // 90 days later: players return
+    const match2 = {
+      id: "match-2",
+      groupId: "group-1",
+      status: "completed" as const,
+      completedAt: new Date("2026-08-30T12:00:00.000Z"),
+      team1: ["a", "b"] as const,
+      team2: ["c", "d"] as const,
+      team1Score: 11,
+      team2Score: 7,
+    };
+    // 30 minutes later on the same day: players play a second match
+    const match3 = {
+      id: "match-3",
+      groupId: "group-1",
+      status: "completed" as const,
+      completedAt: new Date("2026-08-30T12:30:00.000Z"),
+      team1: ["a", "b"] as const,
+      team2: ["c", "d"] as const,
+      team1Score: 11,
+      team2Score: 7,
+    };
+
+    const replayAfterMatch1 = calculateRatingReplay(players, [match1]);
+    const ratingAfterMatch1 = replayAfterMatch1.players.find((p) => p.id === "a")!.rating;
+
+    // During the 90 days of inactivity, no rating drift occurs (ratings are solely match-driven)
+    expect(ratingAfterMatch1).toBeCloseTo(1014.56, 1);
+
+    const fullReplay = calculateRatingReplay(players, [match1, match2, match3]);
+    const snapMatch2 = fullReplay.snapshots.get("match-2")!;
+    const snapMatch3 = fullReplay.snapshots.get("match-3")!;
+
+    const playerADeltaMatch2 = snapMatch2.find((s) => s.playerId === "a")!.ratingAfter - snapMatch2.find((s) => s.playerId === "a")!.ratingBefore;
+    const playerADeltaMatch3 = snapMatch3.find((s) => s.playerId === "a")!.ratingAfter - snapMatch3.find((s) => s.playerId === "a")!.ratingBefore;
+
+    // Match 2 experienced ~90 days of inactivity, so K was boosted by uncertainty
+    // Match 3 occurred 30 minutes later (0 days inactive), so K dropped back to base K
+    expect(playerADeltaMatch2).toBeGreaterThan(playerADeltaMatch3);
+  });
+
+  it("produces strictly identical results regardless of input match order", () => {
+    const m1 = replayMatch("match-1", "2026-10-01T12:00:00.000Z", 1);
+    const m2 = replayMatch("match-2", "2026-10-02T12:00:00.000Z", 2);
+    const m3 = replayMatch("match-3", "2026-10-03T12:00:00.000Z", 1);
+
+    const replayForward = calculateRatingReplay(players, [m1, m2, m3]);
+    const replayReverse = calculateRatingReplay(players, [m3, m2, m1]);
+    const replayPermuted = calculateRatingReplay(players, [m2, m3, m1]);
+
+    expect(replayForward.players).toEqual(replayReverse.players);
+    expect(replayForward.players).toEqual(replayPermuted.players);
+    expect([...replayForward.snapshots.entries()]).toEqual([...replayReverse.snapshots.entries()]);
+    expect([...replayForward.snapshots.entries()]).toEqual([...replayPermuted.snapshots.entries()]);
+  });
 });

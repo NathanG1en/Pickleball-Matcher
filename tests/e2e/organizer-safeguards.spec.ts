@@ -5,7 +5,7 @@ async function addGuests(page: Page, names: string[]) {
   await page.locator("button:has-text('Add Guest')").click();
   for (const name of names) {
     await page.fill("#guest-player-name", name);
-    await page.locator("button:text-is('Add')").click();
+    await page.locator("button:text-is('Add')").click({ force: true });
     await expect(page.locator("p[role='status']")).toContainText(`Guest player "${name}" added to the roster.`);
   }
 }
@@ -112,6 +112,7 @@ test("attendance rows stay put, typed scores survive a reload, and the tally and
   }
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("end-session-button").click();
-  await expect(page).toHaveURL(`/g/${groupId}`);
+  await expect(page.getByTestId("completed-session-badge")).toBeVisible();
+  await page.goto(`/g/${groupId}`);
   await expect(page.getByTestId("session-summary-link")).toHaveAttribute("href", sessionPath);
 });

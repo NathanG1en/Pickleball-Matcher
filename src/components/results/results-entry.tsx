@@ -5,9 +5,11 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShuffleIcon } from "@/components/ui/icons";
+import { CrownIcon, ShuffleIcon } from "@/components/ui/icons";
 
 import { ClientTime } from "@/components/ui/client-date-time";
+import { PlayCountPanel } from "@/components/sessions/play-count-panel";
+import type { PlayCountRow } from "@/lib/sessions/play-count";
 
 import type { RoundProposal } from "@/lib/domain/types";
 
@@ -57,6 +59,7 @@ export interface ResultsEntryViewProps {
   /** The roster player using this device, when they are on the session roster. */
   readonly viewerPlayerId?: string | null;
   readonly sittingPlayerIds?: readonly string[];
+  readonly playCountRows?: readonly PlayCountRow[];
 }
 
 /** What cancelling this match throws away, for the confirmation dialog. */
@@ -167,6 +170,37 @@ function ViewerRoundCard({ state }: { state: NonNullable<ViewerRoundState> }) {
   );
 }
 
+export function calculateWinnerSelection(
+  team: 1 | 2,
+  currentScores: { team1: string; team2: string }
+): { team1: string; team2: string } {
+  if (team === 1) {
+    const curT2 = parseInt(currentScores.team2, 10);
+    return {
+      team1: "11",
+      team2: curT2 >= 11 ? "" : currentScores.team2,
+    };
+  } else {
+    const curT1 = parseInt(currentScores.team1, 10);
+    return {
+      team1: curT1 >= 11 ? "" : currentScores.team1,
+      team2: "11",
+    };
+  }
+}
+
+export function getMatchWinnerState(scores: { team1: string; team2: string }): {
+  isT1Winner: boolean;
+  isT2Winner: boolean;
+} {
+  const parsedT1 = parseInt(scores.team1, 10);
+  const parsedT2 = parseInt(scores.team2, 10);
+  return {
+    isT1Winner: !isNaN(parsedT1) && (isNaN(parsedT2) ? parsedT1 >= 11 : parsedT1 > parsedT2),
+    isT2Winner: !isNaN(parsedT2) && (isNaN(parsedT1) ? parsedT2 >= 11 : parsedT2 > parsedT1),
+  };
+}
+
 export function ResultsEntryView({
   roundNumber,
   pickledMatchId = null,
@@ -193,6 +227,7 @@ export function ResultsEntryView({
   confirmMatchups = false,
   viewerPlayerId = null,
   sittingPlayerIds = [],
+  playCountRows,
 }: ResultsEntryViewProps) {
   const viewerState = getViewerRoundState(matches, viewerPlayerId, sittingPlayerIds);
   const getScores = (match: MatchScoreEntry) => scoreDrafts[match.id] ?? {
@@ -292,11 +327,22 @@ export function ResultsEntryView({
       {/* The viewer's own assignment, pinned above the courts for players */}
       {!canManage && viewerState && <ViewerRoundCard key={`${roundNumber}-${viewerState.kind}`} state={viewerState} />}
 
-      {/* Sitting Out Action Bar */}
-      {sittingNames && sittingNames.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
-          <span className="text-xs font-black text-black">{sittingNames.join(", ")}</span>
+      {/* Sitting Out Section */}
+      {((sittingNames && sittingNames.length > 0) || (playCountRows && playCountRows.length > 0)) && (
+        <div data-testid="sitting-out-panel" className="space-y-3 p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
+            <span className="text-xs font-black text-black">
+              {sittingNames && sittingNames.length > 0 ? sittingNames.join(", ") : "None"}
+            </span>
+          </div>
+          {playCountRows && playCountRows.length > 0 && (
+            <PlayCountPanel
+              rows={playCountRows}
+              playerNames={playerNames}
+              viewerPlayerId={viewerPlayerId}
+            />
+          )}
         </div>
       )}
 
@@ -312,9 +358,6 @@ export function ResultsEntryView({
               <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
-              <p className="text-xs font-bold text-neutral-700">
-                Save &amp; Start uses this exact lineup. It only changes when scores, attendance, or settings change.
-              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {upcomingProposal.courts.map((c) => (
                   <div key={c.courtNumber} className="p-2.5 rounded-xl bg-[#FFFDF7] border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
@@ -359,6 +402,19 @@ export function ResultsEntryView({
           const isViewerTeam1 = Boolean(viewerPlayerId && match.team1PlayerIds?.includes(viewerPlayerId));
           const isViewerTeam2 = Boolean(viewerPlayerId && match.team2PlayerIds?.includes(viewerPlayerId));
 
+          const { isT1Winner, isT2Winner } = getMatchWinnerState(matchScores);
+
+          const handleSelectWinner = (team: 1 | 2) => {
+            if (!canManage || isCancelled || isMatchSaving) return;
+            const next = calculateWinnerSelection(team, matchScores);
+            if (next.team1 !== matchScores.team1) {
+              onScoreChange?.(match.id, "team1", next.team1);
+            }
+            if (next.team2 !== matchScores.team2) {
+              onScoreChange?.(match.id, "team2", next.team2);
+            }
+          };
+
           return (
             <div
               key={match.id}
@@ -394,19 +450,19 @@ export function ResultsEntryView({
               </div>
 
               {/* Match Score Input Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
                 {/* Team 1 */}
                 <div
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
-                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team1Names.join(" & ")}</span>
                     {isViewerTeam1 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canManage ? (
                       <input
                         type="number"
@@ -434,21 +490,38 @@ export function ResultsEntryView({
                         </span>
                       )
                     )}
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(1)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-1-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT1Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT1Winner ? "fill-current" : ""}`} />
+                        <span>{isT1Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Team 2 */}
                 <div
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
-                  className={`space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team2Names.join(" & ")}</span>
                     {isViewerTeam2 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase">You</span>
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canManage ? (
                       <input
                         type="number"
@@ -475,6 +548,23 @@ export function ResultsEntryView({
                           In Play
                         </span>
                       )
+                    )}
+                    {canManage && !isCancelled && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectWinner(2)}
+                        disabled={isMatchSaving}
+                        data-testid={`court-${match.courtNumber}-team-2-winner-button`}
+                        aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                          isT2Winner
+                            ? "bg-black text-[#ccff00]"
+                            : "bg-[#fde047] hover:bg-[#facc15] text-black"
+                        }`}
+                      >
+                        <CrownIcon className={`h-3.5 w-3.5 shrink-0 ${isT2Winner ? "fill-current" : ""}`} />
+                        <span>{isT2Winner ? "Winner" : "Select Winner"}</span>
+                      </button>
                     )}
                   </div>
                 </div>

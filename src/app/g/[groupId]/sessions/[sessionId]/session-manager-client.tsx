@@ -22,6 +22,7 @@ import {
   updateStayTogetherPairsAction,
 } from "@/app/actions/sessions";
 import { getCourtRebalanceChoices, type CourtChoice } from "@/lib/matchmaking/court-rebalance";
+import { candidateKey } from "@/lib/matchmaking/generate-round";
 import { proposeRoundFromSnapshot } from "@/lib/matchmaking/proposal";
 import { cancelMatchAction, recordMultipleResultsAction, recordResultAction } from "@/app/actions/results";
 import { isPickleScore } from "@/components/results/pickle-celebration";
@@ -49,7 +50,7 @@ import type {
   SessionRecord,
   StartedRoundRecord,
 } from "@/lib/domain/types";
-import { markSessionEnded } from "@/lib/animations/session-signoff";
+import { SessionSignOff } from "@/components/sessions/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
@@ -70,7 +71,6 @@ import { useHydrated } from "@/lib/utils/hydration";
 import { buildSessionLiveStamp } from "@/lib/sessions/live-stamp";
 import { readScoreDrafts, scoreDraftsKey, writeScoreDrafts } from "@/lib/rounds/score-drafts";
 import { buildPlayCounts } from "@/lib/sessions/play-count";
-import { PlayCountPanel } from "@/components/sessions/play-count-panel";
 import { useLiveSessionSync } from "@/lib/sessions/use-live-session-sync";
 
 export type SessionSettingsTab = "attendance" | "court_config" | "partners" | "stay_together" | "preferences";
@@ -309,6 +309,7 @@ export function SessionManagerClient({
   const [isMyAttendancePending, setIsMyAttendancePending] = useState(false);
   // Only an actual end-session request says "Ending…"; other actions just disable the button.
   const [isEnding, setIsEnding] = useState(false);
+  const [justEndedSession, setJustEndedSession] = useState(false);
   const [myAttendanceError, setMyAttendanceError] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -699,7 +700,7 @@ export function SessionManagerClient({
         if (activeProposal && nextSeed === activeProposal.seed) {
           nextSeed = (nextSeed + 1) % 0xffff_ffff;
         }
-        const res = await proposeRoundAction({
+        let res = await proposeRoundAction({
           groupId,
           sessionId: currentSession.id,
           sessionVersion: currentSession.version,
@@ -707,11 +708,34 @@ export function SessionManagerClient({
           temperature: variety,
         });
         if (res.ok) {
+          const currentKey = activeProposal ? candidateKey(activeProposal) : "";
+          if (currentKey && candidateKey(res.data) === currentKey) {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const retrySeed = Math.floor(Math.random() * 0xffff_ffff);
+              const retryRes = await proposeRoundAction({
+                groupId,
+                sessionId: currentSession.id,
+                sessionVersion: currentSession.version,
+                seed: retrySeed,
+                temperature: variety,
+              });
+              if (retryRes.ok && candidateKey(retryRes.data) !== currentKey) {
+                res = retryRes;
+                break;
+              }
+            }
+          }
+
+          if (currentKey && candidateKey(res.data) === currentKey) {
+            setError("No alternative lineup was found. The current lineup remains the fairest available matchup.");
+            return;
+          }
+
           clearLineupDraft(lineupDraftKey(currentSession.id));
           saveLineupChoice(currentSession.id, {
             roundNumber: proposalRoundNumber,
             sessionVersion: currentSession.version,
-            seed: nextSeed,
+            seed: res.data.seed,
             temperature: variety,
           });
           setRegeneratedProposal(res.data);
@@ -1371,7 +1395,6 @@ export function SessionManagerClient({
   };
 
   const executeEndSession = async () => {
-    if (hasUnsavedScores) return;
     setIsPending(true);
     setIsEnding(true);
     setError(null);
@@ -1383,9 +1406,11 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("end"),
       });
       if (res.ok) {
-        markSessionEnded(groupId, currentSession.id);
-        router.replace(`/g/${groupId}`);
+        setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
+        setScoreDrafts({});
+        setJustEndedSession(true);
         router.refresh();
+        return;
       } else {
         setError(res.error);
       }
@@ -1398,7 +1423,6 @@ export function SessionManagerClient({
   };
 
   const handleEndSession = async () => {
-    if (hasUnsavedScores) return;
     if (inProgressMatches.length > 0) {
       const skipWarning =
         typeof window !== "undefined" &&
@@ -1425,6 +1449,7 @@ export function SessionManagerClient({
       }
     }
     setShowInProgressModal(false);
+    setScoreDrafts({});
     await executeEndSession();
   };
 
@@ -1672,7 +1697,7 @@ export function SessionManagerClient({
     }));
   };
 
-  const isCompletedSession = session.status === "completed";
+  const isCompletedSession = currentSession.status === "completed";
   const allSessionRounds = localStartedRounds;
   const totalSessionMatches = allSessionRounds.reduce((acc, r) => acc + r.matches.length, 0);
 
@@ -1855,9 +1880,8 @@ export function SessionManagerClient({
               <button
                 type="button"
                 onClick={handleEndSession}
-                disabled={isPending || hasUnsavedScores}
+                disabled={isPending}
                 aria-label="End Session"
-                aria-describedby={hasUnsavedScores ? "unsaved-score-warning" : undefined}
                 data-testid="end-session-button"
                 className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
@@ -1994,6 +2018,10 @@ export function SessionManagerClient({
       {/* Main Mode: Completed Session Full View OR Active Round Flow */}
       {isCompletedSession ? (
         <div className="space-y-6" data-testid="completed-session-full-view">
+          <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 text-sm font-bold">
+            <span>Session complete</span>
+            <SessionSignOff play={justEndedSession} />
+          </div>
           {/* Completed Session Overview Card */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
             <div className="flex items-start justify-between gap-3">
@@ -2269,20 +2297,24 @@ export function SessionManagerClient({
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team1}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
                                   placeholder="T1"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <span className="font-black text-black">–</span>
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team2}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
                                   placeholder="T2"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <Button
                                   type="button"
@@ -2346,88 +2378,96 @@ export function SessionManagerClient({
       ) : (
         <>
           {/* Main Mode: Round In Progress (Score Entry) OR Proposed Round */}
-          {isRoundInProgress ? (
-            <ResultsEntryView
-              pickledMatchId={pickledMatchId}
-              roundId={latestStarted.round.id}
-              roundNumber={latestStarted.round.roundNumber}
-              courtCount={currentSession.courtCount}
-              sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
-              sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
-              viewerPlayerId={currentViewerPlayerId}
-              matches={scoreEntries}
-              fieldErrors={fieldErrors}
-              isPending={isPending}
-              savingMatchIds={savingMatchIds}
-              onSubmitResult={canManage ? handleSaveResult : undefined}
-              onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
-              onNextRound={canManage ? handleNextRound : undefined}
-              onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
-              isGeneratingRound={isGeneratingRound}
-              canManage={canManage}
-              scoreDrafts={scoreDrafts}
-              onScoreChange={handleScoreChange}
-              hasUnsavedScores={hasUnsavedScores}
-              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
-              onSaveAllScores={canManage ? handleSaveAllScores : undefined}
-              onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
-              upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
-              playerNames={playerNames}
-              confirmMatchups={confirmMatchups}
-            />
-          ) : activeProposal ? (
-            <CurrentRoundView
-              draftKey={lineupDraftKey(session.id)}
-              draftContext={`${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`}
-              round={{
-                id: `proposal_${activeProposal.seed}`,
-                roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
-                status: "proposed",
-                seed: activeProposal.seed,
-              }}
-              courts={activeProposal.courts.map((c) => ({
-                courtNumber: c.courtNumber,
-                team1: c.team1,
-                team2: c.team2,
-              }))}
-              sittingPlayerIds={activeProposal.sitting}
-              playerNames={playerNames}
-              playerAccounts={playerAccounts}
-              isPending={isPending}
-              currentViewerPlayerId={currentViewerPlayerId}
-              pairSynergies={pairSynergies}
-              isOrganizer={isOrganizer}
-              isGeneratingRound={isGeneratingRound}
-              canRegenerate={Boolean(canManage)}
-              onRegenerate={canManage ? () => handleRegenerate() : undefined}
-              onStartRound={canManage ? handleStartRound : undefined}
-              canManage={canManage}
-              matchmakingVariety={matchmakingVariety}
-              onChangeMatchmakingVariety={handleChangeVariety}
-              onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
-              confirmMatchups={confirmMatchups}
-            />
-          ) : (
-            <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
-              <p className="font-display text-xl font-black uppercase text-black">
-                {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
-              </p>
-              {canManage ? (
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
-                    {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
-                    + Add Game
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm font-bold text-neutral-600">
-                  The organizer has not started the next round yet.
+          {(() => {
+            const playCountRows =
+              currentSession.status === "active" && localStartedRounds.length > 0
+                ? buildPlayCounts(localStartedRounds, currentAttendance)
+                : undefined;
+            return isRoundInProgress ? (
+              <ResultsEntryView
+                pickledMatchId={pickledMatchId}
+                roundId={latestStarted.round.id}
+                roundNumber={latestStarted.round.roundNumber}
+                courtCount={currentSession.courtCount}
+                sittingNames={latestStarted?.sits.map((s) => playerNames[s.playerId] ?? s.playerId) ?? []}
+                sittingPlayerIds={latestStarted?.sits.map((s) => s.playerId) ?? []}
+                viewerPlayerId={currentViewerPlayerId}
+                matches={scoreEntries}
+                fieldErrors={fieldErrors}
+                isPending={isPending}
+                savingMatchIds={savingMatchIds}
+                onSubmitResult={canManage ? handleSaveResult : undefined}
+                onCancelMatch={canManage ? (matchId) => setMatchPendingCancel(scoreEntries.find((m) => m.id === matchId) ?? null) : undefined}
+                onNextRound={canManage ? handleNextRound : undefined}
+                onReshuffleRound={canManage ? handleReshuffleInProgressRound : undefined}
+                isGeneratingRound={isGeneratingRound}
+                canManage={canManage}
+                scoreDrafts={scoreDrafts}
+                onScoreChange={handleScoreChange}
+                hasUnsavedScores={hasUnsavedScores}
+                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                onSaveAllScores={canManage ? handleSaveAllScores : undefined}
+                onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
+                upcomingProposal={canManage && isHydrated ? preGeneratedProposal : null}
+                playerNames={playerNames}
+                confirmMatchups={confirmMatchups}
+                playCountRows={playCountRows}
+              />
+            ) : activeProposal ? (
+              <CurrentRoundView
+                draftKey={lineupDraftKey(session.id)}
+                draftContext={`${currentSession.version}:${(latestStarted?.round.roundNumber ?? 0) + 1}:${JSON.stringify(canonicalPairs(currentSession.stayTogetherPairs ?? []))}`}
+                round={{
+                  id: `proposal_${activeProposal.seed}`,
+                  roundNumber: (latestStarted?.round.roundNumber ?? 0) + 1,
+                  status: "proposed",
+                  seed: activeProposal.seed,
+                }}
+                courts={activeProposal.courts.map((c) => ({
+                  courtNumber: c.courtNumber,
+                  team1: c.team1,
+                  team2: c.team2,
+                }))}
+                sittingPlayerIds={activeProposal.sitting}
+                playerNames={playerNames}
+                playerAccounts={playerAccounts}
+                isPending={isPending}
+                currentViewerPlayerId={currentViewerPlayerId}
+                pairSynergies={pairSynergies}
+                isOrganizer={isOrganizer}
+                isGeneratingRound={isGeneratingRound}
+                canRegenerate={Boolean(canManage)}
+                onRegenerate={canManage ? () => handleRegenerate() : undefined}
+                onStartRound={canManage ? handleStartRound : undefined}
+                canManage={canManage}
+                matchmakingVariety={matchmakingVariety}
+                onChangeMatchmakingVariety={handleChangeVariety}
+                onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
+                confirmMatchups={confirmMatchups}
+                playCountRows={playCountRows}
+              />
+            ) : (
+              <div className="text-center p-8 bg-white rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <p className="font-display text-xl font-black uppercase text-black">
+                  {canManage ? "Ready for the next round?" : "Waiting for Next Round"}
                 </p>
-              )}
-            </div>
-          )}
+                {canManage ? (
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                      {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
+                      + Add Game
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-neutral-600">
+                    The organizer has not started the next round yet.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* A player's own way to head home early without leaving the group */}
           {!canManage && viewerAttendance && currentSession.status === "active" && (
@@ -2457,15 +2497,6 @@ export function SessionManagerClient({
                 <p role="alert" className="w-full text-xs font-black text-black">{myAttendanceError}</p>
               )}
             </section>
-          )}
-
-          {/* Running fairness tally, collapsed by default */}
-          {currentSession.status === "active" && localStartedRounds.length > 0 && (
-            <PlayCountPanel
-              rows={buildPlayCounts(localStartedRounds, currentAttendance)}
-              playerNames={playerNames}
-              viewerPlayerId={currentViewerPlayerId}
-            />
           )}
 
           {/* Past Rounds Accordion / List */}
@@ -2524,20 +2555,24 @@ export function SessionManagerClient({
                               <div className="pt-2 border-t-2 border-neutral-100 flex flex-wrap items-center gap-2">
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team1}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team1: e.target.value }))}
                                   placeholder="T1"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <span className="font-black text-black">–</span>
                                 <input
                                   type="number"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   min={0}
                                   value={historicalScores.team2}
                                   onChange={(e) => setHistoricalScores((prev) => ({ ...prev, team2: e.target.value }))}
                                   placeholder="T2"
-                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center shadow-[1px_1px_0px_0px_#000]"
+                                  className="w-16 bg-white border-2 border-black rounded-lg px-2 py-1 text-black font-black text-center text-base shadow-[1px_1px_0px_0px_#000]"
                                 />
                                 <Button
                                   type="button"
@@ -2719,7 +2754,7 @@ export function SessionManagerClient({
                             placeholder="Guest player name"
                             value={guestName}
                             onChange={(e) => setGuestName(e.target.value)}
-                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-sm shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
+                            className="flex-1 min-w-0 bg-white border-2 border-black rounded-xl px-3.5 py-2 text-black font-bold placeholder-neutral-400 text-base shadow-[2px_2px_0px_0px_#000] focus:shadow-[4px_4px_0px_0px_#000] focus:outline-none transition-shadow"
                           />
                           <div className="flex items-center gap-2 shrink-0">
                             <CustomDropdown
@@ -2770,7 +2805,7 @@ export function SessionManagerClient({
                       placeholder="Search attendance by name..."
                       aria-label="Search attendance"
                       data-testid="session-attendance-search"
-                      className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+                      className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-base font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
                     />
                     {attendanceSearchQuery && (
                       <button

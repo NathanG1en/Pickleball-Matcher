@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import { clearLineupDraft, readLineupDraft, saveLineupDraft } from "@/lib/rounds/lineup-draft";
 import { RoundGenerationIndicator } from "@/components/rounds/round-generation-indicator";
+import { PlayCountPanel } from "@/components/sessions/play-count-panel";
+import type { PlayCountRow } from "@/lib/sessions/play-count";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -54,6 +56,7 @@ export interface CurrentRoundViewProps {
   readonly onChangeMatchmakingVariety?: (variety: number) => void;
   readonly onAddGame?: () => void;
   readonly confirmMatchups?: boolean;
+  readonly playCountRows?: readonly PlayCountRow[];
 }
 
 const subscribeToHydration = () => () => {};
@@ -61,7 +64,7 @@ const subscribeToHydration = () => () => {};
 export function CurrentRoundView(props: CurrentRoundViewProps) {
   const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   // Semantic inputs avoid discarding edits on a router refresh with new object references.
-  const identity = JSON.stringify([hydrated, props.draftKey, props.draftContext, props.round.id, props.courts, props.sittingPlayerIds]);
+  const identity = JSON.stringify([hydrated, props.draftKey, props.draftContext, props.round.id, props.courts, props.sittingPlayerIds, props.playCountRows]);
   return <CurrentRoundEditor {...props} key={identity} restoreDraft={hydrated} />;
 }
 
@@ -87,6 +90,7 @@ function CurrentRoundEditor({
   onChangeMatchmakingVariety,
   onAddGame,
   confirmMatchups = false,
+  playCountRows,
 }: CurrentRoundViewProps & { restoreDraft: boolean }) {
   const allowRegenerate = canRegenerate !== undefined ? canRegenerate : Boolean(onRegenerate);
   const [showVarietyInfo, setShowVarietyInfo] = useState(false);
@@ -962,6 +966,16 @@ function CurrentRoundEditor({
             </span>
           )}
         </div>
+
+        {playCountRows && playCountRows.length > 0 && (
+          <div className="mt-4 pt-3 border-t-2 border-neutral-200">
+            <PlayCountPanel
+              rows={playCountRows}
+              playerNames={playerNames}
+              viewerPlayerId={currentViewerPlayerId}
+            />
+          </div>
+        )}
       </section>
 
       {/* Friction Modal 1: Unlock Confirmation Dialog */}

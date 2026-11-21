@@ -624,6 +624,8 @@ export function TournamentBracketManager({
                             {isOrganizer && p1 && p2 && !isBye ? (
                               <input
                                 type="number"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 min="0"
                                 max="99"
                                 value={getMatchScore(m, 1)}
@@ -638,7 +640,7 @@ export function TournamentBracketManager({
                                 disabled={isPending}
                                 aria-label={p1 ? `${p1.name} score` : "Participant 1 score"}
                                 data-testid={`score1-input-${m.id}`}
-                                className="w-12 h-8 text-center font-display font-black text-sm bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
+                                className="w-12 h-8 text-center font-display font-black text-base bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
                               />
                             ) : (
                               m.score1 !== null && (
@@ -670,6 +672,8 @@ export function TournamentBracketManager({
                             {isOrganizer && p1 && p2 && !isBye ? (
                               <input
                                 type="number"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 min="0"
                                 max="99"
                                 value={getMatchScore(m, 2)}
@@ -684,7 +688,7 @@ export function TournamentBracketManager({
                                 disabled={isPending}
                                 aria-label={p2 ? `${p2.name} score` : "Participant 2 score"}
                                 data-testid={`score2-input-${m.id}`}
-                                className="w-12 h-8 text-center font-display font-black text-sm bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
+                                className="w-12 h-8 text-center font-display font-black text-base bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_0px_#000] focus:ring-2 focus:ring-black outline-none"
                               />
                             ) : (
                               m.score2 !== null && (

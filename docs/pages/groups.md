@@ -8,7 +8,7 @@ Shows public groups and lets players search them. Requires a signed-in player ac
 
 - **Header:** clean header with category eyebrow, page title ("Find a group"), and a responsive **+ Create Group** button (`/setup`) aligned horizontally for easy access across mobile and desktop.
 - **Search:** searches public groups by name. The query is in the URL (`?q=`), so a search can be shared and survives a reload. Private groups never appear here.
-- **Group cards:** each card shows the group name, a role badge (Host, Organizer, or Member) when the viewer belongs to the group, and the number of active players. Every card has a **View Group** link. The second button depends on the viewer:
+- **Group cards:** each card shows the group name, a role badge (Host, Organizer, or Member) when the viewer belongs to the group, and the number of active players. Long group names wrap naturally onto up to two lines (with a 2-line clamp and ellipsis for exceptionally long names) without dynamically shrinking the font size. The role badge sits alongside the title when space permits and wraps below when needed, with the active player count directly beneath. On mobile, the action buttons sit in a separate row beneath the group details, where **View Group** expands to fill available width while **Leave** or **Join** serves as a smaller secondary action. On larger screens, the side-by-side horizontal layout is preserved. Every card has a **View Group** link. The second button depends on the viewer:
   - **Join** for signed-in non-members. The card refreshes to show the Member badge after joining.
   - **Leave** for members who aren't the host. It asks for confirmation first.
 - **Empty states:**

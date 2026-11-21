@@ -669,6 +669,9 @@ export async function endOpenPlaySessionAction(
       if (!session || session.groupId !== parsed.data.groupId) {
         throw new Error("Session not found.");
       }
+      if (session.status === "completed") {
+        return session;
+      }
 
       const startedRounds = await transaction.listStartedRounds(session.id);
       for (const sr of startedRounds) {

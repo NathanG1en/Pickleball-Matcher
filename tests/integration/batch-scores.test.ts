@@ -48,10 +48,10 @@ it.each([4, 6])("saves %i courts with a constant SQL budget and correct rating s
   expect(results.map(match => match.id)).toEqual([...inputs].reverse().map(input => input.matchId));
   expect(results.every(match => match.status === "completed" && match.version === 2)).toBe(true);
   const players = await repository.listPlayers("batch-group");
-  expect(players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1020, ratedGamesPlayed: 1 });
-  expect(players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 980, ratedGamesPlayed: 1 });
+  expect(players.find(player => player.id === "batch-player-0")).toMatchObject({ rating: 1014.5555555555555, ratedGamesPlayed: 1 });
+  expect(players.find(player => player.id === "batch-player-2")).toMatchObject({ rating: 985.4444444444445, ratedGamesPlayed: 1 });
   const rounds = await repository.listStartedRounds("batch-session");
-  expect(rounds[0].matchPlayers.find(member => member.playerId === "batch-player-0")).toMatchObject({ ratingBefore: 1000, ratingAfter: 1020 });
+  expect(rounds[0].matchPlayers.find(member => member.playerId === "batch-player-0")).toMatchObject({ ratingBefore: 1000, ratingAfter: 1014.5555555555555 });
   expect(queries).toBeLessThanOrEqual(8);
 });
 

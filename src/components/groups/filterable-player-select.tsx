@@ -205,7 +205,7 @@ export function FilterablePlayerSelect({
               }}
               aria-label={`Filter ${ariaLabel} options`}
               data-testid="filterable-select-search"
-              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-black text-xs font-semibold focus:outline-none bg-neutral-50"
+              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-black text-base font-semibold focus:outline-none bg-neutral-50"
             />
             {searchQuery && (
               <button

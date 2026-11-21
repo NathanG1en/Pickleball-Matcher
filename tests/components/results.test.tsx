@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ResultsEntryView, cancelMatchWarning, getViewerRoundState, saveAndStartBlocker, type MatchScoreEntry } from "@/components/results/results-entry";
+import {
+  ResultsEntryView,
+  calculateWinnerSelection,
+  cancelMatchWarning,
+  getMatchWinnerState,
+  getViewerRoundState,
+  saveAndStartBlocker,
+  type MatchScoreEntry,
+} from "@/components/results/results-entry";
 
 const sampleMatches = [
   {
@@ -120,6 +128,28 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Sitting Out:");
     expect(html).toContain("George, Hannah");
     expect(html).not.toContain("+ Add Pickup Game");
+  });
+
+  it("renders expandable games played and rounds sat out tally within sitting section when playCountRows is provided", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        sittingNames={["George", "Hannah"]}
+        canManage={true}
+        playCountRows={[
+          { playerId: "p1", played: 1, sat: 0 },
+          { playerId: "p2", played: 0, sat: 1 },
+        ]}
+      />
+    );
+
+    expect(html).toContain("Sitting Out:");
+    expect(html).toContain("George, Hannah");
+    expect(html).toContain('data-testid="play-count"');
+    expect(html).toContain("Games played · rounds sat out");
   });
 
   it("renders Pickup Game badge when courtNumber exceeds courtCount", () => {
@@ -338,6 +368,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Evan");
     expect(html).toContain("Save &amp; Start R2");
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).not.toContain("Save &amp; Start uses this exact lineup");
   });
 
   it("renders only Save All and Save & Start Next Round action buttons without a separate Next Round button", () => {
@@ -646,5 +677,112 @@ describe("ResultsEntryView Component", () => {
     expect(saveAndStartBlocker(entries.slice(0, 2), scores, false)).toBe("Court 2 needs a score. Enter it, or cancel that game, to start the next round.");
     expect(saveAndStartBlocker([entries[0]!], scores, false)).toBeNull();
     expect(saveAndStartBlocker(entries, scores, true)).toBe("Fix the score errors above to continue.");
+  });
+
+  describe("winner selection and autopopulation", () => {
+    it("autopopulates 11 for Team 1 and preserves opponent score below 11", () => {
+      const result = calculateWinnerSelection(1, { team1: "", team2: "7" });
+      expect(result).toEqual({ team1: "11", team2: "7" });
+    });
+
+    it("autopopulates 11 for Team 1 and clears opponent score if opponent was 11 or higher", () => {
+      const result = calculateWinnerSelection(1, { team1: "", team2: "11" });
+      expect(result).toEqual({ team1: "11", team2: "" });
+
+      const resultOvertime = calculateWinnerSelection(1, { team1: "10", team2: "12" });
+      expect(resultOvertime).toEqual({ team1: "11", team2: "" });
+    });
+
+    it("autopopulates 11 for Team 2 and preserves opponent score below 11", () => {
+      const result = calculateWinnerSelection(2, { team1: "8", team2: "" });
+      expect(result).toEqual({ team1: "8", team2: "11" });
+    });
+
+    it("autopopulates 11 for Team 2 and clears opponent score if opponent was 11 or higher", () => {
+      const result = calculateWinnerSelection(2, { team1: "11", team2: "" });
+      expect(result).toEqual({ team1: "", team2: "11" });
+
+      const resultOvertime = calculateWinnerSelection(2, { team1: "13", team2: "11" });
+      expect(resultOvertime).toEqual({ team1: "", team2: "11" });
+    });
+
+    it("accurately detects winning team state", () => {
+      expect(getMatchWinnerState({ team1: "11", team2: "" })).toEqual({ isT1Winner: true, isT2Winner: false });
+      expect(getMatchWinnerState({ team1: "", team2: "11" })).toEqual({ isT1Winner: false, isT2Winner: true });
+      expect(getMatchWinnerState({ team1: "11", team2: "9" })).toEqual({ isT1Winner: true, isT2Winner: false });
+      expect(getMatchWinnerState({ team1: "8", team2: "11" })).toEqual({ isT1Winner: false, isT2Winner: true });
+      expect(getMatchWinnerState({ team1: "11", team2: "11" })).toEqual({ isT1Winner: false, isT2Winner: false });
+      expect(getMatchWinnerState({ team1: "", team2: "" })).toEqual({ isT1Winner: false, isT2Winner: false });
+      expect(getMatchWinnerState({ team1: "9", team2: "" })).toEqual({ isT1Winner: false, isT2Winner: false });
+    });
+
+    it("renders Winner selection buttons for managers with crown icons and prominent styling", () => {
+      const pendingMatch = [
+        {
+          id: "m_live",
+          courtNumber: 1,
+          team1Names: ["Alice", "Bob"] as [string, string],
+          team2Names: ["Charlie", "Diana"] as [string, string],
+          team1Score: null,
+          team2Score: null,
+          status: "pending" as const,
+          version: 1,
+        },
+      ];
+
+      const html = renderToStaticMarkup(
+        <ResultsEntryView
+          roundId="r1"
+          roundNumber={1}
+          matches={pendingMatch}
+          fieldErrors={{}}
+          canManage={true}
+        />
+      );
+
+      expect(html).toContain('data-testid="court-1-team-1-winner-button"');
+      expect(html).toContain('data-testid="court-1-team-2-winner-button"');
+      expect(html).toContain('aria-label="Select Court 1 Team 1 as Winner"');
+      expect(html).toContain('aria-label="Select Court 1 Team 2 as Winner"');
+      expect(html).toContain("Select Winner");
+      expect(html).toContain("bg-[#fde047]");
+    });
+
+    it("renders Winner button active for winning team and Select Winner for trailing team", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView
+          roundId="r1"
+          roundNumber={1}
+          matches={sampleMatches}
+          fieldErrors={{}}
+          canManage={true}
+        />
+      );
+
+      // Court 1 has m1 with scores 11-9 (Team 1 won)
+      expect(html).toContain('data-testid="court-1-team-1-winner-button"');
+      expect(html).toContain('data-testid="court-1-team-2-winner-button"');
+      expect(html).toContain("bg-black text-[#ccff00]");
+      expect(html).toContain("Winner");
+
+      // Court 2 has m2 which is cancelled, so it does not render winner buttons
+      expect(html).not.toContain('data-testid="court-2-team-1-winner-button"');
+      expect(html).not.toContain('data-testid="court-2-team-2-winner-button"');
+    });
+
+    it("does not render Winner selection buttons when canManage is false", () => {
+      const html = renderToStaticMarkup(
+        <ResultsEntryView
+          roundId="r1"
+          roundNumber={1}
+          matches={sampleMatches}
+          fieldErrors={{}}
+          canManage={false}
+        />
+      );
+
+      expect(html).not.toContain('data-testid="court-1-team-1-winner-button"');
+      expect(html).not.toContain('data-testid="court-1-team-2-winner-button"');
+    });
   });
 });

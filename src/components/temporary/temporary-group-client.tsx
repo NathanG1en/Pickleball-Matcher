@@ -7,7 +7,7 @@ import { BackButton } from "@/components/groups/back-button";
 import { InfoIcon, ShuffleIcon } from "@/components/ui/icons";
 import { CustomDropdown, useTooltipPosition } from "@/components/ui";
 import { saveTemporaryGroupAction } from "@/app/actions/temporary";
-import { generateRound } from "@/lib/matchmaking/generate-round";
+import { candidateKey, generateRound } from "@/lib/matchmaking/generate-round";
 import type { GeneratedRound } from "@/lib/matchmaking/types";
 import type { TemporaryGroupState, TemporaryRound } from "@/lib/temporary/types";
 
@@ -177,15 +177,38 @@ export function TemporaryGroupClient({
   const generateProposal = (roundNumber: number) => {
     if (!state) return null;
     const games = new Map<string, number>();
-    for (const round of state.rounds) for (const court of round.courts) {
-      for (const id of [...court.team1, ...court.team2]) games.set(id, (games.get(id) ?? 0) + 1);
+    const timesPlayedSingles = new Map<string, number>();
+    const timesPlayed2v1 = new Map<string, number>();
+    for (const round of state.rounds) {
+      for (const court of round.courts) {
+        const isSingles = court.team1.length === 1 && court.team2.length === 1;
+        const is2v1 = court.team1.length + court.team2.length === 3;
+        const courtPlayers = [...court.team1, ...court.team2];
+        if (isSingles) {
+          for (const id of courtPlayers) timesPlayedSingles.set(id, (timesPlayedSingles.get(id) ?? 0) + 1);
+        } else if (is2v1) {
+          for (const id of courtPlayers) timesPlayed2v1.set(id, (timesPlayed2v1.get(id) ?? 0) + 1);
+        } else {
+          for (const id of courtPlayers) games.set(id, (games.get(id) ?? 0) + 1);
+        }
+      }
     }
-    const lastSitting = new Set(state.rounds.at(-1)?.sitting ?? []);
+    const lastRound = state.rounds.at(-1);
+    const lastEffectiveSitting = new Set(lastRound?.sitting ?? []);
+    if (lastRound) {
+      for (const court of lastRound.courts) {
+        if (court.team1.length + court.team2.length < 4) {
+          for (const id of [...court.team1, ...court.team2]) lastEffectiveSitting.add(id);
+        }
+      }
+    }
     const players = state.players.map((player) => ({
       ...player,
       gamesPlayed: games.get(player.id) ?? 0,
       eligibleRounds: state.rounds.length,
-      satPreviousRound: lastSitting.has(player.id),
+      satPreviousRound: lastEffectiveSitting.has(player.id),
+      timesPlayedSingles: timesPlayedSingles.get(player.id) ?? 0,
+      timesPlayed2v1: timesPlayed2v1.get(player.id) ?? 0,
     }));
     const seed = Math.floor(Math.random() * 0xffff_ffff);
     const result = generateRound({
@@ -224,7 +247,21 @@ export function TemporaryGroupClient({
     ) {
       return;
     }
-    const proposal = generateProposal(state.currentRound.roundNumber);
+    const currentKey = candidateKey(state.currentRound);
+    let proposal = generateProposal(state.currentRound.roundNumber);
+    if (proposal && candidateKey(proposal) === currentKey) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const retry = generateProposal(state.currentRound.roundNumber);
+        if (retry && candidateKey(retry) !== currentKey) {
+          proposal = retry;
+          break;
+        }
+      }
+    }
+    if (proposal && candidateKey(proposal) === currentKey) {
+      setSaveError("No alternative lineup was found. The current lineup remains the fairest available matchup.");
+      return;
+    }
     if (proposal) {
       setAndPersist({ ...state, currentRound: proposal });
     }
@@ -624,6 +661,8 @@ export function TemporaryGroupClient({
                           <input
                             aria-label={`Court ${court.courtNumber} team 1 score`}
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             step="1"
                             value={court.team1Score ?? ""}
@@ -642,6 +681,8 @@ export function TemporaryGroupClient({
                           <input
                             aria-label={`Court ${court.courtNumber} team 2 score`}
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             min="0"
                             step="1"
                             value={court.team2Score ?? ""}

@@ -27,13 +27,13 @@ function currentGroupAverage(players: readonly MatchmakingPlayer[]): number {
 export function scoreSittingChoice(
   input: SittingChoiceInput,
 ): Pick<ScoreBreakdown, "playingTime" | "consecutiveSit"> {
-  const sitting = new Set(input.sitting);
+  const effectiveSitting = new Set(input.effectiveSitting ?? input.sitting);
   const groupAverage = currentGroupAverage(input.players);
   const projectedLoads = input.players.map((player) =>
     participationLoad(
       {
         ...player,
-        gamesPlayed: player.gamesPlayed + (sitting.has(player.id) ? 0 : 1),
+        gamesPlayed: player.gamesPlayed + (effectiveSitting.has(player.id) ? 0 : 1),
         eligibleRounds: player.eligibleRounds + 1,
       },
       groupAverage,
@@ -44,12 +44,12 @@ export function scoreSittingChoice(
       ? 0
       : Math.max(...projectedLoads) - Math.min(...projectedLoads);
   const consecutiveSitCount = input.players.filter(
-    (player) => sitting.has(player.id) && player.satPreviousRound,
+    (player) => effectiveSitting.has(player.id) && player.satPreviousRound,
   ).length;
 
   return {
     playingTime: spread,
-    consecutiveSit: input.sitting.length === 0 ? 0 : consecutiveSitCount / input.sitting.length,
+    consecutiveSit: effectiveSitting.size === 0 ? 0 : consecutiveSitCount / effectiveSitting.size,
   };
 }
 
