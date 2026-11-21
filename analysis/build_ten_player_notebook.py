@@ -161,12 +161,12 @@ plt.show()
 # Cell 5: Markdown Section 2
 cells.append(nbf.v4.new_markdown_cell("""### Analysis of Macro Trends
 
-1. **Centered MAE Drops from $83.2 \\to 37.7$**:
-   The app successfully halved its relative estimation error within 15 sessions. It quickly adapted from crude UI presets ($900/1000/1100$) toward true individual skill levels.
+1. **Centered MAE Drops from $83.2 \\to 33.6$ (Lowest: $27.5$)**:
+   The app halved its relative estimation error within 10 sessions and reached a record low of $27.5$ Elo points at Session 15 ($\\\\sim 0.07$ on the decimal scale). It quickly adapted from crude UI presets ($900/1000/1100$) toward true individual skill levels.
 2. **The Zero-Sum Anchor Phenomenon**:
-   While true skill rose from $1030 \\to 1089$ ($+59$ points), the app mean remained anchored at $999.3$. Because the league is a closed 10-player pool, the rating system cannot generate net points out of nowhere. This explains why **Raw MAE** appears to climb after session 8 while **Centered MAE** stays low.
-3. **The Rank Correlation Peak at Session 10 ($\\rho = 0.952$)**:
-   By Session 10, the ranking was nearly 100% perfect. However, after Session 10, the correlation slipped to $0.564$. Why? Let's inspect the individual player trajectories to find out!
+   While true skill rose from $1026 \\to 1089$ ($+63$ points), the app mean remained anchored at $1000.2$. Because the league is a closed 10-player pool, the rating system cannot generate net points out of nowhere. This explains why **Raw MAE** appears to climb after session 8 while **Centered MAE** stays low.
+3. **Rank Correlation Recovery ($\rho = 0.879$, Peaking at $0.964$)**:
+   In the previous baseline iteration without carrier shielding, correlation dropped to $0.564$ after Session 10 because Victor collapsed and Marcus was trapped. Under the active engine with weak-link weighting and carrier loss shielding, correlation rebounds strongly to $\\rho = 0.879$ (peaking at $0.964$ in Session 18).
 """))
 
 # Cell 6: Markdown Section 3
@@ -208,10 +208,13 @@ plt.show()
 # Cell 8: Markdown Section 4
 cells.append(nbf.v4.new_markdown_cell("""### Deep-Dive: What Succeeded and What Failed?
 
-#### Where the System Performed Well:
+#### Part 1: Previous Iteration Baseline (Linear Partner Splits & Unshielded High-Tier Losses)
+*(Preserved for historical baseline comparison before carrier shielding and weak-link dynamics)*
+
+##### Where the Old System Performed Well:
 1. **Samira (The Elite Player)**:
    - Ranked #1 in the app every single week without exception.
-   - Proves the system reliably identifies the top talent in the pool.
+   - Proved the system reliably identifies the top talent in the pool.
 2. **Fast Improvers (Maya & Liam)**:
    - Maya climbed from $900 \\to 970$.
    - Liam climbed from $900 \\to 969$.
@@ -221,19 +224,44 @@ cells.append(nbf.v4.new_markdown_cell("""### Deep-Dive: What Succeeded and What 
    - Chloe quickly stabilized around $976$ (True: $1008$).
    - High stability, low erratic jitter.
 
-#### Where the System Stumbled (The Root of the Correlation Drop):
+##### Where the Old System Stumbled (The Root of the Old Correlation Drop):
 1. **Marcus (The Late Bloomer)**:
    - Marcus stayed at $\\sim 920$ for 8 sessions, then experienced a sudden breakthrough at session 10 climbing to $1080$ true skill (True Rank #4).
-   - But in the app, Marcus finished at **$963.5$ (App Rank #9)**!
-   - **Why? The K-Factor Decay Trap**: By Session 10, Marcus had played $\\sim 40$ games. His K-factor had decayed exponentially from $40$ down to $16$. When his real skill surged, the rating engine had become too rigid to track his rapid improvement!
+   - But in the old app, Marcus finished at **$963.5$ (App Rank #9)**!
+   - **Why? The K-Factor Decay Trap**: By Session 10, Marcus had played $\\sim 40$ games. His K-factor had decayed exponentially from $40$ down to $16$. When his real skill surged, the rating engine had become too rigid to track his rapid improvement under linear partner splits.
 2. **Victor (The Declining Veteran)**:
    - Victor's true skill regressed from $1220$ down to $1152$.
-   - But his App Elo plummeted all the way to **$982.6$ ($-237$ points drop)**!
-   - Because of decayed K and carrying weaker partners, his losses overwhelmed him.
-3. **The Compression of High-Rated Players (Samira)**:
-   - Samira's true skill is $1395$ ($4.49$ decimal rating).
+   - But his App Elo plummeted all the way to **$982.6$ ($-237$ points drop, App Rank #8)**!
+   - Because of decayed K and carrying weaker partners with no loss shielding, his losses overwhelmed him.
+3. **High-Tier Compression (Samira)**:
+   - Samira's true skill was $1395$ ($4.49$ decimal rating).
    - Her app Elo finished at **$1242.6$ ($4.10$ decimal rating)**, a **$152$-point downward compression**.
-   - As proven in our earlier mathematical analysis, carrying lower-rated partners while facing the $4.5+$ tier penalty and deadband filter systematically strips points from the top of the pool.
+   - After Session 10, rank correlation slipped from $\\rho = 0.952$ down to $0.564$.
+
+---
+
+#### Part 2: Current Iteration (With Weak-Link Weighting & Carrier Loss Shielding)
+*(Active model: Non-linear doubles team rating + carrier loss dampening)*
+
+##### Key Breakthroughs in the Current Engine:
+1. **Victor's Collapse is Solved (True Rank #2 $\\to$ App Rank #2)**:
+   - In the previous iteration, Victor crashed from $1220 \\to 982.6$ (App Rank #8).
+   - In the current iteration, Victor finishes at **$1026.0$ (App Rank #2)**, preserving his position as the #2 player in the league right behind Samira!
+   - **Why?**: Carrier loss shielding prevents high-rated anchors from losing disproportionate points when teamed up with weaker players facing targeted attacks.
+2. **Marcus Breaks Through the Rigid Ceiling (True Rank #4 $\\to$ App Rank #3)**:
+   - In the previous iteration, Marcus was stranded at $963.5$ (App Rank #9) despite reaching $1080$ true skill.
+   - In the current iteration, Marcus climbs to **$1017.1$ (App Rank #3)**, leapfrogging the beginner/intermediate plateau!
+   - The non-linear team rating correctly credits his team wins without over-penalizing him when partnered with lower seeds.
+3. **Top 4 True Skill Perfectly Mirrored in Discovered Rank**:
+   - **#1 True: Samira (1395.0)** $\\to$ **#1 App: Samira (1224.4)**
+   - **#2 True: Victor (1152.0)** $\\to$ **#2 App: Victor (1026.0)**
+   - **#3 True: Nadia (1115.0)** $\\to$ **#4 App: Nadia (1005.2)**
+   - **#4 True: Marcus (1080.0)** $\\to$ **#3 App: Marcus (1017.1)**
+   - The top 4 players in latent ability are identically the top 4 players in app rating.
+4. **Macro Metrics Greatly Improved**:
+   - **Spearman Rank Correlation**: Finished at **$\\rho = 0.879$** (peaked at **$0.964$** in Session 18), compared to $0.564$ in the previous iteration.
+   - **Centered MAE**: Halved to **$33.6$ Elo points** (reaching a minimum of **$27.5$** at Session 15), meaning relative player skill is estimated within less than $\\sim 0.08$ on the decimal scale.
+   - **Remaining Gap**: Closed-pool deflation still pulls app ratings down relative to true latent skill by $\\sim 80\\text{--}90$ points across the board because the collective pool is improving ($1026 \\to 1089$ true mean) while total rating points are strictly zero-sum ($1000.2$ app mean).
 """))
 
 # Cell 9: Markdown Section 5
@@ -291,20 +319,20 @@ cells.append(nbf.v4.new_markdown_cell("""## 4. Key Takeaways & Recommendations f
 ### What This Experiment Proves:
 1. **The Experiment is Valid and Highly Informative**:
    Tracking 10 players with defined growth functions across real app sessions successfully diagnosed both the strengths and weaknesses of the rating engine.
-2. **Relative Tracking is Strong (Centered MAE = 38 Elo points)**:
-   The system quickly separates beginners from advanced players and tracks general skill tiers within $\\sim 0.10$ on the decimal scale.
-3. **Closed-Pool Deflation is Real**:
-   Because players improve over time but rating points are closed within the 10-player ecosystem, the app's overall rating pool cannot expand to reflect rising collective skill. This causes an apparent $-90$ Elo downward shift across the board.
-4. **The Late Bloomer Problem**:
-   Once a player's rated games reach $30+$, K-factor decay drops their responsiveness to $16$. When Marcus improved rapidly in session 10, the system took far too long to reflect his new level.
+2. **Relative Tracking is Strong (Centered MAE = 33.6 Elo points, minimum 27.5)**:
+   The system accurately maps general skill tiers within $\\sim 0.07\\text{--}0.08$ on the decimal scale.
+3. **Carrier Loss Shielding Works**:
+   In the previous baseline, Victor plummeted to #8 and rank correlation fell to $0.564$. With carrier shielding active, Victor held #2, Marcus surged to #3, and the top 4 players in true skill became identically the top 4 players in app rating ($\rho = 0.879$).
+4. **Closed-Pool Deflation is the Primary Remaining Divergence**:
+   Because players improve over time but rating points are closed within the 10-player ecosystem, the app's overall rating pool cannot expand to reflect rising collective skill ($1026 \\to 1089$). This causes an apparent $-89$ Elo downward shift across the board.
 5. **High-Tier Compression**:
-   The elite player (Samira) had her rating compressed downward by over $150$ Elo points ($-0.38$ decimal scale) due to partner-carrying asymmetry and tier deflation.
+   The elite player (Samira) had her rating compressed downward by over $170$ Elo points due to the zero-sum pool mean anchor ($1000$ app mean vs $1089$ true mean).
 
 ---
 
 ### Actionable Next Steps:
-- **Responsive K for Accelerating Form**: Introduce a performance-streak or surprise-streak factor so that a player who consistently outperforms expectations (like Marcus) temporarily gets a higher K-factor to catch up to their real skill.
-- **Dampen Partner Responsibility**: Equalize partner splits (50/50) in scrambled recreational play so elite players aren't dragged down when carrying weaker partners.
+- **Responsive K for Accelerating Form**: Introduce a surprise-streak or acceleration factor so that when a player makes a sudden leap (like Marcus at Session 10), their K-factor temporarily increases to accelerate discovery.
+- **Closed-Pool Mean Recalibration**: For long-running closed groups, consider a periodic calibration adjustment (or external anchor match) to prevent artificial rating deflation as the group improves.
 """))
 
 nb.cells = cells
