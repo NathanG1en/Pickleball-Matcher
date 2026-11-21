@@ -43,7 +43,7 @@ This experiment tests the app's matchmaking and rating system under realistic, d
      - **Late Bloomer**: Marcus (Struggles for 8 sessions, then surges $+160$ Elo at session 10)
      - **High-Consistency**: Nadia ($1090 \\to 1115$)
      - **Declining Veteran**: Victor (Nagging injury, regressing $1220 \\to 1152$)
-     - **Elite Club Champion**: Samira (True Elo $1380+$, $\\sim 4.45$ DUPR)
+     - **Elite Club Champion**: Samira (True Elo $1380+$, $\\sim 4.45$ decimal scale)
      - **Erratic Wildcard**: Jordan (Hot & cold sinusoidal streaks)
 2. **Real App Execution (`SessionService`)**:
    - The app runs its actual `generateRound()`, court assignment, sitting-out fairness, and `rateMatch()` logic.
@@ -177,7 +177,7 @@ Let's plot each player's True Elo (dashed green) against their App Discovered El
 
 # Cell 7: Code Plot 2
 cells.append(nbf.v4.new_code_cell("""players = df_players['player_name'].unique()
-fig, axes = plt.subplots(5, 2, figsize=(15, 18), dpi=150, sharex=True)
+fig, axes = plt.subplots(5, 2, figsize=(15, 18), dpi=150, sharex=True, sharey=True)
 axes = axes.flatten()
 
 for idx, p_name in enumerate(players):
@@ -191,12 +191,15 @@ for idx, p_name in enumerate(players):
     ax.plot(p_df['session_number'], p_df['app_elo'], color='#2563eb', lw=2.5, marker='o', markersize=4, label='App Elo')
     
     ax.set_title(f"{p_name} ({preset}): {persona}", fontsize=10, fontweight='bold')
-    ax.set_ylabel('Rating (Elo)', fontsize=9)
+    if idx % 2 == 0:
+        ax.set_ylabel('Rating (Elo)', fontsize=9)
     ax.grid(True, alpha=0.3)
     if idx >= 8:
         ax.set_xlabel('Session Number', fontsize=9, fontweight='bold')
     if idx == 0:
         ax.legend(frameon=True, loc='best')
+
+axes[0].set_ylim(775, 1450)
 
 plt.tight_layout()
 plt.show()
@@ -228,8 +231,8 @@ cells.append(nbf.v4.new_markdown_cell("""### Deep-Dive: What Succeeded and What 
    - But his App Elo plummeted all the way to **$982.6$ ($-237$ points drop)**!
    - Because of decayed K and carrying weaker partners, his losses overwhelmed him.
 3. **The Compression of High-Rated Players (Samira)**:
-   - Samira's true skill is $1395$ ($4.49$ DUPR).
-   - Her app Elo finished at **$1242.6$ ($4.10$ DUPR)**, a **$152$-point downward compression**.
+   - Samira's true skill is $1395$ ($4.49$ decimal rating).
+   - Her app Elo finished at **$1242.6$ ($4.10$ decimal rating)**, a **$152$-point downward compression**.
    - As proven in our earlier mathematical analysis, carrying lower-rated partners while facing the $4.5+$ tier penalty and deadband filter systematically strips points from the top of the pool.
 """))
 
@@ -241,14 +244,14 @@ Let's inspect the final standings at Session 20, comparing True Elo and Discover
 
 # Cell 10: Code Final Table
 cells.append(nbf.v4.new_code_cell("""df_s20 = df_players[df_players['session_number'] == 20].copy()
-df_s20['dupr_true'] = 3.500 + (df_s20['true_elo'] - 1000.0) / 400.0
-df_s20['dupr_app'] = 3.500 + (df_s20['app_elo'] - 1000.0) / 400.0
+df_s20['decimal_true'] = 3.500 + (df_s20['true_elo'] - 1000.0) / 400.0
+df_s20['decimal_app'] = 3.500 + (df_s20['app_elo'] - 1000.0) / 400.0
 df_s20['elo_diff'] = df_s20['app_elo'] - df_s20['true_elo']
 df_s20['rank_diff'] = df_s20['app_rank'] - df_s20['true_rank']
 
 table = df_s20[[
     'player_name', 'preset', 'persona', 'true_elo', 'app_elo', 'elo_diff',
-    'true_rank', 'app_rank', 'rank_diff', 'dupr_true', 'dupr_app', 'games_played_total'
+    'true_rank', 'app_rank', 'rank_diff', 'decimal_true', 'decimal_app', 'games_played_total'
 ]].sort_values('true_elo', ascending=False)
 
 table
@@ -289,13 +292,13 @@ cells.append(nbf.v4.new_markdown_cell("""## 4. Key Takeaways & Recommendations f
 1. **The Experiment is Valid and Highly Informative**:
    Tracking 10 players with defined growth functions across real app sessions successfully diagnosed both the strengths and weaknesses of the rating engine.
 2. **Relative Tracking is Strong (Centered MAE = 38 Elo points)**:
-   The system quickly separates beginners from advanced players and tracks general skill tiers within $\\sim 0.10$ DUPR points.
+   The system quickly separates beginners from advanced players and tracks general skill tiers within $\\sim 0.10$ on the decimal scale.
 3. **Closed-Pool Deflation is Real**:
    Because players improve over time but rating points are closed within the 10-player ecosystem, the app's overall rating pool cannot expand to reflect rising collective skill. This causes an apparent $-90$ Elo downward shift across the board.
 4. **The Late Bloomer Problem**:
    Once a player's rated games reach $30+$, K-factor decay drops their responsiveness to $16$. When Marcus improved rapidly in session 10, the system took far too long to reflect his new level.
 5. **High-Tier Compression**:
-   The elite player (Samira) had her rating compressed downward by over $150$ Elo points ($-0.38$ DUPR) due to partner-carrying asymmetry and tier deflation.
+   The elite player (Samira) had her rating compressed downward by over $150$ Elo points ($-0.38$ decimal scale) due to partner-carrying asymmetry and tier deflation.
 
 ---
 
