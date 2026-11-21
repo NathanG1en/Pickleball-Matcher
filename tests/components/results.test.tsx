@@ -368,6 +368,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Evan");
     expect(html).toContain("Save &amp; Start R2");
     expect(html).toContain('data-testid="save-and-start-next-round-button"');
+    expect(html).not.toContain("Save &amp; Start uses this exact lineup");
   });
 
   it("renders only Save All and Save & Start Next Round action buttons without a separate Next Round button", () => {

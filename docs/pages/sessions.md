@@ -72,7 +72,7 @@ Each court is a card (`court-match-N`) with both teams and a score input for eac
 - **Score drafts:** scores typed but not saved are kept for this browser tab. If the phone locks and the page reloads, they come back, but only for games still waiting for a result.
 - **Score inputs:** use numeric inputs (`type="number"` and `inputMode="numeric"`) with a minimum 16 px font size to prevent mobile browser auto-zooming on iPhone and bring up the number keypad directly on mobile devices. Organizers can still type or edit scores directly in the number inputs.
 - **Why Save & Start is disabled:** when it can't be used, a line above the bar names what's missing, for example "Court 2 needs a score. Enter it, or cancel that game, to start the next round."
-- **Up Next preview** (organizers, while a round is in play): a collapsible preview of the next round's courts and sitters. It notes that **Save & Start** uses this exact lineup and that it only changes when scores, attendance, or settings change. A reload shows the same preview.
+- **Up Next preview** (organizers, while a round is in play): a collapsible preview of the next round's courts and sitters. A reload shows the same preview.
 - **Bottom action bar** (organizers): save all, or start the next round. These actions are blocked while score changes are unsaved.
 
 ### Session settings: attendance (organizers)

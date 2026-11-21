@@ -358,9 +358,6 @@ export function ResultsEntryView({
               <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
-              <p className="text-xs font-bold text-neutral-700">
-                Save &amp; Start uses this exact lineup. It only changes when scores, attendance, or settings change.
-              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {upcomingProposal.courts.map((c) => (
                   <div key={c.courtNumber} className="p-2.5 rounded-xl bg-[#FFFDF7] border-2 border-black shadow-[1px_1px_0px_0px_#000] text-xs">
