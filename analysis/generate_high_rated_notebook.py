@@ -472,3 +472,4 @@ with open(NOTEBOOK_PATH, "w") as f:
     nbf.write(nb, f)
 
 print(f"Successfully generated {NOTEBOOK_PATH}")
+

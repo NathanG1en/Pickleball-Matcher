@@ -295,3 +295,4 @@ plt.close()
 print(f"Saved {plot2_path}")
 
 print("Simulation and plots complete!")
+
