@@ -16,7 +16,6 @@ import {
   sortPlayersWithPinned,
   usePinnedPlayerIds,
 } from "@/lib/storage/pinned-players";
-import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { useRouter } from "next/navigation";
 import {
   addOpenPlayGuestAction,
@@ -1222,7 +1221,6 @@ export function OpenPlayManagerClient({
     try {
       const res = await endOpenPlaySessionAction({ groupId, sessionId: currentSession.id });
       if (res.ok) {
-        markSessionEnded(groupId, currentSession.id);
         setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
         setPickledGameId(null);
         setJustEndedSession(true);

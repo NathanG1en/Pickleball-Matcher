@@ -51,7 +51,6 @@ import type {
   StartedRoundRecord,
 } from "@/lib/domain/types";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
-import { markSessionEnded } from "@/lib/animations/session-signoff";
 import { SessionNameEditor } from "@/components/sessions/session-name-editor";
 import { SessionOptionsMenu } from "@/components/sessions/session-options-menu";
 import { SessionHighlights } from "@/components/sessions/session-highlights";
@@ -1408,7 +1407,6 @@ export function SessionManagerClient({
         idempotencyKey: createIdempotencyKey("end"),
       });
       if (res.ok) {
-        markSessionEnded(groupId, currentSession.id);
         setCurrentSession((prev) => ({ ...prev, status: "completed", endedAt: new Date() }));
         setScoreDrafts({});
         setJustEndedSession(true);
@@ -2023,7 +2021,7 @@ export function SessionManagerClient({
         <div className="space-y-6" data-testid="completed-session-full-view">
           <div role={justEndedSession ? "status" : undefined} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 text-sm font-bold">
             <span>Session complete</span>
-            <SessionSignOff play={justEndedSession} groupId={groupId} sessionId={currentSession.id} />
+            <SessionSignOff play={justEndedSession} />
           </div>
           {/* Completed Session Overview Card */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">

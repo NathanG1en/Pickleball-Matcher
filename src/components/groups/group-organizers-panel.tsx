@@ -547,7 +547,7 @@ export function GroupOrganizersPanel({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 w-full">
       {toast && (
         <Toast
           role="status"
@@ -564,7 +564,7 @@ export function GroupOrganizersPanel({
       {(isHost || isOrganizer) && (
         <section
           aria-label="Add player or guest"
-          className="space-y-3 rounded-2xl border-2 border-black bg-[#FFFDF7] p-4"
+          className="space-y-3 rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 min-w-0"
         >
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -681,13 +681,13 @@ export function GroupOrganizersPanel({
                       No registered players found matching &ldquo;{username}&rdquo;.
                     </p>
                   ) : (
-                    <ul className="divide-y divide-neutral-100 max-h-56 overflow-y-auto">
+                    <ul className="divide-y divide-neutral-100 max-h-56 overflow-y-auto overflow-x-hidden">
                       {searchResults.map((result) => (
                         <li key={result.accountId} className="flex items-center justify-between gap-2 py-2 px-1">
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-sm font-black truncate">{result.name}</span>
-                              <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                              <span className="text-xs font-semibold text-neutral-500 truncate max-w-[140px] sm:max-w-none">
                                 (@{result.username})
                               </span>
                               {result.isRestricted && (
@@ -698,12 +698,12 @@ export function GroupOrganizersPanel({
                               )}
                             </div>
                             {!result.isRestricted && (
-                              <div className="flex items-center gap-2 text-[11px] font-bold text-neutral-600 mt-0.5">
+                              <div className="flex items-center gap-2 text-[11px] font-bold text-neutral-600 mt-0.5 flex-wrap">
                                 {result.rating !== undefined && (
                                   <span>Rating: {formatDupr(result.rating)}</span>
                                 )}
                                 {result.bestPartner && (
-                                  <span className="inline-flex items-center gap-1 text-amber-700">
+                                  <span className="inline-flex items-center gap-1 text-amber-700 truncate max-w-[200px] sm:max-w-none">
                                     <span>·</span>
                                     <HandshakeIcon className="h-3 w-3 shrink-0" />
                                     <span>Best: @{result.bestPartner.username} ({result.bestPartner.synergyScore > 0 ? `+${result.bestPartner.synergyScore}%` : `${result.bestPartner.synergyScore}%`})</span>
@@ -821,7 +821,7 @@ export function GroupOrganizersPanel({
       {/* Roster Directory Section */}
       <section
         aria-label="Group roster"
-        className="space-y-3 rounded-2xl border-2 border-black bg-[#fef08a] p-4"
+        className="space-y-3 rounded-2xl border-2 border-black bg-[#fef08a] p-4 min-w-0"
       >
         <div>
           <h2 className="font-display text-xl font-black uppercase">Roster ({players.length})</h2>

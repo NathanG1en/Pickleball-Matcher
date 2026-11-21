@@ -101,7 +101,7 @@ export function HomeScreenTip() {
   return (
     <aside
       aria-label="Add to home screen tip"
-      className="p-4 rounded-2xl bg-[#fef08a] border-[3px] border-black text-black space-y-2.5 relative"
+      className="p-4 rounded-2xl bg-[#fef08a] border-[3px] border-black text-black space-y-2.5 relative min-w-0 overflow-hidden"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black">

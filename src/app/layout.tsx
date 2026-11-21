@@ -51,7 +51,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="min-h-screen min-h-[100svh] flex flex-col">
         <ResponsiveNavigation playerAccount={playerAccount} />
         {/* Main layout container expands to fill available height */}
-        <div className={`flex-1 flex flex-col ${playerAccount ? "pb-20 md:pb-0" : ""}`}>
+        <div className={`flex-1 flex flex-col min-w-0 w-full max-w-full ${playerAccount ? "pb-20 md:pb-0" : ""}`}>
           {children}
         </div>
       </body>
