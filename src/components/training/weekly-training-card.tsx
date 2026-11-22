@@ -25,14 +25,14 @@ export function WeeklyTrainingCard({
     return (
       <section
         data-testid="weekly-training-card"
-        className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7 shadow-[4px_4px_0px_0px_#000]"
+        className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 lg:p-7 shadow-[4px_4px_0px_0px_#000]"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000]">
+            <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000] shrink-0">
               <TargetIcon className="w-4 h-4 text-black" />
             </span>
-            <h2 className="font-display text-xl font-black uppercase text-black">
+            <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black">
               Weekly Training
             </h2>
           </div>
@@ -55,7 +55,7 @@ export function WeeklyTrainingCard({
         <div>
           <Link
             href={isOrganizer ? `/g/${groupId}/training/plan/new` : "/training"}
-            className="inline-block text-center w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
           >
             {isOrganizer ? "Create Weekly Plan →" : "Browse Training Hub →"}
           </Link>
@@ -71,18 +71,18 @@ export function WeeklyTrainingCard({
   return (
     <section
       data-testid="weekly-training-card"
-      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7 shadow-[4px_4px_0px_0px_#000]"
+      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 sm:p-6 lg:p-7 shadow-[4px_4px_0px_0px_#000]"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000]">
+          <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000] shrink-0">
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
               Week {plan.weekNumber} Training
             </span>
-            <h2 className="font-display text-xl font-black uppercase text-black">
+            <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
               {plan.title}
             </h2>
           </div>
@@ -141,17 +141,17 @@ export function WeeklyTrainingCard({
         })}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={`/training?group=${groupId}`}
-          className="flex-1 py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-center text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-center text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center"
         >
           Practice Weekly Drills →
         </Link>
         {isOrganizer && (
           <Link
             href={`/g/${groupId}/training/plan/new`}
-            className="py-3 px-3 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]"
+            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center"
           >
             Edit
           </Link>

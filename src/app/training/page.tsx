@@ -57,14 +57,14 @@ export default async function TrainingHubPage({
     : challenges;
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-24 md:pb-12">
+    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000] shrink-0">
-            <TargetIcon className="w-6 h-6 text-black" />
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000] shrink-0">
+            <TargetIcon className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
           </span>
-          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black leading-tight">
             Training & Challenges
           </h1>
         </div>
@@ -72,7 +72,7 @@ export default async function TrainingHubPage({
         {selectedGroupId && (
           <Link
             href={`/g/${selectedGroupId}`}
-            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]"
+            className="self-start sm:self-auto inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
           >
             ← Back to Group
           </Link>
@@ -80,37 +80,37 @@ export default async function TrainingHubPage({
       </div>
 
       {/* Progress & Stats Cards */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block">Total Completed</span>
-          <span className="font-display text-2xl font-black text-black">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block truncate">Total Completed</span>
+          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
             {progressSummary.totalCompleted}
           </span>
         </div>
 
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block flex items-center gap-1">
-            <TrophyIcon className="w-3 h-3 text-amber-600" />
-            Personal Bests
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
+          <span className="text-[10px] font-black uppercase text-neutral-500 truncate flex items-center gap-1">
+            <TrophyIcon className="w-3 h-3 text-amber-600 shrink-0" />
+            <span className="truncate">Personal Bests</span>
           </span>
-          <span className="font-display text-2xl font-black text-black">
+          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
             {progressSummary.personalBestsCount}
           </span>
         </div>
 
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block flex items-center gap-1">
-            <ZapIcon className="w-3 h-3 text-lime-600" />
-            Practice Points
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
+          <span className="text-[10px] font-black uppercase text-neutral-500 truncate flex items-center gap-1">
+            <ZapIcon className="w-3 h-3 text-lime-600 shrink-0" />
+            <span className="truncate">Practice Points</span>
           </span>
-          <span className="font-display text-2xl font-black text-black">
+          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
             {progressSummary.totalImprovementPoints}
           </span>
         </div>
 
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block">Practice Days</span>
-          <span className="font-display text-2xl font-black text-black">
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block truncate">Practice Days</span>
+          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
             {progressSummary.currentStreakDays}
           </span>
         </div>
@@ -118,27 +118,27 @@ export default async function TrainingHubPage({
 
       {/* Group Weekly Plans Banner (if any) */}
       {activePlans.length > 0 && (
-        <section className="bg-lime-50/80 border-2 border-lime-600 rounded-2xl p-4 space-y-2">
+        <section className="bg-lime-50/80 border-2 border-lime-600 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
           <span className="font-display text-xs font-black uppercase text-lime-900 tracking-wider block">
             {"🎾 Your Groups' Weekly Plans"}
           </span>
-          <div className="grid sm:grid-cols-2 gap-2">
+          <div className="grid sm:grid-cols-2 gap-2.5">
             {activePlans.map((ap) => (
               <div
                 key={ap.plan.id}
-                className="bg-white p-3 rounded-xl border-2 border-black flex items-center justify-between"
+                className="bg-white p-3 rounded-xl border-2 border-black flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
               >
                 <div>
-                  <span className="font-display text-xs font-black text-neutral-500 uppercase block">
+                  <span className="font-display text-[10px] sm:text-xs font-black text-neutral-500 uppercase block">
                     {ap.groupName} · Week {ap.plan.weekNumber}
                   </span>
-                  <h4 className="font-display text-sm font-black uppercase text-black">
+                  <h4 className="font-display text-sm font-black uppercase text-black leading-tight">
                     {ap.plan.title}
                   </h4>
                 </div>
                 <Link
                   href={`/training?group=${ap.plan.groupId}`}
-                  className="px-2.5 py-1 rounded-lg bg-[#ccff00] text-black border border-black font-display text-xs font-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000]"
+                  className="w-full sm:w-auto text-center px-3 py-1.5 min-h-[36px] flex items-center justify-center rounded-lg bg-[#ccff00] text-black border border-black font-display text-xs font-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
                 >
                   View
                 </Link>
@@ -148,8 +148,8 @@ export default async function TrainingHubPage({
         </section>
       )}
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      {/* Category Filter Pills - edge-to-edge scrollable on mobile */}
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none touch-pan-x">
         {categories.map((cat) => {
           const isActive =
             (selectedCategory === undefined && cat.key === "all") ||
@@ -167,7 +167,7 @@ export default async function TrainingHubPage({
             <Link
               key={cat.key}
               href={href}
-              className={`px-3 py-1.5 rounded-xl font-display text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border-2 ${
+              className={`px-3.5 py-2 rounded-xl min-h-[40px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0 border-2 select-none active:translate-x-0.5 active:translate-y-0.5 ${
                 isActive
                   ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                   : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"

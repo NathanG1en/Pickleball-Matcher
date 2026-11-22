@@ -73,12 +73,12 @@ export function NewPlanForm({
       )}
 
       {/* Plan Details Card */}
-      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 shadow-[4px_4px_0px_0px_#000] space-y-4">
-        <h2 className="font-display text-lg font-black uppercase text-black">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-4 sm:p-5 shadow-[4px_4px_0px_0px_#000] space-y-4">
+        <h2 className="font-display text-base sm:text-lg font-black uppercase text-black">
           Plan Details
         </h2>
 
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label htmlFor="plan-title" className="block text-xs font-black uppercase text-neutral-700 mb-1">
               Plan Title
@@ -89,7 +89,7 @@ export function NewPlanForm({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full h-11 px-3 text-sm font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
+              className="w-full h-11 sm:h-12 px-3 text-base font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
             />
           </div>
 
@@ -105,7 +105,7 @@ export function NewPlanForm({
               required
               value={weekNumber}
               onChange={(e) => setWeekNumber(Number(e.target.value))}
-              className="w-full h-11 px-3 text-sm font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
+              className="w-full h-11 sm:h-12 px-3 text-base font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
             />
           </div>
         </div>
@@ -120,15 +120,15 @@ export function NewPlanForm({
             value={focusNotes}
             onChange={(e) => setFocusNotes(e.target.value)}
             placeholder="e.g. Focus on keeping paddle face flat and knees bent on drops."
-            className="w-full p-3 text-sm font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
+            className="w-full p-3 text-base font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
           />
         </div>
       </section>
 
       {/* Challenge Picker Card */}
-      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 shadow-[4px_4px_0px_0px_#000] space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-black uppercase text-black">
+      <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-4 sm:p-5 shadow-[4px_4px_0px_0px_#000] space-y-3 sm:space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <h2 className="font-display text-base sm:text-lg font-black uppercase text-black">
             Select Challenges ({selectedIds.length} Selected)
           </h2>
           <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
@@ -142,10 +142,10 @@ export function NewPlanForm({
                 key={challenge.id}
                 type="button"
                 onClick={() => toggleChallenge(challenge.id)}
-                className={`w-full p-3.5 rounded-2xl border-2 text-left flex items-start gap-3 transition-all cursor-pointer ${
+                className={`w-full p-3 sm:p-3.5 rounded-2xl border-2 text-left flex items-start gap-2.5 sm:gap-3 transition-all cursor-pointer touch-manipulation select-none ${
                   isSelected
                     ? "bg-[#ccff00]/20 border-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white border-black/30 hover:border-black"
+                    : "bg-white border-black/30 hover:border-black active:bg-neutral-50"
                 }`}
               >
                 <span
@@ -185,7 +185,7 @@ export function NewPlanForm({
         <button
           type="submit"
           disabled={isPending || selectedIds.length === 0}
-          className="w-full py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
         >
           {isPending ? "Publishing Plan..." : "Publish Weekly Plan →"}
         </button>

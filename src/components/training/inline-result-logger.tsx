@@ -93,12 +93,12 @@ export function InlineResultLogger({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#ccff00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-[#ccff00] active:bg-[#ccff00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
         >
           <span>+ Record Attempt</span>
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="p-3 bg-white/80 rounded-2xl border-2 border-black space-y-3">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5">
           <div className="flex items-center justify-between">
             <span className="font-display text-xs font-black uppercase text-neutral-800 tracking-wider">
               Record Attempt · {challenge.scoreUnit}
@@ -109,7 +109,7 @@ export function InlineResultLogger({
                 setIsOpen(false);
                 setFeedback(null);
               }}
-              className="text-xs font-bold text-neutral-500 hover:text-black cursor-pointer px-2 py-0.5"
+              className="text-xs font-bold text-neutral-600 hover:text-black cursor-pointer px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 transition-colors touch-manipulation select-none"
             >
               Close
             </button>
@@ -117,7 +117,7 @@ export function InlineResultLogger({
 
           {/* Stepper Inputs tailored to tracking format */}
           {challenge.trackingFormat === "accuracy" ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
                 <label htmlFor={`shots-in-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
                   Shots In
@@ -126,7 +126,7 @@ export function InlineResultLogger({
                   <button
                     type="button"
                     onClick={() => setScorePrimary((p) => Math.max(0, p - 1))}
-                    className="w-8 h-9 rounded-l-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-r-0 border-black flex items-center justify-center cursor-pointer"
+                    className="w-10 sm:w-11 h-11 rounded-l-xl bg-neutral-200 active:bg-neutral-300 font-black text-base border-2 border-r-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                   >
                     -
                   </button>
@@ -137,12 +137,12 @@ export function InlineResultLogger({
                     max={scoreSecondary}
                     value={scorePrimary}
                     onChange={(e) => setScorePrimary(Number(e.target.value))}
-                    className="w-full h-9 text-center font-bold text-base border-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
+                    className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
                   />
                   <button
                     type="button"
                     onClick={() => setScorePrimary((p) => Math.min(scoreSecondary, p + 1))}
-                    className="w-8 h-9 rounded-r-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-l-0 border-black flex items-center justify-center cursor-pointer"
+                    className="w-10 sm:w-11 h-11 rounded-r-xl bg-neutral-200 active:bg-neutral-300 font-black text-base border-2 border-l-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                   >
                     +
                   </button>
@@ -157,7 +157,7 @@ export function InlineResultLogger({
                   <button
                     type="button"
                     onClick={() => setScoreSecondary((s) => Math.max(1, s - 5))}
-                    className="w-8 h-9 rounded-l-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-r-0 border-black flex items-center justify-center cursor-pointer"
+                    className="w-10 sm:w-11 h-11 rounded-l-xl bg-neutral-200 active:bg-neutral-300 font-black text-base border-2 border-r-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                   >
                     -
                   </button>
@@ -167,12 +167,12 @@ export function InlineResultLogger({
                     min={1}
                     value={scoreSecondary}
                     onChange={(e) => setScoreSecondary(Number(e.target.value))}
-                    className="w-full h-9 text-center font-bold text-base border-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
+                    className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
                   />
                   <button
                     type="button"
                     onClick={() => setScoreSecondary((s) => s + 5)}
-                    className="w-8 h-9 rounded-r-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-l-0 border-black flex items-center justify-center cursor-pointer"
+                    className="w-10 sm:w-11 h-11 rounded-r-xl bg-neutral-200 active:bg-neutral-300 font-black text-base border-2 border-l-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                   >
                     +
                   </button>
@@ -188,7 +188,7 @@ export function InlineResultLogger({
                 <button
                   type="button"
                   onClick={() => setScorePrimary((p) => Math.max(1, p - 1))}
-                  className="w-10 h-9 rounded-l-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-r-0 border-black flex items-center justify-center cursor-pointer"
+                  className="w-12 sm:w-14 h-11 rounded-l-xl bg-neutral-200 active:bg-neutral-300 font-black text-lg border-2 border-r-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                 >
                   -
                 </button>
@@ -199,12 +199,12 @@ export function InlineResultLogger({
                   step={0.1}
                   value={scorePrimary}
                   onChange={(e) => setScorePrimary(Number(e.target.value))}
-                  className="w-full h-9 text-center font-bold text-base border-2 border-black focus:outline-none"
+                  className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setScorePrimary((p) => p + 1)}
-                  className="w-10 h-9 rounded-r-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-l-0 border-black flex items-center justify-center cursor-pointer"
+                  className="w-12 sm:w-14 h-11 rounded-r-xl bg-neutral-200 active:bg-neutral-300 font-black text-lg border-2 border-l-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                 >
                   +
                 </button>
@@ -223,7 +223,7 @@ export function InlineResultLogger({
                 <button
                   type="button"
                   onClick={() => setScorePrimary((p) => Math.max(0, p - (challenge.trackingFormat === "wins" ? 1 : 5)))}
-                  className="w-10 h-9 rounded-l-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-r-0 border-black flex items-center justify-center cursor-pointer"
+                  className="w-12 sm:w-14 h-11 rounded-l-xl bg-neutral-200 active:bg-neutral-300 font-black text-lg border-2 border-r-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                 >
                   -
                 </button>
@@ -233,12 +233,12 @@ export function InlineResultLogger({
                   min={0}
                   value={scorePrimary}
                   onChange={(e) => setScorePrimary(Number(e.target.value))}
-                  className="w-full h-9 text-center font-bold text-base border-2 border-black focus:outline-none"
+                  className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setScorePrimary((p) => p + (challenge.trackingFormat === "wins" ? 1 : 5))}
-                  className="w-10 h-9 rounded-r-lg bg-neutral-200 hover:bg-neutral-300 font-black text-sm border-2 border-l-0 border-black flex items-center justify-center cursor-pointer"
+                  className="w-12 sm:w-14 h-11 rounded-r-xl bg-neutral-200 active:bg-neutral-300 font-black text-lg border-2 border-l-0 border-black flex items-center justify-center cursor-pointer touch-manipulation select-none shrink-0"
                 >
                   +
                 </button>
@@ -248,7 +248,7 @@ export function InlineResultLogger({
 
           {/* Accuracy Live Preview */}
           {calculatedAccuracy !== null && (
-            <div className="text-center py-1 rounded-lg bg-neutral-100 font-display text-xs font-black text-black">
+            <div className="text-center py-1.5 px-2 rounded-xl bg-neutral-100 border border-black/10 font-display text-xs font-black text-black">
               Result: {scorePrimary}/{scoreSecondary} ({calculatedAccuracy}%)
             </div>
           )}
@@ -263,7 +263,7 @@ export function InlineResultLogger({
                 id={`partner-select-${challenge.id}`}
                 value={selectedPartnerId}
                 onChange={(e) => setSelectedPartnerId(e.target.value)}
-                className="w-full h-9 px-2 text-xs font-bold rounded-lg border-2 border-black bg-white focus:outline-none"
+                className="w-full h-11 px-3 text-base sm:text-xs font-bold rounded-xl border-2 border-black bg-white focus:outline-none"
               >
                 <option value="">Solo or Partner not on roster</option>
                 {rosterPlayers.map((player) => (
@@ -283,23 +283,23 @@ export function InlineResultLogger({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={200}
-              className="w-full h-8 px-2 text-xs rounded-lg border border-neutral-300 focus:border-black focus:outline-none"
+              className="w-full h-11 px-3 text-base sm:text-xs rounded-xl border-2 border-black/20 focus:border-black focus:outline-none bg-white"
             />
           </div>
 
           {/* Feedback banner */}
           {feedback && (
             <div
-              className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+              className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
                 feedback.success
                   ? "bg-lime-100 text-lime-900 border border-lime-500"
                   : "bg-rose-100 text-rose-900 border border-rose-500"
               }`}
             >
-              {feedback.success && <CheckIcon className="w-3.5 h-3.5 text-lime-700 stroke-2" />}
-              <span>{feedback.message}</span>
+              {feedback.success && <CheckIcon className="w-3.5 h-3.5 text-lime-700 stroke-2 shrink-0" />}
+              <span className="leading-tight">{feedback.message}</span>
               {feedback.isPersonalBest && (
-                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black font-display font-black text-[10px] uppercase border border-black">
+                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black font-display font-black text-[10px] uppercase border border-black shrink-0">
                   New PB!
                 </span>
               )}
@@ -310,7 +310,7 @@ export function InlineResultLogger({
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-2 px-3 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
           >
             {isPending ? "Saving..." : "Save Attempt"}
           </button>

@@ -56,29 +56,29 @@ export function ChallengeCard({
   return (
     <div
       data-testid={`challenge-card-${challenge.id}`}
-      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col justify-between"
+      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col justify-between"
     >
       <div>
         {/* Badges header row */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-          <span className="px-2 py-0.5 rounded-lg bg-black text-[#ccff00] font-display text-[11px] font-black uppercase tracking-wider">
+          <span className="px-2 py-0.5 rounded-lg bg-black text-[#ccff00] font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider">
             {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
           </span>
-          <span className="px-2 py-0.5 rounded-lg bg-neutral-100 text-neutral-800 font-display text-[11px] font-bold uppercase tracking-wider border border-black/20">
+          <span className="px-2 py-0.5 rounded-lg bg-neutral-100 text-neutral-800 font-display text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-black/20">
             {challenge.participantFormat}
           </span>
-          <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-display text-[11px] font-bold uppercase tracking-wider border border-amber-300">
+          <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-display text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-amber-300">
             {formatLabels[challenge.trackingFormat] ?? challenge.trackingFormat}
           </span>
           {completed && (
-            <span className="ml-auto px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
+            <span className="ml-auto px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
               ✓ Done
             </span>
           )}
         </div>
 
         {/* Challenge title & summary */}
-        <h3 className="font-display text-xl font-black uppercase tracking-tight text-black mb-1.5">
+        <h3 className="font-display text-lg sm:text-xl font-black uppercase tracking-tight text-black mb-1.5 leading-snug">
           {challenge.title}
         </h3>
         <p className="text-xs font-medium text-neutral-700 leading-relaxed mb-3">
@@ -86,7 +86,7 @@ export function ChallengeCard({
         </p>
 
         {/* Personal Best banner */}
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-neutral-100 border border-black/10 text-xs">
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-100 border border-black/10 text-xs">
           <TrophyIcon className="w-4 h-4 text-amber-600 shrink-0" />
           <span className="font-bold text-neutral-700">Personal Best:</span>
           <span className="font-display font-black text-black ml-auto">
@@ -101,11 +101,11 @@ export function ChallengeCard({
         </div>
 
         {/* Collapsible Instructions */}
-        <div className="mt-3">
+        <div className="mt-2.5">
           <button
             type="button"
             onClick={() => setInstructionsOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-black cursor-pointer"
+            className="w-full sm:w-auto py-1.5 flex items-center justify-between sm:justify-start gap-1.5 text-xs font-bold text-neutral-600 hover:text-black cursor-pointer touch-manipulation select-none"
           >
             <span>{instructionsOpen ? "Hide Instructions" : "How to Practice & Setup"}</span>
             <ChevronDownIcon
