@@ -60,15 +60,10 @@ export default async function TrainingHubPage({
     <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-24 md:pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000]">
-              <TargetIcon className="w-5 h-5 text-black" />
-            </span>
-            <span className="font-display text-xs font-black uppercase tracking-wider text-neutral-600">
-              Solo & Group Practice
-            </span>
-          </div>
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000] shrink-0">
+            <TargetIcon className="w-6 h-6 text-black" />
+          </span>
           <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
             Training & Challenges
           </h1>
