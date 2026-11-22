@@ -6,6 +6,7 @@ import {
   getActiveGuestPlayerId,
 } from "@/app/actions/action-context";
 import { ChallengeCard } from "@/components/training/challenge-card";
+import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
 import type { ChallengeSkillCategory } from "@/lib/domain/types";
 
@@ -28,10 +29,36 @@ export default async function TrainingHubPage({
     guestPlayerId = await getActiveGuestPlayerId(selectedGroupId);
   }
 
-  const [personalBests, progressSummary] = await Promise.all([
+  // Calculate current ISO week
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
+  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+
+  const [personalBests, progressSummary, currentPersonalPlan] = await Promise.all([
     repo.getPlayerPersonalBests(accountId ?? undefined, guestPlayerId ?? undefined),
     repo.getPlayerTrainingProgress(accountId ?? undefined, guestPlayerId ?? undefined),
+    accountId
+      ? repo.getPersonalWeeklyTrainingPlan(accountId, now.getFullYear(), currentWeekNumber)
+      : Promise.resolve(null),
   ]);
+
+  let personalCompletedChallengeIds: string[] = [];
+  if (currentPersonalPlan) {
+    const planResults = await repo.listTrainingResultsForPersonalPlan(currentPersonalPlan.plan.id);
+    personalCompletedChallengeIds = Array.from(new Set(planResults.map((r) => r.challengeId)));
+  }
+
+  let groupCompletedChallengeIds: string[] = [];
+  if (selectedGroupId && (accountId || guestPlayerId)) {
+    const groupPlan = await repo.getWeeklyTrainingPlan(selectedGroupId, now.getFullYear(), currentWeekNumber);
+    if (groupPlan) {
+      const gResults = await repo.listTrainingResultsForPlan(groupPlan.plan.id);
+      groupCompletedChallengeIds = gResults
+        .filter((r) => (accountId && r.accountId === accountId) || (guestPlayerId && r.loggedByPlayerId === guestPlayerId))
+        .map((r) => r.challengeId);
+    }
+  }
 
   const groupIds = accountGroups.map((g) => g.id);
   const activePlans = groupIds.length > 0 ? await repo.listActiveGroupTrainingPlans(groupIds) : [];
@@ -116,6 +143,13 @@ export default async function TrainingHubPage({
         </div>
       </section>
 
+      {/* Personal Weekly Training Plan Card */}
+      <PersonalTrainingPlanCard
+        currentPlan={currentPersonalPlan}
+        completedChallengeIds={personalCompletedChallengeIds}
+        isSignedIn={Boolean(accountId)}
+      />
+
       {/* Group Weekly Plans Banner (if any) */}
       {activePlans.length > 0 && (
         <section className="bg-lime-50/80 border-2 border-lime-600 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
@@ -189,6 +223,10 @@ export default async function TrainingHubPage({
             groupId={selectedGroupId}
             rosterPlayers={rosterPlayers}
             currentUserId={accountId}
+            isCompletedThisWeek={
+              personalCompletedChallengeIds.includes(challenge.id) ||
+              groupCompletedChallengeIds.includes(challenge.id)
+            }
           />
         ))}
       </section>

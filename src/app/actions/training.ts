@@ -13,6 +13,8 @@ import type { ActionResult } from "@/app/actions/auth";
 import type {
   GroupTrainingPlanItemRecord,
   GroupTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
   TrainingResultParticipantRecord,
   TrainingResultRecord,
 } from "@/lib/domain/types";
@@ -23,6 +25,7 @@ import {
 } from "@/lib/domain/training-calculator";
 import {
   publishWeeklyPlanSchema,
+  personalWeeklyPlanSchema,
   recordTrainingResultSchema,
 } from "@/lib/validation/training";
 
@@ -229,6 +232,56 @@ export async function publishWeeklyPlanAction(
   revalidatePath(`/g/${groupId}/training`);
   revalidatePath("/training");
 
+  return { ok: true, data: { planId } };
+}
+
+export async function savePersonalWeeklyPlanAction(
+  input: unknown,
+): Promise<ActionResult<{ planId: string }>> {
+  const parsed = personalWeeklyPlanSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid plan parameters",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const accountId = await getActivePlayerAccountId();
+  if (!accountId) {
+    return { ok: false, error: "You must be signed in to create a personal training plan." };
+  }
+
+  const { year, weekNumber, title, focusNotes, challengeIds, customGoals } = parsed.data;
+  const repo = getActionRepository();
+
+  const planId = `ptp_${accountId}_${year}_w${weekNumber}`;
+  const now = new Date();
+
+  const plan: PersonalTrainingPlanRecord = {
+    id: planId,
+    accountId,
+    year,
+    weekNumber,
+    title,
+    focusNotes: focusNotes ?? null,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const items: PersonalTrainingPlanItemRecord[] = challengeIds.map((cId, idx) => ({
+    id: `ptpi_${randomUUID().slice(0, 12)}`,
+    planId,
+    challengeId: cId,
+    customGoalDescription: customGoals?.[cId] ?? null,
+    targetBenchmark: null,
+    sortOrder: idx,
+  }));
+
+  await repo.savePersonalWeeklyTrainingPlan(plan, items);
+
+  revalidatePath("/training");
   return { ok: true, data: { planId } };
 }
 

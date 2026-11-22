@@ -503,6 +503,28 @@ export interface GroupTrainingPlanItemRecord {
   readonly challenge?: ChallengeTemplateRecord;
 }
 
+export interface PersonalTrainingPlanRecord {
+  readonly id: string;
+  readonly accountId: string;
+  readonly year: number;
+  readonly weekNumber: number;
+  readonly title: string;
+  readonly focusNotes?: string | null;
+  readonly status: "active" | "completed" | "archived";
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface PersonalTrainingPlanItemRecord {
+  readonly id: string;
+  readonly planId: string;
+  readonly challengeId: string;
+  readonly customGoalDescription?: string | null;
+  readonly targetBenchmark?: number | null;
+  readonly sortOrder: number;
+  readonly challenge?: ChallengeTemplateRecord;
+}
+
 export interface TrainingResultRecord {
   readonly id: string;
   readonly accountId?: string | null;

@@ -28,6 +28,8 @@ import type {
   ChallengeTemplateRecord,
   GroupTrainingPlanRecord,
   GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
   TrainingResultRecord,
   TrainingResultParticipantRecord,
   TrainingProgressSummary,
@@ -143,6 +145,9 @@ export interface DomainRepository {
   listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]>;
   getPlayerPersonalBests(accountId?: string, playerId?: string): Promise<ReadonlyMap<string, number>>;
   getPlayerTrainingProgress(accountId?: string, playerId?: string): Promise<TrainingProgressSummary>;
+  getPersonalWeeklyTrainingPlan(accountId: string, year: number, weekNumber: number): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null>;
+  savePersonalWeeklyTrainingPlan(plan: PersonalTrainingPlanRecord, items: readonly PersonalTrainingPlanItemRecord[]): Promise<void>;
+  listTrainingResultsForPersonalPlan(planId: string): Promise<readonly TrainingResultRecord[]>;
   deleteTrainingResult(resultId: string, actorId: string): Promise<boolean>;
 }
 

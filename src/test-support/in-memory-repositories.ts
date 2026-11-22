@@ -29,6 +29,8 @@ import type {
   ChallengeTemplateRecord,
   GroupTrainingPlanRecord,
   GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
   TrainingResultRecord,
   TrainingResultParticipantRecord,
   TrainingProgressSummary,
@@ -59,6 +61,8 @@ interface InMemoryState {
   challengeTemplates: ChallengeTemplateRecord[];
   trainingPlans: GroupTrainingPlanRecord[];
   trainingPlanItems: GroupTrainingPlanItemRecord[];
+  personalTrainingPlans: PersonalTrainingPlanRecord[];
+  personalTrainingPlanItems: PersonalTrainingPlanItemRecord[];
   trainingResults: TrainingResultRecord[];
   trainingParticipants: TrainingResultParticipantRecord[];
 }
@@ -95,6 +99,8 @@ export class InMemoryRepositories implements DomainRepository {
       challengeTemplates: structuredClone(seed.challengeTemplates ?? []),
       trainingPlans: structuredClone(seed.trainingPlans ?? []),
       trainingPlanItems: structuredClone(seed.trainingPlanItems ?? []),
+      personalTrainingPlans: structuredClone(seed.personalTrainingPlans ?? []),
+      personalTrainingPlanItems: structuredClone(seed.personalTrainingPlanItems ?? []),
       trainingResults: structuredClone(seed.trainingResults ?? []),
       trainingParticipants: structuredClone(seed.trainingParticipants ?? []),
     };
@@ -1429,6 +1435,68 @@ export class InMemoryRepositories implements DomainRepository {
     this.state.trainingParticipants = this.state.trainingParticipants.filter((p) => p.resultId !== resultId);
     this.writeCount += 1;
     return true;
+  }
+
+  async getPersonalWeeklyTrainingPlan(
+    accountId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null> {
+    const plan = this.state.personalTrainingPlans.find(
+      (p) => p.accountId === accountId && p.year === year && p.weekNumber === weekNumber,
+    );
+    if (!plan) return null;
+    const items = this.state.personalTrainingPlanItems
+      .filter((i) => i.planId === plan.id)
+      .map((i) => ({
+        ...i,
+        challenge: this.state.challengeTemplates.find((c) => c.id === i.challengeId),
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    return {
+      plan: structuredClone(plan),
+      items: structuredClone(items),
+    };
+  }
+
+  async savePersonalWeeklyTrainingPlan(
+    plan: PersonalTrainingPlanRecord,
+    items: readonly PersonalTrainingPlanItemRecord[],
+  ): Promise<void> {
+    const existingIdx = this.state.personalTrainingPlans.findIndex(
+      (p) => p.accountId === plan.accountId && p.year === plan.year && p.weekNumber === plan.weekNumber,
+    );
+    if (existingIdx !== -1) {
+      this.state.personalTrainingPlans[existingIdx] = structuredClone(plan);
+    } else {
+      this.state.personalTrainingPlans.push(structuredClone(plan));
+    }
+    this.state.personalTrainingPlanItems = this.state.personalTrainingPlanItems.filter((i) => i.planId !== plan.id);
+    for (const item of items) {
+      this.state.personalTrainingPlanItems.push(structuredClone(item));
+    }
+    this.writeCount += 1;
+  }
+
+  async listTrainingResultsForPersonalPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    const plan = this.state.personalTrainingPlans.find((p) => p.id === planId);
+    if (!plan) return [];
+    const planChallengeIds = new Set(
+      this.state.personalTrainingPlanItems.filter((i) => i.planId === planId).map((i) => i.challengeId),
+    );
+
+    const results = this.state.trainingResults.filter((r) => {
+      if (r.accountId !== plan.accountId) return false;
+      if (!planChallengeIds.has(r.challengeId)) return false;
+      const rec = new Date(r.recordedAt);
+      const startOfYear = new Date(rec.getFullYear(), 0, 1);
+      const pastDays = (rec.getTime() - startOfYear.getTime()) / 86400000;
+      const week = Math.ceil((pastDays + startOfYear.getDay() + 1) / 7);
+      return rec.getFullYear() === plan.year && week === plan.weekNumber;
+    });
+
+    return structuredClone(results);
   }
 }
 

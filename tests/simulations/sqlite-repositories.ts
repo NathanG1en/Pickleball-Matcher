@@ -28,6 +28,8 @@ import type {
   ChallengeTemplateRecord,
   GroupTrainingPlanRecord,
   GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
   TrainingResultRecord,
   TrainingResultParticipantRecord,
   TrainingProgressSummary,
@@ -1912,5 +1914,29 @@ export class SqliteDomainRepository implements DomainRepository {
     void resultId;
     void actorId;
     return false;
+  }
+
+  async getPersonalWeeklyTrainingPlan(
+    accountId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null> {
+    void accountId;
+    void year;
+    void weekNumber;
+    return null;
+  }
+
+  async savePersonalWeeklyTrainingPlan(
+    plan: PersonalTrainingPlanRecord,
+    items: readonly PersonalTrainingPlanItemRecord[],
+  ): Promise<void> {
+    void plan;
+    void items;
+  }
+
+  async listTrainingResultsForPersonalPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    void planId;
+    return [];
   }
 }

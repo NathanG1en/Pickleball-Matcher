@@ -69,3 +69,12 @@ export const publishWeeklyPlanSchema = z.object({
   challengeIds: z.array(z.string().min(1)).min(1, "Select at least 1 challenge").max(6, "Maximum 6 challenges per week"),
   customGoals: z.record(z.string(), z.string()).optional(),
 });
+
+export const personalWeeklyPlanSchema = z.object({
+  year: z.number().int().min(2020).max(2100),
+  weekNumber: z.number().int().min(1).max(53),
+  title: z.string().trim().min(1, "Plan title is required").max(100, "Title is too long"),
+  focusNotes: z.string().trim().max(500).nullable().optional(),
+  challengeIds: z.array(z.string().min(1)).min(1, "Select at least 1 challenge").max(6, "Maximum 6 challenges per week"),
+  customGoals: z.record(z.string(), z.string()).optional(),
+});

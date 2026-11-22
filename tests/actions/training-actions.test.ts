@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { recordTrainingResultAction, publishWeeklyPlanAction } from "@/app/actions/training";
+import {
+  recordTrainingResultAction,
+  publishWeeklyPlanAction,
+  savePersonalWeeklyPlanAction,
+} from "@/app/actions/training";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";
 
@@ -204,6 +208,39 @@ describe("Training Server Actions", () => {
     });
 
     expect(res.ok).toBe(false);
+  });
+
+  it("allows players to construct and update their personal weekly training plan", async () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
+    const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+
+    const res = await savePersonalWeeklyPlanAction({
+      year: now.getFullYear(),
+      weekNumber: currentWeekNumber,
+      title: "My Personal Drop & Dink Goals",
+      focusNotes: "Stay relaxed on resets",
+      challengeIds: ["ch_wall_streak", "ch_drop_accuracy"],
+      customGoals: { ch_drop_accuracy: "Hit 15/20 drops" },
+    });
+
+    expect(res.ok).toBe(true);
+    const planData = await repository.getPersonalWeeklyTrainingPlan("acc-1", now.getFullYear(), currentWeekNumber);
+    expect(planData).not.toBeNull();
+    expect(planData?.plan.title).toBe("My Personal Drop & Dink Goals");
+    expect(planData?.items).toHaveLength(2);
+    expect(planData?.items[1].customGoalDescription).toBe("Hit 15/20 drops");
+
+    // Record an attempt for one of the challenges in the plan
+    await recordTrainingResultAction({
+      challengeId: "ch_wall_streak",
+      scorePrimary: 30,
+    });
+
+    const completedResults = await repository.listTrainingResultsForPersonalPlan(planData!.plan.id);
+    expect(completedResults).toHaveLength(1);
+    expect(completedResults[0].challengeId).toBe("ch_wall_streak");
   });
 });
 

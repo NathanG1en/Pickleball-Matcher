@@ -17,6 +17,14 @@ Signed-in players and roster guests view a summary dashboard at the top of `/tra
 - **Practice Points:** Growth-oriented gamification XP awarded for participation, daily consistency, and personal best breakthroughs (independent of raw Elo ratings).
 - **Practice Days:** Unique calendar days with logged training activity.
 
+## Personal Weekly Training Plan — `/training/plan/new`
+
+Players can construct a customized training plan for themselves for any calendar week:
+- **Build Plan (`+ Build My Weekly Plan`):** Available directly from `/training`.
+- **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
+- **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s").
+- **Weekly Progress Tracking:** Displays an active progress bar with "X / Y Goals Met", drill checkmarks, and visual strike-throughs as attempts are recorded throughout the week.
+
 ## Your Groups' Weekly Plans
 
 When a viewer belongs to one or more groups that have an active weekly training plan:

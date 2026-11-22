@@ -37,5 +37,15 @@ test("records solo and group challenge attempts and displays personal bests", as
   // Verify published plan is displayed on dashboard
   await expect(trainingCard.getByText(/Week \d+ Training/)).toBeVisible();
   await expect(trainingCard.getByRole("link", { name: "Practice Weekly Drills →" })).toBeVisible();
+
+  // Test Personal Weekly Training Plan creation
+  await page.goto("/training");
+  const personalCard = page.getByTestId("personal-training-plan-card");
+  await expect(personalCard).toBeVisible();
+  await personalCard.getByRole("link", { name: /Build My Weekly Plan|Edit My Plan/ }).click();
+  await expect(page).toHaveURL(/\/training\/plan\/new/);
+  await page.getByRole("button", { name: "Save Weekly Training Plan →" }).click();
+  await expect(page).toHaveURL(/\/training$/);
+  await expect(personalCard.getByText(/Week \d+ Personal Goals/)).toBeVisible();
 });
 
