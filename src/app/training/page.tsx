@@ -82,7 +82,7 @@ export default async function TrainingHubPage({
     : challenges;
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12 overflow-x-hidden max-w-full">
+    <main className="min-h-screen p-4 sm:p-6 w-full max-w-4xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3">
@@ -212,7 +212,7 @@ export default async function TrainingHubPage({
       </div>
 
       {/* Challenge Cards Grid */}
-      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section className="grid sm:grid-cols-2 gap-4 sm:gap-5">
         {filteredChallenges.map((challenge) => (
           <ChallengeCard
             key={challenge.id}
