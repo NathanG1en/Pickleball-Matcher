@@ -35,7 +35,7 @@ test("records solo and group challenge attempts and displays personal bests", as
   await expect(page).toHaveURL(new RegExp(`/g/${groupId}$`));
 
   // Verify published plan is displayed on dashboard
-  await expect(trainingCard.getByText(/Week \d+ Training/)).toBeVisible();
+  await expect(trainingCard.getByText(/Week of .+ Training/)).toBeVisible();
   await expect(trainingCard.getByRole("link", { name: "Practice Weekly Drills →" })).toBeVisible();
 
   // Test Personal Weekly Training Plan creation
@@ -46,6 +46,6 @@ test("records solo and group challenge attempts and displays personal bests", as
   await expect(page).toHaveURL(/\/training\/plan\/new/);
   await page.getByRole("button", { name: "Save Weekly Training Plan →" }).click();
   await expect(page).toHaveURL(/\/training$/);
-  await expect(personalCard.getByText(/Week \d+ Personal Goals/)).toBeVisible();
+  await expect(personalCard.getByText(/Week of .+ Personal Goals/)).toBeVisible();
 });
 

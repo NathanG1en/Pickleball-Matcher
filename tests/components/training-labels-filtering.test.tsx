@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalPlanForm } from "@/app/training/plan/new/personal-plan-form";
 import { NewPlanForm } from "@/app/g/[groupId]/training/plan/new/new-plan-form";
+import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
+import { WeeklyTrainingCard } from "@/components/training/weekly-training-card";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 
 // Mock next/navigation
@@ -135,6 +137,11 @@ describe("Training Labels and Filtering", () => {
       expect(html).not.toContain(">accuracy<");
       expect(html).not.toContain(">highest_score<");
       expect(html).not.toContain(">partner<");
+
+      // Verify week selector uses Target Week with "Week of" format instead of raw week numbers
+      expect(html).toContain("Target Week");
+      expect(html).toContain("Week of");
+      expect(html).not.toContain("Week Number (1–53)");
     });
   });
 
@@ -165,6 +172,66 @@ describe("Training Labels and Filtering", () => {
       // Verify unfilterable format labels are NOT displayed
       expect(html).not.toContain(">accuracy<");
       expect(html).not.toContain(">highest_score<");
+
+      // Verify week selector uses Target Week with "Week of" format
+      expect(html).toContain("Target Week");
+      expect(html).toContain("Week of");
+      expect(html).not.toContain("Week Number (1–53)");
+    });
+  });
+
+  describe("Week Display on Plan Cards", () => {
+    it("displays Week of (Sunday date) on PersonalTrainingPlanCard", () => {
+      const html = renderToStaticMarkup(
+        <PersonalTrainingPlanCard
+          isSignedIn={true}
+          currentPlan={{
+            plan: {
+              id: "ptp_1",
+              accountId: "acc_1",
+              year: 2026,
+              weekNumber: 48,
+              title: "My Custom Plan",
+              focusNotes: null,
+              status: "active",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [],
+          }}
+        />
+      );
+
+      expect(html).toContain("Week of Nov 22, 2026 · Personal Goals");
+      expect(html).not.toContain("Week 48 Personal Goals");
+    });
+
+    it("displays Week of (Sunday date) on WeeklyTrainingCard", () => {
+      const html = renderToStaticMarkup(
+        <WeeklyTrainingCard
+          groupId="grp_1"
+          isOrganizer={true}
+          currentPlan={{
+            plan: {
+              id: "gtp_1",
+              groupId: "grp_1",
+              year: 2026,
+              weekNumber: 48,
+              title: "Group Focus",
+              focusNotes: null,
+              status: "published",
+              publishedAt: new Date(),
+              createdByAccountId: "acc_1",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [],
+          }}
+        />
+      );
+
+      expect(html).toContain("Week of Nov 22, 2026 · Training");
+      expect(html).not.toContain("Week 48 Training");
     });
   });
 });

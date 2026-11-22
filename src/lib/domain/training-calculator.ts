@@ -89,3 +89,39 @@ export function calculateAttemptPoints({
   return points;
 }
 
+/**
+ * Calculates the Sunday date starting the week for a given (year, weekNumber).
+ */
+export function getSundayFromYearWeek(year: number, weekNumber: number): Date {
+  const targetDate = new Date(year, 0, 1 + (weekNumber - 1) * 7);
+  const sunday = new Date(targetDate);
+  sunday.setHours(0, 0, 0, 0);
+  sunday.setDate(sunday.getDate() - sunday.getDay());
+  return sunday;
+}
+
+/**
+ * Calculates (year, weekNumber) from a date.
+ */
+export function getWeekNumberFromDate(d: Date = new Date()): { year: number; weekNumber: number } {
+  const date = new Date(d);
+  const startOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - startOfYear.getTime()) / 86400000;
+  const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  return { year: date.getFullYear(), weekNumber };
+}
+
+/**
+ * Formats a week for user display as "Nov 22, 2026" or "Nov 22".
+ */
+export function formatWeekOf(year: number, weekNumber: number, includeYear = true): string {
+  const sunday = getSundayFromYearWeek(year, weekNumber);
+  const monthName = sunday.toLocaleDateString("en-US", { month: "short" });
+  const day = sunday.getDate();
+  const currentYear = new Date().getFullYear();
+  if (includeYear || year !== currentYear) {
+    return `${monthName} ${day}, ${sunday.getFullYear()}`;
+  }
+  return `${monthName} ${day}`;
+}
+

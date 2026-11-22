@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import type { GroupTrainingPlanRecord, GroupTrainingPlanItemRecord } from "@/lib/domain/types";
+import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon } from "@/components/ui/icons";
 
 export interface WeeklyTrainingCardProps {
@@ -80,7 +81,7 @@ export function WeeklyTrainingCard({
           </span>
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-              Week {plan.weekNumber} Training
+              Week of {formatWeekOf(plan.year, plan.weekNumber)} · Training
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
               {plan.title}

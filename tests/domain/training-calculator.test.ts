@@ -4,6 +4,9 @@ import {
   isBetterMetric,
   formatMetricDisplay,
   calculateAttemptPoints,
+  getSundayFromYearWeek,
+  getWeekNumberFromDate,
+  formatWeekOf,
 } from "@/lib/domain/training-calculator";
 
 describe("Training Calculator", () => {
@@ -122,6 +125,29 @@ describe("Training Calculator", () => {
           isFirstAttemptToday: true,
         }),
       ).toBe(55); // 10 base + 5 consistency + 15 benchmark + 25 PB
+    });
+  });
+
+  describe("Sunday Week Calculations", () => {
+    it("calculates the Sunday date of a given week correctly", () => {
+      // 2026 week 48 corresponds to week of Sunday Nov 22, 2026
+      const sunday = getSundayFromYearWeek(2026, 48);
+      expect(sunday.getDay()).toBe(0); // Sunday
+      expect(sunday.getFullYear()).toBe(2026);
+      expect(sunday.getMonth()).toBe(10); // Nov (0-indexed)
+      expect(sunday.getDate()).toBe(22);
+    });
+
+    it("calculates week number from date consistently", () => {
+      const date = new Date(2026, 10, 22); // Nov 22, 2026 (Sunday)
+      const { year, weekNumber } = getWeekNumberFromDate(date);
+      expect(year).toBe(2026);
+      expect(weekNumber).toBe(48);
+    });
+
+    it("formats week for display as Nov 22, 2026", () => {
+      const formatted = formatWeekOf(2026, 48);
+      expect(formatted).toBe("Nov 22, 2026");
     });
   });
 });

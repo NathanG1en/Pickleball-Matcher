@@ -9,6 +9,7 @@ import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
 import type { ChallengeSkillCategory } from "@/lib/domain/types";
+import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 
 export default async function TrainingHubPage({
   searchParams,
@@ -29,17 +30,14 @@ export default async function TrainingHubPage({
     guestPlayerId = await getActiveGuestPlayerId(selectedGroupId);
   }
 
-  // Calculate current ISO week
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
-  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  // Calculate current week
+  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
 
   const [personalBests, progressSummary, currentPersonalPlan] = await Promise.all([
     repo.getPlayerPersonalBests(accountId ?? undefined, guestPlayerId ?? undefined),
     repo.getPlayerTrainingProgress(accountId ?? undefined, guestPlayerId ?? undefined),
     accountId
-      ? repo.getPersonalWeeklyTrainingPlan(accountId, now.getFullYear(), currentWeekNumber)
+      ? repo.getPersonalWeeklyTrainingPlan(accountId, currentYear, currentWeekNumber)
       : Promise.resolve(null),
   ]);
 
@@ -51,7 +49,7 @@ export default async function TrainingHubPage({
 
   let groupCompletedChallengeIds: string[] = [];
   if (selectedGroupId && (accountId || guestPlayerId)) {
-    const groupPlan = await repo.getWeeklyTrainingPlan(selectedGroupId, now.getFullYear(), currentWeekNumber);
+    const groupPlan = await repo.getWeeklyTrainingPlan(selectedGroupId, currentYear, currentWeekNumber);
     if (groupPlan) {
       const gResults = await repo.listTrainingResultsForPlan(groupPlan.plan.id);
       groupCompletedChallengeIds = gResults
@@ -164,7 +162,7 @@ export default async function TrainingHubPage({
               >
                 <div>
                   <span className="font-display text-[10px] sm:text-xs font-black text-neutral-500 uppercase block">
-                    {ap.groupName} · Week {ap.plan.weekNumber}
+                    {ap.groupName} · Week of {formatWeekOf(ap.plan.year, ap.plan.weekNumber)}
                   </span>
                   <h4 className="font-display text-sm font-black uppercase text-black leading-tight">
                     {ap.plan.title}

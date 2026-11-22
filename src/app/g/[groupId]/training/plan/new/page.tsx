@@ -5,6 +5,7 @@ import {
   getActionRepository,
   requireOrganizer,
 } from "@/app/actions/action-context";
+import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { NewPlanForm } from "./new-plan-form";
 
 export default async function NewWeeklyPlanPage({
@@ -30,11 +31,8 @@ export default async function NewWeeklyPlanPage({
     redirect(`/g/${groupId}`);
   }
 
-  // Calculate current ISO week
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
-  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  // Calculate current week
+  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
 
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-3xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
@@ -59,7 +57,7 @@ export default async function NewWeeklyPlanPage({
         groupId={groupId}
         challenges={challenges}
         defaultWeekNumber={currentWeekNumber}
-        defaultYear={now.getFullYear()}
+        defaultYear={currentYear}
       />
     </main>
   );

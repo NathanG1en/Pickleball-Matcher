@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { savePersonalWeeklyPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord, PersonalTrainingPlanRecord, PersonalTrainingPlanItemRecord } from "@/lib/domain/types";
+import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { CheckIcon } from "@/components/ui/icons";
 
 export interface PersonalPlanFormProps {
@@ -27,10 +28,45 @@ export function PersonalPlanForm({
   const [weekNumber, setWeekNumber] = useState(
     existingPlan?.plan.weekNumber ?? defaultWeekNumber,
   );
-  const [year] = useState(existingPlan?.plan.year ?? defaultYear);
+  const [year, setYear] = useState(existingPlan?.plan.year ?? defaultYear);
   const [title, setTitle] = useState(
-    existingPlan?.plan.title ?? `Week ${defaultWeekNumber} Personal Training Plan`,
+    existingPlan?.plan.title ??
+      `Week of ${formatWeekOf(
+        existingPlan?.plan.year ?? defaultYear,
+        existingPlan?.plan.weekNumber ?? defaultWeekNumber,
+      )} Training Plan`,
   );
+
+  const weekOptions = React.useMemo(() => {
+    const options: Array<{ year: number; weekNumber: number; label: string }> = [];
+    const baseDate = new Date();
+    for (let offset = -1; offset <= 4; offset++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + offset * 7);
+      const { year: y, weekNumber: w } = getWeekNumberFromDate(d);
+      const dateStr = formatWeekOf(y, w);
+      let suffix = "";
+      if (offset === 0) suffix = " (Current Week)";
+      else if (offset === 1) suffix = " (Next Week)";
+      else if (offset === -1) suffix = " (Last Week)";
+      options.push({ year: y, weekNumber: w, label: `${dateStr}${suffix}` });
+    }
+    if (
+      existingPlan &&
+      !options.some(
+        (o) =>
+          o.year === existingPlan.plan.year &&
+          o.weekNumber === existingPlan.plan.weekNumber,
+      )
+    ) {
+      options.unshift({
+        year: existingPlan.plan.year,
+        weekNumber: existingPlan.plan.weekNumber,
+        label: formatWeekOf(existingPlan.plan.year, existingPlan.plan.weekNumber),
+      });
+    }
+    return options;
+  }, [existingPlan]);
   const [focusNotes, setFocusNotes] = useState(
     existingPlan?.plan.focusNotes ?? "",
   );
@@ -153,19 +189,26 @@ export function PersonalPlanForm({
           </div>
 
           <div>
-            <label htmlFor="week-number" className="block text-xs font-black uppercase text-neutral-700 mb-1">
-              Week Number (1–53)
+            <label htmlFor="target-week" className="block text-xs font-black uppercase text-neutral-700 mb-1">
+              Target Week
             </label>
-            <input
-              id="week-number"
-              type="number"
-              min={1}
-              max={53}
-              required
-              value={weekNumber}
-              onChange={(e) => setWeekNumber(Number(e.target.value))}
+            <select
+              id="target-week"
+              value={`${year}-${weekNumber}`}
+              onChange={(e) => {
+                const [y, w] = e.target.value.split("-").map(Number);
+                setYear(y);
+                setWeekNumber(w);
+                setTitle(`Week of ${formatWeekOf(y, w)} Training Plan`);
+              }}
               className="w-full h-11 sm:h-12 px-3 text-base font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
-            />
+            >
+              {weekOptions.map((opt) => (
+                <option key={`${opt.year}-${opt.weekNumber}`} value={`${opt.year}-${opt.weekNumber}`}>
+                  Week of {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

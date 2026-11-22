@@ -5,6 +5,7 @@ import {
   getActionRepository,
   getActivePlayerAccountId,
 } from "@/app/actions/action-context";
+import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { PersonalPlanForm } from "./personal-plan-form";
 
 export default async function NewPersonalTrainingPlanPage() {
@@ -15,15 +16,12 @@ export default async function NewPersonalTrainingPlanPage() {
 
   const repo = getActionRepository();
 
-  // Calculate current ISO week
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
-  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  // Calculate current week
+  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
 
   const [challenges, existingPlan] = await Promise.all([
     repo.listChallengeTemplates(),
-    repo.getPersonalWeeklyTrainingPlan(accountId, now.getFullYear(), currentWeekNumber),
+    repo.getPersonalWeeklyTrainingPlan(accountId, currentYear, currentWeekNumber),
   ]);
 
   return (
@@ -48,7 +46,7 @@ export default async function NewPersonalTrainingPlanPage() {
       <PersonalPlanForm
         challenges={challenges}
         defaultWeekNumber={currentWeekNumber}
-        defaultYear={now.getFullYear()}
+        defaultYear={currentYear}
         existingPlan={existingPlan}
       />
     </main>

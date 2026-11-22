@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import type { PersonalTrainingPlanRecord, PersonalTrainingPlanItemRecord } from "@/lib/domain/types";
+import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon, ZapIcon } from "@/components/ui/icons";
 
 export interface PersonalTrainingPlanCardProps {
@@ -73,7 +74,7 @@ export function PersonalTrainingPlanCard({
           </span>
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-              Week {plan.weekNumber} Personal Goals
+              Week of {formatWeekOf(plan.year, plan.weekNumber)} · Personal Goals
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
               {plan.title}

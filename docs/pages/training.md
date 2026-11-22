@@ -19,8 +19,9 @@ Signed-in players and roster guests view a summary dashboard at the top of `/tra
 
 ## Personal Weekly Training Plan — `/training/plan/new`
 
-Players can construct a customized training plan for themselves for any calendar week:
+Players can construct a customized training plan for themselves for any week:
 - **Build Plan (`+ Build My Weekly Plan`):** Available directly from `/training`.
+- **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw numbers like 48/52.
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
 - **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s").
 - **Weekly Progress Tracking:** Displays an active progress bar with "X / Y Goals Met", drill checkmarks, and visual strike-throughs as attempts are recorded throughout the week.
@@ -28,7 +29,7 @@ Players can construct a customized training plan for themselves for any calendar
 ## Your Groups' Weekly Plans
 
 When a viewer belongs to one or more groups that have an active weekly training plan:
-- A highlighted banner surfaces at the top of the hub showing each group's plan title, week number, and a direct link to view that group's assigned challenges.
+- A highlighted banner surfaces at the top of the hub showing each group's plan title, target week formatted as "Week of [Sunday Date]", and a direct link to view that group's assigned challenges.
 
 ## Category Filters & Filterable Labels
 
@@ -53,7 +54,7 @@ Each drill is presented in an editorial neobrutalist card with:
 ## Create Weekly Plan (Organizers) — `/g/[groupId]/training/plan/new`
 
 Accessible to group hosts and organizers from the group dashboard:
-- **Fields:** Plan title, calendar week number (defaults to current ISO week), and optional coach notes/tips.
+- **Fields:** Plan title, target week dropdown formatted as "Week of [Sunday Date]" (defaults to current Sunday week), and optional coach notes/tips.
 - **Category-Filtered Drill Picker:** Browse and filter drills with category pills and interactive badges with active selection counts. Select 1 to 6 challenges from the system and group drill library.
 - **Publishing:** Instantly activates the plan for the group, updating the group dashboard card and member training hub.
 

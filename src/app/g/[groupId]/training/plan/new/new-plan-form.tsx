@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { publishWeeklyPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
+import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { CheckIcon } from "@/components/ui/icons";
 
 export interface NewPlanFormProps {
@@ -22,8 +23,27 @@ export function NewPlanForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [weekNumber, setWeekNumber] = useState(defaultWeekNumber);
-  const [year] = useState(defaultYear);
-  const [title, setTitle] = useState(`Week ${defaultWeekNumber} Challenge Plan`);
+  const [year, setYear] = useState(defaultYear);
+  const [title, setTitle] = useState(
+    `Week of ${formatWeekOf(defaultYear, defaultWeekNumber)} Challenge Plan`,
+  );
+
+  const weekOptions = React.useMemo(() => {
+    const options: Array<{ year: number; weekNumber: number; label: string }> = [];
+    const baseDate = new Date();
+    for (let offset = -1; offset <= 4; offset++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + offset * 7);
+      const { year: y, weekNumber: w } = getWeekNumberFromDate(d);
+      const dateStr = formatWeekOf(y, w);
+      let suffix = "";
+      if (offset === 0) suffix = " (Current Week)";
+      else if (offset === 1) suffix = " (Next Week)";
+      else if (offset === -1) suffix = " (Last Week)";
+      options.push({ year: y, weekNumber: w, label: `${dateStr}${suffix}` });
+    }
+    return options;
+  }, []);
   const [focusNotes, setFocusNotes] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
     return challenges.slice(0, 3).map((c) => c.id);
@@ -118,19 +138,26 @@ export function NewPlanForm({
           </div>
 
           <div>
-            <label htmlFor="week-number" className="block text-xs font-black uppercase text-neutral-700 mb-1">
-              Week Number (1–53)
+            <label htmlFor="target-week" className="block text-xs font-black uppercase text-neutral-700 mb-1">
+              Target Week
             </label>
-            <input
-              id="week-number"
-              type="number"
-              min={1}
-              max={53}
-              required
-              value={weekNumber}
-              onChange={(e) => setWeekNumber(Number(e.target.value))}
+            <select
+              id="target-week"
+              value={`${year}-${weekNumber}`}
+              onChange={(e) => {
+                const [y, w] = e.target.value.split("-").map(Number);
+                setYear(y);
+                setWeekNumber(w);
+                setTitle(`Week of ${formatWeekOf(y, w)} Challenge Plan`);
+              }}
               className="w-full h-11 sm:h-12 px-3 text-base font-bold rounded-xl border-2 border-black bg-white focus:outline-none focus:bg-[#FFFDF7]"
-            />
+            >
+              {weekOptions.map((opt) => (
+                <option key={`${opt.year}-${opt.weekNumber}`} value={`${opt.year}-${opt.weekNumber}`}>
+                  Week of {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
