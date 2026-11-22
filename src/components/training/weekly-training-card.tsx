@@ -37,14 +37,6 @@ export function WeeklyTrainingCard({
               Weekly Training
             </h2>
           </div>
-          {isOrganizer && (
-            <Link
-              href={`/g/${groupId}/training/plan/new`}
-              className="px-3 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
-            >
-              + Create Plan
-            </Link>
-          )}
         </div>
 
         <p className="text-sm font-medium text-neutral-700 mb-4">

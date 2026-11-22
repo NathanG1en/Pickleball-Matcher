@@ -233,5 +233,18 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Week of Nov 22, 2026 · Training");
       expect(html).not.toContain("Week 48 Training");
     });
+
+    it("does not render top-right + Create Plan button in WeeklyTrainingCard empty state", () => {
+      const html = renderToStaticMarkup(
+        <WeeklyTrainingCard
+          groupId="grp_1"
+          isOrganizer={true}
+          currentPlan={null}
+        />
+      );
+
+      expect(html).not.toContain("+ Create Plan");
+      expect(html).toContain("Create Weekly Plan →");
+    });
   });
 });

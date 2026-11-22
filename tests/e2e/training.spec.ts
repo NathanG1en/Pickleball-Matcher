@@ -27,16 +27,18 @@ test("records solo and group challenge attempts and displays personal bests", as
   await page.goto(`/g/${groupId}`);
   const trainingCard = page.getByTestId("weekly-training-card");
   await expect(trainingCard).toBeVisible();
-  await trainingCard.getByRole("link", { name: "+ Create Plan" }).click();
+  await trainingCard.getByRole("link", { name: "Create Weekly Plan →" }).click();
   await expect(page).toHaveURL(new RegExp(`/g/${groupId}/training/plan/new`));
 
   // Publish plan
   await page.getByRole("button", { name: "Publish Weekly Plan →" }).click();
   await expect(page).toHaveURL(new RegExp(`/g/${groupId}$`));
 
-  // Verify published plan is displayed on dashboard
+  // Verify published plan is displayed on dashboard and navigate to group's weekly drills
   await expect(trainingCard.getByText(/Week of .+ Training/)).toBeVisible();
-  await expect(trainingCard.getByRole("link", { name: "Practice Weekly Drills →" })).toBeVisible();
+  await trainingCard.getByRole("link", { name: "Practice Weekly Drills →" }).click();
+  await expect(page).toHaveURL(new RegExp(`/training\\?group=${groupId}`));
+  await expect(page.getByTestId("group-training-header")).toBeVisible();
 
   // Test Personal Weekly Training Plan creation
   await page.goto("/training");

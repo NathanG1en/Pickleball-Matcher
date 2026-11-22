@@ -29,7 +29,18 @@ Players can construct a customized training plan for themselves for any week:
 ## Your Groups' Weekly Plans
 
 When a viewer belongs to one or more groups that have an active weekly training plan:
-- A highlighted banner surfaces at the top of the hub showing each group's plan title, target week formatted as "Week of [Sunday Date]", and a direct link to view that group's assigned challenges.
+- A highlighted banner surfaces at the top of the main training hub showing each group's plan title, target week formatted as "Week of [Sunday Date]", and a direct link to view that group's assigned challenges.
+
+## Group Weekly Drills View — `/training?group=[groupId]`
+
+When navigating to a group's plan (via "Practice Weekly Drills →" on the group dashboard or "View" on a group plan card):
+- **Dedicated Drill Spot:** The page focuses exclusively on that specific week's drills assigned to the group, instead of showing all drill templates across the library.
+- **Group Training Banner:** Displays the group name, plan title, target week formatted as "Week of [Sunday Date]", coach focus notes/tips, and an active completion progress bar ("X / Y Done").
+- **Custom Drill Goals:** Each challenge card displays any custom target goals set for that drill in the weekly plan.
+- **Focused Filtering:** Category filter pills dynamically adapt to only display categories present in the current weekly plan (plus "All Plan Drills").
+- **Clean Context:** Suppresses the personal training plan card and other group banners to eliminate distractions while practicing the group's weekly drills.
+- **Navigation:** Header includes quick links to return to the group dashboard (`← Back to [Group]`) or explore the general drill library (`Browse All Drills`). Organizers have a direct `Edit Plan` shortcut.
+- **Empty State:** If no weekly plan has been published for the target week, a helpful empty state explains this and gives organizers a single-click action to create one.
 
 ## Category Filters & Filterable Labels
 

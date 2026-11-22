@@ -12,6 +12,7 @@ export interface ChallengeCardProps {
   readonly personalBest?: number | null;
   readonly groupId?: string | null;
   readonly planItemId?: string | null;
+  readonly customGoalDescription?: string | null;
   readonly rosterPlayers?: readonly RosterPlayerOption[];
   readonly currentUserId?: string | null;
   readonly isCompletedThisWeek?: boolean;
@@ -23,6 +24,7 @@ export function ChallengeCard({
   personalBest,
   groupId,
   planItemId,
+  customGoalDescription,
   rosterPlayers = [],
   currentUserId,
   isCompletedThisWeek = false,
@@ -94,6 +96,15 @@ export function ChallengeCard({
         <p className="text-xs font-medium text-neutral-700 leading-relaxed mb-3">
           {challenge.description}
         </p>
+
+        {customGoalDescription && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-lime-100 border border-lime-600/40 text-xs text-lime-950 mb-2.5 font-bold">
+            <span className="text-[10px] uppercase font-black tracking-wider bg-lime-300 px-1.5 py-0.5 rounded border border-lime-700 shrink-0">
+              Goal
+            </span>
+            <span className="truncate">{customGoalDescription}</span>
+          </div>
+        )}
 
         {/* Personal Best banner */}
         <div className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-100 border border-black/10 text-xs">
