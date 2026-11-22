@@ -30,21 +30,18 @@ Players can construct a customized training plan for themselves for any calendar
 When a viewer belongs to one or more groups that have an active weekly training plan:
 - A highlighted banner surfaces at the top of the hub showing each group's plan title, week number, and a direct link to view that group's assigned challenges.
 
-## Category Filters
+## Category Filters & Filterable Labels
 
-Drills can be filtered by skill category using horizontal pill controls:
-- **All Drills:** Comprehensive catalog.
-- **Dinking:** Soft-game kitchen control and patience drills.
-- **Third Shot:** Drops and transition-zone depth accuracy tests.
-- **Serving:** Deep placement and trajectory drills.
-- **Volleys:** Net battle reflexes and hand speed.
-- **Resets:** Neutralizing offensive drives into the kitchen.
-- **Conditioning:** Shuttle sprints and footwork agility.
+All visible drill labels across the drill browser, individual plan builder, and group plan builder are directly filterable:
+- **Interactive Category Badges:** Tapping the Category badge on any drill card or item filters the list directly to that category (and toggles back to All Drills if tapped again).
+- **Filter Pills:** Category pill controls allow quick filtering across **All Drills**, **Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, and **Conditioning**. In plan builders, pills indicate how many focus drills are currently selected within each category.
+- **Removed Unfilterable Labels:** Metadata that cannot be cleanly filtered (such as participant format and tracking format) is omitted from drill cards and selection lists to eliminate clutter and keep filtering fast and intuitive.
 
 ## Challenge Cards & Reusable Result Logger
 
 Each drill is presented in an editorial neobrutalist card with:
-- **Badges:** Skill category, participant format (*Individual*, *Partner*, *Group*), and tracking format (*Streak*, *Accuracy %*, *Wins*, *Milestone*, *Timed*).
+- **Filterable Category Badge:** Tapping filters the browser to that category.
+- **Done Badge:** Highlights drills with completed attempts in the current calendar week.
 - **Personal Best Banner:** Shows the player's lifetime highest score or best time for that drill.
 - **Instructions & Setup:** Expandable guide outlining court setup, target cones, and drill rules.
 - **Inline Multi-Attempt Logger (`+ Record Attempt`):**
@@ -57,7 +54,7 @@ Each drill is presented in an editorial neobrutalist card with:
 
 Accessible to group hosts and organizers from the group dashboard:
 - **Fields:** Plan title, calendar week number (defaults to current ISO week), and optional coach notes/tips.
-- **Challenge Picker:** Select 1 to 6 challenges from the system and group drill library.
+- **Category-Filtered Drill Picker:** Browse and filter drills with category pills and interactive badges with active selection counts. Select 1 to 6 challenges from the system and group drill library.
 - **Publishing:** Instantly activates the plan for the group, updating the group dashboard card and member training hub.
 
 ## Mobile-First Responsive Design

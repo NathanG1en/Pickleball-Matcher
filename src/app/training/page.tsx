@@ -227,6 +227,7 @@ export default async function TrainingHubPage({
               personalCompletedChallengeIds.includes(challenge.id) ||
               groupCompletedChallengeIds.includes(challenge.id)
             }
+            activeCategory={selectedCategory}
           />
         ))}
       </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { formatMetricDisplay } from "@/lib/domain/training-calculator";
 import { InlineResultLogger, type RosterPlayerOption } from "@/components/training/inline-result-logger";
@@ -14,6 +15,7 @@ export interface ChallengeCardProps {
   readonly rosterPlayers?: readonly RosterPlayerOption[];
   readonly currentUserId?: string | null;
   readonly isCompletedThisWeek?: boolean;
+  readonly activeCategory?: string;
 }
 
 export function ChallengeCard({
@@ -24,18 +26,11 @@ export function ChallengeCard({
   rosterPlayers = [],
   currentUserId,
   isCompletedThisWeek = false,
+  activeCategory,
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
   const [completed, setCompleted] = useState(isCompletedThisWeek);
-
-  const formatLabels: Record<string, string> = {
-    highest_score: "Streak / High Score",
-    accuracy: "Accuracy %",
-    wins: "Wins Challenge",
-    completion: "Milestone",
-    timed: "Timed Duration",
-  };
 
   const categoryLabels: Record<string, string> = {
     dinking: "Dinking",
@@ -53,6 +48,15 @@ export function ChallengeCard({
     }
   };
 
+  const filterHref =
+    activeCategory === challenge.skillCategory
+      ? groupId
+        ? `/training?group=${groupId}`
+        : "/training"
+      : groupId
+      ? `/training?group=${groupId}&category=${challenge.skillCategory}`
+      : `/training?category=${challenge.skillCategory}`;
+
   return (
     <div
       data-testid={`challenge-card-${challenge.id}`}
@@ -61,15 +65,21 @@ export function ChallengeCard({
       <div>
         {/* Badges header row */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-          <span className="px-2 py-0.5 rounded-lg bg-black text-[#ccff00] font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider">
+          <Link
+            href={filterHref}
+            className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
+              activeCategory === challenge.skillCategory
+                ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
+            }`}
+            title={
+              activeCategory === challenge.skillCategory
+                ? "Clear category filter"
+                : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
+            }
+          >
             {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
-          </span>
-          <span className="px-2 py-0.5 rounded-lg bg-neutral-100 text-neutral-800 font-display text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-black/20">
-            {challenge.participantFormat}
-          </span>
-          <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-display text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border border-amber-300">
-            {formatLabels[challenge.trackingFormat] ?? challenge.trackingFormat}
-          </span>
+          </Link>
           {completed && (
             <span className="ml-auto px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
               ✓ Done

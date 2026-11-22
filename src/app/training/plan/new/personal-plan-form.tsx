@@ -52,6 +52,30 @@ export function PersonalPlanForm({
     return goals;
   });
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const categoryLabels: Record<string, string> = {
+    dinking: "Dinking",
+    third_shot: "Third Shot",
+    serving: "Serving",
+    volleys: "Volleys",
+    resets: "Resets",
+    conditioning: "Conditioning",
+  };
+
+  const categories = [
+    { key: "all", label: "All Drills" },
+    { key: "dinking", label: "Dinking" },
+    { key: "third_shot", label: "Third Shot" },
+    { key: "serving", label: "Serving" },
+    { key: "volleys", label: "Volleys" },
+    { key: "resets", label: "Resets" },
+    { key: "conditioning", label: "Conditioning" },
+  ];
+
+  const visibleChallenges = challenges.filter(
+    (c) => selectedCategory === "all" || c.skillCategory === selectedCategory,
+  );
 
   const toggleChallenge = (id: string) => {
     setSelectedIds((prev) =>
@@ -169,8 +193,46 @@ export function PersonalPlanForm({
           <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
         </div>
 
+        {/* Category Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {categories.map((cat) => {
+            const count =
+              cat.key === "all"
+                ? selectedIds.length
+                : selectedIds.filter((id) => {
+                    const c = challenges.find((ch) => ch.id === id);
+                    return c?.skillCategory === cat.key;
+                  }).length;
+            const isActive = selectedCategory === cat.key;
+
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => setSelectedCategory(cat.key)}
+                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all border-2 select-none active:translate-x-0.5 active:translate-y-0.5 cursor-pointer ${
+                  isActive
+                    ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
+                }`}
+              >
+                <span>{cat.label}</span>
+                {count > 0 && (
+                  <span
+                    className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                      isActive ? "bg-[#ccff00] text-black" : "bg-black text-[#ccff00]"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="space-y-2.5">
-          {challenges.map((challenge) => {
+          {visibleChallenges.map((challenge) => {
             const isSelected = selectedIds.includes(challenge.id);
             return (
               <div
@@ -209,12 +271,27 @@ export function PersonalPlanForm({
                       <span className="font-display text-sm font-black uppercase text-black">
                         {challenge.title}
                       </span>
-                      <span className="px-1.5 py-0.2 rounded bg-neutral-100 text-[10px] font-bold uppercase text-neutral-700 border border-black/10">
-                        {challenge.skillCategory}
-                      </span>
-                      <span className="px-1.5 py-0.2 rounded bg-amber-50 text-[10px] font-bold uppercase text-amber-900 border border-amber-300">
-                        {challenge.trackingFormat}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory((prev) =>
+                            prev === challenge.skillCategory ? "all" : challenge.skillCategory,
+                          );
+                        }}
+                        className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer ${
+                          selectedCategory === challenge.skillCategory
+                            ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                            : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
+                        }`}
+                        title={
+                          selectedCategory === challenge.skillCategory
+                            ? "Clear filter (showing all)"
+                            : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
+                        }
+                      >
+                        {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
+                      </button>
                     </div>
                     <p className="text-xs text-neutral-600 line-clamp-2">
                       {challenge.description}
