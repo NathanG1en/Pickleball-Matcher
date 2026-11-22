@@ -98,7 +98,7 @@ export function InlineResultLogger({
           <span>+ Record Attempt</span>
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5 overflow-hidden max-w-full">
           <div className="flex items-center justify-between">
             <span className="font-display text-xs font-black uppercase text-neutral-800 tracking-wider">
               Record Attempt · {challenge.scoreUnit}
@@ -137,7 +137,7 @@ export function InlineResultLogger({
                     max={scoreSecondary}
                     value={scorePrimary}
                     onChange={(e) => setScorePrimary(Number(e.target.value))}
-                    className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
+                    className="w-full min-w-0 h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
                   />
                   <button
                     type="button"
@@ -167,7 +167,7 @@ export function InlineResultLogger({
                     min={1}
                     value={scoreSecondary}
                     onChange={(e) => setScoreSecondary(Number(e.target.value))}
-                    className="w-full h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
+                    className="w-full min-w-0 h-11 text-center font-black text-base sm:text-lg border-y-2 border-black focus:outline-none focus:bg-[#FFFDF7]"
                   />
                   <button
                     type="button"

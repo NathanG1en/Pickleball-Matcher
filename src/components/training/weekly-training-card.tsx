@@ -119,7 +119,7 @@ export function WeeklyTrainingCard({
                   : "bg-white border-black text-black"
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span
                   className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
                     isDone
@@ -133,7 +133,7 @@ export function WeeklyTrainingCard({
                   {item.challenge?.title ?? "Drill"}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-neutral-600 shrink-0 ml-2">
+              <span className="text-[11px] font-bold text-neutral-600 shrink-0 ml-2 max-w-[45%] text-right truncate">
                 {item.customGoalDescription ?? item.challenge?.scoreUnit ?? ""}
               </span>
             </div>

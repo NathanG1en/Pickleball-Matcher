@@ -56,7 +56,7 @@ export function ChallengeCard({
   return (
     <div
       data-testid={`challenge-card-${challenge.id}`}
-      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col justify-between"
+      className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-4 sm:p-5 shadow-[3px_3px_0px_0px_#000] flex flex-col justify-between overflow-hidden max-w-full"
     >
       <div>
         {/* Badges header row */}

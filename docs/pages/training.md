@@ -64,6 +64,6 @@ Accessible to group hosts and organizers from the group dashboard:
 
 - **Touch-Friendly Controls:** Steppers and action buttons enforce 44px minimum touch targets (`min-h-[44px]` / `h-11`) with `touch-manipulation` to eliminate mobile tap delays.
 - **iOS Safari Optimization:** All form text inputs, number fields, and selectors enforce a minimum 16px font size to prevent automatic browser zoom on mobile viewports.
-- **Edge-Bleed Category Scrolling:** Horizontal drill category pills bleed seamlessly to the edge of the mobile screen (`-mx-4 px-4`) with smooth momentum touch scrolling.
+- **Zero Horizontal Scrolling:** Category filter pills and card contents wrap cleanly within the mobile viewport width so that all drills, controls, and weekly goals are immediately visible without any left-or-right horizontal scrolling.
 - **Safe Area Bottom Navigation Clearance:** The page maintains ample bottom padding (`pb-28`) ensuring all cards and action buttons remain fully visible above the fixed mobile bottom navigation bar and home indicator.
 

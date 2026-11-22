@@ -84,7 +84,7 @@ export default async function TrainingHubPage({
     : challenges;
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
+    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12 overflow-x-hidden max-w-full">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3">
@@ -182,8 +182,8 @@ export default async function TrainingHubPage({
         </section>
       )}
 
-      {/* Category Filter Pills - edge-to-edge scrollable on mobile */}
-      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none touch-pan-x">
+      {/* Category Filter Pills - all visible without horizontal scrolling */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {categories.map((cat) => {
           const isActive =
             (selectedCategory === undefined && cat.key === "all") ||
@@ -201,7 +201,7 @@ export default async function TrainingHubPage({
             <Link
               key={cat.key}
               href={href}
-              className={`px-3.5 py-2 rounded-xl min-h-[40px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0 border-2 select-none active:translate-x-0.5 active:translate-y-0.5 ${
+              className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all border-2 select-none active:translate-x-0.5 active:translate-y-0.5 ${
                 isActive
                   ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                   : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
