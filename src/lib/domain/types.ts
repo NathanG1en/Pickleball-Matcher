@@ -457,7 +457,8 @@ export type ChallengeSkillCategory =
   | "serving"
   | "volleys"
   | "resets"
-  | "conditioning";
+  | "conditioning"
+  | "strategy";
 
 export interface ChallengeTemplateRecord {
   readonly id: string;

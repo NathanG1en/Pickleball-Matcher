@@ -38,6 +38,7 @@ import type {
 import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
+import { SYSTEM_CHALLENGE_TEMPLATES } from "@/lib/domain/default-challenges";
 
 interface InMemoryState {
   groups: GroupRecord[];
@@ -96,7 +97,13 @@ export class InMemoryRepositories implements DomainRepository {
       ratingSnapshots: new Map(seed.ratingSnapshots ?? []),
       synergies: structuredClone(seed.synergies ?? []),
       tournaments: structuredClone(seed.tournaments ?? []),
-      challengeTemplates: structuredClone(seed.challengeTemplates ?? []),
+      challengeTemplates: seed.challengeTemplates
+        ? structuredClone(seed.challengeTemplates)
+        : SYSTEM_CHALLENGE_TEMPLATES.map((c) => ({
+            ...c,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })),
       trainingPlans: structuredClone(seed.trainingPlans ?? []),
       trainingPlanItems: structuredClone(seed.trainingPlanItems ?? []),
       personalTrainingPlans: structuredClone(seed.personalTrainingPlans ?? []),

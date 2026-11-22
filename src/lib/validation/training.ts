@@ -21,6 +21,7 @@ export const challengeSkillCategorySchema = z.enum([
   "volleys",
   "resets",
   "conditioning",
+  "strategy",
 ]);
 
 export const recordTrainingResultSchema = z

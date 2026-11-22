@@ -46,8 +46,18 @@ When navigating to a group's plan (via "Practice Weekly Drills →" on the group
 
 All visible drill labels across the drill browser, individual plan builder, and group plan builder are directly filterable:
 - **Interactive Category Badges:** Tapping the Category badge on any drill card or item filters the list directly to that category (and toggles back to All Drills if tapped again).
-- **Filter Pills:** Category pill controls allow quick filtering across **All Drills**, **Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, and **Conditioning**. In plan builders, pills indicate how many focus drills are currently selected within each category.
+- **Filter Pills:** Category pill controls allow quick filtering across **All Drills**, **Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, **Conditioning**, and **Strategy**. In plan builders, pills indicate how many focus drills are currently selected within each category.
 - **Removed Unfilterable Labels:** Metadata that cannot be cleanly filtered (such as participant format and tracking format) is omitted from drill cards and selection lists to eliminate clutter and keep filtering fast and intuitive.
+
+## Standardized Drill Library (30 Drills)
+
+The drill library contains 30 standardized drills spanning 6 core skill categories:
+- **Dinking & Kitchen Control (6 drills):** Crosscourt Dink Streak, Dink Target Practice, Backhand Dink Challenge, Dink and Speed Up, Dink Under Pressure, Short and Deep Dinks.
+- **Third-Shot Drops & Transition (6 drills):** Third-Shot Drop Repetition, Drop and Advance, Third-Shot Drop Placement, Drop vs. Drive Decision, Five-Ball Transition Drill, Return, Drop, and Dink.
+- **Resets & Defensive Skills (5 drills):** Reset Master, Transition Zone Resets, Reset Under Pressure, Block and Counter, Defensive Footwork.
+- **Volleys & Hand Speed (5 drills):** Volley Rally Challenge, Hand Speed Battle, Body Bag Defense, Attack and Counter, Alternating Volley Targets.
+- **Serving & Returning (4 drills):** Deep Serve Challenge, Serve Placement Challenge, Deep Return Challenge, Return Placement Challenge.
+- **Doubles Strategy & Point Construction (4 drills):** Seven-Shot Patience, Skinny Singles, Attack vs. Defense, Situational Doubles.
 
 ## Challenge Cards & Reusable Result Logger
 

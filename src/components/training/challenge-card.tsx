@@ -41,6 +41,7 @@ export function ChallengeCard({
     volleys: "Volleys",
     resets: "Resets",
     conditioning: "Conditioning",
+    strategy: "Strategy",
   };
 
   const handleSaved = (metricValue: number, isPB: boolean) => {

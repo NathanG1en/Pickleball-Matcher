@@ -112,6 +112,7 @@ export default async function TrainingHubPage({
     { key: "volleys", label: "Volleys" },
     { key: "resets", label: "Resets" },
     { key: "conditioning", label: "Conditioning" },
+    { key: "strategy", label: "Strategy" },
   ];
 
   const availableCategories = selectedGroupId && selectedGroupPlan

@@ -58,6 +58,7 @@ export function NewPlanForm({
     volleys: "Volleys",
     resets: "Resets",
     conditioning: "Conditioning",
+    strategy: "Strategy",
   };
 
   const categories = [
@@ -68,6 +69,7 @@ export function NewPlanForm({
     { key: "volleys", label: "Volleys" },
     { key: "resets", label: "Resets" },
     { key: "conditioning", label: "Conditioning" },
+    { key: "strategy", label: "Strategy" },
   ];
 
   const visibleChallenges = challenges.filter(

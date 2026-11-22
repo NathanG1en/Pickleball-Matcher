@@ -247,4 +247,72 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Create Weekly Plan →");
     });
   });
+
+  describe("System Challenge Templates Library (30 Drills)", () => {
+    it("incorporates all 30 drills across all 6 skill categories including Strategy", async () => {
+      const { SYSTEM_CHALLENGE_TEMPLATES } = await import("@/lib/domain/default-challenges");
+      expect(SYSTEM_CHALLENGE_TEMPLATES).toHaveLength(30);
+
+      const titles = SYSTEM_CHALLENGE_TEMPLATES.map((c) => c.title);
+      expect(titles).toContain("Crosscourt Dink Streak");
+      expect(titles).toContain("Dink Target Practice");
+      expect(titles).toContain("Backhand Dink Challenge");
+      expect(titles).toContain("Dink and Speed Up");
+      expect(titles).toContain("Dink Under Pressure");
+      expect(titles).toContain("Short and Deep Dinks");
+      expect(titles).toContain("Third-Shot Drop Repetition");
+      expect(titles).toContain("Drop and Advance");
+      expect(titles).toContain("Third-Shot Drop Placement");
+      expect(titles).toContain("Drop vs. Drive Decision");
+      expect(titles).toContain("Five-Ball Transition Drill");
+      expect(titles).toContain("Return, Drop, and Dink");
+      expect(titles).toContain("Reset Master");
+      expect(titles).toContain("Transition Zone Resets");
+      expect(titles).toContain("Reset Under Pressure");
+      expect(titles).toContain("Block and Counter");
+      expect(titles).toContain("Defensive Footwork");
+      expect(titles).toContain("Volley Rally Challenge");
+      expect(titles).toContain("Hand Speed Battle");
+      expect(titles).toContain("Body Bag Defense");
+      expect(titles).toContain("Attack and Counter");
+      expect(titles).toContain("Alternating Volley Targets");
+      expect(titles).toContain("Deep Serve Challenge");
+      expect(titles).toContain("Serve Placement Challenge");
+      expect(titles).toContain("Deep Return Challenge");
+      expect(titles).toContain("Return Placement Challenge");
+      expect(titles).toContain("Seven-Shot Patience");
+      expect(titles).toContain("Skinny Singles");
+      expect(titles).toContain("Attack vs. Defense");
+      expect(titles).toContain("Situational Doubles");
+
+      const categories = new Set(SYSTEM_CHALLENGE_TEMPLATES.map((c) => c.skillCategory));
+      expect(categories).toContain("dinking");
+      expect(categories).toContain("third_shot");
+      expect(categories).toContain("resets");
+      expect(categories).toContain("volleys");
+      expect(categories).toContain("serving");
+      expect(categories).toContain("strategy");
+    });
+
+    it("renders Strategy filter pill in PersonalPlanForm and NewPlanForm", () => {
+      const personalHtml = renderToStaticMarkup(
+        <PersonalPlanForm
+          challenges={mockChallenges}
+          defaultWeekNumber={47}
+          defaultYear={2026}
+        />
+      );
+      expect(personalHtml).toContain("Strategy");
+
+      const groupHtml = renderToStaticMarkup(
+        <NewPlanForm
+          groupId="grp_test_123"
+          challenges={mockChallenges}
+          defaultWeekNumber={47}
+          defaultYear={2026}
+        />
+      );
+      expect(groupHtml).toContain("Strategy");
+    });
+  });
 });

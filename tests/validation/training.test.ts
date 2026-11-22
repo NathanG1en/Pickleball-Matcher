@@ -1,7 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { recordTrainingResultSchema, publishWeeklyPlanSchema, personalWeeklyPlanSchema } from "@/lib/validation/training";
+import {
+  recordTrainingResultSchema,
+  publishWeeklyPlanSchema,
+  personalWeeklyPlanSchema,
+  challengeSkillCategorySchema,
+} from "@/lib/validation/training";
 
 describe("Training Validation Schemas", () => {
+  describe("challengeSkillCategorySchema", () => {
+    it("validates all supported categories including strategy", () => {
+      const categories = [
+        "dinking",
+        "third_shot",
+        "serving",
+        "volleys",
+        "resets",
+        "conditioning",
+        "strategy",
+      ];
+      for (const cat of categories) {
+        expect(challengeSkillCategorySchema.safeParse(cat).success).toBe(true);
+      }
+    });
+
+    it("rejects unknown category", () => {
+      expect(challengeSkillCategorySchema.safeParse("unknown_cat").success).toBe(false);
+    });
+  });
   describe("recordTrainingResultSchema", () => {
     it("validates valid individual attempt", () => {
       const res = recordTrainingResultSchema.safeParse({
