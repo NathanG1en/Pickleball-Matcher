@@ -5,8 +5,8 @@ The Training Hub enables players to practice drills solo or with peers, track pe
 ## Navigation & Access
 
 - **Accessible via Site Navigation:**
-  - **Desktop:** The center top navigation bar features a direct **Training** pill link.
-  - **Mobile:** The fixed 5-tab bottom navigation bar includes **Training** as a core destination between **Groups** and **Players**.
+  - **Desktop:** The center top navigation bar features a direct **Training** pill link placed after **Players**.
+  - **Mobile:** The fixed 5-tab bottom navigation bar includes **Training** as a core destination between **Players** and **Profile**.
 - **Group Dashboard Links:** Group dashboards (`/g/[groupId]`) feature a **Weekly Training** card linking directly to `/training?group=[groupId]` with pre-filtered context.
 
 ## Player Progress & Stats

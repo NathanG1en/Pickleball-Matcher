@@ -52,6 +52,18 @@ describe("ResponsiveNavigation Component", () => {
     const bottomNavStart = html.indexOf('aria-label="Mobile bottom navigation"');
     const bottomNavHtml = html.slice(bottomNavStart);
     expect(bottomNavHtml).not.toContain("Log Out");
+
+    // In desktop navigation, Training appears after Players
+    const desktopNavStart = html.indexOf('aria-label="Desktop main navigation"');
+    const desktopNavHtml = html.slice(desktopNavStart, html.indexOf("</div>", desktopNavStart));
+    const desktopPlayersIdx = desktopNavHtml.indexOf('href="/players/find"');
+    const desktopTrainingIdx = desktopNavHtml.indexOf('href="/training"');
+    expect(desktopPlayersIdx).toBeLessThan(desktopTrainingIdx);
+
+    // In mobile bottom navigation, Training appears after Players
+    const mobilePlayersIdx = bottomNavHtml.indexOf('href="/players/find"');
+    const mobileTrainingIdx = bottomNavHtml.indexOf('href="/training"');
+    expect(mobilePlayersIdx).toBeLessThan(mobileTrainingIdx);
   });
 
   it("renders only branding and Sign In button when signed out, hiding navigation destinations and bottom bar", () => {

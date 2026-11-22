@@ -97,18 +97,18 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
       active: isGroupsActive,
     },
     {
-      id: "training",
-      label: "Training",
-      href: "/training",
-      icon: TargetIcon,
-      active: isTrainingActive,
-    },
-    {
       id: "players",
       label: "Players",
       href: "/players/find",
       icon: SearchIcon,
       active: isPlayersActive,
+    },
+    {
+      id: "training",
+      label: "Training",
+      href: "/training",
+      icon: TargetIcon,
+      active: isTrainingActive,
     },
     {
       id: "profile",
@@ -175,17 +175,6 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 Groups
               </Link>
               <Link
-                href="/training"
-                aria-current={isTrainingActive ? "page" : undefined}
-                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
-                  isTrainingActive
-                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
-                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
-                }`}
-              >
-                Training
-              </Link>
-              <Link
                 href="/players/find"
                 aria-current={isPlayersActive ? "page" : undefined}
                 className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -195,6 +184,17 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 }`}
               >
                 Players
+              </Link>
+              <Link
+                href="/training"
+                aria-current={isTrainingActive ? "page" : undefined}
+                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isTrainingActive
+                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
+                }`}
+              >
+                Training
               </Link>
             </div>
           )}
