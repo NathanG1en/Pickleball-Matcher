@@ -19,6 +19,7 @@ import { GroupJoinCard } from "@/components/groups/group-join-card";
 import { PastSessionsList } from "@/components/groups/past-sessions-list";
 import { EndSessionNowButton } from "@/components/groups/end-session-now-button";
 import { GroupTournamentsList } from "@/components/tournaments/group-tournaments-list";
+import { WeeklyTrainingCard } from "@/components/training/weekly-training-card";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 
@@ -89,6 +90,20 @@ export default async function GroupDashboardPage({
 
   // Right after a session ends, the dashboard points straight at its summary.
   const showRecentSummaryLink = !activeSession && endedWithinHours(latestCompletedSession?.endedAt ?? null, 12);
+
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
+  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+
+  const currentTrainingPlan = await repository.getWeeklyTrainingPlan(groupId, now.getFullYear(), currentWeekNumber);
+  let completedChallengeIds: string[] = [];
+  if (currentTrainingPlan && (accountId || viewerPlayerId)) {
+    const planResults = await repository.listTrainingResultsForPlan(currentTrainingPlan.plan.id);
+    completedChallengeIds = planResults
+      .filter((r) => (accountId && r.accountId === accountId) || (viewerPlayerId && r.loggedByPlayerId === viewerPlayerId))
+      .map((r) => r.challengeId);
+  }
 
   let currentRoundMatches: readonly MatchRecord[] = [];
   let currentMatchPlayers: readonly { matchId: string; playerId: string; team: 1 | 2 }[] = [];
@@ -463,6 +478,14 @@ export default async function GroupDashboardPage({
 
         {isPartOfGroup && (
           <div className="space-y-6 lg:col-span-7 xl:col-span-8 lg:col-start-1 lg:row-start-2 min-w-0 w-full">
+          {/* Weekly Training & Challenges Section */}
+          <WeeklyTrainingCard
+            groupId={groupId}
+            isOrganizer={isOrganizer}
+            currentPlan={currentTrainingPlan}
+            completedChallengeIds={completedChallengeIds}
+          />
+
           {/* Tournaments Section */}
           <section className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 lg:p-7">
             <div className="flex items-center justify-between mb-4">

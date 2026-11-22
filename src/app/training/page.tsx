@@ -1,0 +1,203 @@
+import React from "react";
+import Link from "next/link";
+import {
+  getActionRepository,
+  getActivePlayerAccountId,
+  getActiveGuestPlayerId,
+} from "@/app/actions/action-context";
+import { ChallengeCard } from "@/components/training/challenge-card";
+import { TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
+import type { ChallengeSkillCategory } from "@/lib/domain/types";
+
+export default async function TrainingHubPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string; category?: string }>;
+}) {
+  const { group: selectedGroupId, category: selectedCategory } = await searchParams;
+  const repo = getActionRepository();
+
+  const accountId = await getActivePlayerAccountId();
+  const [challenges, accountGroups] = await Promise.all([
+    repo.listChallengeTemplates(selectedGroupId),
+    accountId ? repo.listAccountGroups(accountId) : Promise.resolve([]),
+  ]);
+
+  let guestPlayerId: string | null = null;
+  if (selectedGroupId && !accountId) {
+    guestPlayerId = await getActiveGuestPlayerId(selectedGroupId);
+  }
+
+  const [personalBests, progressSummary] = await Promise.all([
+    repo.getPlayerPersonalBests(accountId ?? undefined, guestPlayerId ?? undefined),
+    repo.getPlayerTrainingProgress(accountId ?? undefined, guestPlayerId ?? undefined),
+  ]);
+
+  const groupIds = accountGroups.map((g) => g.id);
+  const activePlans = groupIds.length > 0 ? await repo.listActiveGroupTrainingPlans(groupIds) : [];
+
+  let rosterPlayers: { id: string; name: string; username?: string | null }[] = [];
+  if (selectedGroupId) {
+    const players = await repo.listPlayers(selectedGroupId, { includeInactive: false });
+    rosterPlayers = players.map((p) => ({ id: p.id, name: p.name, username: p.username }));
+  }
+
+  const categories: { key: ChallengeSkillCategory | "all"; label: string }[] = [
+    { key: "all", label: "All Drills" },
+    { key: "dinking", label: "Dinking" },
+    { key: "third_shot", label: "Third Shot" },
+    { key: "serving", label: "Serving" },
+    { key: "volleys", label: "Volleys" },
+    { key: "resets", label: "Resets" },
+    { key: "conditioning", label: "Conditioning" },
+  ];
+
+  const filteredChallenges = selectedCategory && selectedCategory !== "all"
+    ? challenges.filter((c) => c.skillCategory === selectedCategory)
+    : challenges;
+
+  return (
+    <main className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-6 text-black pb-24 md:pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-8 h-8 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center shadow-[1.5px_1.5px_0px_0px_#000]">
+              <TargetIcon className="w-5 h-5 text-black" />
+            </span>
+            <span className="font-display text-xs font-black uppercase tracking-wider text-neutral-600">
+              Solo & Group Practice
+            </span>
+          </div>
+          <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+            Training & Challenges
+          </h1>
+        </div>
+
+        {selectedGroupId && (
+          <Link
+            href={`/g/${selectedGroupId}`}
+            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]"
+          >
+            ← Back to Group
+          </Link>
+        )}
+      </div>
+
+      {/* Progress & Stats Cards */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block">Total Completed</span>
+          <span className="font-display text-2xl font-black text-black">
+            {progressSummary.totalCompleted}
+          </span>
+        </div>
+
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block flex items-center gap-1">
+            <TrophyIcon className="w-3 h-3 text-amber-600" />
+            Personal Bests
+          </span>
+          <span className="font-display text-2xl font-black text-black">
+            {progressSummary.personalBestsCount}
+          </span>
+        </div>
+
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block flex items-center gap-1">
+            <ZapIcon className="w-3 h-3 text-lime-600" />
+            Practice Points
+          </span>
+          <span className="font-display text-2xl font-black text-black">
+            {progressSummary.totalImprovementPoints}
+          </span>
+        </div>
+
+        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3.5 shadow-[2px_2px_0px_0px_#000]">
+          <span className="text-[10px] font-black uppercase text-neutral-500 block">Practice Days</span>
+          <span className="font-display text-2xl font-black text-black">
+            {progressSummary.currentStreakDays}
+          </span>
+        </div>
+      </section>
+
+      {/* Group Weekly Plans Banner (if any) */}
+      {activePlans.length > 0 && (
+        <section className="bg-lime-50/80 border-2 border-lime-600 rounded-2xl p-4 space-y-2">
+          <span className="font-display text-xs font-black uppercase text-lime-900 tracking-wider block">
+            {"🎾 Your Groups' Weekly Plans"}
+          </span>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {activePlans.map((ap) => (
+              <div
+                key={ap.plan.id}
+                className="bg-white p-3 rounded-xl border-2 border-black flex items-center justify-between"
+              >
+                <div>
+                  <span className="font-display text-xs font-black text-neutral-500 uppercase block">
+                    {ap.groupName} · Week {ap.plan.weekNumber}
+                  </span>
+                  <h4 className="font-display text-sm font-black uppercase text-black">
+                    {ap.plan.title}
+                  </h4>
+                </div>
+                <Link
+                  href={`/training?group=${ap.plan.groupId}`}
+                  className="px-2.5 py-1 rounded-lg bg-[#ccff00] text-black border border-black font-display text-xs font-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000]"
+                >
+                  View
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Category Filter Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        {categories.map((cat) => {
+          const isActive =
+            (selectedCategory === undefined && cat.key === "all") ||
+            selectedCategory === cat.key;
+          const href =
+            cat.key === "all"
+              ? selectedGroupId
+                ? `/training?group=${selectedGroupId}`
+                : "/training"
+              : selectedGroupId
+              ? `/training?group=${selectedGroupId}&category=${cat.key}`
+              : `/training?category=${cat.key}`;
+
+          return (
+            <Link
+              key={cat.key}
+              href={href}
+              className={`px-3 py-1.5 rounded-xl font-display text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border-2 ${
+                isActive
+                  ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
+                  : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
+              }`}
+            >
+              {cat.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Challenge Cards Grid */}
+      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredChallenges.map((challenge) => (
+          <ChallengeCard
+            key={challenge.id}
+            challenge={challenge}
+            personalBest={personalBests.get(challenge.id)}
+            groupId={selectedGroupId}
+            rosterPlayers={rosterPlayers}
+            currentUserId={accountId}
+          />
+        ))}
+      </section>
+    </main>
+  );
+}
+

@@ -26,6 +26,12 @@ import type {
   SessionRecord,
   StartedRoundRecord,
   TournamentRecord,
+  ChallengeTemplateRecord,
+  GroupTrainingPlanRecord,
+  GroupTrainingPlanItemRecord,
+  TrainingResultRecord,
+  TrainingResultParticipantRecord,
+  TrainingProgressSummary,
 } from "@/lib/domain/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
@@ -50,6 +56,11 @@ interface InMemoryState {
   ratingSnapshots: Map<string, readonly RatingSnapshot[]>;
   synergies: PlayerSynergyRecord[];
   tournaments: TournamentRecord[];
+  challengeTemplates: ChallengeTemplateRecord[];
+  trainingPlans: GroupTrainingPlanRecord[];
+  trainingPlanItems: GroupTrainingPlanItemRecord[];
+  trainingResults: TrainingResultRecord[];
+  trainingParticipants: TrainingResultParticipantRecord[];
 }
 
 type InMemorySeed = Partial<Omit<InMemoryState, "ratingSnapshots">> & {
@@ -81,6 +92,11 @@ export class InMemoryRepositories implements DomainRepository {
       ratingSnapshots: new Map(seed.ratingSnapshots ?? []),
       synergies: structuredClone(seed.synergies ?? []),
       tournaments: structuredClone(seed.tournaments ?? []),
+      challengeTemplates: structuredClone(seed.challengeTemplates ?? []),
+      trainingPlans: structuredClone(seed.trainingPlans ?? []),
+      trainingPlanItems: structuredClone(seed.trainingPlanItems ?? []),
+      trainingResults: structuredClone(seed.trainingResults ?? []),
+      trainingParticipants: structuredClone(seed.trainingParticipants ?? []),
     };
   }
 
@@ -1224,6 +1240,195 @@ export class InMemoryRepositories implements DomainRepository {
       this.state.tournaments.splice(idx, 1);
       this.writeCount += 1;
     }
+  }
+
+  async listChallengeTemplates(groupId?: string): Promise<readonly ChallengeTemplateRecord[]> {
+    return structuredClone(
+      this.state.challengeTemplates.filter(
+        (c) => c.isActive && (c.scope === "system" || c.groupId === groupId),
+      ),
+    );
+  }
+
+  async getChallengeTemplate(id: string): Promise<ChallengeTemplateRecord | null> {
+    const item = this.state.challengeTemplates.find((c) => c.id === id);
+    return item ? structuredClone(item) : null;
+  }
+
+  async getWeeklyTrainingPlan(
+    groupId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: GroupTrainingPlanRecord; items: readonly GroupTrainingPlanItemRecord[] } | null> {
+    const plan = this.state.trainingPlans.find(
+      (p) => p.groupId === groupId && p.year === year && p.weekNumber === weekNumber,
+    );
+    if (!plan) return null;
+    const items = this.state.trainingPlanItems
+      .filter((i) => i.planId === plan.id)
+      .map((i) => ({
+        ...i,
+        challenge: this.state.challengeTemplates.find((c) => c.id === i.challengeId),
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    return {
+      plan: structuredClone(plan),
+      items: structuredClone(items),
+    };
+  }
+
+  async listActiveGroupTrainingPlans(
+    groupIds: readonly string[],
+  ): Promise<readonly { plan: GroupTrainingPlanRecord; groupName: string; challengeCount: number; completedCount: number }[]> {
+    const plans = this.state.trainingPlans.filter(
+      (p) => groupIds.includes(p.groupId) && p.status === "published",
+    );
+    return plans.map((p) => {
+      const group = this.state.groups.find((g) => g.id === p.groupId);
+      const items = this.state.trainingPlanItems.filter((i) => i.planId === p.id);
+      return {
+        plan: structuredClone(p),
+        groupName: group?.name ?? "Group",
+        challengeCount: items.length,
+        completedCount: 0,
+      };
+    });
+  }
+
+  async createWeeklyTrainingPlan(
+    plan: GroupTrainingPlanRecord,
+    items: readonly GroupTrainingPlanItemRecord[],
+  ): Promise<void> {
+    const existingIdx = this.state.trainingPlans.findIndex(
+      (p) => p.groupId === plan.groupId && p.year === plan.year && p.weekNumber === plan.weekNumber,
+    );
+    if (existingIdx !== -1) {
+      this.state.trainingPlans[existingIdx] = structuredClone(plan);
+    } else {
+      this.state.trainingPlans.push(structuredClone(plan));
+    }
+    this.state.trainingPlanItems = this.state.trainingPlanItems.filter((i) => i.planId !== plan.id);
+    for (const item of items) {
+      this.state.trainingPlanItems.push(structuredClone(item));
+    }
+    this.writeCount += 1;
+  }
+
+  async recordTrainingResult(
+    result: TrainingResultRecord,
+    participants: readonly TrainingResultParticipantRecord[],
+  ): Promise<void> {
+    this.state.trainingResults.push(structuredClone(result));
+    for (const p of participants) {
+      this.state.trainingParticipants.push(structuredClone(p));
+    }
+    this.writeCount += 1;
+  }
+
+  async listTrainingResultsForChallenge(
+    challengeId: string,
+    options?: { accountId?: string; playerId?: string; groupId?: string; limit?: number },
+  ): Promise<readonly TrainingResultRecord[]> {
+    let results = this.state.trainingResults.filter((r) => r.challengeId === challengeId);
+    if (options?.groupId) {
+      results = results.filter((r) => r.groupId === options.groupId);
+    }
+    if (options?.accountId) {
+      results = results.filter((r) => {
+        if (r.accountId === options.accountId) return true;
+        return this.state.trainingParticipants.some(
+          (p) => p.resultId === r.id && p.accountId === options.accountId,
+        );
+      });
+    } else if (options?.playerId) {
+      results = results.filter((r) => {
+        if (r.loggedByPlayerId === options.playerId) return true;
+        return this.state.trainingParticipants.some(
+          (p) => p.resultId === r.id && p.playerId === options.playerId,
+        );
+      });
+    }
+    results.sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime());
+    if (options?.limit) {
+      results = results.slice(0, options.limit);
+    }
+
+    return results.map((r) => {
+      const parts = this.state.trainingParticipants.filter((p) => p.resultId === r.id);
+      return {
+        ...structuredClone(r),
+        participants: structuredClone(parts),
+      };
+    });
+  }
+
+  async listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    const planItemIds = new Set(
+      this.state.trainingPlanItems.filter((i) => i.planId === planId).map((i) => i.id),
+    );
+    return structuredClone(
+      this.state.trainingResults.filter((r) => r.planItemId && planItemIds.has(r.planItemId)),
+    );
+  }
+
+  async getPlayerPersonalBests(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<ReadonlyMap<string, number>> {
+    const map = new Map<string, number>();
+    const results = this.state.trainingResults.filter((r) => {
+      if (accountId && (r.accountId === accountId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.accountId === accountId))) return true;
+      if (playerId && (r.loggedByPlayerId === playerId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.playerId === playerId))) return true;
+      return false;
+    });
+
+    for (const r of results) {
+      const challenge = this.state.challengeTemplates.find((c) => c.id === r.challengeId);
+      const higherIsBetter = challenge?.higherIsBetter ?? true;
+      const currentBest = map.get(r.challengeId);
+      if (currentBest === undefined) {
+        map.set(r.challengeId, r.metricValue);
+      } else if (higherIsBetter && r.metricValue > currentBest) {
+        map.set(r.challengeId, r.metricValue);
+      } else if (!higherIsBetter && r.metricValue < currentBest) {
+        map.set(r.challengeId, r.metricValue);
+      }
+    }
+    return map;
+  }
+
+  async getPlayerTrainingProgress(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<TrainingProgressSummary> {
+    const pbs = await this.getPlayerPersonalBests(accountId, playerId);
+    const results = this.state.trainingResults.filter((r) => {
+      if (accountId && (r.accountId === accountId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.accountId === accountId))) return true;
+      if (playerId && (r.loggedByPlayerId === playerId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.playerId === playerId))) return true;
+      return false;
+    });
+
+    return {
+      totalCompleted: results.length,
+      personalBestsCount: pbs.size,
+      totalImprovementPoints: results.length * 10 + pbs.size * 25,
+      currentStreakDays: new Set(results.map((r) => r.recordedAt.toISOString().slice(0, 10))).size,
+    };
+  }
+
+  async deleteTrainingResult(resultId: string, actorId: string): Promise<boolean> {
+    const idx = this.state.trainingResults.findIndex((r) => r.id === resultId);
+    if (idx === -1) return false;
+    const r = this.state.trainingResults[idx];
+    const isOwner = r.accountId === actorId || r.loggedByPlayerId === actorId;
+    const isOrg = r.groupId ? this.state.groupOrganizers.some((o) => o.groupId === r.groupId && o.accountId === actorId) : false;
+    if (!isOwner && !isOrg) return false;
+
+    this.state.trainingResults.splice(idx, 1);
+    this.state.trainingParticipants = this.state.trainingParticipants.filter((p) => p.resultId !== resultId);
+    this.writeCount += 1;
+    return true;
   }
 }
 

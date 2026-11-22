@@ -25,6 +25,12 @@ import type {
   SessionType,
   StartedRoundRecord,
   TournamentRecord,
+  ChallengeTemplateRecord,
+  GroupTrainingPlanRecord,
+  GroupTrainingPlanItemRecord,
+  TrainingResultRecord,
+  TrainingResultParticipantRecord,
+  TrainingProgressSummary,
   GroupOrganizerPermissions,
   ProfileVisibilitySettings,
 } from "@/lib/domain/types";
@@ -1819,5 +1825,92 @@ export class SqliteDomainRepository implements DomainRepository {
   async deleteTournament(tournamentId: string, groupId: string): Promise<void> {
     void tournamentId;
     void groupId;
+  }
+
+  async listChallengeTemplates(groupId?: string): Promise<readonly ChallengeTemplateRecord[]> {
+    void groupId;
+    return [];
+  }
+
+  async getChallengeTemplate(id: string): Promise<ChallengeTemplateRecord | null> {
+    void id;
+    return null;
+  }
+
+  async getWeeklyTrainingPlan(
+    groupId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: GroupTrainingPlanRecord; items: readonly GroupTrainingPlanItemRecord[] } | null> {
+    void groupId;
+    void year;
+    void weekNumber;
+    return null;
+  }
+
+  async listActiveGroupTrainingPlans(
+    groupIds: readonly string[],
+  ): Promise<readonly { plan: GroupTrainingPlanRecord; groupName: string; challengeCount: number; completedCount: number }[]> {
+    void groupIds;
+    return [];
+  }
+
+  async createWeeklyTrainingPlan(
+    plan: GroupTrainingPlanRecord,
+    items: readonly GroupTrainingPlanItemRecord[],
+  ): Promise<void> {
+    void plan;
+    void items;
+  }
+
+  async recordTrainingResult(
+    result: TrainingResultRecord,
+    participants: readonly TrainingResultParticipantRecord[],
+  ): Promise<void> {
+    void result;
+    void participants;
+  }
+
+  async listTrainingResultsForChallenge(
+    challengeId: string,
+    options?: { accountId?: string; playerId?: string; groupId?: string; limit?: number },
+  ): Promise<readonly TrainingResultRecord[]> {
+    void challengeId;
+    void options;
+    return [];
+  }
+
+  async listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    void planId;
+    return [];
+  }
+
+  async getPlayerPersonalBests(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<ReadonlyMap<string, number>> {
+    void accountId;
+    void playerId;
+    return new Map();
+  }
+
+  async getPlayerTrainingProgress(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<TrainingProgressSummary> {
+    void accountId;
+    void playerId;
+    return {
+      totalCompleted: 0,
+      personalBestsCount: 0,
+      totalImprovementPoints: 0,
+      currentStreakDays: 0,
+    };
+  }
+
+  async deleteTrainingResult(resultId: string, actorId: string): Promise<boolean> {
+    void resultId;
+    void actorId;
+    return false;
   }
 }

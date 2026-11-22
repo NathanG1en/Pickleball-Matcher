@@ -442,3 +442,98 @@ export interface TournamentRecord {
   teamData?: TeamTournamentData | null;
 }
 
+export type ChallengeTrackingFormat =
+  | "highest_score"
+  | "accuracy"
+  | "wins"
+  | "completion"
+  | "timed";
+
+export type ChallengeParticipantFormat = "individual" | "partner" | "group";
+
+export type ChallengeSkillCategory =
+  | "dinking"
+  | "third_shot"
+  | "serving"
+  | "volleys"
+  | "resets"
+  | "conditioning";
+
+export interface ChallengeTemplateRecord {
+  readonly id: string;
+  readonly scope: "system" | "group";
+  readonly groupId?: string | null;
+  readonly title: string;
+  readonly slug: string;
+  readonly description: string;
+  readonly instructions: string;
+  readonly skillCategory: ChallengeSkillCategory;
+  readonly participantFormat: ChallengeParticipantFormat;
+  readonly trackingFormat: ChallengeTrackingFormat;
+  readonly scoreUnit: string;
+  readonly higherIsBetter: boolean;
+  readonly defaultTargetGoal?: number | null;
+  readonly recommendedDurationMinutes?: number | null;
+  readonly isActive: boolean;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface GroupTrainingPlanRecord {
+  readonly id: string;
+  readonly groupId: string;
+  readonly year: number;
+  readonly weekNumber: number;
+  readonly title: string;
+  readonly focusNotes?: string | null;
+  readonly status: "draft" | "published" | "archived";
+  readonly publishedAt?: Date | null;
+  readonly createdByAccountId?: string | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface GroupTrainingPlanItemRecord {
+  readonly id: string;
+  readonly planId: string;
+  readonly challengeId: string;
+  readonly customGoalDescription?: string | null;
+  readonly targetBenchmark?: number | null;
+  readonly sortOrder: number;
+  readonly challenge?: ChallengeTemplateRecord;
+}
+
+export interface TrainingResultRecord {
+  readonly id: string;
+  readonly accountId?: string | null;
+  readonly groupId?: string | null;
+  readonly planItemId?: string | null;
+  readonly challengeId: string;
+  readonly loggedByPlayerId?: string | null;
+  readonly scorePrimary: number;
+  readonly scoreSecondary?: number | null;
+  readonly metricValue: number;
+  readonly completed: boolean;
+  readonly notes?: string | null;
+  readonly recordedAt: Date;
+  readonly version: number;
+  readonly participants?: readonly TrainingResultParticipantRecord[];
+}
+
+export interface TrainingResultParticipantRecord {
+  readonly id: string;
+  readonly resultId: string;
+  readonly playerId?: string | null;
+  readonly accountId?: string | null;
+  readonly role: "primary" | "partner" | "opponent" | "feeder" | "group_member";
+  readonly playerName?: string;
+  readonly playerUsername?: string;
+}
+
+export interface TrainingProgressSummary {
+  readonly totalCompleted: number;
+  readonly personalBestsCount: number;
+  readonly totalImprovementPoints: number;
+  readonly currentStreakDays: number;
+}
+

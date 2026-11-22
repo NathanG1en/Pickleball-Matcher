@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
 describe("ResponsiveNavigation Component", () => {
   const mockAccount = { username: "dinkmaster" };
 
-  it("renders desktop and mobile navigation elements with the 4 core destinations when signed in", () => {
+  it("renders desktop and mobile navigation elements with the 5 core destinations when signed in", () => {
     currentPathname = "/";
     const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
 
@@ -26,12 +26,14 @@ describe("ResponsiveNavigation Component", () => {
     // Desktop navigation links
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/players/groups"');
+    expect(html).toContain('href="/training"');
     expect(html).toContain('href="/players/find"');
     expect(html).toContain('href="/players"');
 
     // Labels
     expect(html).toContain("Home");
     expect(html).toContain("Groups");
+    expect(html).toContain("Training");
     expect(html).toContain("Players");
     expect(html).toContain("@dinkmaster");
 
@@ -92,6 +94,13 @@ describe("ResponsiveNavigation Component", () => {
     currentPathname = "/g/grp-123";
     html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players\/groups"/);
+  });
+
+  it("highlights Training as active when pathname is '/training'", () => {
+    currentPathname = "/training";
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
+    expect(html).toMatch(/aria-current="page"[^>]*href="\/training"/);
+    expect(html).not.toMatch(/aria-current="page"[^>]*href="\/"/);
   });
 
   it("highlights Players as active when pathname is '/players/find'", () => {
