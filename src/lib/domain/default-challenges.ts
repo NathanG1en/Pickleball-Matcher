@@ -547,3 +547,4 @@ export const SYSTEM_CHALLENGE_TEMPLATES: readonly Omit<ChallengeTemplateRecord, 
     isActive: true,
   },
 ];
+

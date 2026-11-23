@@ -22,6 +22,8 @@ import {
   calculateAttemptPoints,
   calculateMetricValue,
   isBetterMetric,
+  formatWeekOf,
+  getWeekNumberFromDate,
 } from "@/lib/domain/training-calculator";
 import {
   publishWeeklyPlanSchema,
@@ -302,5 +304,156 @@ export async function deleteTrainingResultAction(
 
   revalidatePath("/training");
   return { ok: true, data: undefined };
+}
+
+export async function addDrillToPersonalPlanAction(
+  challengeId: string,
+): Promise<ActionResult<{ planId: string; alreadyPresent: boolean }>> {
+  const accountId = await getActivePlayerAccountId();
+  if (!accountId) {
+    return { ok: false, error: "You must be signed in to add drills to your personal plan." };
+  }
+
+  const repo = getActionRepository();
+  const challenge = await repo.getChallengeTemplate(challengeId);
+  if (!challenge) {
+    return { ok: false, error: "Drill not found." };
+  }
+
+  const { year, weekNumber } = getWeekNumberFromDate();
+  const existingPlan = await repo.getPersonalWeeklyTrainingPlan(accountId, year, weekNumber);
+
+  if (existingPlan) {
+    if (existingPlan.items.some((i) => i.challengeId === challengeId)) {
+      return { ok: true, data: { planId: existingPlan.plan.id, alreadyPresent: true } };
+    }
+    if (existingPlan.items.length >= 6) {
+      return { ok: false, error: "Your weekly plan already has the maximum of 6 drills." };
+    }
+
+    const newItem: PersonalTrainingPlanItemRecord = {
+      id: `ptpi_${randomUUID().slice(0, 12)}`,
+      planId: existingPlan.plan.id,
+      challengeId,
+      customGoalDescription: null,
+      targetBenchmark: null,
+      sortOrder: existingPlan.items.length,
+    };
+
+    await repo.savePersonalWeeklyTrainingPlan(existingPlan.plan, [
+      ...existingPlan.items,
+      newItem,
+    ]);
+    revalidatePath("/training");
+    return { ok: true, data: { planId: existingPlan.plan.id, alreadyPresent: false } };
+  }
+
+  // Create new plan for current week with this drill
+  const planId = `ptp_${accountId}_${year}_w${weekNumber}`;
+  const now = new Date();
+  const plan: PersonalTrainingPlanRecord = {
+    id: planId,
+    accountId,
+    year,
+    weekNumber,
+    title: `Week of ${formatWeekOf(year, weekNumber)} Training Plan`,
+    focusNotes: null,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const newItem: PersonalTrainingPlanItemRecord = {
+    id: `ptpi_${randomUUID().slice(0, 12)}`,
+    planId,
+    challengeId,
+    customGoalDescription: null,
+    targetBenchmark: null,
+    sortOrder: 0,
+  };
+
+  await repo.savePersonalWeeklyTrainingPlan(plan, [newItem]);
+  revalidatePath("/training");
+  return { ok: true, data: { planId, alreadyPresent: false } };
+}
+
+export async function addDrillToGroupPlanAction(
+  groupId: string,
+  challengeId: string,
+): Promise<ActionResult<{ planId: string; alreadyPresent: boolean }>> {
+  try {
+    await requireOrganizer(groupId);
+  } catch {
+    return { ok: false, error: "You must be an organizer of this group to edit training plans." };
+  }
+
+  const accountId = await getActivePlayerAccountId();
+  const repo = getActionRepository();
+  const challenge = await repo.getChallengeTemplate(challengeId);
+  if (!challenge) {
+    return { ok: false, error: "Drill not found." };
+  }
+
+  const { year, weekNumber } = getWeekNumberFromDate();
+  const existingPlan = await repo.getWeeklyTrainingPlan(groupId, year, weekNumber);
+
+  if (existingPlan) {
+    if (existingPlan.items.some((i) => i.challengeId === challengeId)) {
+      return { ok: true, data: { planId: existingPlan.plan.id, alreadyPresent: true } };
+    }
+    if (existingPlan.items.length >= 6) {
+      return { ok: false, error: "This group's weekly plan already has the maximum of 6 drills." };
+    }
+
+    const newItem: GroupTrainingPlanItemRecord = {
+      id: `tpi_${randomUUID().slice(0, 12)}`,
+      planId: existingPlan.plan.id,
+      challengeId,
+      customGoalDescription: null,
+      targetBenchmark: null,
+      sortOrder: existingPlan.items.length,
+    };
+
+    await repo.createWeeklyTrainingPlan(existingPlan.plan, [
+      ...existingPlan.items,
+      newItem,
+    ]);
+    revalidatePath(`/g/${groupId}`);
+    revalidatePath(`/g/${groupId}/training`);
+    revalidatePath("/training");
+    return { ok: true, data: { planId: existingPlan.plan.id, alreadyPresent: false } };
+  }
+
+  // Create new group plan with this drill
+  const planId = `tp_${groupId}_${year}_w${weekNumber}`;
+  const now = new Date();
+  const plan: GroupTrainingPlanRecord = {
+    id: planId,
+    groupId,
+    year,
+    weekNumber,
+    title: `Week of ${formatWeekOf(year, weekNumber)} Weekly Training`,
+    focusNotes: null,
+    status: "published",
+    publishedAt: now,
+    createdByAccountId: accountId ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const newItem: GroupTrainingPlanItemRecord = {
+    id: `tpi_${randomUUID().slice(0, 12)}`,
+    planId,
+    challengeId,
+    customGoalDescription: null,
+    targetBenchmark: null,
+    sortOrder: 0,
+  };
+
+  await repo.createWeeklyTrainingPlan(plan, [newItem]);
+  revalidatePath(`/g/${groupId}`);
+  revalidatePath(`/g/${groupId}/training`);
+  revalidatePath("/training");
+  return { ok: true, data: { planId, alreadyPresent: false } };
 }
 

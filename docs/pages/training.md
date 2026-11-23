@@ -25,6 +25,8 @@ Players can construct a customized training plan for themselves for any week:
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
 - **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s").
 - **Weekly Progress Tracking:** Displays an active progress bar with "X / Y Goals Met", drill checkmarks, and visual strike-throughs as attempts are recorded throughout the week.
+- **Direct In-Plan Result Recording:** Players can record attempts directly on each drill item in their plan card via **+ Record** without searching for the drill in the library. An inline logger expands right in the plan card, and saving instantly marks the drill done, awards points, and updates the progress bar live.
+- **Add Drill from Library:** Plans feature **+ Add Drill from Library** linking directly to the drill browser. In the library, every drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓**) to seamlessly append drills to the current weekly plan.
 
 ## Your Groups' Weekly Plans
 

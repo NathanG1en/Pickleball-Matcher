@@ -262,3 +262,4 @@ on conflict (id) do update set
   default_target_goal = excluded.default_target_goal,
   recommended_duration_minutes = excluded.recommended_duration_minutes,
   updated_at = now();
+

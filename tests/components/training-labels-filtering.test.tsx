@@ -315,4 +315,96 @@ describe("Training Labels and Filtering", () => {
       expect(groupHtml).toContain("Strategy");
     });
   });
+
+  describe("Direct Result Recording in Plan and Adding Drills", () => {
+    it("renders + Record button on drill items in PersonalTrainingPlanCard and WeeklyTrainingCard", () => {
+      const personalHtml = renderToStaticMarkup(
+        <PersonalTrainingPlanCard
+          isSignedIn={true}
+          currentPlan={{
+            plan: {
+              id: "ptp_1",
+              accountId: "acc_1",
+              year: 2026,
+              weekNumber: 48,
+              title: "My Custom Plan",
+              focusNotes: null,
+              status: "active",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [
+              {
+                id: "item_1",
+                planId: "ptp_1",
+                challengeId: "ch_dink_1",
+                customGoalDescription: "50 dinks",
+                targetBenchmark: 50,
+                sortOrder: 0,
+                challenge: mockChallenges[0],
+              },
+            ],
+          }}
+        />
+      );
+
+      expect(personalHtml).toContain("+ Record");
+      expect(personalHtml).toContain("+ Add Drill from Library");
+
+      const groupHtml = renderToStaticMarkup(
+        <WeeklyTrainingCard
+          groupId="grp_1"
+          isOrganizer={true}
+          currentPlan={{
+            plan: {
+              id: "gtp_1",
+              groupId: "grp_1",
+              year: 2026,
+              weekNumber: 48,
+              title: "Group Focus",
+              focusNotes: null,
+              status: "published",
+              publishedAt: new Date(),
+              createdByAccountId: "acc_1",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [
+              {
+                id: "gitem_1",
+                planId: "gtp_1",
+                challengeId: "ch_dink_1",
+                customGoalDescription: null,
+                targetBenchmark: null,
+                sortOrder: 0,
+                challenge: mockChallenges[0],
+              },
+            ],
+          }}
+        />
+      );
+
+      expect(groupHtml).toContain("+ Record");
+    });
+
+    it("renders + Add to Plan and In Plan badges on ChallengeCard", () => {
+      const cardNotInPlan = renderToStaticMarkup(
+        <ChallengeCard
+          challenge={mockChallenges[0]}
+          currentUserId="acc_1"
+          isInPersonalPlan={false}
+        />
+      );
+      expect(cardNotInPlan).toContain("+ Add to Plan");
+
+      const cardInPlan = renderToStaticMarkup(
+        <ChallengeCard
+          challenge={mockChallenges[0]}
+          currentUserId="acc_1"
+          isInPersonalPlan={true}
+        />
+      );
+      expect(cardInPlan).toContain("In Plan ✓");
+    });
+  });
 });

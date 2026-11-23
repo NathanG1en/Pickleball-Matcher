@@ -18,6 +18,9 @@ export interface InlineResultLoggerProps {
   readonly rosterPlayers?: readonly RosterPlayerOption[];
   readonly currentUserId?: string | null;
   readonly onResultSaved?: (metricValue: number, isPersonalBest: boolean) => void;
+  readonly initialOpen?: boolean;
+  readonly hideToggleButton?: boolean;
+  readonly onClose?: () => void;
 }
 
 export function InlineResultLogger({
@@ -26,8 +29,11 @@ export function InlineResultLogger({
   planItemId,
   rosterPlayers = [],
   onResultSaved,
+  initialOpen = false,
+  hideToggleButton = false,
+  onClose,
 }: InlineResultLoggerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [isPending, startTransition] = useTransition();
   const [scorePrimary, setScorePrimary] = useState<number>(() => {
     if (challenge.trackingFormat === "accuracy") return 15;
@@ -87,9 +93,13 @@ export function InlineResultLogger({
       ? Math.round((Math.min(scorePrimary, scoreSecondary) / scoreSecondary) * 100)
       : null;
 
+  if (hideToggleButton && !isOpen) {
+    return null;
+  }
+
   return (
-    <div className="mt-3 pt-3 border-t-2 border-black/10">
-      {!isOpen ? (
+    <div className={hideToggleButton ? "" : "mt-3 pt-3 border-t-2 border-black/10"}>
+      {!isOpen && !hideToggleButton ? (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
@@ -97,7 +107,7 @@ export function InlineResultLogger({
         >
           <span>+ Record Attempt</span>
         </button>
-      ) : (
+      ) : isOpen ? (
         <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5 overflow-hidden max-w-full">
           <div className="flex items-center justify-between">
             <span className="font-display text-xs font-black uppercase text-neutral-800 tracking-wider">
@@ -108,6 +118,7 @@ export function InlineResultLogger({
               onClick={() => {
                 setIsOpen(false);
                 setFeedback(null);
+                if (onClose) onClose();
               }}
               className="text-xs font-bold text-neutral-600 hover:text-black cursor-pointer px-3 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 transition-colors touch-manipulation select-none"
             >
@@ -315,7 +326,7 @@ export function InlineResultLogger({
             {isPending ? "Saving..." : "Save Attempt"}
           </button>
         </form>
-      )}
+      ) : null}
     </div>
   );
 }

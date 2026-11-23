@@ -1,8 +1,11 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import type { GroupTrainingPlanRecord, GroupTrainingPlanItemRecord } from "@/lib/domain/types";
 import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon } from "@/components/ui/icons";
+import { InlineResultLogger } from "@/components/training/inline-result-logger";
 
 export interface WeeklyTrainingCardProps {
   readonly groupId: string;
@@ -20,7 +23,10 @@ export function WeeklyTrainingCard({
   currentPlan,
   completedChallengeIds = [],
 }: WeeklyTrainingCardProps) {
-  const completedSet = new Set(completedChallengeIds);
+  const [completedIds, setCompletedIds] = useState<string[]>(() => [...completedChallengeIds]);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  const completedSet = new Set(completedIds);
 
   if (!currentPlan) {
     return (
@@ -99,36 +105,86 @@ export function WeeklyTrainingCard({
         />
       </div>
 
-      {/* Challenge List Items */}
-      <div className="space-y-2 mb-4">
+      {/* Challenge List Items with direct record ability */}
+      <div className="space-y-2.5 mb-4">
         {items.map((item) => {
           const isDone = completedSet.has(item.challengeId);
+          const isExpanded = expandedItemId === item.id;
+
           return (
             <div
               key={item.id}
-              className={`flex items-center justify-between p-2.5 rounded-xl border-2 ${
+              className={`rounded-2xl border-2 transition-all p-3 sm:p-3.5 ${
                 isDone
                   ? "bg-lime-50/70 border-lime-600 text-lime-900"
                   : "bg-white border-black text-black"
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
-                    isDone
-                      ? "bg-[#ccff00] border-black text-black"
-                      : "border-neutral-400 bg-neutral-50"
-                  }`}
-                >
-                  {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
-                </span>
-                <span className="font-display text-sm font-black uppercase truncate">
-                  {item.challenge?.title ?? "Drill"}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
+                      isDone
+                        ? "bg-[#ccff00] border-black text-black"
+                        : "border-neutral-400 bg-neutral-50"
+                    }`}
+                  >
+                    {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
+                  </span>
+                  <span
+                    className={`font-display text-sm font-black uppercase truncate ${
+                      isDone ? "line-through opacity-80" : ""
+                    }`}
+                  >
+                    {item.challenge?.title ?? "Drill"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                    {item.customGoalDescription ?? item.challenge?.scoreUnit ?? ""}
+                  </span>
+
+                  {item.challenge && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider transition-all shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer touch-manipulation select-none ${
+                        isExpanded
+                          ? "bg-black text-[#ccff00]"
+                          : isDone
+                          ? "bg-white text-black hover:bg-neutral-100"
+                          : "bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+                      }`}
+                    >
+                      {isExpanded ? "Close" : isDone ? "Log Again" : "+ Record"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-[11px] font-bold text-neutral-600 shrink-0 ml-2 max-w-[45%] text-right truncate">
-                {item.customGoalDescription ?? item.challenge?.scoreUnit ?? ""}
-              </span>
+
+              {item.customGoalDescription && (
+                <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                  Goal: {item.customGoalDescription}
+                </div>
+              )}
+
+              {/* Inline Logger directly in plan */}
+              {isExpanded && item.challenge && (
+                <div className="mt-3 pt-3 border-t border-black/10">
+                  <InlineResultLogger
+                    challenge={item.challenge}
+                    groupId={groupId}
+                    planItemId={item.id}
+                    initialOpen={true}
+                    hideToggleButton={true}
+                    onClose={() => setExpandedItemId(null)}
+                    onResultSaved={() => {
+                      setCompletedIds((prev) => Array.from(new Set([...prev, item.challengeId])));
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -137,14 +193,14 @@ export function WeeklyTrainingCard({
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={`/training?group=${groupId}`}
-          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-center text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center"
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-center text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center select-none"
         >
           Practice Weekly Drills →
         </Link>
         {isOrganizer && (
           <Link
             href={`/g/${groupId}/training/plan/new`}
-            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center"
+            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center select-none"
           >
             Edit
           </Link>
@@ -153,4 +209,3 @@ export function WeeklyTrainingCard({
     </section>
   );
 }
-

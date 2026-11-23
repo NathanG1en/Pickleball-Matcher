@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import type { PersonalTrainingPlanRecord, PersonalTrainingPlanItemRecord } from "@/lib/domain/types";
 import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon, ZapIcon } from "@/components/ui/icons";
+import { InlineResultLogger } from "@/components/training/inline-result-logger";
 
 export interface PersonalTrainingPlanCardProps {
   readonly currentPlan: {
@@ -20,7 +21,10 @@ export function PersonalTrainingPlanCard({
   completedChallengeIds = [],
   isSignedIn,
 }: PersonalTrainingPlanCardProps) {
-  const completedSet = new Set(completedChallengeIds);
+  const [completedIds, setCompletedIds] = useState<string[]>(() => [...completedChallengeIds]);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  const completedSet = new Set(completedIds);
 
   if (!currentPlan) {
     return (
@@ -104,50 +108,109 @@ export function PersonalTrainingPlanCard({
         />
       </div>
 
-      {/* Challenge List Items */}
-      <div className="space-y-2 mb-4">
+      {/* Challenge List Items with direct record ability */}
+      <div className="space-y-2.5 mb-4">
         {items.map((item) => {
           const isDone = completedSet.has(item.challengeId);
+          const isExpanded = expandedItemId === item.id;
+
           return (
             <div
               key={item.id}
-              className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all ${
+              className={`rounded-2xl border-2 transition-all p-3 sm:p-3.5 ${
                 isDone
                   ? "bg-lime-50/80 border-lime-600 text-lime-900"
                   : "bg-white border-black text-black"
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
-                    isDone
-                      ? "bg-[#ccff00] border-black text-black"
-                      : "border-neutral-400 bg-neutral-50"
-                  }`}
-                >
-                  {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
-                </span>
-                <span className={`font-display text-sm font-black uppercase truncate ${isDone ? "line-through opacity-80" : ""}`}>
-                  {item.challenge?.title ?? "Drill"}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
+                      isDone
+                        ? "bg-[#ccff00] border-black text-black"
+                        : "border-neutral-400 bg-neutral-50"
+                    }`}
+                  >
+                    {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
+                  </span>
+                  <span
+                    className={`font-display text-sm font-black uppercase truncate ${
+                      isDone ? "line-through opacity-80" : ""
+                    }`}
+                  >
+                    {item.challenge?.title ?? "Drill"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                    {item.customGoalDescription ??
+                      (item.challenge?.defaultTargetGoal
+                        ? `Target: ${item.challenge.defaultTargetGoal} ${item.challenge.scoreUnit}`
+                        : item.challenge?.scoreUnit ?? "")}
+                  </span>
+
+                  {item.challenge && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider transition-all shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer touch-manipulation select-none ${
+                        isExpanded
+                          ? "bg-black text-[#ccff00]"
+                          : isDone
+                          ? "bg-white text-black hover:bg-neutral-100"
+                          : "bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+                      }`}
+                    >
+                      {isExpanded ? "Close" : isDone ? "Log Again" : "+ Record"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-[11px] font-bold text-neutral-600 shrink-0 ml-2 max-w-[45%] text-right truncate">
-                {item.customGoalDescription ?? (item.challenge?.defaultTargetGoal ? `Target: ${item.challenge.defaultTargetGoal} ${item.challenge.scoreUnit}` : item.challenge?.scoreUnit ?? "")}
-              </span>
+
+              {item.customGoalDescription && (
+                <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                  Goal: {item.customGoalDescription}
+                </div>
+              )}
+
+              {/* Inline Logger directly in plan */}
+              {isExpanded && item.challenge && (
+                <div className="mt-3 pt-3 border-t border-black/10">
+                  <InlineResultLogger
+                    challenge={item.challenge}
+                    planItemId={item.id}
+                    initialOpen={true}
+                    hideToggleButton={true}
+                    onClose={() => setExpandedItemId(null)}
+                    onResultSaved={() => {
+                      setCompletedIds((prev) => Array.from(new Set([...prev, item.challengeId])));
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/training/plan/new"
-          className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center touch-manipulation select-none"
+          className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center touch-manipulation select-none active:translate-x-0.5 active:translate-y-0.5"
         >
           Edit My Plan
         </Link>
+        {items.length < 6 && (
+          <a
+            href="#drill-library"
+            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center touch-manipulation select-none active:translate-x-0.5 active:translate-y-0.5"
+          >
+            + Add Drill from Library
+          </a>
+        )}
       </div>
     </section>
   );
 }
-

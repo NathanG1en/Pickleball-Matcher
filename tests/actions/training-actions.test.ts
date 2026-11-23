@@ -4,6 +4,8 @@ import {
   recordTrainingResultAction,
   publishWeeklyPlanAction,
   savePersonalWeeklyPlanAction,
+  addDrillToPersonalPlanAction,
+  addDrillToGroupPlanAction,
 } from "@/app/actions/training";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";
@@ -241,6 +243,37 @@ describe("Training Server Actions", () => {
     const completedResults = await repository.listTrainingResultsForPersonalPlan(planData!.plan.id);
     expect(completedResults).toHaveLength(1);
     expect(completedResults[0].challengeId).toBe("ch_wall_streak");
+  });
+
+  it("allows adding a drill from the library directly into a personal plan", async () => {
+    // Add drill when no plan exists yet (creates plan with drill)
+    const res1 = await addDrillToPersonalPlanAction("ch_wall_streak");
+    expect(res1.ok).toBe(true);
+
+    // Add another drill from the library
+    const res2 = await addDrillToPersonalPlanAction("ch_drop_accuracy");
+    expect(res2.ok).toBe(true);
+    if (res2.ok) {
+      expect(res2.data.alreadyPresent).toBe(false);
+    }
+
+    // Adding same drill again indicates alreadyPresent: true
+    const res3 = await addDrillToPersonalPlanAction("ch_drop_accuracy");
+    expect(res3.ok).toBe(true);
+    if (res3.ok) {
+      expect(res3.data.alreadyPresent).toBe(true);
+    }
+  });
+
+  it("allows organizers to add a drill from the library into a group weekly plan", async () => {
+    const res1 = await addDrillToGroupPlanAction("group-1", "ch_wall_streak");
+    expect(res1.ok).toBe(true);
+
+    const res2 = await addDrillToGroupPlanAction("group-1", "ch_drop_accuracy");
+    expect(res2.ok).toBe(true);
+    if (res2.ok) {
+      expect(res2.data.alreadyPresent).toBe(false);
+    }
   });
 });
 

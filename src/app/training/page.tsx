@@ -67,9 +67,11 @@ export default async function TrainingHubPage({
   ]);
 
   let personalCompletedChallengeIds: string[] = [];
+  let personalPlanChallengeIds = new Set<string>();
   if (currentPersonalPlan) {
     const planResults = await repo.listTrainingResultsForPersonalPlan(currentPersonalPlan.plan.id);
     personalCompletedChallengeIds = Array.from(new Set(planResults.map((r) => r.challengeId)));
+    personalPlanChallengeIds = new Set(currentPersonalPlan.items.map((i) => i.challengeId));
   }
 
   let groupCompletedChallengeIds: string[] = [];
@@ -380,7 +382,7 @@ export default async function TrainingHubPage({
 
       {/* Challenge Cards Grid */}
       {filteredChallenges.length > 0 ? (
-        <section className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+        <section id="drill-library" className="grid sm:grid-cols-2 gap-4 sm:gap-5 scroll-mt-6">
           {filteredChallenges.map((challenge) => {
             const planItem = selectedGroupPlan
               ? planItemMap.get(challenge.id)
@@ -400,6 +402,7 @@ export default async function TrainingHubPage({
                   groupCompletedChallengeIds.includes(challenge.id)
                 }
                 activeCategory={selectedCategory}
+                isInPersonalPlan={personalPlanChallengeIds.has(challenge.id)}
               />
             );
           })}

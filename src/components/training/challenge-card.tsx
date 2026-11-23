@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import { addDrillToPersonalPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { formatMetricDisplay } from "@/lib/domain/training-calculator";
 import { InlineResultLogger, type RosterPlayerOption } from "@/components/training/inline-result-logger";
@@ -17,6 +18,7 @@ export interface ChallengeCardProps {
   readonly currentUserId?: string | null;
   readonly isCompletedThisWeek?: boolean;
   readonly activeCategory?: string;
+  readonly isInPersonalPlan?: boolean;
 }
 
 export function ChallengeCard({
@@ -29,10 +31,14 @@ export function ChallengeCard({
   currentUserId,
   isCompletedThisWeek = false,
   activeCategory,
+  isInPersonalPlan = false,
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
   const [completed, setCompleted] = useState(isCompletedThisWeek);
+  const [inPersonalPlan, setInPersonalPlan] = useState(isInPersonalPlan);
+  const [isAdding, startAddTransition] = useTransition();
+  const [planFeedback, setPlanFeedback] = useState<string | null>(null);
 
   const categoryLabels: Record<string, string> = {
     dinking: "Dinking",
@@ -67,27 +73,78 @@ export function ChallengeCard({
     >
       <div>
         {/* Badges header row */}
-        <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-          <Link
-            href={filterHref}
-            className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
-              activeCategory === challenge.skillCategory
-                ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
-                : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
-            }`}
-            title={
-              activeCategory === challenge.skillCategory
-                ? "Clear category filter"
-                : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
-            }
-          >
-            {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
-          </Link>
-          {completed && (
-            <span className="ml-auto px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
-              ✓ Done
-            </span>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link
+              href={filterHref}
+              className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
+                activeCategory === challenge.skillCategory
+                  ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                  : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
+              }`}
+              title={
+                activeCategory === challenge.skillCategory
+                  ? "Clear category filter"
+                  : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
+              }
+            >
+              {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
+            </Link>
+
+            {completed && (
+              <span className="px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
+                ✓ Done
+              </span>
+            )}
+          </div>
+
+          {/* Add to Plan action */}
+          <div className="flex items-center gap-1.5">
+            {planFeedback && (
+              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-600 animate-pulse">
+                {planFeedback}
+              </span>
+            )}
+            {currentUserId ? (
+              <button
+                type="button"
+                disabled={inPersonalPlan || isAdding}
+                onClick={() => {
+                  startAddTransition(async () => {
+                    const res = await addDrillToPersonalPlanAction(challenge.id);
+                    if (res.ok) {
+                      setInPersonalPlan(true);
+                      setPlanFeedback(res.data.alreadyPresent ? "In plan" : "Added! ✓");
+                      setTimeout(() => setPlanFeedback(null), 3000);
+                    } else {
+                      setPlanFeedback(res.error);
+                      setTimeout(() => setPlanFeedback(null), 3500);
+                    }
+                  });
+                }}
+                className={`px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider transition-all border border-black shadow-[1.5px_1.5px_0px_0px_#000] select-none touch-manipulation ${
+                  inPersonalPlan
+                    ? "bg-lime-100 text-lime-900 border-lime-600 cursor-default"
+                    : "bg-white hover:bg-[#ccff00] text-black cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                }`}
+                title={
+                  inPersonalPlan
+                    ? "This drill is in your weekly plan"
+                    : "Add this drill to your weekly training plan"
+                }
+              >
+                {isAdding ? "Adding..." : inPersonalPlan ? "In Plan ✓" : "+ Add to Plan"}
+              </button>
+            ) : (
+              <Link
+                href="/player-login?returnTo=/training"
+                className="px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider transition-all border border-black shadow-[1.5px_1.5px_0px_0px_#000] bg-white hover:bg-neutral-100 text-black select-none touch-manipulation"
+                title="Sign in to add this drill to your weekly plan"
+              >
+                + Add to Plan
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Challenge title & summary */}
