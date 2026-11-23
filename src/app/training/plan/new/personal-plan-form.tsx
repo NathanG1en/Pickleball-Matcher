@@ -70,11 +70,18 @@ export function PersonalPlanForm({
   const [focusNotes, setFocusNotes] = useState(
     existingPlan?.plan.focusNotes ?? "",
   );
+  const eligibleChallenges = React.useMemo(
+    () => challenges.filter((c) => c.participantFormat !== "group"),
+    [challenges],
+  );
+
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
     if (existingPlan && existingPlan.items.length > 0) {
-      return existingPlan.items.map((i) => i.challengeId);
+      return existingPlan.items
+        .filter((i) => i.challenge?.participantFormat !== "group")
+        .map((i) => i.challengeId);
     }
-    return challenges.slice(0, 3).map((c) => c.id);
+    return eligibleChallenges.slice(0, 3).map((c) => c.id);
   });
   const [customGoals, setCustomGoals] = useState<Record<string, string>>(() => {
     const goals: Record<string, string> = {};
@@ -111,7 +118,7 @@ export function PersonalPlanForm({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const visibleChallenges = challenges.filter(
+  const visibleChallenges = eligibleChallenges.filter(
     (c) => selectedCategory === "all" || c.skillCategory === selectedCategory,
   );
 

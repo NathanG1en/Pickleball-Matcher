@@ -6,6 +6,7 @@ import { PersonalPlanForm } from "@/app/training/plan/new/personal-plan-form";
 import { NewPlanForm } from "@/app/g/[groupId]/training/plan/new/new-plan-form";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { WeeklyTrainingCard } from "@/components/training/weekly-training-card";
+import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 
 // Mock next/navigation
@@ -60,6 +61,22 @@ const mockChallenges: ChallengeTemplateRecord[] = [
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
   },
+  {
+    id: "ch_strat_1",
+    scope: "system",
+    slug: "seven-shot-patience",
+    title: "Seven-Shot Patience",
+    description: "Group patience drill",
+    skillCategory: "strategy",
+    participantFormat: "group",
+    trackingFormat: "completion",
+    scoreUnit: "rallies",
+    higherIsBetter: true,
+    instructions: "Play 7 shots before attack",
+    isActive: true,
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date("2026-01-01"),
+  },
 ];
 
 describe("Training Labels and Filtering", () => {
@@ -107,7 +124,7 @@ describe("Training Labels and Filtering", () => {
   });
 
   describe("PersonalPlanForm", () => {
-    it("renders category filter pills, interactive category buttons, and omits unfilterable labels", () => {
+    it("renders category filter pills, interactive category buttons, and omits unfilterable labels and group drills", () => {
       const html = renderToStaticMarkup(
         <PersonalPlanForm
           challenges={mockChallenges}
@@ -116,9 +133,10 @@ describe("Training Labels and Filtering", () => {
         />
       );
 
-      // Verify drills visible
+      // Verify individual and partner drills visible, group drills excluded
       expect(html).toContain("Kitchen Dink 50");
       expect(html).toContain("Deep Serve Accuracy");
+      expect(html).not.toContain("Seven-Shot Patience");
 
       // Verify category filter pills rendered
       expect(html).toContain("All Drills");
@@ -146,7 +164,7 @@ describe("Training Labels and Filtering", () => {
   });
 
   describe("NewPlanForm (group plan)", () => {
-    it("renders category filter pills, interactive category buttons, and omits unfilterable labels", () => {
+    it("renders category filter pills, interactive category buttons, and omits individual drills", () => {
       const html = renderToStaticMarkup(
         <NewPlanForm
           groupId="grp_test_123"
@@ -156,18 +174,19 @@ describe("Training Labels and Filtering", () => {
         />
       );
 
-      // Verify drills visible
+      // Verify group and partner drills visible, individual drills excluded
       expect(html).toContain("Kitchen Dink 50");
-      expect(html).toContain("Deep Serve Accuracy");
+      expect(html).toContain("Seven-Shot Patience");
+      expect(html).not.toContain("Deep Serve Accuracy");
 
       // Verify category filter pills rendered
       expect(html).toContain("All Drills");
       expect(html).toContain("Dinking");
-      expect(html).toContain("Serving");
+      expect(html).toContain("Strategy");
 
       // Verify drill items have category filter buttons with title
       expect(html).toContain('title="Filter by Dinking"');
-      expect(html).toContain('title="Filter by Serving"');
+      expect(html).toContain('title="Filter by Strategy"');
 
       // Verify unfilterable format labels are NOT displayed
       expect(html).not.toContain(">accuracy<");
@@ -405,6 +424,82 @@ describe("Training Labels and Filtering", () => {
         />
       );
       expect(cardInPlan).toContain("In Plan ✓");
+    });
+
+    it("renders Group Drill badge for group format drills and excludes them from personal add button", () => {
+      const groupChallenge: ChallengeTemplateRecord = {
+        ...mockChallenges[0],
+        id: "ch_group_format",
+        participantFormat: "group",
+      };
+
+      const html = renderToStaticMarkup(
+        <ChallengeCard
+          challenge={groupChallenge}
+          currentUserId="acc_1"
+        />
+      );
+
+      expect(html).toContain("Group Drill");
+      expect(html).not.toContain("+ Add to Plan");
+    });
+
+    it("renders default empty weekly plan with expand button when user has no plan", () => {
+      const html = renderToStaticMarkup(
+        <PersonalTrainingPlanCard
+          isSignedIn={true}
+          currentPlan={null}
+          availableChallenges={mockChallenges}
+          currentYear={2026}
+          currentWeekNumber={48}
+        />
+      );
+
+      expect(html).toContain("Week of");
+      expect(html).toContain("Personal Goals");
+      expect(html).toContain("Empty Plan (0/6 Drills)");
+      expect(html).toContain("+ Expand &amp; Add Drills");
+      expect(html).not.toContain("+ Build My Weekly Plan →");
+    });
+
+    it("renders GroupWeeklyPlanCard with group name tag and drill details", () => {
+      const html = renderToStaticMarkup(
+        <GroupWeeklyPlanCard
+          group={{ id: "grp_tuesday", name: "Tuesday Picklers" }}
+          plan={{
+            id: "gtp_1",
+            groupId: "grp_tuesday",
+            year: 2026,
+            weekNumber: 48,
+            title: "Tuesday Kitchen Control",
+            focusNotes: "Keep balls low",
+            status: "published",
+            publishedAt: new Date(),
+            createdByAccountId: "acc_1",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }}
+          items={[
+            {
+              id: "item_1",
+              planId: "gtp_1",
+              challengeId: "ch_dink_1",
+              customGoalDescription: "50 continuous dinks",
+              targetBenchmark: 50,
+              sortOrder: 0,
+              challenge: mockChallenges[0],
+            },
+          ]}
+        />
+      );
+
+      // Verify group name tag
+      expect(html).toContain("Tuesday Picklers");
+      expect(html).toContain("Group Training");
+      expect(html).toContain("Tuesday Kitchen Control");
+      expect(html).toContain("Coach Focus Notes:");
+      expect(html).toContain("+ Record");
+      expect(html).toContain("View Group Progress &amp; Leaderboard →");
     });
   });
 });

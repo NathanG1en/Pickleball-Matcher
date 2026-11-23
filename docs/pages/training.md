@@ -17,26 +17,31 @@ Signed-in players and roster guests view a summary dashboard at the top of `/tra
 - **Practice Points:** Growth-oriented gamification XP awarded for participation, daily consistency, and personal best breakthroughs (independent of raw Elo ratings).
 - **Practice Days:** Unique calendar days with logged training activity.
 
-## Personal Weekly Training Plan — `/training/plan/new`
+## Personal Weekly Training Plan — `/training` and `/training/plan/new`
 
-Players can construct a customized training plan for themselves for any week:
-- **Build Plan (`+ Build My Weekly Plan`):** Available directly from `/training`.
-- **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw numbers like 48/52.
+Signed-in players always have a default weekly training plan ready on `/training` for the current week ("Week of [Sunday Date] · Personal Goals"), eliminating any requirement to "create plan" to get started:
+- **Default Empty Plan:** When visiting `/training`, players see their active weekly plan container immediately. If empty, it displays an empty state with a single-click **+ Expand & Add Drills ▼** toggle to choose focus drills inline without leaving the page.
+- **Participant Format Restrictions:** Group drills (`participantFormat === "group"`) cannot be added to an individual plan. In the drill library, group drills display a dedicated **Group Drill** badge instead of "+ Add to Plan", and are omitted from individual plan selectors. Individual plans support individual and partner drills.
+- **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw week numbers.
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
-- **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s").
+- **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s") via **Edit My Plan**.
 - **Weekly Progress Tracking:** Displays an active progress bar with "X / Y Goals Met", drill checkmarks, and visual strike-throughs as attempts are recorded throughout the week.
 - **Direct In-Plan Result Recording:** Players can record attempts directly on each drill item in their plan card via **+ Record** without searching for the drill in the library. An inline logger expands right in the plan card, and saving instantly marks the drill done, awards points, and updates the progress bar live.
-- **Add Drill from Library:** Plans feature **+ Add Drill from Library** linking directly to the drill browser. In the library, every drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓**) to seamlessly append drills to the current weekly plan.
+- **Add Drill from Library:** Plans feature **+ Add Drill from Library** linking directly to the drill browser. In the library, every eligible drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓**) to seamlessly append drills to the current weekly plan.
 
-## Your Groups' Weekly Plans
+## Group Weekly Training Plans Under Personal Plan
 
 When a viewer belongs to one or more groups that have an active weekly training plan:
-- A highlighted banner surfaces at the top of the main training hub showing each group's plan title, target week formatted as "Week of [Sunday Date]", and a direct link to view that group's assigned challenges.
+- Each group plan appears directly underneath the player's personal training plan on the main Training Hub (`/training`).
+- **Group Name Tag:** Each group card features a prominent badge/tag with the name of the group (`[Group Name]`), target week, and plan title.
+- **Direct In-Plan Recording:** Group members can see all drills assigned for that week, see their personal completion status, and record results directly via **+ Record**.
+- **View Group Progress & Leaderboard:** Each card features a link to **View Group Progress & Leaderboard →** which navigates to `/training?group=[groupId]` to view the group's collective progress and focus drills.
 
 ## Group Weekly Drills View — `/training?group=[groupId]`
 
-When navigating to a group's plan (via "Practice Weekly Drills →" on the group dashboard or "View" on a group plan card):
-- **Dedicated Drill Spot:** The page focuses exclusively on that specific week's drills assigned to the group, instead of showing all drill templates across the library.
+When navigating to a group's plan (via "Practice Weekly Drills →" on the group dashboard or "View Group Progress & Leaderboard →" on a group plan card):
+- **Dedicated Drill Spot & Group Progress:** The page focuses on that specific week's drills assigned to the group, showing group progress %, coach focus notes, and completions across group members.
+- **Participant Format Restrictions:** Individual drills (`participantFormat === "individual"`) cannot be added to a group plan. Group plans support group and partner drills.
 - **Group Training Banner:** Displays the group name, plan title, target week formatted as "Week of [Sunday Date]", coach focus notes/tips, and an active completion progress bar ("X / Y Done").
 - **Custom Drill Goals:** Each challenge card displays any custom target goals set for that drill in the weekly plan.
 - **Focused Filtering:** Category filter pills dynamically adapt to only display categories present in the current weekly plan (plus "All Plan Drills").

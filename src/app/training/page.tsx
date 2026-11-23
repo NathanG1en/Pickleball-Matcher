@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/action-context";
 import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
+import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
 import { TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
 import type {
   ChallengeSkillCategory,
@@ -82,10 +83,43 @@ export default async function TrainingHubPage({
       .map((r) => r.challengeId);
   }
 
-  const groupIds = accountGroups.map((g) => g.id);
-  const activePlans = groupIds.length > 0 && !selectedGroupId
-    ? await repo.listActiveGroupTrainingPlans(groupIds)
-    : [];
+  const userGroupPlans =
+    !selectedGroupId && accountGroups.length > 0
+      ? await Promise.all(
+          accountGroups.map(async (g) => {
+            const [planData, players] = await Promise.all([
+              repo.getWeeklyTrainingPlan(g.id, currentYear, currentWeekNumber),
+              repo.listPlayers(g.id, { includeInactive: false }),
+            ]);
+            if (!planData || planData.items.length === 0) return null;
+
+            let compIds: string[] = [];
+            if (accountId) {
+              const gResults = await repo.listTrainingResultsForPlan(planData.plan.id);
+              compIds = gResults
+                .filter((r) => r.accountId === accountId)
+                .map((r) => r.challengeId);
+            }
+
+            const isOrg = Boolean(g.isHost || g.isOrganizer);
+
+            const roster = players.map((p) => ({
+              id: p.id,
+              name: p.name,
+              username: p.username,
+            }));
+
+            return {
+              group: g,
+              plan: planData.plan,
+              items: planData.items,
+              completedChallengeIds: compIds,
+              isOrganizer: isOrg,
+              rosterPlayers: roster,
+            };
+          }),
+        ).then((res) => res.filter((r): r is NonNullable<typeof r> => r !== null))
+      : [];
 
   let rosterPlayers: { id: string; name: string; username?: string | null }[] = [];
   if (selectedGroupId) {
@@ -312,38 +346,24 @@ export default async function TrainingHubPage({
             currentPlan={currentPersonalPlan}
             completedChallengeIds={personalCompletedChallengeIds}
             isSignedIn={Boolean(accountId)}
+            availableChallenges={challenges.filter((c) => c.participantFormat !== "group")}
+            currentYear={currentYear}
+            currentWeekNumber={currentWeekNumber}
           />
 
-          {activePlans.length > 0 && (
-            <section className="bg-lime-50/80 border-2 border-lime-600 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
-              <span className="font-display text-xs font-black uppercase text-lime-900 tracking-wider block">
-                {"🎾 Your Groups' Weekly Plans"}
-              </span>
-              <div className="grid sm:grid-cols-2 gap-2.5">
-                {activePlans.map((ap) => (
-                  <div
-                    key={ap.plan.id}
-                    className="bg-white p-3 rounded-xl border-2 border-black flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                  >
-                    <div>
-                      <span className="font-display text-[10px] sm:text-xs font-black text-neutral-500 uppercase block">
-                        {ap.groupName} · Week of {formatWeekOf(ap.plan.year, ap.plan.weekNumber)}
-                      </span>
-                      <h4 className="font-display text-sm font-black uppercase text-black leading-tight">
-                        {ap.plan.title}
-                      </h4>
-                    </div>
-                    <Link
-                      href={`/training?group=${ap.plan.groupId}`}
-                      className="w-full sm:w-auto text-center px-3 py-1.5 min-h-[36px] flex items-center justify-center rounded-lg bg-[#ccff00] text-black border border-black font-display text-xs font-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
-                    >
-                      View
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Group Weekly Training Plans for groups user is a member of */}
+          {userGroupPlans.map(({ group: grp, plan, items, completedChallengeIds: cIds, isOrganizer: isOrg, rosterPlayers: rPlayers }) => (
+            <GroupWeeklyPlanCard
+              key={plan.id}
+              group={grp}
+              plan={plan}
+              items={items}
+              completedChallengeIds={cIds}
+              currentUserId={accountId}
+              rosterPlayers={rPlayers}
+              isOrganizer={isOrg}
+            />
+          ))}
         </>
       )}
 

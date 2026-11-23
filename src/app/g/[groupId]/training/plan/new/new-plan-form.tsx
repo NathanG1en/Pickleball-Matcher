@@ -45,8 +45,13 @@ export function NewPlanForm({
     return options;
   }, []);
   const [focusNotes, setFocusNotes] = useState("");
+  const eligibleChallenges = React.useMemo(
+    () => challenges.filter((c) => c.participantFormat !== "individual"),
+    [challenges],
+  );
+
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
-    return challenges.slice(0, 3).map((c) => c.id);
+    return eligibleChallenges.slice(0, 3).map((c) => c.id);
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -72,7 +77,7 @@ export function NewPlanForm({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const visibleChallenges = challenges.filter(
+  const visibleChallenges = eligibleChallenges.filter(
     (c) => selectedCategory === "all" || c.skillCategory === selectedCategory,
   );
 

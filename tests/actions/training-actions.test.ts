@@ -109,6 +109,22 @@ describe("Training Server Actions", () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
+        {
+          id: "ch_seven_shot",
+          scope: "system",
+          title: "Seven-Shot Patience",
+          slug: "seven-shot-patience",
+          description: "Group drill",
+          instructions: "Play 7 shots",
+          skillCategory: "strategy",
+          participantFormat: "group",
+          trackingFormat: "completion",
+          scoreUnit: "rallies",
+          higherIsBetter: true,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ],
     });
     setActionRepository(repository);
@@ -183,14 +199,14 @@ describe("Training Server Actions", () => {
     expect(pbs.get("ch_wall_streak")).toBe(55);
   });
 
-  it("allows organizers to publish a weekly training plan", async () => {
+  it("allows organizers to publish a weekly training plan with group and partner drills", async () => {
     const res = await publishWeeklyPlanAction({
       groupId: "group-1",
       year: 2026,
       weekNumber: 47,
       title: "Week 47 Focus",
       focusNotes: "Keep paddle high",
-      challengeIds: ["ch_wall_streak", "ch_drop_accuracy"],
+      challengeIds: ["ch_seven_shot", "ch_drop_accuracy"],
     });
 
     expect(res.ok).toBe(true);
@@ -200,13 +216,28 @@ describe("Training Server Actions", () => {
     expect(planData?.items).toHaveLength(2);
   });
 
+  it("rejects group weekly plan if an individual drill is included", async () => {
+    const res = await publishWeeklyPlanAction({
+      groupId: "group-1",
+      year: 2026,
+      weekNumber: 47,
+      title: "Week 47 Focus",
+      challengeIds: ["ch_wall_streak"],
+    });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error).toBe("Individual drills cannot be added to a group plan.");
+    }
+  });
+
   it("rejects weekly plan creation if user is not organizer", async () => {
     const res = await publishWeeklyPlanAction({
       groupId: "group-unauthorized",
       year: 2026,
       weekNumber: 47,
       title: "Unauthorized Plan",
-      challengeIds: ["ch_wall_streak"],
+      challengeIds: ["ch_seven_shot"],
     });
 
     expect(res.ok).toBe(false);
@@ -245,12 +276,33 @@ describe("Training Server Actions", () => {
     expect(completedResults[0].challengeId).toBe("ch_wall_streak");
   });
 
-  it("allows adding a drill from the library directly into a personal plan", async () => {
-    // Add drill when no plan exists yet (creates plan with drill)
+  it("rejects personal weekly plan if a group drill is included", async () => {
+    const res = await savePersonalWeeklyPlanAction({
+      year: 2026,
+      weekNumber: 48,
+      title: "Invalid Personal Plan",
+      challengeIds: ["ch_seven_shot"],
+    });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error).toBe("Group drills cannot be added to an individual plan.");
+    }
+  });
+
+  it("allows adding a drill from the library directly into a personal plan and rejects group drills", async () => {
+    // Adding a group drill to a personal plan is rejected
+    const groupRes = await addDrillToPersonalPlanAction("ch_seven_shot");
+    expect(groupRes.ok).toBe(false);
+    if (!groupRes.ok) {
+      expect(groupRes.error).toBe("Group drills cannot be added to an individual plan.");
+    }
+
+    // Add individual drill when no plan exists yet (creates plan with drill)
     const res1 = await addDrillToPersonalPlanAction("ch_wall_streak");
     expect(res1.ok).toBe(true);
 
-    // Add another drill from the library
+    // Add another partner drill from the library
     const res2 = await addDrillToPersonalPlanAction("ch_drop_accuracy");
     expect(res2.ok).toBe(true);
     if (res2.ok) {
@@ -265,10 +317,19 @@ describe("Training Server Actions", () => {
     }
   });
 
-  it("allows organizers to add a drill from the library into a group weekly plan", async () => {
-    const res1 = await addDrillToGroupPlanAction("group-1", "ch_wall_streak");
+  it("allows organizers to add group and partner drills to a group weekly plan and rejects individual drills", async () => {
+    // Adding an individual drill to a group plan is rejected
+    const indivRes = await addDrillToGroupPlanAction("group-1", "ch_wall_streak");
+    expect(indivRes.ok).toBe(false);
+    if (!indivRes.ok) {
+      expect(indivRes.error).toBe("Individual drills cannot be added to a group plan.");
+    }
+
+    // Adding group drill succeeds
+    const res1 = await addDrillToGroupPlanAction("group-1", "ch_seven_shot");
     expect(res1.ok).toBe(true);
 
+    // Adding partner drill succeeds
     const res2 = await addDrillToGroupPlanAction("group-1", "ch_drop_accuracy");
     expect(res2.ok).toBe(true);
     if (res2.ok) {

@@ -199,8 +199,15 @@ export async function publishWeeklyPlanAction(
     return { ok: false, error: "You must be an organizer of this group to publish training plans." };
   }
 
-  const accountId = await getActivePlayerAccountId();
   const repo = getActionRepository();
+  const challenges = await Promise.all(
+    challengeIds.map((cId) => repo.getChallengeTemplate(cId)),
+  );
+  if (challenges.some((c) => c && c.participantFormat === "individual")) {
+    return { ok: false, error: "Individual drills cannot be added to a group plan." };
+  }
+
+  const accountId = await getActivePlayerAccountId();
 
   const planId = `tp_${groupId}_${year}_w${weekNumber}`;
   const now = new Date();
@@ -256,6 +263,13 @@ export async function savePersonalWeeklyPlanAction(
 
   const { year, weekNumber, title, focusNotes, challengeIds, customGoals } = parsed.data;
   const repo = getActionRepository();
+
+  const challenges = await Promise.all(
+    challengeIds.map((cId) => repo.getChallengeTemplate(cId)),
+  );
+  if (challenges.some((c) => c && c.participantFormat === "group")) {
+    return { ok: false, error: "Group drills cannot be added to an individual plan." };
+  }
 
   const planId = `ptp_${accountId}_${year}_w${weekNumber}`;
   const now = new Date();
@@ -318,6 +332,10 @@ export async function addDrillToPersonalPlanAction(
   const challenge = await repo.getChallengeTemplate(challengeId);
   if (!challenge) {
     return { ok: false, error: "Drill not found." };
+  }
+
+  if (challenge.participantFormat === "group") {
+    return { ok: false, error: "Group drills cannot be added to an individual plan." };
   }
 
   const { year, weekNumber } = getWeekNumberFromDate();
@@ -392,6 +410,10 @@ export async function addDrillToGroupPlanAction(
   const challenge = await repo.getChallengeTemplate(challengeId);
   if (!challenge) {
     return { ok: false, error: "Drill not found." };
+  }
+
+  if (challenge.participantFormat === "individual") {
+    return { ok: false, error: "Individual drills cannot be added to a group plan." };
   }
 
   const { year, weekNumber } = getWeekNumberFromDate();

@@ -105,7 +105,15 @@ export function ChallengeCard({
                 {planFeedback}
               </span>
             )}
-            {currentUserId ? (
+            {challenge.participantFormat === "group" ? (
+              <span
+                data-testid={`badge-group-drill-${challenge.id}`}
+                className="px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider bg-neutral-100 text-neutral-500 border border-neutral-300 select-none cursor-default"
+                title="Group drills can only be added to group training plans"
+              >
+                Group Drill
+              </span>
+            ) : currentUserId ? (
               <button
                 type="button"
                 disabled={inPersonalPlan || isAdding}
