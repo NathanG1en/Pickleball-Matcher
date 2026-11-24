@@ -1,7 +1,10 @@
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { OpenPlayManagerClient } from "@/app/g/[groupId]/sessions/[sessionId]/open-play-manager-client";
+import {
+  DuplicateWarningModal,
+  OpenPlayManagerClient,
+} from "@/app/g/[groupId]/sessions/[sessionId]/open-play-manager-client";
 import type { AttendanceRecord, PlayerRecord, SessionRecord, StartedRoundRecord } from "@/lib/domain/types";
 
 const mockStorage: Record<string, string> = {};
@@ -1009,6 +1012,26 @@ describe("OpenPlayManagerClient Component", () => {
 
     expect(html).not.toContain('data-testid="duplicate-warning-m_dup_1"');
     expect(html).not.toContain("Potential duplicate:");
+  });
+
+  it("renders duplicate warning modal with requested copy and actions", () => {
+    const onCancel = vi.fn();
+    const onConfirm = vi.fn();
+    const html = renderToStaticMarkup(
+      <DuplicateWarningModal
+        team1Score={11}
+        team2Score={0}
+        onCancel={onCancel}
+        onConfirm={onConfirm}
+      />
+    );
+
+    expect(html).toContain("Same game?");
+    expect(html).toContain("A game with these players and score (11–0) is already in this session.");
+    expect(html).toContain("It&#x27;s a Duplicate");
+    expect(html).toContain("It&#x27;s a New Game");
+    expect(html).toContain('data-testid="duplicate-modal-cancel-button"');
+    expect(html).toContain('data-testid="duplicate-modal-confirm-button"');
   });
 });
 

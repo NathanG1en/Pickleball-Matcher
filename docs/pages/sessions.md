@@ -99,9 +99,9 @@ Open Play allows participants to check in, self-organize matches, and record res
 - **Winner Selection:** Quick winner selection buttons automatically set the winning team's score to 11.
 - **Duplicate Game Prevention:**
   - When submitting a game, if an existing completed game in the session has the exact same players and score (independent of player ordering within teams or which side is designated Team 1 vs Team 2), a confirmation modal appears:
-    - **"Possible Duplicate Game"**: Informs the submitter that Game N was already recorded with the identical players and score.
-    - **"It's a Duplicate"**: Dismisses the modal, clears the score inputs, and notifies the user that the game was already recorded.
-    - **"Submit as New Game"**: Confirms that this was an intentional, separate rematch with the same score and proceeds with recording the new game.
+    - **"Same game?"**: Informs the submitter that "A game with these players and score (X–Y) is already in this session."
+    - **"IT'S A DUPLICATE"**: Dismisses the modal, clears the score inputs, and notifies the user that the game was already recorded.
+    - **"IT'S A NEW GAME"**: Confirms that this was an intentional, separate rematch with the same score and proceeds with recording the new game.
 
 ### Match History & Organizer Duplicate Reconciliation
 - **Session Games List:** All recorded games appear in the session match history.

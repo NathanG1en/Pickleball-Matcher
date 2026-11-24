@@ -81,6 +81,64 @@ export interface OpenPlayManagerClientProps {
   readonly initialMatchType?: "doubles" | "singles";
 }
 
+export interface DuplicateWarningModalProps {
+  readonly team1Score: number;
+  readonly team2Score: number;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}
+
+export function DuplicateWarningModal({
+  team1Score,
+  team2Score,
+  onCancel,
+  onConfirm,
+}: DuplicateWarningModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      role="presentation"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="duplicate-game-title"
+        className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]"
+      >
+        <div className="space-y-1">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fef08a] border border-black text-[10px] font-black uppercase tracking-wider text-amber-900">
+            Possible Duplicate
+          </span>
+          <h2 id="duplicate-game-title" className="font-display text-2xl font-black uppercase tracking-tight">
+            Same game?
+          </h2>
+        </div>
+        <p className="text-sm font-bold text-neutral-700 leading-relaxed">
+          A game with these players and score ({team1Score}–{team2Score}) is already in this session.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            data-testid="duplicate-modal-cancel-button"
+            className="rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          >
+            It&apos;s a Duplicate
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            data-testid="duplicate-modal-confirm-button"
+            className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          >
+            It&apos;s a New Game
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function OpenPlayManagerClient({
   groupId,
   groupName,
@@ -2356,50 +2414,12 @@ export function OpenPlayManagerClient({
       </div>
 
       {pendingDuplicateSubmission && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          role="presentation"
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="duplicate-game-title"
-            className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]"
-          >
-            <div className="space-y-1">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fef08a] border border-black text-[10px] font-black uppercase tracking-wider text-amber-900">
-                Possible Duplicate
-              </span>
-              <h2 id="duplicate-game-title" className="font-display text-2xl font-black uppercase tracking-tight">
-                Game Already Recorded?
-              </h2>
-            </div>
-            <p className="text-sm font-bold text-neutral-700 leading-relaxed">
-              Game {pendingDuplicateSubmission.existingGameNumber} was already recorded in this session with these exact players and score ({pendingDuplicateSubmission.team1Score} – {pendingDuplicateSubmission.team2Score}).
-            </p>
-            <p className="text-xs font-bold text-neutral-500">
-              Did another player already log this match, or was this a separate rematch that ended with the same score?
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={handleCancelDuplicateSubmission}
-                data-testid="duplicate-modal-cancel-button"
-                className="rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
-              >
-                It&apos;s a Duplicate
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDuplicateSubmission}
-                data-testid="duplicate-modal-confirm-button"
-                className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
-              >
-                Submit as New Game
-              </button>
-            </div>
-          </section>
-        </div>
+        <DuplicateWarningModal
+          team1Score={pendingDuplicateSubmission.team1Score}
+          team2Score={pendingDuplicateSubmission.team2Score}
+          onCancel={handleCancelDuplicateSubmission}
+          onConfirm={handleConfirmDuplicateSubmission}
+        />
       )}
     </div>
   );
