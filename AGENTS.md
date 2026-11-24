@@ -55,7 +55,10 @@ Key E2E specs for reference:
   - `npm run test:simulation` (When rating or matchmaking algorithms are modified)
   - `npm run test:e2e` (Optional / on-demand only; update relevant tests before running, and do not run automatically every time)
 
-## 3. Git & Commit Guidelines
+## 3. UI, Copy & Design Guidelines
+- **No Unnecessary or Redundant Labels / Badges**: Do not add useless eyebrow pills, redundant category badges, or decorative status tags in modals, cards, or dialogs (e.g. adding a "Possible Duplicate" badge right above a clear title like "Same game?"). Keep dialogs, headers, and UI copy clean, direct, and uncluttered.
+
+## 4. Git & Commit Guidelines
 - **Commit Per User Request**: Make a separate Git commit each time the user asks to make a change.
 - **Commit Page Documentation with Behavior**: Every commit that changes a user-facing page or flow must include the updated or newly created documentation for each affected page in `docs/pages/`, along with all affected E2E updates.
 - **Commit Message Style**: Do not add prefixes like `bug(...)`, `fix(...)`, `feat(...)`, etc. Simply explain the change made in plain, descriptive language.

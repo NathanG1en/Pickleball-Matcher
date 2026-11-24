@@ -1027,6 +1027,7 @@ describe("OpenPlayManagerClient Component", () => {
     );
 
     expect(html).toContain("Same game?");
+    expect(html).not.toContain("Possible Duplicate");
     expect(html).toContain("A game with these players and score (11–0) is already in this session.");
     expect(html).toContain("It&#x27;s a Duplicate");
     expect(html).toContain("It&#x27;s a New Game");

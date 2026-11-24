@@ -105,14 +105,9 @@ export function DuplicateWarningModal({
         aria-labelledby="duplicate-game-title"
         className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]"
       >
-        <div className="space-y-1">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fef08a] border border-black text-[10px] font-black uppercase tracking-wider text-amber-900">
-            Possible Duplicate
-          </span>
-          <h2 id="duplicate-game-title" className="font-display text-2xl font-black uppercase tracking-tight">
-            Same game?
-          </h2>
-        </div>
+        <h2 id="duplicate-game-title" className="font-display text-2xl font-black uppercase tracking-tight">
+          Same game?
+        </h2>
         <p className="text-sm font-bold text-neutral-700 leading-relaxed">
           A game with these players and score ({team1Score}–{team2Score}) is already in this session.
         </p>
