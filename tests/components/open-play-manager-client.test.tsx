@@ -863,6 +863,153 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).not.toContain("Input:");
     expect(html).toContain(`dateTime="${inputTime.toISOString()}"`);
   });
+
+  it("renders potential duplicate alert with dismiss button for organizers on matching games", () => {
+    const startedRoundsWithDuplicates: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:00:00.000Z"),
+          startedAt: new Date("2026-10-10T14:00:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_dup_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:15:00.000Z"),
+            version: 1,
+          },
+          {
+            id: "m_dup_2",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 9,
+            team2Score: 11,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:25:00.000Z"),
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          // m_dup_1: p1 & p2 vs p3 & p4 (11 - 9)
+          { matchId: "m_dup_1", playerId: "p1", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p2", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p3", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p4", team: 2, ratingBefore: null, ratingAfter: null },
+          // m_dup_2: p3 & p4 vs p1 & p2 (9 - 11) - inverted teams and score
+          { matchId: "m_dup_2", playerId: "p3", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p4", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p1", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p2", team: 2, ratingBefore: null, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRoundsWithDuplicates}
+        isOrganizer={true}
+        isHost={true}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).toContain('data-testid="duplicate-warning-m_dup_1"');
+    expect(html).toContain('data-testid="duplicate-warning-m_dup_2"');
+    expect(html).toContain('data-testid="dismiss-duplicate-button-m_dup_1"');
+    expect(html).toContain('data-testid="dismiss-duplicate-button-m_dup_2"');
+    expect(html).toContain("Potential duplicate:");
+    expect(html).toContain("Matches Game 2");
+    expect(html).toContain("Matches Game 1");
+  });
+
+  it("does not render potential duplicate alert for non-organizer members", () => {
+    const startedRoundsWithDuplicates: StartedRoundRecord[] = [
+      {
+        round: {
+          id: "rnd_1",
+          sessionId,
+          roundNumber: 1,
+          status: "started",
+          seed: 1,
+          scoreBreakdown: { playingTime: 0, consecutiveSit: 0, partnerRepeat: 0, skillBalance: 0, opponentRepeat: 0, tieBreak: 0, total: 0 },
+          createdAt: new Date("2026-10-10T14:00:00.000Z"),
+          startedAt: new Date("2026-10-10T14:00:00.000Z"),
+          completedAt: null,
+          version: 1,
+        },
+        matches: [
+          {
+            id: "m_dup_1",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:15:00.000Z"),
+            version: 1,
+          },
+          {
+            id: "m_dup_2",
+            roundId: "rnd_1",
+            courtNumber: 1,
+            team1Score: 11,
+            team2Score: 9,
+            status: "completed",
+            completedAt: new Date("2026-10-10T14:25:00.000Z"),
+            version: 1,
+          },
+        ],
+        matchPlayers: [
+          { matchId: "m_dup_1", playerId: "p1", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p2", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p3", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_1", playerId: "p4", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p1", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p2", team: 1, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p3", team: 2, ratingBefore: null, ratingAfter: null },
+          { matchId: "m_dup_2", playerId: "p4", team: 2, ratingBefore: null, ratingAfter: null },
+        ],
+        sits: [],
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <OpenPlayManagerClient
+        groupId={groupId}
+        groupName="Test Group"
+        session={session}
+        players={players}
+        attendance={attendance}
+        startedRounds={startedRoundsWithDuplicates}
+        isOrganizer={false}
+        isHost={false}
+        isMember={true}
+        currentViewerPlayerId="p1"
+      />
+    );
+
+    expect(html).not.toContain('data-testid="duplicate-warning-m_dup_1"');
+    expect(html).not.toContain("Potential duplicate:");
+  });
 });
 
 
