@@ -189,6 +189,9 @@ export function ScoreHistoryChart({
       if (event.key === "Escape") {
         setSelectedIndex(null);
         setHoveredIndex(null);
+        if (typeof document !== "undefined" && (document.activeElement instanceof HTMLElement || document.activeElement instanceof SVGElement)) {
+          document.activeElement.blur();
+        }
       }
     };
     document.addEventListener("pointerdown", handlePointerDown);
@@ -265,10 +268,6 @@ export function ScoreHistoryChart({
         e.currentTarget.setPointerCapture(e.pointerId);
       } catch {
         // Ignore if pointer capture unsupported
-      }
-      const idx = getIndexFromClientX(e.clientX);
-      if (idx !== null) {
-        setSelectedIndex(idx);
       }
     } else {
       isTouchRef.current = true;
