@@ -5,6 +5,8 @@ import {
   ScoreHistoryChart,
   filterHistoryByTimeRange,
   computeYAxisTicks,
+  findClosestSessionIndex,
+  calculateSvgXFromClientX,
   RATING_TIME_RANGES,
 } from "@/components/players/score-history-chart";
 import type { PlayerSessionHistoryRecord } from "@/lib/domain/types";
@@ -232,6 +234,80 @@ describe("ScoreHistoryChart", () => {
       expect(tick.y).toBeGreaterThanOrEqual(25);
       expect(tick.y).toBeLessThanOrEqual(180);
     }
+  });
+
+  it("renders scrubber container with touch-pan-y and swipe hint for interactive timeline exploration", () => {
+    const history: PlayerSessionHistoryRecord[] = [
+      {
+        sessionId: "s1",
+        groupId: "g1",
+        groupName: "Club A",
+        rating: 1000,
+        wins: 2,
+        losses: 0,
+        startedAt: new Date("2026-09-01T10:00:00Z"),
+      },
+      {
+        sessionId: "s2",
+        groupId: "g1",
+        groupName: "Club A",
+        rating: 1050,
+        wins: 2,
+        losses: 0,
+        startedAt: new Date("2026-09-15T10:00:00Z"),
+      },
+    ];
+
+    const html = renderToStaticMarkup(<ScoreHistoryChart history={history} />);
+    expect(html).toContain('data-testid="rating-chart-scrubber"');
+    expect(html).toContain("touch-pan-y");
+    expect(html).toContain("select-none");
+    expect(html).toContain("Swipe or hover to explore");
+  });
+});
+
+describe("findClosestSessionIndex", () => {
+  it("returns 0 for empty or single-point arrays", () => {
+    expect(findClosestSessionIndex([], 100)).toBe(0);
+    expect(findClosestSessionIndex([{ x: 200 }], 50)).toBe(0);
+    expect(findClosestSessionIndex([{ x: 200 }], 350)).toBe(0);
+  });
+
+  it("finds closest session point across multiple coordinates", () => {
+    const points = [{ x: 36 }, { x: 209 }, { x: 382 }];
+
+    // Left of or near first point
+    expect(findClosestSessionIndex(points, 0)).toBe(0);
+    expect(findClosestSessionIndex(points, 36)).toBe(0);
+    expect(findClosestSessionIndex(points, 100)).toBe(0);
+
+    // Near middle point
+    expect(findClosestSessionIndex(points, 150)).toBe(1);
+    expect(findClosestSessionIndex(points, 209)).toBe(1);
+    expect(findClosestSessionIndex(points, 250)).toBe(1);
+
+    // Near or right of last point
+    expect(findClosestSessionIndex(points, 350)).toBe(2);
+    expect(findClosestSessionIndex(points, 382)).toBe(2);
+    expect(findClosestSessionIndex(points, 450)).toBe(2);
+  });
+});
+
+describe("calculateSvgXFromClientX", () => {
+  it("calculates proportional svgX based on client bounding rect", () => {
+    const rect = { left: 100, width: 800 };
+
+    // At left edge
+    expect(calculateSvgXFromClientX(100, rect)).toBe(0);
+    // In middle
+    expect(calculateSvgXFromClientX(500, rect)).toBe(200);
+    // At right edge
+    expect(calculateSvgXFromClientX(900, rect)).toBe(400);
+  });
+
+  it("handles zero or negative width gracefully", () => {
+    expect(calculateSvgXFromClientX(100, { left: 100, width: 0 })).toBe(200);
+    expect(calculateSvgXFromClientX(100, { left: 100, width: -50 })).toBe(200);
   });
 });
 
