@@ -25,6 +25,14 @@ import type {
   SessionRecord,
   StartedRoundRecord,
   TournamentRecord,
+  ChallengeTemplateRecord,
+  GroupTrainingPlanRecord,
+  GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
+  TrainingResultRecord,
+  TrainingResultParticipantRecord,
+  TrainingProgressSummary,
 } from "@/lib/domain/types";
 
 export interface DomainRepository {
@@ -127,5 +135,19 @@ export interface DomainRepository {
   createTournament(tournament: TournamentRecord): Promise<void>;
   updateTournament(tournament: TournamentRecord): Promise<void>;
   deleteTournament(tournamentId: string, groupId: string): Promise<void>;
+  listChallengeTemplates(groupId?: string): Promise<readonly ChallengeTemplateRecord[]>;
+  getChallengeTemplate(id: string): Promise<ChallengeTemplateRecord | null>;
+  getWeeklyTrainingPlan(groupId: string, year: number, weekNumber: number): Promise<{ plan: GroupTrainingPlanRecord; items: readonly GroupTrainingPlanItemRecord[] } | null>;
+  listActiveGroupTrainingPlans(groupIds: readonly string[]): Promise<readonly { plan: GroupTrainingPlanRecord; groupName: string; challengeCount: number; completedCount: number }[]>;
+  createWeeklyTrainingPlan(plan: GroupTrainingPlanRecord, items: readonly GroupTrainingPlanItemRecord[]): Promise<void>;
+  recordTrainingResult(result: TrainingResultRecord, participants: readonly TrainingResultParticipantRecord[]): Promise<void>;
+  listTrainingResultsForChallenge(challengeId: string, options?: { accountId?: string; playerId?: string; groupId?: string; limit?: number }): Promise<readonly TrainingResultRecord[]>;
+  listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]>;
+  getPlayerPersonalBests(accountId?: string, playerId?: string): Promise<ReadonlyMap<string, number>>;
+  getPlayerTrainingProgress(accountId?: string, playerId?: string): Promise<TrainingProgressSummary>;
+  getPersonalWeeklyTrainingPlan(accountId: string, year: number, weekNumber: number): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null>;
+  savePersonalWeeklyTrainingPlan(plan: PersonalTrainingPlanRecord, items: readonly PersonalTrainingPlanItemRecord[]): Promise<void>;
+  listTrainingResultsForPersonalPlan(planId: string): Promise<readonly TrainingResultRecord[]>;
+  deleteTrainingResult(resultId: string, actorId: string): Promise<boolean>;
 }
 

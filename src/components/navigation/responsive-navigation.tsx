@@ -7,6 +7,7 @@ import {
   UsersIcon,
   SearchIcon,
   UserIcon,
+  TargetIcon,
   PickleballIcon,
   LogOutIcon,
 } from "@/components/ui/icons";
@@ -60,6 +61,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
     pathname.startsWith("/players/groups") ||
     pathname === "/setup" ||
     (pathname.startsWith("/g/") && !pathname.includes("/sessions/"));
+  const isTrainingActive = pathname.startsWith("/training");
   const isPlayersActive = pathname.startsWith("/players/find");
   const isProfileActive =
     pathname === "/players" ||
@@ -100,6 +102,13 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
       href: "/players/find",
       icon: SearchIcon,
       active: isPlayersActive,
+    },
+    {
+      id: "training",
+      label: "Training",
+      href: "/training",
+      icon: TargetIcon,
+      active: isTrainingActive,
     },
     {
       id: "profile",
@@ -175,6 +184,17 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 }`}
               >
                 Players
+              </Link>
+              <Link
+                href="/training"
+                aria-current={isTrainingActive ? "page" : undefined}
+                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isTrainingActive
+                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
+                }`}
+              >
+                Training
               </Link>
             </div>
           )}
@@ -265,8 +285,8 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
 
       {/* =========================================================================
           MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)
-          Instagram-inspired persistent bottom bar with 4 destinations:
-          Home, Groups, Players, Profile
+          Instagram-inspired persistent bottom bar with 5 destinations:
+          Home, Groups, Training, Players, Profile
           Only rendered for signed-in players outside active session court view.
          ========================================================================= */}
       {!isSessionCourtView && Boolean(playerAccount) && (
@@ -275,7 +295,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
           className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#FFFDF7]/95 backdrop-blur-md border-t-2 border-black shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
           style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
         >
-          <div className="grid grid-cols-4 items-center px-2 pt-1.5 max-w-md mx-auto">
+          <div className="grid grid-cols-5 items-center px-1 pt-1.5 max-w-md mx-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

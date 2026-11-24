@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
 describe("ResponsiveNavigation Component", () => {
   const mockAccount = { username: "dinkmaster" };
 
-  it("renders desktop and mobile navigation elements with the 4 core destinations when signed in", () => {
+  it("renders desktop and mobile navigation elements with the 5 core destinations when signed in", () => {
     currentPathname = "/";
     const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
 
@@ -26,12 +26,14 @@ describe("ResponsiveNavigation Component", () => {
     // Desktop navigation links
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/players/groups"');
+    expect(html).toContain('href="/training"');
     expect(html).toContain('href="/players/find"');
     expect(html).toContain('href="/players"');
 
     // Labels
     expect(html).toContain("Home");
     expect(html).toContain("Groups");
+    expect(html).toContain("Training");
     expect(html).toContain("Players");
     expect(html).toContain("@dinkmaster");
 
@@ -50,6 +52,18 @@ describe("ResponsiveNavigation Component", () => {
     const bottomNavStart = html.indexOf('aria-label="Mobile bottom navigation"');
     const bottomNavHtml = html.slice(bottomNavStart);
     expect(bottomNavHtml).not.toContain("Log Out");
+
+    // In desktop navigation, Training appears after Players
+    const desktopNavStart = html.indexOf('aria-label="Desktop main navigation"');
+    const desktopNavHtml = html.slice(desktopNavStart, html.indexOf("</div>", desktopNavStart));
+    const desktopPlayersIdx = desktopNavHtml.indexOf('href="/players/find"');
+    const desktopTrainingIdx = desktopNavHtml.indexOf('href="/training"');
+    expect(desktopPlayersIdx).toBeLessThan(desktopTrainingIdx);
+
+    // In mobile bottom navigation, Training appears after Players
+    const mobilePlayersIdx = bottomNavHtml.indexOf('href="/players/find"');
+    const mobileTrainingIdx = bottomNavHtml.indexOf('href="/training"');
+    expect(mobilePlayersIdx).toBeLessThan(mobileTrainingIdx);
   });
 
   it("renders only branding and Sign In button when signed out, hiding navigation destinations and bottom bar", () => {
@@ -92,6 +106,13 @@ describe("ResponsiveNavigation Component", () => {
     currentPathname = "/g/grp-123";
     html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
     expect(html).toMatch(/aria-current="page"[^>]*href="\/players\/groups"/);
+  });
+
+  it("highlights Training as active when pathname is '/training'", () => {
+    currentPathname = "/training";
+    const html = renderToStaticMarkup(<ResponsiveNavigation playerAccount={mockAccount} />);
+    expect(html).toMatch(/aria-current="page"[^>]*href="\/training"/);
+    expect(html).not.toMatch(/aria-current="page"[^>]*href="\/"/);
   });
 
   it("highlights Players as active when pathname is '/players/find'", () => {

@@ -37,6 +37,17 @@ import {
   TournamentBracket,
   TournamentFormat,
   TeamTournamentData,
+  ChallengeTemplateRecord,
+  ChallengeTrackingFormat,
+  ChallengeParticipantFormat,
+  ChallengeSkillCategory,
+  GroupTrainingPlanRecord,
+  GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanRecord,
+  PersonalTrainingPlanItemRecord,
+  TrainingResultRecord,
+  TrainingResultParticipantRecord,
+  TrainingProgressSummary,
 } from "@/lib/domain/types";
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
@@ -240,6 +251,217 @@ const mapTournament = (row: TournamentRow): TournamentRecord => {
     teamData: teamData && typeof teamData === "object" ? teamData : null,
   };
 };
+
+type ChallengeTemplateRow = {
+  id: string;
+  scope: "system" | "group";
+  group_id: string | null;
+  title: string;
+  slug: string;
+  description: string;
+  instructions: string;
+  skill_category: ChallengeSkillCategory;
+  participant_format: ChallengeParticipantFormat;
+  tracking_format: ChallengeTrackingFormat;
+  score_unit: string;
+  higher_is_better: boolean;
+  default_target_goal: number | null;
+  recommended_duration_minutes: number | null;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+const mapChallengeTemplate = (row: ChallengeTemplateRow): ChallengeTemplateRecord => ({
+  id: row.id,
+  scope: row.scope,
+  groupId: row.group_id,
+  title: row.title,
+  slug: row.slug,
+  description: row.description,
+  instructions: row.instructions,
+  skillCategory: row.skill_category,
+  participantFormat: row.participant_format,
+  trackingFormat: row.tracking_format,
+  scoreUnit: row.score_unit,
+  higherIsBetter: row.higher_is_better,
+  defaultTargetGoal: row.default_target_goal,
+  recommendedDurationMinutes: row.recommended_duration_minutes,
+  isActive: row.is_active,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+type GroupTrainingPlanRow = {
+  id: string;
+  group_id: string;
+  year: number;
+  week_number: number;
+  title: string;
+  focus_notes: string | null;
+  status: "draft" | "published" | "archived";
+  published_at: Date | null;
+  created_by_account_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+const mapGroupTrainingPlan = (row: GroupTrainingPlanRow): GroupTrainingPlanRecord => ({
+  id: row.id,
+  groupId: row.group_id,
+  year: row.year,
+  weekNumber: row.week_number,
+  title: row.title,
+  focusNotes: row.focus_notes,
+  status: row.status,
+  publishedAt: row.published_at,
+  createdByAccountId: row.created_by_account_id,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+type GroupTrainingPlanItemRow = {
+  id: string;
+  plan_id: string;
+  challenge_id: string;
+  custom_goal_description: string | null;
+  target_benchmark: number | null;
+  sort_order: number;
+  challenge_scope?: "system" | "group";
+  challenge_group_id?: string | null;
+  challenge_title?: string;
+  challenge_slug?: string;
+  challenge_description?: string;
+  challenge_instructions?: string;
+  challenge_skill_category?: ChallengeSkillCategory;
+  challenge_participant_format?: ChallengeParticipantFormat;
+  challenge_tracking_format?: ChallengeTrackingFormat;
+  challenge_score_unit?: string;
+  challenge_higher_is_better?: boolean;
+  challenge_default_target_goal?: number | null;
+  challenge_recommended_duration_minutes?: number | null;
+  challenge_is_active?: boolean;
+  challenge_created_at?: Date;
+  challenge_updated_at?: Date;
+};
+
+const mapGroupTrainingPlanItem = (row: GroupTrainingPlanItemRow): GroupTrainingPlanItemRecord => ({
+  id: row.id,
+  planId: row.plan_id,
+  challengeId: row.challenge_id,
+  customGoalDescription: row.custom_goal_description,
+  targetBenchmark: row.target_benchmark,
+  sortOrder: row.sort_order,
+  challenge: row.challenge_title
+    ? {
+        id: row.challenge_id,
+        scope: row.challenge_scope ?? "system",
+        groupId: row.challenge_group_id,
+        title: row.challenge_title,
+        slug: row.challenge_slug ?? "",
+        description: row.challenge_description ?? "",
+        instructions: row.challenge_instructions ?? "",
+        skillCategory: row.challenge_skill_category ?? "dinking",
+        participantFormat: row.challenge_participant_format ?? "individual",
+        trackingFormat: row.challenge_tracking_format ?? "highest_score",
+        scoreUnit: row.challenge_score_unit ?? "reps",
+        higherIsBetter: row.challenge_higher_is_better ?? true,
+        defaultTargetGoal: row.challenge_default_target_goal,
+        recommendedDurationMinutes: row.challenge_recommended_duration_minutes,
+        isActive: row.challenge_is_active ?? true,
+        createdAt: row.challenge_created_at ?? new Date(),
+        updatedAt: row.challenge_updated_at ?? new Date(),
+      }
+    : undefined,
+});
+
+type PersonalTrainingPlanRow = {
+  id: string;
+  account_id: string;
+  year: number;
+  week_number: number;
+  title: string;
+  focus_notes: string | null;
+  status: "active" | "completed" | "archived";
+  created_at: Date;
+  updated_at: Date;
+};
+
+const mapPersonalTrainingPlan = (row: PersonalTrainingPlanRow): PersonalTrainingPlanRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  year: row.year,
+  weekNumber: row.week_number,
+  title: row.title,
+  focusNotes: row.focus_notes,
+  status: row.status,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+type PersonalTrainingPlanItemRow = GroupTrainingPlanItemRow;
+
+const mapPersonalTrainingPlanItem = (row: PersonalTrainingPlanItemRow): PersonalTrainingPlanItemRecord => ({
+  id: row.id,
+  planId: row.plan_id,
+  challengeId: row.challenge_id,
+  customGoalDescription: row.custom_goal_description,
+  targetBenchmark: row.target_benchmark !== null ? Number(row.target_benchmark) : null,
+  sortOrder: row.sort_order,
+  challenge: row.challenge_title
+    ? {
+        id: row.challenge_id,
+        scope: row.challenge_scope ?? "system",
+        groupId: row.challenge_group_id,
+        title: row.challenge_title,
+        slug: row.challenge_slug ?? "",
+        description: row.challenge_description ?? "",
+        instructions: row.challenge_instructions ?? "",
+        skillCategory: row.challenge_skill_category ?? "dinking",
+        participantFormat: row.challenge_participant_format ?? "individual",
+        trackingFormat: row.challenge_tracking_format ?? "highest_score",
+        scoreUnit: row.challenge_score_unit ?? "reps",
+        higherIsBetter: row.challenge_higher_is_better ?? true,
+        defaultTargetGoal: row.challenge_default_target_goal !== null ? Number(row.challenge_default_target_goal) : null,
+        recommendedDurationMinutes: row.challenge_recommended_duration_minutes,
+        isActive: row.challenge_is_active ?? true,
+        createdAt: row.challenge_created_at ?? new Date(),
+        updatedAt: row.challenge_updated_at ?? new Date(),
+      }
+    : undefined,
+});
+
+type TrainingResultRow = {
+  id: string;
+  account_id: string | null;
+  group_id: string | null;
+  plan_item_id: string | null;
+  challenge_id: string;
+  logged_by_player_id: string | null;
+  score_primary: number;
+  score_secondary: number | null;
+  metric_value: number;
+  completed: boolean;
+  notes: string | null;
+  recorded_at: Date;
+  version: number;
+};
+
+const mapTrainingResult = (row: TrainingResultRow): TrainingResultRecord => ({
+  id: row.id,
+  accountId: row.account_id,
+  groupId: row.group_id,
+  planItemId: row.plan_item_id,
+  challengeId: row.challenge_id,
+  loggedByPlayerId: row.logged_by_player_id,
+  scorePrimary: Number(row.score_primary),
+  scoreSecondary: row.score_secondary !== null && row.score_secondary !== undefined ? Number(row.score_secondary) : null,
+  metricValue: Number(row.metric_value),
+  completed: row.completed,
+  notes: row.notes,
+  recordedAt: row.recorded_at,
+  version: row.version,
+});
 
 const mapGroup = (row: GroupRow): GroupRecord => ({
   id: row.id,
@@ -2087,6 +2309,468 @@ export class PostgresRepositories implements DomainRepository {
       delete from tournaments
       where id = ${tournamentId} and group_id = ${groupId}
     `;
+  }
+
+  async listChallengeTemplates(groupId?: string): Promise<readonly ChallengeTemplateRecord[]> {
+    const rows = groupId
+      ? await this.query<ChallengeTemplateRow[]>`
+          select * from challenge_templates
+          where is_active = true and (scope = 'system' or group_id = ${groupId})
+          order by title asc
+        `
+      : await this.query<ChallengeTemplateRow[]>`
+          select * from challenge_templates
+          where is_active = true and scope = 'system'
+          order by title asc
+        `;
+    return rows.map(mapChallengeTemplate);
+  }
+
+  async getChallengeTemplate(id: string): Promise<ChallengeTemplateRecord | null> {
+    const rows = await this.query<ChallengeTemplateRow[]>`
+      select * from challenge_templates
+      where id = ${id}
+    `;
+    return rows[0] ? mapChallengeTemplate(rows[0]) : null;
+  }
+
+  async getWeeklyTrainingPlan(
+    groupId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: GroupTrainingPlanRecord; items: readonly GroupTrainingPlanItemRecord[] } | null> {
+    const planRows = await this.query<GroupTrainingPlanRow[]>`
+      select * from group_training_plans
+      where group_id = ${groupId} and year = ${year} and week_number = ${weekNumber}
+    `;
+    if (!planRows[0]) return null;
+    const plan = mapGroupTrainingPlan(planRows[0]);
+
+    const itemRows = await this.query<GroupTrainingPlanItemRow[]>`
+      select
+        i.id, i.plan_id, i.challenge_id, i.custom_goal_description, i.target_benchmark, i.sort_order,
+        c.scope as challenge_scope, c.group_id as challenge_group_id, c.title as challenge_title,
+        c.slug as challenge_slug, c.description as challenge_description, c.instructions as challenge_instructions,
+        c.skill_category as challenge_skill_category, c.participant_format as challenge_participant_format,
+        c.tracking_format as challenge_tracking_format, c.score_unit as challenge_score_unit,
+        c.higher_is_better as challenge_higher_is_better, c.default_target_goal as challenge_default_target_goal,
+        c.recommended_duration_minutes as challenge_recommended_duration_minutes,
+        c.is_active as challenge_is_active, c.created_at as challenge_created_at, c.updated_at as challenge_updated_at
+      from group_training_plan_items i
+      left join challenge_templates c on c.id = i.challenge_id
+      where i.plan_id = ${plan.id}
+      order by i.sort_order asc
+    `;
+
+    return {
+      plan,
+      items: itemRows.map(mapGroupTrainingPlanItem),
+    };
+  }
+
+  async listActiveGroupTrainingPlans(
+    groupIds: readonly string[],
+  ): Promise<readonly { plan: GroupTrainingPlanRecord; groupName: string; challengeCount: number; completedCount: number }[]> {
+    if (groupIds.length === 0) return [];
+    const rows = await this.query<{
+      id: string;
+      group_id: string;
+      group_name: string;
+      year: number;
+      week_number: number;
+      title: string;
+      focus_notes: string | null;
+      status: "draft" | "published" | "archived";
+      published_at: Date | null;
+      created_by_account_id: string | null;
+      created_at: Date;
+      updated_at: Date;
+      challenge_count: string | number;
+    }[]>`
+      select
+        p.*,
+        g.name as group_name,
+        count(i.id) as challenge_count
+      from group_training_plans p
+      join groups g on g.id = p.group_id
+      left join group_training_plan_items i on i.plan_id = p.id
+      where p.group_id in ${this.query(groupIds as string[])}
+        and p.status = 'published'
+      group by p.id, g.name
+      order by p.created_at desc
+    `;
+
+    return rows.map((r) => ({
+      plan: mapGroupTrainingPlan(r),
+      groupName: r.group_name,
+      challengeCount: Number(r.challenge_count),
+      completedCount: 0,
+    }));
+  }
+
+  async createWeeklyTrainingPlan(
+    plan: GroupTrainingPlanRecord,
+    items: readonly GroupTrainingPlanItemRecord[],
+  ): Promise<void> {
+    await this.transaction(async (repo) => {
+      const pRepo = repo as PostgresRepositories;
+      await pRepo.query`
+        insert into group_training_plans (
+          id, group_id, year, week_number, title, focus_notes, status, published_at, created_by_account_id, created_at, updated_at
+        ) values (
+          ${plan.id}, ${plan.groupId}, ${plan.year}, ${plan.weekNumber}, ${plan.title},
+          ${plan.focusNotes ?? null}, ${plan.status}, ${plan.publishedAt ?? null},
+          ${plan.createdByAccountId ?? null}, ${plan.createdAt}, ${plan.updatedAt}
+        )
+        on conflict (group_id, year, week_number) do update set
+          title = excluded.title,
+          focus_notes = excluded.focus_notes,
+          status = excluded.status,
+          published_at = excluded.published_at,
+          updated_at = excluded.updated_at
+      `;
+
+      await pRepo.query`
+        delete from group_training_plan_items where plan_id = ${plan.id}
+      `;
+
+      for (const item of items) {
+        await pRepo.query`
+          insert into group_training_plan_items (
+            id, plan_id, challenge_id, custom_goal_description, target_benchmark, sort_order
+          ) values (
+            ${item.id}, ${item.planId}, ${item.challengeId}, ${item.customGoalDescription ?? null},
+            ${item.targetBenchmark ?? null}, ${item.sortOrder}
+          )
+        `;
+      }
+    });
+  }
+
+  async recordTrainingResult(
+    result: TrainingResultRecord,
+    participants: readonly TrainingResultParticipantRecord[],
+  ): Promise<void> {
+    await this.transaction(async (repo) => {
+      const pRepo = repo as PostgresRepositories;
+      await pRepo.query`
+        insert into training_results (
+          id, account_id, group_id, plan_item_id, challenge_id, logged_by_player_id,
+          score_primary, score_secondary, metric_value, completed, notes, recorded_at, version
+        ) values (
+          ${result.id}, ${result.accountId ?? null}, ${result.groupId ?? null},
+          ${result.planItemId ?? null}, ${result.challengeId}, ${result.loggedByPlayerId ?? null},
+          ${result.scorePrimary}, ${result.scoreSecondary ?? null}, ${result.metricValue},
+          ${result.completed}, ${result.notes ?? null}, ${result.recordedAt}, ${result.version}
+        )
+      `;
+
+      for (const part of participants) {
+        await pRepo.query`
+          insert into training_result_participants (
+            id, result_id, player_id, account_id, role
+          ) values (
+            ${part.id}, ${result.id}, ${part.playerId ?? null}, ${part.accountId ?? null}, ${part.role}
+          )
+          on conflict do nothing
+        `;
+      }
+    });
+  }
+
+  async listTrainingResultsForChallenge(
+    challengeId: string,
+    options?: { accountId?: string; playerId?: string; groupId?: string; limit?: number },
+  ): Promise<readonly TrainingResultRecord[]> {
+    const limit = options?.limit ?? 50;
+    let rows: TrainingResultRow[];
+
+    if (options?.accountId && options?.groupId) {
+      rows = await this.query<TrainingResultRow[]>`
+        select distinct r.* from training_results r
+        left join training_result_participants p on p.result_id = r.id
+        where r.challenge_id = ${challengeId}
+          and r.group_id = ${options.groupId}
+          and (r.account_id = ${options.accountId} or p.account_id = ${options.accountId})
+        order by r.recorded_at desc
+        limit ${limit}
+      `;
+    } else if (options?.accountId) {
+      rows = await this.query<TrainingResultRow[]>`
+        select distinct r.* from training_results r
+        left join training_result_participants p on p.result_id = r.id
+        where r.challenge_id = ${challengeId}
+          and (r.account_id = ${options.accountId} or p.account_id = ${options.accountId})
+        order by r.recorded_at desc
+        limit ${limit}
+      `;
+    } else if (options?.playerId) {
+      rows = await this.query<TrainingResultRow[]>`
+        select distinct r.* from training_results r
+        left join training_result_participants p on p.result_id = r.id
+        where r.challenge_id = ${challengeId}
+          and (r.logged_by_player_id = ${options.playerId} or p.player_id = ${options.playerId})
+        order by r.recorded_at desc
+        limit ${limit}
+      `;
+    } else if (options?.groupId) {
+      rows = await this.query<TrainingResultRow[]>`
+        select r.* from training_results r
+        where r.challenge_id = ${challengeId} and r.group_id = ${options.groupId}
+        order by r.recorded_at desc
+        limit ${limit}
+      `;
+    } else {
+      rows = await this.query<TrainingResultRow[]>`
+        select r.* from training_results r
+        where r.challenge_id = ${challengeId}
+        order by r.recorded_at desc
+        limit ${limit}
+      `;
+    }
+
+    if (rows.length === 0) return [];
+
+    const resultIds = rows.map((r) => r.id);
+    const participantRows = await this.query<{
+      id: string;
+      result_id: string;
+      player_id: string | null;
+      account_id: string | null;
+      role: "primary" | "partner" | "opponent" | "feeder" | "group_member";
+      player_name: string | null;
+      username: string | null;
+    }[]>`
+      select
+        p.*,
+        pl.name as player_name,
+        acc.username as username
+      from training_result_participants p
+      left join players pl on pl.id = p.player_id
+      left join player_accounts acc on acc.id = p.account_id
+      where p.result_id in ${this.query(resultIds)}
+    `;
+
+    const partsByResult = new Map<string, TrainingResultParticipantRecord[]>();
+    for (const pr of participantRows) {
+      const list = partsByResult.get(pr.result_id) ?? [];
+      list.push({
+        id: pr.id,
+        resultId: pr.result_id,
+        playerId: pr.player_id,
+        accountId: pr.account_id,
+        role: pr.role,
+        playerName: pr.player_name ?? undefined,
+        playerUsername: pr.username ?? undefined,
+      });
+      partsByResult.set(pr.result_id, list);
+    }
+
+    return rows.map((r) => ({
+      ...mapTrainingResult(r),
+      participants: partsByResult.get(r.id) ?? [],
+    }));
+  }
+
+  async listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    const rows = await this.query<TrainingResultRow[]>`
+      select r.* from training_results r
+      join group_training_plan_items i on i.id = r.plan_item_id
+      where i.plan_id = ${planId}
+      order by r.recorded_at desc
+    `;
+    return rows.map(mapTrainingResult);
+  }
+
+  async getPlayerPersonalBests(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<ReadonlyMap<string, number>> {
+    if (!accountId && !playerId) return new Map();
+
+    const rows = accountId
+      ? await this.query<{ challenge_id: string; higher_is_better: boolean; best_metric: number }[]>`
+          select
+            r.challenge_id,
+            c.higher_is_better,
+            case when c.higher_is_better then max(r.metric_value) else min(r.metric_value) end as best_metric
+          from training_results r
+          join challenge_templates c on c.id = r.challenge_id
+          left join training_result_participants p on p.result_id = r.id
+          where r.account_id = ${accountId} or p.account_id = ${accountId}
+          group by r.challenge_id, c.higher_is_better
+        `
+      : await this.query<{ challenge_id: string; higher_is_better: boolean; best_metric: number }[]>`
+          select
+            r.challenge_id,
+            c.higher_is_better,
+            case when c.higher_is_better then max(r.metric_value) else min(r.metric_value) end as best_metric
+          from training_results r
+          join challenge_templates c on c.id = r.challenge_id
+          left join training_result_participants p on p.result_id = r.id
+          where r.logged_by_player_id = ${playerId!} or p.player_id = ${playerId!}
+          group by r.challenge_id, c.higher_is_better
+        `;
+
+    const map = new Map<string, number>();
+    for (const r of rows) {
+      map.set(r.challenge_id, Number(r.best_metric));
+    }
+    return map;
+  }
+
+  async getPlayerTrainingProgress(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<TrainingProgressSummary> {
+    if (!accountId && !playerId) {
+      return { totalCompleted: 0, personalBestsCount: 0, totalImprovementPoints: 0, currentStreakDays: 0 };
+    }
+
+    const rows = accountId
+      ? await this.query<{ count: string; distinct_dates: string[] }[]>`
+          select
+            count(distinct r.id) as count,
+            array_agg(distinct (r.recorded_at at time zone 'UTC')::date) as distinct_dates
+          from training_results r
+          left join training_result_participants p on p.result_id = r.id
+          where r.account_id = ${accountId} or p.account_id = ${accountId}
+        `
+      : await this.query<{ count: string; distinct_dates: string[] }[]>`
+          select
+            count(distinct r.id) as count,
+            array_agg(distinct (r.recorded_at at time zone 'UTC')::date) as distinct_dates
+          from training_results r
+          left join training_result_participants p on p.result_id = r.id
+          where r.logged_by_player_id = ${playerId!} or p.player_id = ${playerId!}
+        `;
+
+    const totalCompleted = Number(rows[0]?.count ?? 0);
+    const pbs = await this.getPlayerPersonalBests(accountId, playerId);
+    const personalBestsCount = pbs.size;
+    const totalImprovementPoints = totalCompleted * 10 + personalBestsCount * 25;
+
+    // Approximate streak days
+    const dates = (rows[0]?.distinct_dates ?? []).filter(Boolean);
+    const currentStreakDays = dates.length;
+
+    return {
+      totalCompleted,
+      personalBestsCount,
+      totalImprovementPoints,
+      currentStreakDays,
+    };
+  }
+
+  async deleteTrainingResult(resultId: string, actorId: string): Promise<boolean> {
+    const rows = await this.query<{ id: string; account_id: string | null; logged_by_player_id: string | null; group_id: string | null }[]>`
+      select id, account_id, logged_by_player_id, group_id from training_results where id = ${resultId}
+    `;
+    if (!rows[0]) return false;
+
+    const res = rows[0];
+    const isOwner = res.account_id === actorId || res.logged_by_player_id === actorId;
+    let isOrg = false;
+    if (res.group_id) {
+      isOrg = await this.isGroupOrganizer(res.group_id, actorId);
+    }
+
+    if (!isOwner && !isOrg) {
+      return false;
+    }
+
+    await this.query`delete from training_results where id = ${resultId}`;
+    return true;
+  }
+
+  async getPersonalWeeklyTrainingPlan(
+    accountId: string,
+    year: number,
+    weekNumber: number,
+  ): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null> {
+    const planRows = await this.query<PersonalTrainingPlanRow[]>`
+      select * from personal_training_plans
+      where account_id = ${accountId} and year = ${year} and week_number = ${weekNumber}
+    `;
+    if (!planRows[0]) return null;
+    const plan = mapPersonalTrainingPlan(planRows[0]);
+
+    const itemRows = await this.query<PersonalTrainingPlanItemRow[]>`
+      select
+        i.id, i.plan_id, i.challenge_id, i.custom_goal_description, i.target_benchmark, i.sort_order,
+        c.scope as challenge_scope, c.group_id as challenge_group_id, c.title as challenge_title,
+        c.slug as challenge_slug, c.description as challenge_description, c.instructions as challenge_instructions,
+        c.skill_category as challenge_skill_category, c.participant_format as challenge_participant_format,
+        c.tracking_format as challenge_tracking_format, c.score_unit as challenge_score_unit,
+        c.higher_is_better as challenge_higher_is_better, c.default_target_goal as challenge_default_target_goal,
+        c.recommended_duration_minutes as challenge_recommended_duration_minutes,
+        c.is_active as challenge_is_active, c.created_at as challenge_created_at, c.updated_at as challenge_updated_at
+      from personal_training_plan_items i
+      left join challenge_templates c on c.id = i.challenge_id
+      where i.plan_id = ${plan.id}
+      order by i.sort_order asc
+    `;
+
+    return {
+      plan,
+      items: itemRows.map(mapPersonalTrainingPlanItem),
+    };
+  }
+
+  async savePersonalWeeklyTrainingPlan(
+    plan: PersonalTrainingPlanRecord,
+    items: readonly PersonalTrainingPlanItemRecord[],
+  ): Promise<void> {
+    await this.transaction(async (repo) => {
+      const pRepo = repo as PostgresRepositories;
+      await pRepo.query`
+        insert into personal_training_plans (
+          id, account_id, year, week_number, title, focus_notes, status, created_at, updated_at
+        ) values (
+          ${plan.id}, ${plan.accountId}, ${plan.year}, ${plan.weekNumber}, ${plan.title},
+          ${plan.focusNotes ?? null}, ${plan.status}, ${plan.createdAt}, ${plan.updatedAt}
+        )
+        on conflict (account_id, year, week_number) do update set
+          title = excluded.title,
+          focus_notes = excluded.focus_notes,
+          status = excluded.status,
+          updated_at = excluded.updated_at
+      `;
+
+      await pRepo.query`
+        delete from personal_training_plan_items where plan_id = ${plan.id}
+      `;
+
+      for (const item of items) {
+        await pRepo.query`
+          insert into personal_training_plan_items (
+            id, plan_id, challenge_id, custom_goal_description, target_benchmark, sort_order
+          ) values (
+            ${item.id}, ${item.planId}, ${item.challengeId}, ${item.customGoalDescription ?? null},
+            ${item.targetBenchmark ?? null}, ${item.sortOrder}
+          )
+        `;
+      }
+    });
+  }
+
+  async listTrainingResultsForPersonalPlan(planId: string): Promise<readonly TrainingResultRecord[]> {
+    const planRows = await this.query<PersonalTrainingPlanRow[]>`
+      select * from personal_training_plans where id = ${planId}
+    `;
+    if (!planRows[0]) return [];
+    const plan = planRows[0];
+
+    const rows = await this.query<TrainingResultRow[]>`
+      select r.* from training_results r
+      join personal_training_plan_items i on i.challenge_id = r.challenge_id
+      where i.plan_id = ${planId}
+        and r.account_id = ${plan.account_id}
+        and extract(isoyear from r.recorded_at) = ${plan.year}
+        and extract(week from r.recorded_at) = ${plan.week_number}
+      order by r.recorded_at desc
+    `;
+    return rows.map(mapTrainingResult);
   }
 }
 
