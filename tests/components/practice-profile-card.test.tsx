@@ -45,7 +45,7 @@ describe("PracticeProfileCard", () => {
       <PracticeProfileCard profile={profileWith({ dinking: 0.82, resets: 0.48, volleys: 0.7 })} />,
     );
     expect(html).toContain("Practice Profile");
-    expect(html).toContain("Only you");
+    expect(html).not.toContain("Only you");
     expect(html).toContain("82%");
     expect(html).toContain("Not tested");
     expect(html).toContain('href="/training?category=dinking"');

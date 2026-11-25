@@ -31,8 +31,8 @@ The player profile page is where athletes can review their rating, track their g
    - When viewing one's own profile, provides "Create" and "Find groups" shortcut buttons.
    - **Privacy fallback**: Displays a locked notice ("Groups Private") if the player has hidden group memberships.
 5. **Practice Profile** (owner only):
-   - Shown only to the profile owner (on `/players` and on their own `/players/[username]`), under My Groups, with an **Only you** tag. Other viewers never see it.
-   - **Collapsed by default:** the card is a disclosure. Closed, it shows the title, the **Only you** tag, a one-line summary ("3 of 6 skills tested · Focus: Resets 48%", or "No skills tested yet"), and a chevron button. Tapping anywhere on the header opens the full card below.
+   - Shown only to the profile owner (on `/players` and on their own `/players/[username]`), under My Groups. Other viewers never see it.
+   - **Collapsed by default:** the card is a disclosure. Closed, it shows the title, a one-line summary ("3 of 6 skills tested · Focus: Resets 48%", or "No skills tested yet"), and a chevron button. Tapping anywhere on the header opens the full card below.
    - A hexagon with six skills — Dinking, Third Shot, Resets, Volleys, Serving, Strategy — scored as the average, across drills tried in that skill, of the player's best result in the last 60 days divided by the drill's target (capped at 100%). The outer ring is 100% of target; the inner ring is 50%.
    - Skills with no scorable attempts are drawn as dashed spokes labelled **Not tested** (never zero). The filled shape connects tested skills once at least three are tested; a hollow point marks a score based on a single attempt.
    - Win-based drills are excluded (results depend on the opponent), as are completion drills and drills without a target.

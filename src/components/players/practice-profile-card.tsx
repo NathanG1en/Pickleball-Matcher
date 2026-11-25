@@ -211,12 +211,7 @@ export function PracticeProfileCard({ profile }: { readonly profile: PracticePro
     >
       <summary data-testid="practice-profile-toggle" className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-3xl p-5 select-none [&::-webkit-details-marker]:hidden">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-xl font-black uppercase leading-tight text-black">Practice Profile</h2>
-            <span className="shrink-0 rounded-lg border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-500">
-              Only you
-            </span>
-          </div>
+          <h2 className="font-display text-xl font-black uppercase leading-tight text-black">Practice Profile</h2>
           <p data-testid="practice-profile-summary" className="mt-0.5 truncate text-xs font-bold text-neutral-600">
             {collapsedSummary(profile)}
           </p>
