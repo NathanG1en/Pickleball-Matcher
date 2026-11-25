@@ -8,7 +8,8 @@ import {
 import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
-import { TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
+import { TargetIcon } from "@/components/ui/icons";
+import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type {
   ChallengeSkillCategory,
   GroupRecord,
@@ -168,7 +169,6 @@ export default async function TrainingHubPage({
     ? selectedGroupPlan.items.filter((item) => groupCompletedChallengeIds.includes(item.challengeId)).length
     : 0;
   const planTotalCount = selectedGroupPlan?.items.length ?? 0;
-  const planProgressPercent = planTotalCount > 0 ? Math.round((planCompletedCount / planTotalCount) * 100) : 0;
 
   return (
     <main className="min-h-screen p-4 sm:p-6 w-full max-w-4xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
@@ -183,9 +183,7 @@ export default async function TrainingHubPage({
               {selectedGroupId ? "Weekly Training" : "Training & Challenges"}
             </h1>
             {selectedGroupId && group && (
-              <span className="text-xs font-bold text-neutral-600 block">
-                {group.name} · Focus Drills
-              </span>
+              <span className="text-xs font-bold text-neutral-600 block">{group.name}</span>
             )}
           </div>
         </div>
@@ -208,43 +206,6 @@ export default async function TrainingHubPage({
         )}
       </div>
 
-      {/* Progress & Stats Cards */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block truncate">Total Completed</span>
-          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
-            {progressSummary.totalCompleted}
-          </span>
-        </div>
-
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase text-neutral-500 truncate flex items-center gap-1">
-            <TrophyIcon className="w-3 h-3 text-amber-600 shrink-0" />
-            <span className="truncate">Personal Bests</span>
-          </span>
-          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
-            {progressSummary.personalBestsCount}
-          </span>
-        </div>
-
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase text-neutral-500 truncate flex items-center gap-1">
-            <ZapIcon className="w-3 h-3 text-lime-600 shrink-0" />
-            <span className="truncate">Practice Points</span>
-          </span>
-          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
-            {progressSummary.totalImprovementPoints}
-          </span>
-        </div>
-
-        <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-3 sm:p-3.5 shadow-[2px_2px_0px_0px_#000] flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase text-neutral-500 block truncate">Practice Days</span>
-          <span className="font-display text-xl sm:text-2xl font-black text-black mt-1">
-            {progressSummary.currentStreakDays}
-          </span>
-        </div>
-      </section>
-
       {/* Group Weekly Training Header Banner */}
       {selectedGroupId && selectedGroupPlan && (
         <section
@@ -258,18 +219,15 @@ export default async function TrainingHubPage({
               </span>
               <div>
                 <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 block">
-                  {group?.name ?? "Group"} · Week of {formatWeekOf(selectedGroupPlan.plan.year, selectedGroupPlan.plan.weekNumber)}
+                  Week of {formatWeekOf(selectedGroupPlan.plan.year, selectedGroupPlan.plan.weekNumber)}
                 </span>
                 <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
-                  {selectedGroupPlan.plan.title}
+                  {isGeneratedPlanTitle(selectedGroupPlan.plan.title) ? "This Week's Drills" : selectedGroupPlan.plan.title}
                 </h2>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1.5 rounded-xl bg-neutral-100 border-2 border-black font-display text-xs font-black uppercase text-black">
-                {planCompletedCount} / {planTotalCount} Done
-              </span>
               {isGroupOrganizer && (
                 <Link
                   href={`/g/${selectedGroupId}/training/plan/new`}
@@ -287,23 +245,7 @@ export default async function TrainingHubPage({
             </p>
           )}
 
-          {/* Progress Bar */}
-          <div className="w-full bg-neutral-200 h-2.5 rounded-full border border-black overflow-hidden">
-            <div
-              className="bg-[#ccff00] h-full transition-all duration-300"
-              style={{ width: `${planProgressPercent}%` }}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-neutral-600 font-bold border-t border-black/10">
-            <span>Focus drills assigned for this week</span>
-            <Link
-              href="/training"
-              className="text-black hover:underline flex items-center gap-1 font-black uppercase text-[11px]"
-            >
-              Browse All Drills →
-            </Link>
-          </div>
+          <PlanProgress completed={planCompletedCount} total={planTotalCount} />
         </section>
       )}
 
@@ -371,6 +313,32 @@ export default async function TrainingHubPage({
             />
           ))}
         </>
+      )}
+
+      {/* Lifetime practice totals (secondary to this week's plans) */}
+      {!selectedGroupId && (accountId || guestPlayerId) && (
+        <section aria-labelledby="practice-totals-heading" className="space-y-2">
+          <h2 id="practice-totals-heading" className="text-[11px] font-black uppercase tracking-wider text-neutral-500">
+            All-time practice
+          </h2>
+          <dl className="grid grid-cols-4 gap-px bg-black/10 border-2 border-black rounded-2xl overflow-hidden">
+            {[
+              { label: "Attempts logged", value: progressSummary.totalCompleted },
+              { label: "Personal bests", value: progressSummary.personalBestsCount },
+              { label: "Days practiced", value: progressSummary.currentStreakDays },
+              { label: "Practice points", value: progressSummary.totalImprovementPoints },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-[#FFFDF7] px-2 py-2.5 sm:px-3 flex flex-col-reverse justify-end gap-0.5">
+                <dt className="text-[10px] sm:text-[11px] font-bold text-neutral-600 leading-tight">{stat.label}</dt>
+                <dd className="font-display text-lg sm:text-xl font-black text-black leading-none">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {!selectedGroupId && (
+        <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black pt-2">Drill Library</h2>
       )}
 
       {/* Category Filter Pills - all visible without horizontal scrolling */}

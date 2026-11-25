@@ -221,8 +221,10 @@ describe("Training Labels and Filtering", () => {
         />
       );
 
-      expect(html).toContain("Week of Nov 22, 2026 · Personal Goals");
-      expect(html).not.toContain("Week 48 Personal Goals");
+      expect(html).toContain("Week of Nov 22, 2026");
+      expect(html).not.toContain("Week 48");
+      // A custom title is shown as the heading
+      expect(html).toContain("My Custom Plan");
     });
 
     it("displays Week of (Sunday date) on WeeklyTrainingCard", () => {
@@ -368,7 +370,11 @@ describe("Training Labels and Filtering", () => {
       );
 
       expect(personalHtml).toContain("+ Record");
-      expect(personalHtml).toContain("+ Add Drill from Library");
+      expect(personalHtml).toContain("+ Add Drills");
+      expect(personalHtml).toContain("Edit Plan");
+      expect(personalHtml).not.toContain("+ Add Drill from Library");
+      expect(personalHtml).toContain("0 of 1 drill practiced");
+      expect(personalHtml).not.toContain("Goals Met");
 
       const groupHtml = renderToStaticMarkup(
         <WeeklyTrainingCard
@@ -456,9 +462,10 @@ describe("Training Labels and Filtering", () => {
       );
 
       expect(html).toContain("Week of");
-      expect(html).toContain("Personal Goals");
-      expect(html).toContain("Empty Plan (0/6 Drills)");
-      expect(html).toContain("+ Expand &amp; Add Drills");
+      expect(html).toContain("My Weekly Plan");
+      expect(html).toContain("No drills yet");
+      expect(html).toContain("+ Add Drills");
+      expect(html).not.toContain("drills practiced");
       expect(html).not.toContain("+ Build My Weekly Plan →");
     });
 
@@ -495,11 +502,20 @@ describe("Training Labels and Filtering", () => {
 
       // Verify group name tag
       expect(html).toContain("Tuesday Picklers");
-      expect(html).toContain("Group Training");
       expect(html).toContain("Tuesday Kitchen Control");
+      expect(html).toContain("0 of 1 drill practiced");
       expect(html).toContain("Coach Focus Notes:");
       expect(html).toContain("+ Record");
-      expect(html).toContain("View Group Progress &amp; Leaderboard →");
+      expect(html).toContain("Open Group Drills →");
+      expect(html).not.toContain("Leaderboard");
     });
+  });
+  it("replaces auto-generated plan titles that repeat the week", async () => {
+    const { isGeneratedPlanTitle } = await import("@/components/training/plan-progress");
+    expect(isGeneratedPlanTitle("Week of Nov 22, 2026 Training Plan")).toBe(true);
+    expect(isGeneratedPlanTitle("Week of Nov 22, 2026 Challenge Plan")).toBe(true);
+    expect(isGeneratedPlanTitle("Week of Nov 22, 2026 Weekly Training")).toBe(true);
+    expect(isGeneratedPlanTitle("Kitchen focus week")).toBe(false);
+    expect(isGeneratedPlanTitle(null)).toBe(true);
   });
 });

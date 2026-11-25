@@ -64,10 +64,11 @@ test("records solo and group challenge attempts and displays personal bests", as
   await page.goto("/training");
   const personalCard = page.getByTestId("personal-training-plan-card");
   await expect(personalCard).toBeVisible();
-  await personalCard.getByRole("link", { name: /Build My Weekly Plan|Edit My Plan/ }).click();
+  await personalCard.getByRole("link", { name: "Edit Plan" }).click();
   await expect(page).toHaveURL(/\/training\/plan\/new/);
   await page.getByRole("button", { name: "Save Weekly Training Plan →" }).click();
   await expect(page).toHaveURL(/\/training$/);
-  await expect(personalCard.getByText(/Week of .+ Personal Goals/)).toBeVisible();
+  await expect(personalCard.getByText(/^Week of .+/)).toBeVisible();
+  await expect(personalCard.getByRole("heading", { name: "My Weekly Plan" })).toBeVisible();
 });
 

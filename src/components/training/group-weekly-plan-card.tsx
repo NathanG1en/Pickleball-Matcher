@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import type { GroupTrainingPlanRecord, GroupTrainingPlanItemRecord, GroupRecord } from "@/lib/domain/types";
-import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon } from "@/components/ui/icons";
 import { InlineResultLogger, type RosterPlayerOption } from "@/components/training/inline-result-logger";
+import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type { LastResultSummary } from "@/lib/domain/training-history";
 
 export interface GroupWeeklyPlanCardProps {
@@ -45,8 +45,6 @@ export function GroupWeeklyPlanCard({
     }));
   };
   const completedCount = items.filter((i) => completedSet.has(i.challengeId)).length;
-  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
-  const allDone = items.length > 0 && completedCount === items.length;
 
   return (
     <section
@@ -66,23 +64,12 @@ export function GroupWeeklyPlanCard({
               >
                 {group.name}
               </span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
-                Week of {formatWeekOf(plan.year, plan.weekNumber)} · Group Training
-              </span>
             </div>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
-              {plan.title}
+              {isGeneratedPlanTitle(plan.title) ? "Group Plan" : plan.title}
             </h2>
           </div>
         </div>
-
-        <span
-          className={`px-2.5 py-1 rounded-xl border border-black font-display text-xs font-black uppercase ${
-            allDone ? "bg-[#ccff00] text-black" : "bg-neutral-100 text-black"
-          }`}
-        >
-          {completedCount} / {items.length} Done
-        </span>
       </div>
 
       {plan.focusNotes && (
@@ -91,13 +78,7 @@ export function GroupWeeklyPlanCard({
         </p>
       )}
 
-      {/* Progress Bar */}
-      <div className="w-full bg-neutral-200 h-2.5 rounded-full border border-black overflow-hidden">
-        <div
-          className="bg-[#ccff00] h-full transition-all duration-300"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
+      <PlanProgress completed={completedCount} total={items.length} />
 
       {/* Drill List Items with direct inline record capability */}
       <div className="space-y-2.5">
@@ -195,7 +176,7 @@ export function GroupWeeklyPlanCard({
           href={`/training?group=${group.id}`}
           className="inline-flex items-center min-h-[40px] px-4 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all select-none"
         >
-          View Group Progress & Leaderboard →
+          Open Group Drills →
         </Link>
         {isOrganizer && (
           <Link

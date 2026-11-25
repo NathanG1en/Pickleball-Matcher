@@ -11,6 +11,7 @@ import type {
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon, ZapIcon } from "@/components/ui/icons";
 import { InlineResultLogger } from "@/components/training/inline-result-logger";
+import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type { LastResultSummary } from "@/lib/domain/training-history";
 
 export interface PersonalTrainingPlanCardProps {
@@ -65,10 +66,10 @@ export function PersonalTrainingPlanCard({
             </span>
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-                Week of {weekDateStr} · Personal Goals
+                Week of {weekDateStr}
               </span>
               <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
-                My Weekly Training Plan
+                My Weekly Plan
               </h2>
             </div>
           </div>
@@ -101,9 +102,7 @@ export function PersonalTrainingPlanCard({
     }));
   };
   const completedCount = items.filter((i) => completedSet.has(i.challengeId)).length;
-  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
-  const allDone = items.length > 0 && completedCount === items.length;
-  const planTitle = currentPlan?.plan.title ?? `Week of ${weekDateStr} Training Plan`;
+  const planTitle = isGeneratedPlanTitle(currentPlan?.plan.title) ? "My Weekly Plan" : currentPlan!.plan.title;
   const focusNotes = currentPlan?.plan.focusNotes ?? null;
 
   const handleAddDrill = (challenge: ChallengeTemplateRecord) => {
@@ -153,7 +152,7 @@ export function PersonalTrainingPlanCard({
           </span>
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-              Week of {weekDateStr} · Personal Goals
+              Week of {weekDateStr}
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
               {planTitle}
@@ -161,17 +160,6 @@ export function PersonalTrainingPlanCard({
           </div>
         </div>
 
-        <span
-          className={`px-2.5 py-1 rounded-xl border border-black font-display text-xs font-black uppercase ${
-            items.length === 0
-              ? "bg-neutral-100 text-neutral-600"
-              : allDone
-              ? "bg-[#ccff00] text-black"
-              : "bg-neutral-100 text-black"
-          }`}
-        >
-          {items.length === 0 ? "Empty Plan (0/6 Drills)" : `${completedCount} / ${items.length} Goals Met`}
-        </span>
       </div>
 
       {focusNotes && (
@@ -180,22 +168,15 @@ export function PersonalTrainingPlanCard({
         </p>
       )}
 
-      {/* Progress Bar */}
-      <div className="w-full bg-neutral-200 h-2.5 rounded-full border border-black overflow-hidden mb-4">
-        <div
-          className="bg-[#ccff00] h-full transition-all duration-300"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-
-      {/* Empty State Banner if no items yet */}
-      {items.length === 0 && (
+      {items.length > 0 ? (
+        <div className="mb-4">
+          <PlanProgress completed={completedCount} total={items.length} />
+        </div>
+      ) : (
         <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 border-2 border-dashed border-black/20 text-center space-y-1.5 mb-4">
-          <p className="font-display text-sm font-black uppercase text-neutral-800">
-            Your training plan for this week is empty
-          </p>
+          <p className="font-display text-sm font-black uppercase text-neutral-800">No drills yet</p>
           <p className="text-xs font-medium text-neutral-600 max-w-md mx-auto">
-            Expand below to select focus drills or pick drills from the drill library to start tracking your goals.
+            Add up to 6 drills to practice this week.
           </p>
         </div>
       )}
@@ -295,13 +276,6 @@ export function PersonalTrainingPlanCard({
             <span className="font-display text-xs font-black uppercase text-black">
               Pick Focus Drills for This Week ({items.length}/6)
             </span>
-            <button
-              type="button"
-              onClick={() => setIsPickerExpanded(false)}
-              className="text-xs font-bold text-neutral-600 hover:text-black uppercase"
-            >
-              Close ✕
-            </button>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
@@ -344,31 +318,27 @@ export function PersonalTrainingPlanCard({
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons: one way to add drills, one way to edit */}
       <div className="flex flex-wrap items-center gap-2">
         {items.length < 6 && (
           <button
             type="button"
             data-testid="expand-plan-picker-btn"
+            aria-expanded={isPickerExpanded}
             onClick={() => setIsPickerExpanded((prev) => !prev)}
-            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer select-none"
+            className={`min-h-[44px] py-2.5 px-4 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer select-none ${
+              items.length === 0 ? "bg-[#ccff00] hover:bg-[#b8eb00] text-black" : "bg-white hover:bg-neutral-100 text-black"
+            }`}
           >
-            {isPickerExpanded ? "Hide Drill Selector ▲" : "+ Expand & Add Drills ▼"}
+            {isPickerExpanded ? "Done Adding" : "+ Add Drills"}
           </button>
         )}
 
-        <a
-          href="#drill-library"
-          className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center touch-manipulation select-none active:translate-x-0.5 active:translate-y-0.5"
-        >
-          + Add Drill from Library
-        </a>
-
         <Link
           href="/training/plan/new"
-          className="min-h-[44px] py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center touch-manipulation select-none active:translate-x-0.5 active:translate-y-0.5"
+          className="min-h-[44px] px-3 inline-flex items-center text-xs font-black uppercase tracking-wider text-neutral-700 underline underline-offset-2 hover:text-black touch-manipulation select-none"
         >
-          Edit My Plan
+          Edit Plan
         </Link>
 
         {pickerFeedback && (
