@@ -320,32 +320,25 @@ export default async function TrainingHubPage({
         <section
           aria-labelledby="practice-totals-heading"
           data-testid="practice-totals"
-          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000] overflow-hidden"
+          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] p-5 sm:p-6"
         >
-          <h2
-            id="practice-totals-heading"
-            className="px-3.5 sm:px-4 py-2 border-b border-black/10 text-[11px] font-black uppercase tracking-wider text-neutral-500"
-          >
+          <h2 id="practice-totals-heading" className="text-[15px] font-semibold text-black mb-3">
             All-time practice
           </h2>
-          <dl className="grid grid-cols-4 divide-x divide-black/10">
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
             {[
-              { lines: ["Attempts", "logged"], value: progressSummary.totalCompleted, icon: <TargetIcon className="w-3.5 h-3.5 text-neutral-500" /> },
-              { lines: ["Personal", "bests"], value: progressSummary.personalBestsCount, icon: <TrophyIcon className="w-3.5 h-3.5 text-amber-600" /> },
-              { lines: ["Days", "practiced"], value: progressSummary.currentStreakDays, icon: <CheckIcon className="w-3.5 h-3.5 text-lime-700" /> },
-              { lines: ["Practice", "points"], value: progressSummary.totalImprovementPoints, icon: <ZapIcon className="w-3.5 h-3.5 text-lime-600" /> },
-            ].map((stat) => (
-              <div key={stat.lines.join(" ")} className="px-2.5 sm:px-4 py-3 flex flex-col-reverse gap-1.5 min-w-0">
-                {/* Two-word labels stack on phones so every column wraps the same way; one line from sm up. */}
-                <dt className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-neutral-500 leading-tight">
-                  <span className="block sm:inline">{stat.lines[0]}</span>{" "}
-                  <span className="block sm:inline">{stat.lines[1]}</span>
+              { label: "Attempts logged", value: progressSummary.totalCompleted, Icon: TargetIcon },
+              { label: "Personal bests", value: progressSummary.personalBestsCount, Icon: TrophyIcon },
+              { label: "Days practiced", value: progressSummary.currentStreakDays, Icon: CheckIcon },
+              { label: "Practice points", value: progressSummary.totalImprovementPoints, Icon: ZapIcon },
+            ].map(({ label, value, Icon }) => (
+              <div key={label} className="flex flex-col-reverse gap-1 min-w-0">
+                <dt className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
+                  <Icon aria-hidden="true" className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+                  <span className="truncate">{label}</span>
                 </dt>
-                <dd className="flex items-center gap-1.5">
-                  <span aria-hidden="true" className="shrink-0">{stat.icon}</span>
-                  <span className="font-display text-xl sm:text-2xl font-black text-black leading-none tabular-nums">
-                    {stat.value.toLocaleString("en-US")}
-                  </span>
+                <dd className="font-display text-[32px] font-bold text-black leading-none tabular-nums">
+                  {value.toLocaleString("en-US")}
                 </dd>
               </div>
             ))}
