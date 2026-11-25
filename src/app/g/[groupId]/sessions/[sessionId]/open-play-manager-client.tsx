@@ -16,6 +16,14 @@ import {
   sortPlayersWithPinned,
   usePinnedPlayerIds,
 } from "@/lib/storage/pinned-players";
+import {
+  dismissDuplicateWarning,
+  useDismissedDuplicates,
+} from "@/lib/storage/dismissed-duplicates";
+import {
+  areGamesDuplicate,
+  detectDuplicateMatchPairs,
+} from "@/lib/sessions/duplicate-games";
 import { useRouter } from "next/navigation";
 import {
   addOpenPlayGuestAction,
@@ -71,6 +79,59 @@ export interface OpenPlayManagerClientProps {
   readonly currentViewerPlayerId?: string | null;
   readonly isFromProfile?: boolean;
   readonly initialMatchType?: "doubles" | "singles";
+}
+
+export interface DuplicateWarningModalProps {
+  readonly team1Score: number;
+  readonly team2Score: number;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}
+
+export function DuplicateWarningModal({
+  team1Score,
+  team2Score,
+  onCancel,
+  onConfirm,
+}: DuplicateWarningModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      role="presentation"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="duplicate-game-title"
+        className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]"
+      >
+        <h2 id="duplicate-game-title" className="font-display text-2xl font-black uppercase tracking-tight">
+          Same game?
+        </h2>
+        <p className="text-sm font-bold text-neutral-700 leading-relaxed">
+          A game with these players and score ({team1Score}–{team2Score}) is already in this session.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            data-testid="duplicate-modal-cancel-button"
+            className="rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          >
+            It&apos;s a Duplicate
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            data-testid="duplicate-modal-confirm-button"
+            className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          >
+            It&apos;s a New Game
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export function OpenPlayManagerClient({
@@ -134,6 +195,16 @@ export function OpenPlayManagerClient({
   );
 
   const pinnedPlayerIds = usePinnedPlayerIds(groupId);
+  const dismissedDuplicates = useDismissedDuplicates(session.id);
+
+  const [pendingDuplicateSubmission, setPendingDuplicateSubmission] = useState<{
+    team1Ids: string[];
+    team2Ids: string[];
+    team1Score: number;
+    team2Score: number;
+    existingGameNumber: number;
+    existingMatchId: string;
+  } | null>(null);
 
   // Group players not yet checked in
   const availableRosterPlayers = useMemo(
@@ -210,6 +281,21 @@ export function OpenPlayManagerClient({
     () => allMatches.filter((m) => m.status === "completed"),
     [allMatches],
   );
+
+  const duplicateMatchPairs = useMemo(() => {
+    const candidates = allMatches
+      .map((m, idx) => ({
+        id: m.id,
+        gameNumber: idx + 1,
+        team1PlayerIds: m.team1PlayerIds,
+        team2PlayerIds: m.team2PlayerIds,
+        team1Score: m.team1Score,
+        team2Score: m.team2Score,
+        completedAt: m.completedAt,
+      }))
+      .filter((m) => m.team1Score !== null && m.team2Score !== null);
+    return detectDuplicateMatchPairs(candidates);
+  }, [allMatches]);
 
   const openPlayPlayerStats = useMemo(() => {
     const participantIds = new Set<string>();
@@ -871,6 +957,47 @@ export function OpenPlayManagerClient({
       return;
     }
 
+    // Check for potential duplicate in existing completed games
+    const candidateMatch = {
+      team1PlayerIds: team1Ids,
+      team2PlayerIds: team2Ids,
+      team1Score: s1,
+      team2Score: s2,
+    };
+
+    let existingDuplicateIdx = -1;
+    let existingDuplicateMatch: (typeof allMatches)[0] | null = null;
+    for (let i = 0; i < allMatches.length; i++) {
+      const m = allMatches[i];
+      if (m.status !== "completed" || m.team1Score === null || m.team2Score === null) continue;
+      if (areGamesDuplicate(candidateMatch, m)) {
+        existingDuplicateIdx = i;
+        existingDuplicateMatch = m;
+        break;
+      }
+    }
+
+    if (existingDuplicateMatch) {
+      setPendingDuplicateSubmission({
+        team1Ids,
+        team2Ids,
+        team1Score: s1,
+        team2Score: s2,
+        existingGameNumber: existingDuplicateIdx + 1,
+        existingMatchId: existingDuplicateMatch.id,
+      });
+      return;
+    }
+
+    await executeGameSubmission(team1Ids, team2Ids, s1, s2);
+  };
+
+  const executeGameSubmission = async (
+    team1Ids: string[],
+    team2Ids: string[],
+    s1: number,
+    s2: number
+  ) => {
     // Optimistic match generation for instant feedback
     const optimisticMatchId = createIdempotencyKey("opt");
     const targetRoundId = localStartedRounds[0]?.round.id ?? `rnd_${session.id}`;
@@ -1012,6 +1139,20 @@ export function OpenPlayManagerClient({
     } finally {
       setIsSubmittingGame(false);
     }
+  };
+
+  const handleCancelDuplicateSubmission = () => {
+    setPendingDuplicateSubmission(null);
+    setT1Score("");
+    setT2Score("");
+    showToast("Submission cancelled — game was already recorded.");
+  };
+
+  const handleConfirmDuplicateSubmission = async () => {
+    if (!pendingDuplicateSubmission) return;
+    const { team1Ids, team2Ids, team1Score, team2Score } = pendingDuplicateSubmission;
+    setPendingDuplicateSubmission(null);
+    await executeGameSubmission(team1Ids, team2Ids, team1Score, team2Score);
   };
 
   // Edit match state and handlers
@@ -2160,66 +2301,104 @@ export function OpenPlayManagerClient({
                 );
               }
 
+              const isOrganizerOrHost = isOrganizer || isHost;
+              const dupInfo = duplicateMatchPairs.get(m.id);
+              const isDismissed =
+                dupInfo &&
+                (dismissedDuplicates.has(m.id) ||
+                  dismissedDuplicates.has(dupInfo.otherMatchId));
+              const showDuplicateAlert =
+                isOrganizerOrHost && Boolean(dupInfo) && !isDismissed;
+
               return (
                 <article
                   key={m.id}
-                  className="p-3.5 bg-neutral-50 border-2 border-black rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[2px_2px_0px_0px_#000]"
+                  className="p-3.5 bg-neutral-50 border-2 border-black rounded-2xl flex flex-col gap-3 shadow-[2px_2px_0px_0px_#000]"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
-                        Game {idx + 1}
-                      </span>
-                      {isCompleted && m.completedAt && (
-                        <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
-                          <span>•</span>
-                          <ClientTime date={m.completedAt} />
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm font-bold flex flex-wrap items-center gap-1.5 text-black">
-                      <span className={isCompleted && isT1Winner ? "font-black underline" : ""}>
-                        {m.team1Names.join(" & ")}
-                      </span>
-                      <span className="text-xs font-normal text-neutral-500">vs</span>
-                      <span className={isCompleted && !isT1Winner ? "font-black underline" : ""}>
-                        {m.team2Names.join(" & ")}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant={isCompleted ? "success" : isCancelled ? "muted" : "warning"}
-                      className="font-mono text-sm px-3 py-1"
+                  {showDuplicateAlert && dupInfo && (
+                    <div
+                      role="alert"
+                      data-testid={`duplicate-warning-${m.id}`}
+                      className="p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-amber-900"
                     >
-                      {isCompleted
-                        ? `${m.team1Score} – ${m.team2Score}`
-                        : isCancelled
-                        ? "Deleted"
-                        : "In Play"}
-                    </Badge>
-
-                    {canEditOrDelete && isCompleted && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span aria-hidden="true">⚠️</span>
+                        <span>
+                          <strong>Potential duplicate:</strong> Matches Game {dupInfo.duplicateOfGameNumber} with the same players and score.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={() => handleStartEdit(m)}
-                          data-testid={`edit-game-button-${m.id}`}
-                          className="text-xs font-bold text-neutral-700 hover:text-black hover:underline cursor-pointer"
+                          onClick={() =>
+                            dismissDuplicateWarning(session.id, m.id, dupInfo.otherMatchId)
+                          }
+                          data-testid={`dismiss-duplicate-button-${m.id}`}
+                          className="px-2.5 py-1 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] cursor-pointer"
                         >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMatch(m.id)}
-                          data-testid={`delete-game-button-${m.id}`}
-                          className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
-                        >
-                          Delete
+                          Dismiss
                         </button>
                       </div>
-                    )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+                          Game {idx + 1}
+                        </span>
+                        {isCompleted && m.completedAt && (
+                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                            <span>•</span>
+                            <ClientTime date={m.completedAt} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm font-bold flex flex-wrap items-center gap-1.5 text-black">
+                        <span className={isCompleted && isT1Winner ? "font-black underline" : ""}>
+                          {m.team1Names.join(" & ")}
+                        </span>
+                        <span className="text-xs font-normal text-neutral-500">vs</span>
+                        <span className={isCompleted && !isT1Winner ? "font-black underline" : ""}>
+                          {m.team2Names.join(" & ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={isCompleted ? "success" : isCancelled ? "muted" : "warning"}
+                        className="font-mono text-sm px-3 py-1"
+                      >
+                        {isCompleted
+                          ? `${m.team1Score} – ${m.team2Score}`
+                          : isCancelled
+                          ? "Deleted"
+                          : "In Play"}
+                      </Badge>
+
+                      {canEditOrDelete && isCompleted && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(m)}
+                            data-testid={`edit-game-button-${m.id}`}
+                            className="text-xs font-bold text-neutral-700 hover:text-black hover:underline cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMatch(m.id)}
+                            data-testid={`delete-game-button-${m.id}`}
+                            className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </article>
               );
@@ -2228,6 +2407,15 @@ export function OpenPlayManagerClient({
         )}
       </section>
       </div>
+
+      {pendingDuplicateSubmission && (
+        <DuplicateWarningModal
+          team1Score={pendingDuplicateSubmission.team1Score}
+          team2Score={pendingDuplicateSubmission.team2Score}
+          onCancel={handleCancelDuplicateSubmission}
+          onConfirm={handleConfirmDuplicateSubmission}
+        />
+      )}
     </div>
   );
 }

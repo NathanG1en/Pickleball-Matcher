@@ -89,3 +89,25 @@ Each court is a card (`court-match-N`) with both teams and a score input for eac
 - **After ending:** the organizer remains on the session page, which transitions directly to the completed session summary with the sign-off animation playing in place. A header back button returns to the group dashboard whenever desired.
 - **The summary:** the completed session shows totals, highlights and every round. Each player gets a "Your Session" panel with their wins and losses and their rating change, for example "Rating 3.5 → 3.56 (+0.06)". If they played no rated doubles games, it says their rating didn't change.
 
+## Open Play Live Session — `/g/[groupId]/sessions/[sessionId]`
+
+Open Play allows participants to check in, self-organize matches, and record results on the fly without rigid round scheduling.
+
+### Recording Games
+- **Check-in Requirement:** Players must be checked in to the Open Play session to record games or be selected as participants.
+- **Match Types:** Supports both Doubles and Singles formats.
+- **Winner Selection:** Quick winner selection buttons automatically set the winning team's score to 11.
+- **Duplicate Game Prevention:**
+  - When submitting a game, if an existing completed game in the session has the exact same players and score (independent of player ordering within teams or which side is designated Team 1 vs Team 2), a confirmation modal appears:
+    - **"Same game?"**: Informs the submitter that "A game with these players and score (X–Y) is already in this session."
+    - **"IT'S A DUPLICATE"**: Dismisses the modal, clears the score inputs, and notifies the user that the game was already recorded.
+    - **"IT'S A NEW GAME"**: Confirms that this was an intentional, separate rematch with the same score and proceeds with recording the new game.
+
+### Match History & Organizer Duplicate Reconciliation
+- **Session Games List:** All recorded games appear in the session match history.
+- **Organizer Duplicate Alerts:**
+  - If multiple games in the session have identical participants and scores, organizers and hosts see a visible warning banner on those game cards: `⚠️ Potential duplicate: Matches Game N with the same players and score.`
+  - Regular members do not see this alert, keeping their view distraction-free.
+  - **Dismiss Warning:** Organizers can tap **Dismiss** on the alert banner to silence the notification for that match pair. Dismissed warnings are remembered in browser storage for that session.
+  - **Delete Duplicate:** Organizers can tap **Delete** on any duplicate match to remove it and immediately trigger rating and stats recalculation.
+

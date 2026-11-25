@@ -10,6 +10,32 @@ import {
 } from "@/lib/domain/rating-display";
 import { useHydrated } from "@/lib/utils/hydration";
 
+export function findClosestSessionIndex(
+  points: readonly { readonly x: number }[],
+  svgX: number
+): number {
+  if (points.length <= 1) return 0;
+  let closestIndex = 0;
+  let minDistance = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const distance = Math.abs(points[i].x - svgX);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestIndex = i;
+    }
+  }
+  return closestIndex;
+}
+
+export function calculateSvgXFromClientX(
+  clientX: number,
+  boundingClientRect: { readonly left: number; readonly width: number }
+): number {
+  if (boundingClientRect.width <= 0) return 200;
+  const relX = (clientX - boundingClientRect.left) / boundingClientRect.width;
+  return relX * 400;
+}
+
 export interface YAxisTick {
   readonly dupr: number;
   readonly elo: number;
@@ -135,6 +161,16 @@ export function ScoreHistoryChart({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const isDraggingRef = useRef(false);
+  const hasDraggedRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isTouchRef = useRef(false);
+  const touchPendingRef = useRef(false);
+  const isScrollingRef = useRef(false);
 
   const handleRangeChange = (range: RatingTimeRange) => {
     setTimeRange(range);
@@ -153,6 +189,9 @@ export function ScoreHistoryChart({
       if (event.key === "Escape") {
         setSelectedIndex(null);
         setHoveredIndex(null);
+        if (typeof document !== "undefined" && (document.activeElement instanceof HTMLElement || document.activeElement instanceof SVGElement)) {
+          document.activeElement.blur();
+        }
       }
     };
     document.addEventListener("pointerdown", handlePointerDown);
@@ -204,6 +243,204 @@ export function ScoreHistoryChart({
 
   const firstDate = filtered.length > 0 ? formatDate(filtered[0].startedAt, isHydrated) : "";
   const lastDate = filtered.length > 0 ? formatDate(filtered.at(-1)!.startedAt, isHydrated) : "";
+
+  const getIndexFromClientX = (clientX: number): number | null => {
+    if (!svgRef.current || filtered.length === 0) return null;
+    const rect = svgRef.current.getBoundingClientRect();
+    const svgX = calculateSvgXFromClientX(clientX, rect);
+    return findClosestSessionIndex(points, svgX);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (filtered.length === 0) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    hasDraggedRef.current = false;
+    isScrollingRef.current = false;
+
+    if (e.pointerType === "mouse") {
+      isTouchRef.current = false;
+      touchPendingRef.current = false;
+      isDraggingRef.current = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore if pointer capture unsupported
+      }
+    } else {
+      isTouchRef.current = true;
+      touchPendingRef.current = true;
+      isDraggingRef.current = false;
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (filtered.length === 0) return;
+
+    if (isTouchRef.current) {
+      if (isScrollingRef.current) return;
+
+      if (touchPendingRef.current) {
+        const dx = Math.abs(e.clientX - startXRef.current);
+        const dy = Math.abs(e.clientY - startYRef.current);
+
+        // Vertical scroll detection: user intends to scroll page
+        if (dy > dx && dy > 4) {
+          isScrollingRef.current = true;
+          touchPendingRef.current = false;
+          return;
+        }
+
+        // Horizontal swipe gesture detection: user swiping timeline
+        if (dx > dy && dx > 6) {
+          touchPendingRef.current = false;
+          isDraggingRef.current = true;
+          hasDraggedRef.current = true;
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {
+            // Ignore if pointer capture unsupported
+          }
+          const idx = getIndexFromClientX(e.clientX);
+          if (idx !== null) {
+            setSelectedIndex(idx);
+          }
+          return;
+        }
+      } else if (isDraggingRef.current) {
+        hasDraggedRef.current = true;
+        const idx = getIndexFromClientX(e.clientX);
+        if (idx !== null) {
+          setSelectedIndex(idx);
+        }
+      }
+      return;
+    }
+
+    // Mouse movement
+    if (isDraggingRef.current) {
+      hasDraggedRef.current = true;
+      const idx = getIndexFromClientX(e.clientX);
+      if (idx !== null) {
+        setSelectedIndex(idx);
+      }
+    } else {
+      const idx = getIndexFromClientX(e.clientX);
+      if (idx !== null) {
+        setHoveredIndex(idx);
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isTouchRef.current) {
+      if (isScrollingRef.current) {
+        isScrollingRef.current = false;
+        touchPendingRef.current = false;
+        isDraggingRef.current = false;
+        return;
+      }
+
+      if (isDraggingRef.current) {
+        try {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore
+        }
+        isDraggingRef.current = false;
+        setTimeout(() => {
+          hasDraggedRef.current = false;
+        }, 100);
+      }
+
+      touchPendingRef.current = false;
+      isScrollingRef.current = false;
+      return;
+    }
+
+    if (isDraggingRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore
+      }
+      isDraggingRef.current = false;
+      setTimeout(() => {
+        hasDraggedRef.current = false;
+      }, 100);
+    }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore
+      }
+    }
+    isDraggingRef.current = false;
+    touchPendingRef.current = false;
+    isScrollingRef.current = false;
+    setTimeout(() => {
+      hasDraggedRef.current = false;
+    }, 100);
+  };
+
+  const handlePointerLeave = () => {
+    if (!isDraggingRef.current) {
+      setHoveredIndex(null);
+    }
+  };
+
+  const handleChartClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (hasDraggedRef.current) return;
+    const idx = getIndexFromClientX(e.clientX);
+    if (idx !== null) {
+      setSelectedIndex((prev) => (prev === idx ? null : idx));
+    }
+  };
+
+  useEffect(() => {
+    const el = chartAreaRef.current;
+    if (!el) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isSwiping = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isSwiping = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - touchStartX);
+      const dy = Math.abs(touch.clientY - touchStartY);
+
+      if (!isSwiping && dx > dy && dx > 6) {
+        isSwiping = true;
+      }
+
+      if (isSwiping && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, []);
 
   return (
     <div ref={containerRef} className="relative space-y-4">
@@ -259,12 +496,23 @@ export function ScoreHistoryChart({
         </div>
       ) : (
         <div className="pt-8">
-          <div className="relative">
+          <div
+            ref={chartAreaRef}
+            data-testid="rating-chart-scrubber"
+            className="relative touch-pan-y select-none cursor-pointer"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={handlePointerLeave}
+            onClick={handleChartClick}
+          >
             <svg
+              ref={svgRef}
               viewBox="0 0 400 220"
               role="img"
               aria-label={`Rating history from ${formatDupr(values[0])} to ${formatDupr(values.at(-1)!)}`}
-              className="w-full overflow-visible"
+              className="w-full overflow-visible touch-pan-y select-none"
             >
               {/* Y-axis markings and horizontal grid lines */}
               {yTicks.map((tick, i) => (
@@ -310,6 +558,22 @@ export function ScoreHistoryChart({
                 strokeLinecap="round"
               />
 
+              {/* Vertical scrubber line indicator */}
+              {activePoint && (
+                <line
+                  data-testid="rating-scrubber-line"
+                  x1={activePoint.x}
+                  y1="25"
+                  x2={activePoint.x}
+                  y2="180"
+                  stroke="black"
+                  strokeDasharray="3 3"
+                  strokeWidth="1.5"
+                  strokeOpacity="0.4"
+                  className="pointer-events-none"
+                />
+              )}
+
               {points.map((point, index) => {
                 const item = filtered[index];
                 const isActive = activeIndex === index;
@@ -330,6 +594,7 @@ export function ScoreHistoryChart({
                     onMouseLeave={() => setHoveredIndex(null)}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (hasDraggedRef.current) return;
                       setSelectedIndex((prev) => (prev === index ? null : index));
                     }}
                     onFocus={() => setHoveredIndex(index)}
@@ -413,14 +678,18 @@ export function ScoreHistoryChart({
             <p>
               {formatDupr(timeRange === "all" && startingRating !== null ? startingRating : values[0])} → {formatDupr(values.at(-1)!)} rating
             </p>
-            {activeRecord && (
+            {activeRecord ? (
               <p data-testid="active-rating-details" className="text-black font-black">
                 <span>{formatDupr(activeRecord.rating)} rating</span>
                 <span className="text-neutral-500 font-bold ml-1.5">
                   ({formatDate(activeRecord.startedAt, isHydrated)})
                 </span>
               </p>
-            )}
+            ) : filtered.length > 1 ? (
+              <p className="text-[11px] font-semibold text-neutral-400">
+                Swipe or hover to explore
+              </p>
+            ) : null}
           </div>
         </div>
       )}
