@@ -30,11 +30,20 @@ The player profile page is where athletes can review their rating, track their g
    - Lists all groups where the player is an active member or organizer, showing member count and quick links.
    - When viewing one's own profile, provides "Create" and "Find groups" shortcut buttons.
    - **Privacy fallback**: Displays a locked notice ("Groups Private") if the player has hidden group memberships.
-5. **Score History Chart**:
+5. **Practice Profile** (owner only):
+   - Shown only to the profile owner (on `/players` and on their own `/players/[username]`), under My Groups, with an **Only you** tag. Other viewers never see it.
+   - **Collapsed by default:** the card is a disclosure. Closed, it shows the title, the **Only you** tag, a one-line summary ("3 of 6 skills tested · Focus: Resets 48%", or "No skills tested yet"), and a chevron button. Tapping anywhere on the header opens the full card below.
+   - A hexagon with six skills — Dinking, Third Shot, Resets, Volleys, Serving, Strategy — scored as the average, across drills tried in that skill, of the player's best result in the last 60 days divided by the drill's target (capped at 100%). The outer ring is 100% of target; the inner ring is 50%.
+   - Skills with no scorable attempts are drawn as dashed spokes labelled **Not tested** (never zero). The filled shape connects tested skills once at least three are tested; a hollow point marks a score based on a single attempt.
+   - Win-based drills are excluded (results depend on the opponent), as are completion drills and drills without a target.
+   - **Focus suggestion:** the lowest tested skill below target ("Focus next: Resets · 48% of target") with a **Practice [Skill]** button; once every tested skill is at target it suggests an untested skill; with no data it reads "Start your practice profile" and links to `/training`.
+   - **Skill list:** each skill shows its % of target with a bar and "N drills · N attempts" (plus "early estimate" for a single attempt) or "Not tested yet". Every row and hexagon label links to `/training?category=[skill]`, which opens the drill library filtered to that skill.
+   - Footer: "Last practiced N days ago" (or "No drills logged yet.").
+6. **Score History Chart**:
    - Visual trend of rating progression over time across completed sessions. Hidden if rating & stats are private.
    - Week, Month, Year and All filters. Under the chart, a line reads "from → to rating" for the selected range. For **All**, "from" is the player's starting rating, so the line shows a change even after the first session.
    - **Interactive Swiping & Scrubbing**: Athletes can swipe across the rating timeline on touch devices or hover/drag on desktop to scrub through ratings over time without needing to tap individual dots. As you swipe across the chart, a vertical dashed guide line follows the gesture, highlighting the nearest session dot with an active ring, displaying a floating tooltip with the exact DUPR rating and session date, and updating active details under the chart. Tapping or releasing a swipe keeps the session pinned; clicking outside or pressing Escape dismisses the detail.
-6. **Past Sessions**:
+7. **Past Sessions**:
    - Chronological list of completed sessions with date, group name, session type (e.g. Regular or Open Play), and win/loss match records.
    - When viewed by the owner, includes direct links (`?from=profile`) to inspect session round results.
    - **Privacy fallback**: Displays a locked notice ("Past Sessions Private") if the player has hidden activity history.

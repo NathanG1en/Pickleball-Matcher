@@ -1896,6 +1896,12 @@ export class SqliteDomainRepository implements DomainRepository {
     return new Map();
   }
 
+  async listAccountTrainingResultsSince(accountId: string, since: Date): Promise<readonly TrainingResultRecord[]> {
+    void accountId;
+    void since;
+    return [];
+  }
+
   async getPlayerLatestTrainingResults(
     accountId?: string,
     playerId?: string,

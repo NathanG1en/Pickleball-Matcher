@@ -7,6 +7,7 @@ import {
 import {
   PlayerProfileHeader,
 } from "@/components/players/player-profile-controls";
+import { PracticeProfileCard, loadPracticeProfile } from "@/components/players/practice-profile-card";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
 import { StatCard } from "@/components/ui";
@@ -48,7 +49,7 @@ export default async function PlayerPublicProfilePage({
   }
   const isOwner = Boolean(viewerAccountId === targetAccount.id);
 
-  const [history, groups, bestPartner, viewerSynergy, viewerGroups] = await Promise.all([
+  const [history, groups, bestPartner, viewerSynergy, viewerGroups, practiceProfile] = await Promise.all([
     repository.listPlayerSessionHistory(targetAccount.id),
     repository.listAccountGroups(targetAccount.id),
     repository.getBestPartner(targetAccount.id),
@@ -58,6 +59,8 @@ export default async function PlayerPublicProfilePage({
     viewerAccountId && viewerAccountId !== targetAccount.id
       ? repository.listAccountGroups(viewerAccountId)
       : Promise.resolve([]),
+    // Practice profile is private to the owner, so it's only loaded for them.
+    isOwner ? loadPracticeProfile(targetAccount.id) : Promise.resolve(null),
   ]);
 
   const targetGroupIds = new Set(groups.map((g) => g.id));
@@ -372,6 +375,8 @@ export default async function PlayerPublicProfilePage({
                 )}
               </section>
             )}
+
+            {isOwner && practiceProfile && <PracticeProfileCard profile={practiceProfile} />}
           </div>
 
           {/* Everything Else (Mutual Chemistry, Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}

@@ -2620,6 +2620,17 @@ export class PostgresRepositories implements DomainRepository {
     return map;
   }
 
+  async listAccountTrainingResultsSince(accountId: string, since: Date): Promise<readonly TrainingResultRecord[]> {
+    const rows = await this.query<TrainingResultRow[]>`
+      select distinct r.* from training_results r
+      left join training_result_participants p on p.result_id = r.id
+      where (r.account_id = ${accountId} or p.account_id = ${accountId})
+        and r.recorded_at >= ${since}
+      order by r.recorded_at desc
+    `;
+    return rows.map(mapTrainingResult);
+  }
+
   async getPlayerLatestTrainingResults(
     accountId?: string,
     playerId?: string,

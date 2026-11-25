@@ -53,6 +53,20 @@ test("records solo and group challenge attempts and displays personal bests", as
   await expect(page).toHaveURL(/\/training$/);
   await expect(wallCard).toBeVisible();
 
+  // The owner's Practice Profile scores the logged skill and links into filtered training
+  await page.goto("/players");
+  const practice = page.getByTestId("practice-profile");
+  await expect(practice).toBeVisible();
+  // Collapsed by default: the summary shows, the skill list is hidden until opened
+  await expect(practice.getByTestId("practice-profile-summary")).toContainText("1 of 6 skills tested");
+  await expect(practice.getByTestId("practice-skill-dinking")).toBeHidden();
+  await practice.getByTestId("practice-profile-toggle").click();
+  await expect(practice.getByTestId("practice-skill-dinking")).toContainText("%");
+  await expect(practice.getByTestId("practice-skill-serving")).toContainText("Not tested yet");
+  await practice.getByTestId("practice-skill-dinking").click();
+  await expect(page).toHaveURL(/\/training\?category=dinking$/);
+  await expect(page.getByTestId("drill-filters").getByRole("button", { name: "Dinking", exact: true })).toHaveAttribute("aria-pressed", "true");
+
   // Navigate back to group and publish a weekly training plan
   await page.goto(`/g/${groupId}`);
   const trainingCard = page.getByTestId("weekly-training-card");

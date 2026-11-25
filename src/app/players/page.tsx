@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getActionRepository, getActivePlayerAccountId } from "@/app/actions/action-context";
 import { PlayerProfileHeader } from "@/components/players/player-profile-controls";
 import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
+import { PracticeProfileCard, loadPracticeProfile } from "@/components/players/practice-profile-card";
 import { ScoreHistoryChart } from "@/components/players/score-history-chart";
 import { StatCard } from "@/components/ui";
 import { SynergyExplainerButton } from "@/components/players/synergy-explainer";
@@ -13,11 +14,12 @@ export default async function PlayerProfilePage() {
   const accountId = await getActivePlayerAccountId();
   if (!accountId) redirect("/player-login");
   const repository = getActionRepository();
-  const [account, history, groups, bestPartner] = await Promise.all([
+  const [account, history, groups, bestPartner, practiceProfile] = await Promise.all([
     repository.getPlayerAccount(accountId),
     repository.listPlayerSessionHistory(accountId),
     repository.listAccountGroups(accountId),
     repository.getBestPartner(accountId),
+    loadPracticeProfile(accountId),
   ]);
   if (!account) redirect("/player-login");
   const wins = history.reduce((total, session) => total + session.wins, 0);
@@ -144,6 +146,8 @@ export default async function PlayerProfilePage() {
               </ul>
             )}
           </section>
+
+          <PracticeProfileCard profile={practiceProfile} />
         </div>
 
         {/* Everything Else (Score History Chart & Past Sessions): 2nd on mobile, left column (7-8 cols) on desktop */}

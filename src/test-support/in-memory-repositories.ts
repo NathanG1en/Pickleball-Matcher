@@ -1412,6 +1412,18 @@ export class InMemoryRepositories implements DomainRepository {
     return map;
   }
 
+  async listAccountTrainingResultsSince(accountId: string, since: Date): Promise<readonly TrainingResultRecord[]> {
+    return structuredClone(
+      this.state.trainingResults
+        .filter((r) =>
+          (r.accountId === accountId ||
+            this.state.trainingParticipants.some((p) => p.resultId === r.id && p.accountId === accountId)) &&
+          r.recordedAt.getTime() >= since.getTime(),
+        )
+        .sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime()),
+    );
+  }
+
   async getPlayerLatestTrainingResults(
     accountId?: string,
     playerId?: string,
