@@ -79,4 +79,20 @@ describe("PracticeProfileCard", () => {
     expect(html).not.toContain("<polygon");
     expect(html).toContain("No drills logged yet.");
   });
+
+  it("doesn't tell someone who practiced long ago to start their profile", () => {
+    const html = renderToStaticMarkup(<PracticeProfileCard profile={profileWith({}, { daysSinceLastPractice: 74 })} />);
+    expect(html).not.toContain("Start your practice profile");
+    expect(html).not.toContain("No skills tested yet");
+    expect(html).toContain("Nothing scored in the last 60 days");
+    expect(html).toContain("Log a drill to refresh your profile.");
+    expect(html).toContain("Last practiced 74 days ago.");
+  });
+
+  it("explains that win-based practice isn't scored", () => {
+    const html = renderToStaticMarkup(<PracticeProfileCard profile={profileWith({}, { daysSinceLastPractice: 1 })} />);
+    expect(html).not.toContain("Start your practice profile");
+    expect(html).toContain("No scored drills yet");
+    expect(html).toContain("Win-based games aren&#x27;t scored. Log a drill with a target to score your skills.");
+  });
 });

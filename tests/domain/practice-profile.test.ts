@@ -3,6 +3,7 @@ import type { ChallengeTemplateRecord, TrainingResultRecord } from "@/lib/domain
 import {
   PRACTICE_SKILLS,
   computePracticeProfile,
+  getPracticeProfileState,
   isScorableDrill,
   targetRatio,
 } from "@/lib/domain/practice-profile";
@@ -100,5 +101,34 @@ describe("practice profile", () => {
     expect(profile.weakest).toBeNull();
     expect(profile.daysSinceLastPractice).toBeNull();
     expect(profile.skills.every((s) => s.score === null)).toBe(true);
+  });
+
+  it("tells apart never practiced, stale, unscored, and scored profiles", () => {
+    expect(getPracticeProfileState({ testedCount: 0, daysSinceLastPractice: null })).toBe("never");
+    expect(getPracticeProfileState({ testedCount: 0, daysSinceLastPractice: 74 })).toBe("stale");
+    expect(getPracticeProfileState({ testedCount: 0, daysSinceLastPractice: 60 })).toBe("stale");
+    expect(getPracticeProfileState({ testedCount: 0, daysSinceLastPractice: 59 })).toBe("unscored");
+    expect(getPracticeProfileState({ testedCount: 0, daysSinceLastPractice: 2 })).toBe("unscored");
+    expect(getPracticeProfileState({ testedCount: 1, daysSinceLastPractice: 2 })).toBe("scored");
+  });
+
+  it("is stale when the only scorable results fall outside the window", () => {
+    const profile = computePracticeProfile({
+      challenges,
+      now,
+      lastPracticedAt: daysAgo(74),
+      results: [result("dink_a", 20, daysAgo(74))],
+    });
+    expect(getPracticeProfileState(profile)).toBe("stale");
+  });
+
+  it("is unscored when recent practice is only win-based drills", () => {
+    const profile = computePracticeProfile({
+      challenges,
+      now,
+      lastPracticedAt: daysAgo(1),
+      results: [result("serve_wins", 3, daysAgo(1))],
+    });
+    expect(getPracticeProfileState(profile)).toBe("unscored");
   });
 });

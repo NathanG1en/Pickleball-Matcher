@@ -4,6 +4,7 @@ import { getActionRepository } from "@/app/actions/action-context";
 import {
   PRACTICE_PROFILE_WINDOW_DAYS,
   computePracticeProfile,
+  getPracticeProfileState,
   toPercentOfTarget,
   type PracticeProfile,
   type PracticeSkillScore,
@@ -129,9 +130,21 @@ function FocusSuggestion({ profile }: { readonly profile: PracticeProfile }) {
   let href: string;
   let cta: string;
 
-  if (profile.testedCount === 0) {
+  const state = getPracticeProfileState(profile);
+
+  if (state === "never") {
     title = "Start your practice profile";
     detail = "Log any drill with a target to see where each skill stands.";
+    href = "/training";
+    cta = "Go to Training";
+  } else if (state === "stale") {
+    title = `Nothing scored in the last ${PRACTICE_PROFILE_WINDOW_DAYS} days`;
+    detail = "Log a drill to refresh your profile.";
+    href = "/training";
+    cta = "Go to Training";
+  } else if (state === "unscored") {
+    title = "No scored drills yet";
+    detail = "Win-based games aren't scored. Log a drill with a target to score your skills.";
     href = "/training";
     cta = "Go to Training";
   } else if (profile.weakest && (profile.weakest.score ?? 1) < 1) {
@@ -208,7 +221,10 @@ function SkillRow({ skill, index }: { readonly skill: PracticeSkillScore; readon
 }
 
 function collapsedSummary(profile: PracticeProfile): string {
-  if (profile.testedCount === 0) return "No skills tested yet";
+  const state = getPracticeProfileState(profile);
+  if (state === "never") return "No skills tested yet";
+  if (state === "stale") return `Nothing scored in the last ${PRACTICE_PROFILE_WINDOW_DAYS} days`;
+  if (state === "unscored") return "No scored drills yet";
   const tested = `${profile.testedCount} of ${profile.skills.length} skills tested`;
   if (profile.weakest && (profile.weakest.score ?? 1) < 1) {
     return `${tested} · Focus: ${profile.weakest.label} ${toPercentOfTarget(profile.weakest.score ?? 0)}%`;

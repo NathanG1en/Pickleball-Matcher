@@ -118,3 +118,21 @@ export function computePracticeProfile({
 export function toPercentOfTarget(score: number): number {
   return Math.round(score * 100);
 }
+
+/**
+ * Why a profile does or doesn't have scores, so copy never tells someone who has practiced to "start":
+ * - "never": no drills logged at all
+ * - "stale": has practiced, but nothing in the scoring window
+ * - "unscored": practiced recently, but only drills that aren't scored (win-based, completion, no target)
+ * - "scored": at least one skill has a score
+ */
+export type PracticeProfileState = "never" | "stale" | "unscored" | "scored";
+
+export function getPracticeProfileState(
+  profile: Pick<PracticeProfile, "testedCount" | "daysSinceLastPractice">,
+  windowDays: number = PRACTICE_PROFILE_WINDOW_DAYS,
+): PracticeProfileState {
+  if (profile.testedCount > 0) return "scored";
+  if (profile.daysSinceLastPractice === null) return "never";
+  return profile.daysSinceLastPractice >= windowDays ? "stale" : "unscored";
+}
