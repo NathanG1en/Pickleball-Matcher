@@ -15,7 +15,7 @@ The Training Hub enables players to practice drills solo or with peers, track pe
 
 ## All-time Practice Totals
 
-Signed-in players see an **All-time practice** card below their weekly plans (hidden when signed out and in the group view). Each total is a large number with a small icon and label beneath it, laid out 2 × 2 on phones and in one row of four on wider screens:
+Signed-in players see an **All-time practice** card below their weekly plans (hidden when signed out and in the group view). Each total is a large number with a small icon and label beneath it, laid out 2 × 2 on phones and as one grouped row on wider screens:
 - **Attempts logged:** Count of unique challenge attempts recorded across all drills.
 - **Personal bests:** Count of drills where the player holds a recorded personal best.
 - **Days practiced:** Unique calendar days with logged training activity.

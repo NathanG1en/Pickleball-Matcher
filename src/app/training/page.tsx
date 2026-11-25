@@ -8,7 +8,7 @@ import {
 import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
-import { CheckIcon, TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
+import { CalendarIcon, TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
 import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type {
   ChallengeSkillCategory,
@@ -320,24 +320,25 @@ export default async function TrainingHubPage({
         <section
           aria-labelledby="practice-totals-heading"
           data-testid="practice-totals"
-          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] p-5 sm:p-6"
+          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] px-5 py-4 sm:px-6 sm:py-5"
         >
-          <h2 id="practice-totals-heading" className="text-[15px] font-semibold text-black mb-3">
+          <h2 id="practice-totals-heading" className="text-[13px] font-semibold text-neutral-500 mb-3">
             All-time practice
           </h2>
-          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
+          {/* Phones: 2 x 2. Wider screens: one row of content-width columns so the stats read as a group. */}
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-[repeat(4,max-content)] sm:gap-x-14">
             {[
               { label: "Attempts logged", value: progressSummary.totalCompleted, Icon: TargetIcon },
               { label: "Personal bests", value: progressSummary.personalBestsCount, Icon: TrophyIcon },
-              { label: "Days practiced", value: progressSummary.currentStreakDays, Icon: CheckIcon },
+              { label: "Days practiced", value: progressSummary.currentStreakDays, Icon: CalendarIcon },
               { label: "Practice points", value: progressSummary.totalImprovementPoints, Icon: ZapIcon },
             ].map(({ label, value, Icon }) => (
-              <div key={label} className="flex flex-col-reverse gap-1 min-w-0">
-                <dt className="flex items-center gap-1.5 text-sm font-medium text-neutral-600">
-                  <Icon aria-hidden="true" className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+              <div key={label} className="flex flex-col-reverse gap-1.5 min-w-0">
+                <dt className="flex items-center gap-1.5 text-sm font-medium leading-5 text-neutral-600">
+                  <Icon aria-hidden="true" className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
                   <span className="truncate">{label}</span>
                 </dt>
-                <dd className="font-display text-[32px] font-bold text-black leading-none tabular-nums">
+                <dd className="font-display text-[32px] font-bold leading-none tracking-tight text-black tabular-nums">
                   {value.toLocaleString("en-US")}
                 </dd>
               </div>

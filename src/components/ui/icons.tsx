@@ -23,6 +23,15 @@ export function PencilIcon({ className = "h-4 w-4", ...props }: IconProps) {
   );
 }
 
+export function CalendarIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg {...defaultProps} className={className} {...props}>
+      <rect x="3" y="4.5" width="18" height="16.5" rx="2.5" />
+      <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    </svg>
+  );
+}
+
 export function ZapIcon({ className, width, height, ...props }: IconProps) {
   const fallbackClassName = !width && !height && !className ? "h-4 w-4" : className;
   return (
