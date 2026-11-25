@@ -61,6 +61,15 @@ test("records solo and group challenge attempts and displays personal bests", as
   await expect(practice.getByTestId("practice-profile-summary")).toContainText("1 of 6 skills tested");
   await expect(practice.getByTestId("practice-skill-dinking")).toBeHidden();
   await practice.getByTestId("practice-profile-toggle").click();
+  // Opening plays the reveal animation, and it replays on every reopen
+  const runningReveal = () =>
+    practice.evaluate((el) => el.getAnimations({ subtree: true }).filter((a) => a instanceof CSSAnimation && a.playState === "running").length);
+  await expect.poll(runningReveal, { timeout: 1000 }).toBeGreaterThan(0);
+  await expect.poll(runningReveal, { timeout: 4000 }).toBe(0);
+  await practice.getByTestId("practice-profile-toggle").click();
+  await page.waitForTimeout(100);
+  await practice.getByTestId("practice-profile-toggle").click();
+  await expect.poll(runningReveal, { timeout: 1000 }).toBeGreaterThan(0);
   await expect(practice.getByTestId("practice-skill-dinking")).toContainText("%");
   await expect(practice.getByTestId("practice-skill-serving")).toContainText("Not tested yet");
   await practice.getByTestId("practice-skill-dinking").click();

@@ -10,6 +10,7 @@ import {
 } from "@/lib/domain/practice-profile";
 import { formatDaysAgo } from "@/lib/domain/training-history";
 import { ArrowRightIcon, ChevronDownIcon } from "@/components/ui/icons";
+import { PracticeProfileDisclosure } from "@/components/players/practice-profile-disclosure";
 
 const trainingHref = (key: string) => `/training?category=${key}`;
 
@@ -37,7 +38,7 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
   const tested = skills
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => s.score !== null)
-    .map(({ s, i }) => ({ skill: s, ...axisPoint(i, R * Math.max(0.06, s.score ?? 0)) }));
+    .map(({ s, i }) => ({ skill: s, index: i, ...axisPoint(i, R * Math.max(0.06, s.score ?? 0)) }));
 
   const summary = skills
     .map((s) => `${s.label} ${s.score === null ? "not tested" : `${toPercentOfTarget(s.score)}% of target`}`)
@@ -46,7 +47,7 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[372px] h-auto mx-auto" role="img" aria-label={`Practice profile: ${summary}.`}>
       {/* Rings at 50% and 100% of target */}
-      <path d={ringPath(1)} fill="#f5f5f0" stroke="#000" strokeWidth="2" />
+      <path className="practice-profile-ring" d={ringPath(1)} pathLength={1} strokeDasharray="1" fill="#f5f5f0" stroke="#000" strokeWidth="2" />
       <path d={ringPath(0.5)} fill="none" stroke="#d4d4d4" strokeWidth="1.5" />
 
       {/* Spokes: solid for tested skills, dashed for untested */}
@@ -69,6 +70,8 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
       {/* Shape through tested skills only (needs three to form an area) */}
       {tested.length >= 3 && (
         <polygon
+          className="practice-profile-shape"
+          style={{ transformOrigin: `${CX}px ${CY}px` }}
           points={tested.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")}
           fill="#ccff00"
           fillOpacity="0.75"
@@ -80,6 +83,8 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
       {tested.map((p) => (
         <circle
           key={p.skill.key}
+          className="practice-profile-dot"
+          style={{ "--practice-i": p.index } as React.CSSProperties}
           cx={p.x}
           cy={p.y}
           r="5"
@@ -97,7 +102,13 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
         const bottom = p.y > CY + R; // bottom label
         const nameY = top ? p.y - 10 : bottom ? p.y + 2 : p.y - 3;
         return (
-          <a key={s.key} href={trainingHref(s.key)} aria-label={`Practice ${s.label}`}>
+          <a
+            key={s.key}
+            href={trainingHref(s.key)}
+            aria-label={`Practice ${s.label}`}
+            className="practice-profile-label"
+            style={{ "--practice-i": i } as React.CSSProperties}
+          >
             <text x={p.x} y={nameY} textAnchor={anchor} fontSize="12" fontWeight="800" className="fill-black uppercase" style={{ letterSpacing: "0.04em" }}>
               {s.label.toUpperCase()}
             </text>
@@ -135,14 +146,14 @@ function FocusSuggestion({ profile }: { readonly profile: PracticeProfile }) {
     cta = `Practice ${untested.label}`;
   } else {
     return (
-      <p className="rounded-2xl border-2 border-black bg-[#ccff00] px-4 py-3 text-sm font-bold text-black">
+      <p className="practice-profile-focus rounded-2xl border-2 border-black bg-[#ccff00] px-4 py-3 text-sm font-bold text-black">
         Every skill is at target. Raise the bar with harder goals in your weekly plan.
       </p>
     );
   }
 
   return (
-    <div data-testid="practice-focus" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-black bg-[#ccff00] px-4 py-3">
+    <div data-testid="practice-focus" className="practice-profile-focus flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-black bg-[#ccff00] px-4 py-3">
       <div className="min-w-0">
         <p className="font-display text-base font-black uppercase leading-tight text-black">{title}</p>
         <p className="text-xs font-bold text-neutral-800">{detail}</p>
@@ -158,7 +169,7 @@ function FocusSuggestion({ profile }: { readonly profile: PracticeProfile }) {
   );
 }
 
-function SkillRow({ skill }: { readonly skill: PracticeSkillScore }) {
+function SkillRow({ skill, index }: { readonly skill: PracticeSkillScore; readonly index: number }) {
   const percent = skill.score === null ? null : toPercentOfTarget(skill.score);
   const detail =
     skill.score === null
@@ -182,7 +193,10 @@ function SkillRow({ skill }: { readonly skill: PracticeSkillScore }) {
           </div>
           <div className="mt-1 h-2 w-full overflow-hidden rounded-full border border-black bg-neutral-100">
             {percent !== null && (
-              <div className="h-full bg-[#ccff00]" style={{ width: `${Math.max(3, percent)}%` }} />
+              <div
+                className="practice-profile-bar h-full bg-[#ccff00]"
+                style={{ width: `${Math.max(3, percent)}%`, "--practice-i": index } as React.CSSProperties}
+              />
             )}
           </div>
           <span className="mt-0.5 block text-[11px] font-bold text-neutral-500">{detail}</span>
@@ -205,9 +219,9 @@ function collapsedSummary(profile: PracticeProfile): string {
 /** Collapsible card (closed by default); load data with loadPracticeProfile. */
 export function PracticeProfileCard({ profile }: { readonly profile: PracticeProfile }) {
   return (
-    <details
+    <PracticeProfileDisclosure
       data-testid="practice-profile"
-      className="group/practice rounded-3xl border-[3px] border-black bg-[#FFFDF7]"
+      className="practice-profile group/practice rounded-3xl border-[3px] border-black bg-[#FFFDF7]"
     >
       <summary data-testid="practice-profile-toggle" className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-3xl p-5 select-none [&::-webkit-details-marker]:hidden">
         <div className="min-w-0">
@@ -222,7 +236,7 @@ export function PracticeProfileCard({ profile }: { readonly profile: PracticePro
         </span>
       </summary>
 
-      <div className="space-y-4 px-5 pb-5">
+      <div className="practice-profile-body space-y-4 px-5 pb-5">
         <p className="text-xs font-bold text-neutral-600">
           Best drill results in the last {PRACTICE_PROFILE_WINDOW_DAYS} days, as a % of each drill&apos;s target.
         </p>
@@ -232,8 +246,8 @@ export function PracticeProfileCard({ profile }: { readonly profile: PracticePro
         <FocusSuggestion profile={profile} />
 
         <ul className="space-y-1">
-          {profile.skills.map((skill) => (
-            <SkillRow key={skill.key} skill={skill} />
+          {profile.skills.map((skill, index) => (
+            <SkillRow key={skill.key} skill={skill} index={index} />
           ))}
         </ul>
 
@@ -244,7 +258,7 @@ export function PracticeProfileCard({ profile }: { readonly profile: PracticePro
           Win-based drills aren&apos;t counted because results depend on your opponent.
         </p>
       </div>
-    </details>
+    </PracticeProfileDisclosure>
   );
 }
 
