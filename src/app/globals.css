@@ -408,19 +408,20 @@ body {
   100% { opacity: 1; transform: scale(1); }
 }
 
+/* Launch values are randomized per open via CSS variables (see src/lib/animations/practice-ball.ts). */
 @keyframes practice-profile-ball-roll {
-  0% { opacity: 0; transform: translateX(44px); }
+  0% { opacity: 0; transform: translateX(var(--practice-ball-from-x, 44px)); }
   4% { opacity: 1; }
   100% { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes practice-profile-ball-spin {
-  from { transform: rotate(240deg); }
+  from { transform: rotate(var(--practice-ball-spin, 220deg)); }
   to { transform: rotate(0deg); }
 }
 
 @keyframes practice-profile-ball-hop {
-  0% { transform: translateY(-150px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  0% { transform: translateY(calc(var(--practice-ball-drop, 150px) * -1)); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
   38% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
   56% { transform: translateY(-38px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
   72% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
