@@ -21,6 +21,8 @@ export interface ChallengeCardProps {
   readonly activeCategory?: string;
   readonly isInPersonalPlan?: boolean;
   readonly lastResult?: LastResultSummary | null;
+  /** When set, the category badge filters in place instead of navigating. */
+  readonly onCategorySelect?: (category: string) => void;
 }
 
 export function ChallengeCard({
@@ -35,6 +37,7 @@ export function ChallengeCard({
   activeCategory,
   isInPersonalPlan = false,
   lastResult = null,
+  onCategorySelect,
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
@@ -68,6 +71,10 @@ export function ChallengeCard({
     setCurrentPB(personalBest);
   };
 
+  const categoryLabel = categoryLabels[challenge.skillCategory] ?? challenge.skillCategory;
+  const badgeTitle =
+    activeCategory === challenge.skillCategory ? "Clear category filter" : `Filter by ${categoryLabel}`;
+
   const filterHref =
     activeCategory === challenge.skillCategory
       ? groupId
@@ -86,21 +93,33 @@ export function ChallengeCard({
         {/* Badges header row */}
         <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Link
-              href={filterHref}
-              className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
+            {onCategorySelect ? (
+              <button
+                type="button"
+                onClick={() => onCategorySelect(challenge.skillCategory)}
+                aria-pressed={activeCategory === challenge.skillCategory}
+                className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
                 activeCategory === challenge.skillCategory
                   ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
                   : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
               }`}
-              title={
+                title={badgeTitle}
+              >
+                {categoryLabel}
+              </button>
+            ) : (
+              <Link
+                href={filterHref}
+                className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
                 activeCategory === challenge.skillCategory
-                  ? "Clear category filter"
-                  : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
-              }
-            >
-              {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
-            </Link>
+                  ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                  : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
+              }`}
+                title={badgeTitle}
+              >
+                {categoryLabel}
+              </Link>
+            )}
 
             {completed && (
               <span className="px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">

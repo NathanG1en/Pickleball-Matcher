@@ -43,6 +43,16 @@ test("records solo and group challenge attempts and displays personal bests", as
   await page.getByRole("link", { name: "← Training" }).click();
   await expect(page).toHaveURL(/\/training$/);
 
+  // Category filters apply in place: the URL updates and other drills are hidden
+  const filters = page.getByTestId("drill-filters");
+  await filters.getByRole("button", { name: "Serving", exact: true }).click();
+  await expect(page).toHaveURL(/\/training\?category=serving$/);
+  await expect(filters.getByRole("button", { name: "Serving", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(wallCard).toBeHidden();
+  await filters.getByRole("button", { name: "All Drills", exact: true }).click();
+  await expect(page).toHaveURL(/\/training$/);
+  await expect(wallCard).toBeVisible();
+
   // Navigate back to group and publish a weekly training plan
   await page.goto(`/g/${groupId}`);
   const trainingCard = page.getByTestId("weekly-training-card");

@@ -5,7 +5,7 @@ import {
   getActivePlayerAccountId,
   getActiveGuestPlayerId,
 } from "@/app/actions/action-context";
-import { ChallengeCard } from "@/components/training/challenge-card";
+import { DrillLibrary, type DrillLibraryItem } from "@/components/training/drill-library";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
 import { TargetIcon } from "@/components/ui/icons";
@@ -22,9 +22,10 @@ import { toLastResultRecord } from "@/lib/domain/training-history";
 export default async function TrainingHubPage({
   searchParams,
 }: {
-  searchParams: Promise<{ group?: string; category?: string }>;
+  // `category` is also read from the URL, but only by the client-side DrillLibrary.
+  searchParams: Promise<{ group?: string }>;
 }) {
-  const { group: selectedGroupId, category: selectedCategory } = await searchParams;
+  const { group: selectedGroupId } = await searchParams;
   const repo = getActionRepository();
 
   const accountId = await getActivePlayerAccountId();
@@ -142,9 +143,23 @@ export default async function TrainingHubPage({
       : []
     : challenges;
 
-  const filteredChallenges = selectedCategory && selectedCategory !== "all"
-    ? targetChallenges.filter((c) => c.skillCategory === selectedCategory)
-    : targetChallenges;
+  const libraryItems: DrillLibraryItem[] = targetChallenges.map((challenge) => {
+    const planItem = selectedGroupPlan ? planItemMap.get(challenge.id) : undefined;
+    return {
+      challenge,
+      personalBest: personalBests.get(challenge.id),
+      lastResult: lastResults[challenge.id] ?? null,
+      groupId: selectedGroupId,
+      planItemId: planItem?.id,
+      customGoalDescription: planItem?.customGoalDescription,
+      rosterPlayers,
+      currentUserId: accountId,
+      isCompletedThisWeek:
+        personalCompletedChallengeIds.includes(challenge.id) ||
+        groupCompletedChallengeIds.includes(challenge.id),
+      isInPersonalPlan: personalPlanChallengeIds.has(challenge.id),
+    };
+  });
 
   const allCategories: { key: ChallengeSkillCategory; label: string }[] = [
     { key: "dinking", label: "Dinking" },
@@ -361,82 +376,11 @@ export default async function TrainingHubPage({
         <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black pt-2">Drill Library</h2>
       )}
 
-      {/* Category Filter Pills - all visible without horizontal scrolling */}
-      {categories.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          {categories.map((cat) => {
-            const isActive =
-              (selectedCategory === undefined && cat.key === "all") ||
-              selectedCategory === cat.key;
-            const href =
-              cat.key === "all"
-                ? selectedGroupId
-                  ? `/training?group=${selectedGroupId}`
-                  : "/training"
-                : selectedGroupId
-                ? `/training?group=${selectedGroupId}&category=${cat.key}`
-                : `/training?category=${cat.key}`;
-
-            return (
-              <Link
-                key={cat.key}
-                href={href}
-                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all border-2 select-none active:translate-x-0.5 active:translate-y-0.5 ${
-                  isActive
-                    ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
-                }`}
-              >
-                {cat.label}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Challenge Cards Grid */}
-      {filteredChallenges.length > 0 ? (
-        <section id="drill-library" className="grid sm:grid-cols-2 gap-4 sm:gap-5 scroll-mt-6">
-          {filteredChallenges.map((challenge) => {
-            const planItem = selectedGroupPlan
-              ? planItemMap.get(challenge.id)
-              : undefined;
-            return (
-              <ChallengeCard
-                key={challenge.id}
-                challenge={challenge}
-                personalBest={personalBests.get(challenge.id)}
-                lastResult={lastResults[challenge.id] ?? null}
-                groupId={selectedGroupId}
-                planItemId={planItem?.id}
-                customGoalDescription={planItem?.customGoalDescription}
-                rosterPlayers={rosterPlayers}
-                currentUserId={accountId}
-                isCompletedThisWeek={
-                  personalCompletedChallengeIds.includes(challenge.id) ||
-                  groupCompletedChallengeIds.includes(challenge.id)
-                }
-                activeCategory={selectedCategory}
-                isInPersonalPlan={personalPlanChallengeIds.has(challenge.id)}
-              />
-            );
-          })}
-        </section>
-      ) : (
-        selectedGroupId && selectedGroupPlan && (
-          <div className="bg-[#FFFDF7] border-2 border-black rounded-2xl p-6 text-center text-sm font-bold text-neutral-600 shadow-[2px_2px_0px_0px_#000]">
-            No drills found matching &ldquo;{selectedCategory}&rdquo; in this week&apos;s plan.
-            <div className="mt-3">
-              <Link
-                href={`/training?group=${selectedGroupId}`}
-                className="inline-block px-3.5 py-1.5 rounded-xl bg-black text-[#ccff00] font-display text-xs font-black uppercase tracking-wider"
-              >
-                View All Plan Drills
-              </Link>
-            </div>
-          </div>
-        )
-      )}
+      <DrillLibrary
+        categories={categories}
+        items={libraryItems}
+        scopeLabel={selectedGroupId ? "this week's plan" : "the drill library"}
+      />
     </main>
   );
 }

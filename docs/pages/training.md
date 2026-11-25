@@ -62,6 +62,7 @@ When navigating to a group's plan (via "Practice Weekly Drills →" on the group
 All visible drill labels across the drill browser, individual plan builder, and group plan builder are directly filterable:
 - **Interactive Category Badges:** Tapping the Category badge on any drill card or item filters the list directly to that category (and toggles back to All Drills if tapped again).
 - **Filter Pills:** Category pill controls allow quick filtering across **All Drills**, **Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, **Conditioning**, and **Strategy**. In plan builders, pills indicate how many focus drills are currently selected within each category.
+- **Instant Filtering on `/training`:** On the Training Hub and group drills view, filter pills are toggle buttons (the active one is marked pressed) that filter the already-loaded drill cards in the browser without reloading the page. The active category is kept in the URL (`?category=[key]`, replaced in place rather than adding history entries), so a filtered view can be shared or reloaded. Hidden cards stay mounted, so an open result logger keeps its entries when switching filters. If no drills match (for example from a shared URL), an empty state offers a button to show all drills.
 - **Removed Unfilterable Labels:** Metadata that cannot be cleanly filtered (such as participant format and tracking format) is omitted from drill cards and selection lists to eliminate clutter and keep filtering fast and intuitive.
 
 ## Standardized Drill Library (30 Drills)
