@@ -7,7 +7,8 @@ import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { formatMetricDisplay } from "@/lib/domain/training-calculator";
 import type { LastResultSummary } from "@/lib/domain/training-history";
 import { InlineResultLogger, type RosterPlayerOption } from "@/components/training/inline-result-logger";
-import { ChevronDownIcon, TrophyIcon } from "@/components/ui/icons";
+import { ChevronDownIcon } from "@/components/ui/icons";
+import { PickleballMedal } from "@/components/training/pickleball-medal";
 
 export interface ChallengeCardProps {
   readonly challenge: ChallengeTemplateRecord;
@@ -204,7 +205,13 @@ export function ChallengeCard({
 
         {/* Personal Best banner */}
         <div className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-100 border border-black/10 text-xs">
-          <TrophyIcon className="w-4 h-4 text-amber-600 shrink-0" />
+          <PickleballMedal
+            rank={1}
+            size={22}
+            decorative
+            // Greyed out until there's a result, so it never looks like a PB has been set.
+            className={`shrink-0 ${currentPB !== null && currentPB !== undefined ? "" : "grayscale opacity-40"}`}
+          />
           <span className="font-bold text-neutral-700">Personal Best:</span>
           <span className="font-display font-black text-black ml-auto">
             {currentPB !== null && currentPB !== undefined

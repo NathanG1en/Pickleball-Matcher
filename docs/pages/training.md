@@ -81,7 +81,7 @@ The drill library contains 30 standardized drills spanning 6 core skill categori
 Each drill is presented in an editorial neobrutalist card with:
 - **Filterable Category Badge:** Tapping filters the browser to that category.
 - **Done Badge:** Highlights drills with completed attempts in the current calendar week.
-- **Personal Best Banner:** Shows the player's lifetime highest score or best time for that drill. Once the drill has attempts, a **History** link opens the drill history page.
+- **Personal Best Banner:** A small pickleball medal marked **PB** (the same medal as the drill history podium; greyed out until the drill has a result), then the player's lifetime highest score or best time for that drill, or "No attempts yet". Once the drill has attempts, a **History** link opens the drill history page.
 - **Instructions & Setup:** Expandable guide outlining court setup, target cones, and drill rules.
 - **Inline Multi-Attempt Logger (`+ Record Attempt`):**
   - Allows logging multiple attempts in one practice session directly on the card without page reloads.

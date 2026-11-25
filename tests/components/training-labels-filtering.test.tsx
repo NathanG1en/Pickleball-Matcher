@@ -518,4 +518,20 @@ describe("Training Labels and Filtering", () => {
     expect(isGeneratedPlanTitle("Kitchen focus week")).toBe(false);
     expect(isGeneratedPlanTitle(null)).toBe(true);
   });
+
+  describe("Personal best row on drill cards", () => {
+    it("uses a greyed-out PB pickleball before any attempts", () => {
+      const html = renderToStaticMarkup(<ChallengeCard challenge={mockChallenges[0]} />);
+      expect(html).toContain("No attempts yet");
+      expect(html).toMatch(/<svg[^>]*class="shrink-0 grayscale opacity-40"[^>]*aria-hidden="true"/);
+      expect(html).toContain(">PB</text>");
+    });
+
+    it("shows the full-colour PB pickleball once there is a personal best", () => {
+      const html = renderToStaticMarkup(<ChallengeCard challenge={mockChallenges[0]} personalBest={42} />);
+      expect(html).toContain("42 dinks");
+      expect(html).toMatch(/<svg[^>]*class="shrink-0 "[^>]*aria-hidden="true"/);
+      expect(html).not.toContain("grayscale");
+    });
+  });
 });

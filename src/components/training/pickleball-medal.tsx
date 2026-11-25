@@ -22,10 +22,12 @@ export interface PickleballMedalProps {
   /** Rendered width/height in px. */
   readonly size?: number;
   readonly className?: string;
+  /** Hide from screen readers when nearby text already names it (e.g. "Personal Best:"). */
+  readonly decorative?: boolean;
 }
 
 /** A pickleball medal: "PB" on the best result, "2" and "3" on the runners-up. */
-export function PickleballMedal({ rank, size = 48, className }: PickleballMedalProps) {
+export function PickleballMedal({ rank, size = 48, className, decorative = false }: PickleballMedalProps) {
   const label = rank === 1 ? "PB" : String(rank);
   return (
     <svg
@@ -33,8 +35,9 @@ export function PickleballMedal({ rank, size = 48, className }: PickleballMedalP
       width={size}
       height={size}
       className={className}
-      role="img"
-      aria-label={rank === 1 ? "Personal best" : `${rank === 2 ? "2nd" : "3rd"} best`}
+      {...(decorative
+        ? { "aria-hidden": true, focusable: "false" as const }
+        : { role: "img", "aria-label": rank === 1 ? "Personal best" : `${rank === 2 ? "2nd" : "3rd"} best` })}
     >
       <circle cx="12" cy="12" r="10.5" fill={RANK_FILL[rank]} stroke="#000" strokeWidth="1.6" />
       <g fill="#000">
