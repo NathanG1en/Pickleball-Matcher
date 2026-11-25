@@ -40,6 +40,7 @@ The player profile page is where athletes can review their rating, track their g
      - Never logged a drill: "Start your practice profile" ("Log any drill with a target to see where each skill stands.").
      - Practiced, but nothing in the last 60 days: "Nothing scored in the last 60 days" ("Log a drill to refresh your profile.").
      - Practiced recently, but only unscored drills (win-based, completion, or no target): "No scored drills yet" ("Win-based games aren't scored. Log a drill with a target to score your skills.").
+     - These three getting-started prompts use a white card, and the home screen's pickleball sits beside **Go to Training**. When the card opens, the ball drops in from above, bounces a few times with spin and settles next to the button (after the reveal, about 2.5s in total). Once settled it behaves like the home screen ball: tap or hover to make it bounce. The profile never plays or uses up the home page's once-per-session bounce.
    - **Skill list:** each skill shows its % of target with a bar and "N drills · N attempts" (plus "early estimate" for a single attempt) or "Not tested yet". Every row and hexagon label links to `/training?category=[skill]`, which opens the drill library filtered to that skill.
    - Footer: "Last practiced N days ago" (or "No drills logged yet.").
 6. **Score History Chart**:

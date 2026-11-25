@@ -12,6 +12,7 @@ import {
 import { formatDaysAgo } from "@/lib/domain/training-history";
 import { ArrowRightIcon, ChevronDownIcon } from "@/components/ui/icons";
 import { PracticeProfileDisclosure } from "@/components/players/practice-profile-disclosure";
+import { HomePickleball } from "@/components/home/home-pickleball";
 
 const trainingHref = (key: string) => `/training?category=${key}`;
 
@@ -166,18 +167,38 @@ function FocusSuggestion({ profile }: { readonly profile: PracticeProfile }) {
   }
 
   return (
-    <div data-testid="practice-focus" className="practice-profile-focus flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-black bg-[#ccff00] px-4 py-3">
+    <div
+      data-testid="practice-focus"
+      className={`practice-profile-focus flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-black px-4 py-3 ${
+        // Getting-started prompts use the cream card so the lime pickleball stands out beside the button.
+        href === "/training" ? "bg-white" : "bg-[#ccff00]"
+      }`}
+    >
       <div className="min-w-0">
         <p className="font-display text-base font-black uppercase leading-tight text-black">{title}</p>
         <p className="text-xs font-bold text-neutral-800">{detail}</p>
       </div>
-      <Link
-        href={href}
-        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 font-display text-xs font-black uppercase tracking-wider text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
-      >
-        {cta}
-        <ArrowRightIcon className="h-3.5 w-3.5" />
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link
+          href={href}
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 font-display text-xs font-black uppercase tracking-wider text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+        >
+          {cta}
+          <ArrowRightIcon className="h-3.5 w-3.5" />
+        </Link>
+        {href === "/training" && (
+          // The home screen's pickleball drops in and settles beside "Go to Training".
+          // Layers: hop (vertical fall/bounces) > roll (sideways slide) > spin (rotation only),
+          // so rotation never bends the fall.
+          <span className="practice-profile-ball-hop inline-flex" data-testid="practice-profile-ball">
+            <span className="practice-profile-ball-roll inline-flex">
+              <span className="practice-profile-ball-spin inline-flex">
+                <HomePickleball playOnMount={false} />
+              </span>
+            </span>
+          </span>
+        )}
+      </div>
     </div>
   );
 }

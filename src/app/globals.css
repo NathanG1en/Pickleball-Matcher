@@ -325,6 +325,7 @@ body {
 .practice-profile-dot { transform-box: fill-box; transform-origin: center; }
 .practice-profile-shape { transform-box: view-box; }
 .practice-profile-bar { transform-origin: left center; }
+.practice-profile-ball-spin { transform-origin: center; }
 
 @media (prefers-reduced-motion: no-preference) {
   .practice-profile[open] .practice-profile-body {
@@ -357,6 +358,20 @@ body {
 
   .practice-profile[open] .practice-profile-focus {
     animation: practice-profile-focus-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
+  }
+
+  /* The home screen's pickleball drops from above once the focus card lands, bounces three
+   * times, and rolls to rest beside "Go to Training" (spin proportional to travel). */
+  .practice-profile[open] .practice-profile-ball-roll {
+    animation: practice-profile-ball-roll 1400ms cubic-bezier(0.33, 1, 0.68, 1) 1050ms both;
+  }
+
+  .practice-profile[open] .practice-profile-ball-spin {
+    animation: practice-profile-ball-spin 1400ms cubic-bezier(0.33, 1, 0.68, 1) 1050ms both;
+  }
+
+  .practice-profile[open] .practice-profile-ball-hop {
+    animation: practice-profile-ball-hop 1400ms linear 1050ms both;
   }
 }
 
@@ -391,6 +406,28 @@ body {
   55% { opacity: 1; transform: scale(1.04) rotate(1deg); }
   80% { transform: scale(0.99) rotate(0deg); }
   100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes practice-profile-ball-roll {
+  0% { opacity: 0; transform: translateX(44px); }
+  4% { opacity: 1; }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes practice-profile-ball-spin {
+  from { transform: rotate(240deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes practice-profile-ball-hop {
+  0% { transform: translateY(-150px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  38% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  56% { transform: translateY(-38px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  72% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  82% { transform: translateY(-12px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  91% { transform: translateY(0); animation-timing-function: cubic-bezier(0.5, 1, 0.89, 1); }
+  96% { transform: translateY(-3px); animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0); }
+  100% { transform: translateY(0); }
 }
 
 @keyframes practice-profile-fill {

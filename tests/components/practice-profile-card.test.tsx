@@ -95,4 +95,19 @@ describe("PracticeProfileCard", () => {
     expect(html).toContain("No scored drills yet");
     expect(html).toContain("Win-based games aren&#x27;t scored. Log a drill with a target to score your skills.");
   });
+
+  it("drops the home screen pickleball beside Go to Training on getting-started prompts only", () => {
+    for (const days of [null, 74, 1]) {
+      const html = renderToStaticMarkup(<PracticeProfileCard profile={profileWith({}, { daysSinceLastPractice: days })} />);
+      expect(html).toContain("Go to Training");
+      expect(html).toContain('data-testid="practice-profile-ball"');
+      expect(html).toContain('aria-label="Bounce pickleball"');
+      expect(html).toMatch(/data-testid="practice-focus" class="[^"]*bg-white/);
+    }
+    const focusHtml = renderToStaticMarkup(
+      <PracticeProfileCard profile={profileWith({ dinking: 0.82, resets: 0.48 })} />,
+    );
+    expect(focusHtml).not.toContain('data-testid="practice-profile-ball"');
+    expect(focusHtml).toMatch(/data-testid="practice-focus" class="[^"]*bg-\[#ccff00\]/);
+  });
 });

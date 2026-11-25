@@ -5,7 +5,11 @@ import { PickleballIcon } from "@/components/ui/icons";
 
 const SESSION_KEY = "pickleball:home-dink:v1";
 
-export function HomePickleball() {
+/**
+ * The bounceable pickleball. On the home page it dinks once per browser session on load;
+ * pass `playOnMount={false}` to reuse it elsewhere without consuming or playing that one-shot.
+ */
+export function HomePickleball({ playOnMount = true }: { readonly playOnMount?: boolean } = {}) {
   const ballRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -13,6 +17,7 @@ export function HomePickleball() {
     // React Strict Mode may reconnect the same effect; leave its one-shot motion running.
     if (!ball || ball.dataset.motion === "dink") return;
     ball.dataset.motion = "still";
+    if (!playOnMount) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     try {
       if (window.sessionStorage.getItem(SESSION_KEY)) return;
@@ -22,7 +27,7 @@ export function HomePickleball() {
       return;
     }
     ball.dataset.motion = "dink";
-  }, []);
+  }, [playOnMount]);
 
   const replayBounce = () => {
     const ball = ballRef.current;
