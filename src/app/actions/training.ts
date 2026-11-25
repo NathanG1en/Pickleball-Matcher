@@ -121,7 +121,7 @@ export async function recordTrainingResultAction(
     id: resultId,
     accountId: accountId ?? null,
     groupId: groupId ?? null,
-    planItemId: planItemId ?? null,
+    planItemId: groupId && planItemId ? planItemId : null,
     challengeId: challenge.id,
     loggedByPlayerId,
     scorePrimary,

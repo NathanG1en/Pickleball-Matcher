@@ -259,7 +259,6 @@ export function PersonalTrainingPlanCard({
                   <div className="mt-3 pt-3 border-t border-black/10">
                     <InlineResultLogger
                       challenge={item.challenge}
-                      planItemId={item.id}
                       initialOpen={true}
                       hideToggleButton={true}
                       onClose={() => setExpandedItemId(null)}

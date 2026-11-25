@@ -265,15 +265,18 @@ describe("Training Server Actions", () => {
     expect(planData?.items).toHaveLength(2);
     expect(planData?.items[1].customGoalDescription).toBe("Hit 15/20 drops");
 
-    // Record an attempt for one of the challenges in the plan
-    await recordTrainingResultAction({
+    // Record an attempt for one of the challenges in the plan (even if personal planItemId is passed)
+    const recordRes = await recordTrainingResultAction({
       challengeId: "ch_wall_streak",
+      planItemId: planData!.items[0].id,
       scorePrimary: 30,
     });
+    expect(recordRes.ok).toBe(true);
 
     const completedResults = await repository.listTrainingResultsForPersonalPlan(planData!.plan.id);
     expect(completedResults).toHaveLength(1);
     expect(completedResults[0].challengeId).toBe("ch_wall_streak");
+    expect(completedResults[0].planItemId).toBeNull();
   });
 
   it("rejects personal weekly plan if a group drill is included", async () => {
