@@ -16,6 +16,7 @@ import type {
   GroupTrainingPlanItemRecord,
 } from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
+import { toLastResultRecord } from "@/lib/domain/training-history";
 
 export default async function TrainingHubPage({
   searchParams,
@@ -59,13 +60,16 @@ export default async function TrainingHubPage({
     guestPlayerId = await getActiveGuestPlayerId(selectedGroupId);
   }
 
-  const [personalBests, progressSummary, currentPersonalPlan] = await Promise.all([
+  const [personalBests, latestResults, progressSummary, currentPersonalPlan] = await Promise.all([
     repo.getPlayerPersonalBests(accountId ?? undefined, guestPlayerId ?? undefined),
+    repo.getPlayerLatestTrainingResults(accountId ?? undefined, guestPlayerId ?? undefined),
     repo.getPlayerTrainingProgress(accountId ?? undefined, guestPlayerId ?? undefined),
     accountId && !selectedGroupId
       ? repo.getPersonalWeeklyTrainingPlan(accountId, currentYear, currentWeekNumber)
       : Promise.resolve(null),
   ]);
+
+  const lastResults = toLastResultRecord(latestResults);
 
   let personalCompletedChallengeIds: string[] = [];
   let personalPlanChallengeIds = new Set<string>();
@@ -349,6 +353,7 @@ export default async function TrainingHubPage({
             availableChallenges={challenges.filter((c) => c.participantFormat !== "group")}
             currentYear={currentYear}
             currentWeekNumber={currentWeekNumber}
+            lastResults={lastResults}
           />
 
           {/* Group Weekly Training Plans for groups user is a member of */}
@@ -362,6 +367,7 @@ export default async function TrainingHubPage({
               currentUserId={accountId}
               rosterPlayers={rPlayers}
               isOrganizer={isOrg}
+              lastResults={lastResults}
             />
           ))}
         </>
@@ -412,6 +418,7 @@ export default async function TrainingHubPage({
                 key={challenge.id}
                 challenge={challenge}
                 personalBest={personalBests.get(challenge.id)}
+                lastResult={lastResults[challenge.id] ?? null}
                 groupId={selectedGroupId}
                 planItemId={planItem?.id}
                 customGoalDescription={planItem?.customGoalDescription}

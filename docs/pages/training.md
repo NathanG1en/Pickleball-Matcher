@@ -72,14 +72,26 @@ The drill library contains 30 standardized drills spanning 6 core skill categori
 Each drill is presented in an editorial neobrutalist card with:
 - **Filterable Category Badge:** Tapping filters the browser to that category.
 - **Done Badge:** Highlights drills with completed attempts in the current calendar week.
-- **Personal Best Banner:** Shows the player's lifetime highest score or best time for that drill.
+- **Personal Best Banner:** Shows the player's lifetime highest score or best time for that drill. Once the drill has attempts, a **History** link opens the drill history page.
 - **Instructions & Setup:** Expandable guide outlining court setup, target cones, and drill rules.
 - **Inline Multi-Attempt Logger (`+ Record Attempt`):**
   - Allows logging multiple attempts in one practice session directly on the card without page reloads.
+  - **Last time:** Above the inputs, a muted line shows the player's most recent result for that drill (e.g. "Last time · 16/20 (80%) · Yesterday") with a **History** link to the drill's history page. Inputs are pre-filled from that result. Before the first attempt it reads "First attempt. This will be your starting point." After a save the line shows the new result ("Just now"); **Undo** restores the previous one.
   - Tailors inputs to the tracking format (e.g. Shots In vs Total Attempts for accuracy with live percentage preview; duration in seconds for timed sprints; +/- steppers with 16px numeric inputs).
   - **Partner Selector:** In a group context, partner and group drills allow selecting a partner from the active group roster. A single shared result is written with participant links, avoiding duplicate entries.
   - **Instant Feedback:** Celebratory banner on save highlighting practice points earned and whether a new personal best was achieved.
   - **Undo:** The save confirmation includes an **Undo** button that deletes that attempt. The card's personal best, **✓ Done** badge, and plan checkmarks/progress roll back to their state before the attempt (a drill stays done if it already had another attempt that week). The banner then reads "Attempt removed." If undo fails, the error is shown and **Undo** stays available to retry. Signed-in players and roster guests (in a group context) can undo their own attempts.
+
+## Drill History — `/training/drills/[challengeId]`
+
+Opened from **History** on a drill card's personal best row or from the logger's "Last time" line. Group context (`?group=[groupId]`) is kept so roster guests can view their own history and choose partners.
+- **Headline:** Latest result (with the accuracy breakdown when relevant) and personal best, followed by a plain-language summary that compares the best result on the first and most recent practice days in the range using the drill's own metric and units (e.g. "Up 15 percentage points since Nov 3 (65% → 80%).", "3.2s faster since Nov 10 (31s → 27.8s)."). A single practice day reads "Starting point: 65% on Nov 15."
+- **Activity line:** Neutral gap copy ("Last logged 9 days ago") plus attempt and day counts for the range.
+- **Date range:** **Last 90 days** (default) or **All time** (`?range=all`). If nothing falls in the last 90 days the headline says so and **All time** shows older results.
+- **Trend chart:** Shown once there are two or more practice days. Plots the best result per day on a date-scaled axis (gaps between sessions are visible), labels the first and last dates and the value range, and draws the drill's target benchmark as a dashed "Target" line. Timed drills are captioned "lower is better". The chart has an accessible text summary.
+- **Record from history:** The standard result logger (with Last time and Undo) sits below the summary; saving or undoing refreshes the headline, chart, and list.
+- **Attempts list:** Newest first, with value, weekday and date, notes, and a **PB** tag on the first attempt that reached the personal best. Attempts the player logged themselves have a two-step **Delete** (Delete → Delete / Keep) for correcting mistakes; on failure an error and **Retry delete** are shown. Attempts logged by a partner are listed without a delete control.
+- **Signed out:** Shows a sign-in prompt that returns to the same history page.
 
 ## Create Weekly Plan (Organizers) — `/g/[groupId]/training/plan/new`
 

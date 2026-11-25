@@ -20,7 +20,7 @@ test("records solo and group challenge attempts and displays personal bests", as
   await wallCard.getByRole("button", { name: "Save Attempt" }).click();
 
   // Verify personal best badge updates
-  await expect(wallCard.getByText("42 dinks")).toBeVisible();
+  await expect(wallCard.getByText("42 dinks").first()).toBeVisible();
   await expect(wallCard.getByText("✓ Done")).toBeVisible();
 
   // Undo the attempt: the personal best and Done badge roll back
@@ -31,8 +31,17 @@ test("records solo and group challenge attempts and displays personal bests", as
 
   // Save it again (the form keeps the entered values)
   await wallCard.getByRole("button", { name: "Save Attempt" }).click();
-  await expect(wallCard.getByText("42 dinks")).toBeVisible();
+  await expect(wallCard.getByText("42 dinks").first()).toBeVisible();
   await expect(wallCard.getByText("✓ Done")).toBeVisible();
+  await expect(wallCard.getByTestId("last-result-ch_wall_streak_100")).toContainText("Last time");
+
+  // Open the drill history: one attempt is shown as the starting point
+  await wallCard.getByRole("link", { name: /history$/i }).first().click();
+  await expect(page).toHaveURL(/\/training\/drills\/ch_wall_streak_100/);
+  await expect(page.getByTestId("drill-trend-headline")).toContainText("Starting point: 42 dinks");
+  await expect(page.getByRole("heading", { name: "Attempts" })).toBeVisible();
+  await page.getByRole("link", { name: "← Training" }).click();
+  await expect(page).toHaveURL(/\/training$/);
 
   // Navigate back to group and publish a weekly training plan
   await page.goto(`/g/${groupId}`);

@@ -1412,6 +1412,27 @@ export class InMemoryRepositories implements DomainRepository {
     return map;
   }
 
+  async getPlayerLatestTrainingResults(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<ReadonlyMap<string, TrainingResultRecord>> {
+    const latest = new Map<string, TrainingResultRecord>();
+    if (!accountId && !playerId) return latest;
+
+    for (const r of this.state.trainingResults) {
+      const mine =
+        (accountId && (r.accountId === accountId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.accountId === accountId))) ||
+        (!accountId && playerId && (r.loggedByPlayerId === playerId || this.state.trainingParticipants.some((p) => p.resultId === r.id && p.playerId === playerId)));
+      if (!mine) continue;
+      const current = latest.get(r.challengeId);
+      // Results are stored in insertion order, so ">=" keeps the later of two same-instant results.
+      if (!current || r.recordedAt.getTime() >= current.recordedAt.getTime()) {
+        latest.set(r.challengeId, r);
+      }
+    }
+    return new Map([...latest].map(([id, r]) => [id, structuredClone(r)]));
+  }
+
   async getPlayerTrainingProgress(
     accountId?: string,
     playerId?: string,

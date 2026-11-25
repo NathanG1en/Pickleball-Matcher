@@ -5,6 +5,7 @@ import Link from "next/link";
 import { addDrillToPersonalPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { formatMetricDisplay } from "@/lib/domain/training-calculator";
+import type { LastResultSummary } from "@/lib/domain/training-history";
 import { InlineResultLogger, type RosterPlayerOption } from "@/components/training/inline-result-logger";
 import { ChevronDownIcon, TrophyIcon } from "@/components/ui/icons";
 
@@ -19,6 +20,7 @@ export interface ChallengeCardProps {
   readonly isCompletedThisWeek?: boolean;
   readonly activeCategory?: string;
   readonly isInPersonalPlan?: boolean;
+  readonly lastResult?: LastResultSummary | null;
 }
 
 export function ChallengeCard({
@@ -32,6 +34,7 @@ export function ChallengeCard({
   isCompletedThisWeek = false,
   activeCategory,
   isInPersonalPlan = false,
+  lastResult = null,
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
@@ -193,6 +196,15 @@ export function ChallengeCard({
                 })
               : "No attempts yet"}
           </span>
+          {currentPB !== null && currentPB !== undefined && (
+            <Link
+              href={`/training/drills/${challenge.id}${groupId ? `?group=${groupId}` : ""}`}
+              aria-label={`${challenge.title} history`}
+              className="shrink-0 pl-2 ml-1 border-l border-black/15 font-bold text-neutral-700 underline underline-offset-2 hover:text-black"
+            >
+              History
+            </Link>
+          )}
         </div>
 
         {/* Collapsible Instructions */}
@@ -235,6 +247,7 @@ export function ChallengeCard({
         currentUserId={currentUserId}
         onResultSaved={handleSaved}
         onResultUndone={handleUndone}
+        lastResult={lastResult}
       />
     </div>
   );

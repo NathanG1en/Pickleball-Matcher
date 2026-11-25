@@ -11,6 +11,7 @@ import type {
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon, ZapIcon } from "@/components/ui/icons";
 import { InlineResultLogger } from "@/components/training/inline-result-logger";
+import type { LastResultSummary } from "@/lib/domain/training-history";
 
 export interface PersonalTrainingPlanCardProps {
   readonly currentPlan: {
@@ -22,6 +23,8 @@ export interface PersonalTrainingPlanCardProps {
   readonly availableChallenges?: readonly ChallengeTemplateRecord[];
   readonly currentYear?: number;
   readonly currentWeekNumber?: number;
+  /** Most recent result per drill id, shown as "Last time" in the logger. */
+  readonly lastResults?: Readonly<Record<string, LastResultSummary>>;
 }
 
 export function PersonalTrainingPlanCard({
@@ -31,6 +34,7 @@ export function PersonalTrainingPlanCard({
   availableChallenges = [],
   currentYear,
   currentWeekNumber,
+  lastResults = {},
 }: PersonalTrainingPlanCardProps) {
   const { year: fallbackYear, weekNumber: fallbackWeek } = getWeekNumberFromDate();
   const planYear = currentPlan?.plan.year ?? currentYear ?? fallbackYear;
@@ -274,6 +278,7 @@ export function PersonalTrainingPlanCard({
                       onClose={() => setExpandedItemId(null)}
                       onResultSaved={() => adjustSessionSaves(item.challengeId, 1)}
                       onResultUndone={() => adjustSessionSaves(item.challengeId, -1)}
+                      lastResult={lastResults[item.challengeId] ?? null}
                     />
                   </div>
                 )}

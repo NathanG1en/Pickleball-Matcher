@@ -340,6 +340,24 @@ describe("Training Server Actions", () => {
     expect(again.ok).toBe(false);
   });
 
+  it("returns each drill's most recent result for the Last time reference", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date(2026, 10, 20, 9, 0));
+      await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 40 });
+      vi.setSystemTime(new Date(2026, 10, 22, 9, 0));
+      await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 25 });
+      await recordTrainingResultAction({ challengeId: "ch_drop_accuracy", scorePrimary: 14, scoreSecondary: 20 });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const latest = await repository.getPlayerLatestTrainingResults("acc-1");
+    expect(latest.get("ch_wall_streak")?.scorePrimary).toBe(25);
+    expect(latest.get("ch_drop_accuracy")?.metricValue).toBe(70);
+    expect((await repository.getPlayerLatestTrainingResults("acc-unknown")).size).toBe(0);
+  });
+
   it("rejects personal weekly plan if a group drill is included", async () => {
     const res = await savePersonalWeeklyPlanAction({
       year: 2026,

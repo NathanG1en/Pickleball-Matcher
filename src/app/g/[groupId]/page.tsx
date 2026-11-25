@@ -23,6 +23,7 @@ import { WeeklyTrainingCard } from "@/components/training/weekly-training-card";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
 import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
+import { toLastResultRecord } from "@/lib/domain/training-history";
 
 /** Request-time check used to surface a session summary shortly after it ends. */
 function endedWithinHours(endedAt: Date | null, hours: number): boolean {
@@ -96,8 +97,13 @@ export default async function GroupDashboardPage({
 
   const currentTrainingPlan = await repository.getWeeklyTrainingPlan(groupId, currentYear, currentWeekNumber);
   let completedChallengeIds: string[] = [];
+  let trainingLastResults: ReturnType<typeof toLastResultRecord> = {};
   if (currentTrainingPlan && (accountId || viewerPlayerId)) {
-    const planResults = await repository.listTrainingResultsForPlan(currentTrainingPlan.plan.id);
+    const [planResults, latestResults] = await Promise.all([
+      repository.listTrainingResultsForPlan(currentTrainingPlan.plan.id),
+      repository.getPlayerLatestTrainingResults(accountId ?? undefined, accountId ? undefined : viewerPlayerId ?? undefined),
+    ]);
+    trainingLastResults = toLastResultRecord(latestResults);
     completedChallengeIds = planResults
       .filter((r) => (accountId && r.accountId === accountId) || (viewerPlayerId && r.loggedByPlayerId === viewerPlayerId))
       .map((r) => r.challengeId);
@@ -482,6 +488,7 @@ export default async function GroupDashboardPage({
             isOrganizer={isOrganizer}
             currentPlan={currentTrainingPlan}
             completedChallengeIds={completedChallengeIds}
+            lastResults={trainingLastResults}
           />
 
           {/* Tournaments Section */}

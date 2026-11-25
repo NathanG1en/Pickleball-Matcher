@@ -2620,6 +2620,32 @@ export class PostgresRepositories implements DomainRepository {
     return map;
   }
 
+  async getPlayerLatestTrainingResults(
+    accountId?: string,
+    playerId?: string,
+  ): Promise<ReadonlyMap<string, TrainingResultRecord>> {
+    if (!accountId && !playerId) return new Map();
+
+    const rows = accountId
+      ? await this.query<TrainingResultRow[]>`
+          select distinct on (r.challenge_id) r.* from training_results r
+          left join training_result_participants p on p.result_id = r.id
+          where r.account_id = ${accountId} or p.account_id = ${accountId}
+          order by r.challenge_id, r.recorded_at desc, r.id desc
+        `
+      : await this.query<TrainingResultRow[]>`
+          select distinct on (r.challenge_id) r.* from training_results r
+          left join training_result_participants p on p.result_id = r.id
+          where r.logged_by_player_id = ${playerId!} or p.player_id = ${playerId!}
+          order by r.challenge_id, r.recorded_at desc, r.id desc
+        `;
+
+    return new Map(rows.map((row) => {
+      const result = mapTrainingResult(row);
+      return [result.challengeId, result] as const;
+    }));
+  }
+
   async getPlayerTrainingProgress(
     accountId?: string,
     playerId?: string,

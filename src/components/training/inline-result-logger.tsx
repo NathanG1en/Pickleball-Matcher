@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import Link from "next/link";
 import { deleteTrainingResultAction, recordTrainingResultAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { CheckIcon } from "@/components/ui/icons";
+import { formatLastResultValue, type LastResultSummary } from "@/lib/domain/training-history";
 
 export interface RosterPlayerOption {
   readonly id: string;
@@ -21,6 +23,8 @@ export interface InlineResultLoggerProps {
   /** Called after a saved attempt is undone, with the drill's personal best after removal. */
   readonly onResultUndone?: (personalBest: number | null) => void;
   readonly initialOpen?: boolean;
+  /** The player's most recent result for this drill, shown beside the new entry and used to pre-fill it. */
+  readonly lastResult?: LastResultSummary | null;
   readonly hideToggleButton?: boolean;
   readonly onClose?: () => void;
 }
@@ -32,6 +36,7 @@ export function InlineResultLogger({
   rosterPlayers = [],
   onResultSaved,
   onResultUndone,
+  lastResult = null,
   initialOpen = false,
   hideToggleButton = false,
   onClose,
@@ -40,13 +45,17 @@ export function InlineResultLogger({
   const [isPending, startTransition] = useTransition();
   const [isUndoing, startUndoTransition] = useTransition();
   const [lastSavedResultId, setLastSavedResultId] = useState<string | null>(null);
+  // "Last time" reference: starts as the stored result, then follows saves made here.
+  const [shownLast, setShownLast] = useState<LastResultSummary | null>(lastResult);
+  const [lastBeforeSave, setLastBeforeSave] = useState<LastResultSummary | null>(lastResult);
   const [scorePrimary, setScorePrimary] = useState<number>(() => {
+    if (lastResult) return lastResult.scorePrimary;
     if (challenge.trackingFormat === "accuracy") return 15;
     if (challenge.trackingFormat === "timed") return 30;
     return 10;
   });
   const [scoreSecondary, setScoreSecondary] = useState<number>(() => {
-    if (challenge.trackingFormat === "accuracy") return 20;
+    if (challenge.trackingFormat === "accuracy") return lastResult?.scoreSecondary ?? 20;
     return 0;
   });
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
@@ -78,6 +87,13 @@ export function InlineResultLogger({
       const result = await recordTrainingResultAction(payload);
       if (result.ok) {
         setLastSavedResultId(result.data.resultId);
+        setLastBeforeSave(shownLast);
+        setShownLast({
+          scorePrimary: payload.scorePrimary,
+          scoreSecondary: payload.scoreSecondary ?? null,
+          metricValue: result.data.metricValue,
+          dateLabel: "Just now",
+        });
         setFeedback({
           success: true,
           message: `Attempt saved! (+${result.data.pointsEarned} pts)`,
@@ -107,6 +123,7 @@ export function InlineResultLogger({
       });
       if (result.ok) {
         setLastSavedResultId(null);
+        setShownLast(lastBeforeSave);
         setFeedback({ success: true, message: "Attempt removed." });
         if (onResultUndone) {
           onResultUndone(result.data.personalBest);
@@ -154,6 +171,32 @@ export function InlineResultLogger({
             >
               Close
             </button>
+          </div>
+
+          {/* Previous result for comparison (kept visually distinct from the new entry) */}
+          <div
+            data-testid={`last-result-${challenge.id}`}
+            className="flex items-center justify-between gap-2 text-xs text-neutral-500"
+          >
+            {shownLast ? (
+              <span className="min-w-0">
+                <span className="font-bold">Last time</span>
+                {" · "}
+                <span className="font-bold text-neutral-700">{formatLastResultValue(challenge, shownLast)}</span>
+                {" · "}
+                {shownLast.dateLabel}
+              </span>
+            ) : (
+              <span className="min-w-0">First attempt. This will be your starting point.</span>
+            )}
+            {shownLast && (
+              <Link
+                href={`/training/drills/${challenge.id}${groupId ? `?group=${groupId}` : ""}`}
+                className="shrink-0 font-bold text-neutral-700 underline underline-offset-2 hover:text-black"
+              >
+                History
+              </Link>
+            )}
           </div>
 
           {/* Stepper Inputs tailored to tracking format */}

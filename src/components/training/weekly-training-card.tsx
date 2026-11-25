@@ -6,6 +6,7 @@ import type { GroupTrainingPlanRecord, GroupTrainingPlanItemRecord } from "@/lib
 import { formatWeekOf } from "@/lib/domain/training-calculator";
 import { TargetIcon, CheckIcon } from "@/components/ui/icons";
 import { InlineResultLogger } from "@/components/training/inline-result-logger";
+import type { LastResultSummary } from "@/lib/domain/training-history";
 
 export interface WeeklyTrainingCardProps {
   readonly groupId: string;
@@ -15,6 +16,8 @@ export interface WeeklyTrainingCardProps {
     readonly items: readonly GroupTrainingPlanItemRecord[];
   } | null;
   readonly completedChallengeIds?: readonly string[];
+  /** Most recent result per drill id, shown as "Last time" in the logger. */
+  readonly lastResults?: Readonly<Record<string, LastResultSummary>>;
 }
 
 export function WeeklyTrainingCard({
@@ -22,6 +25,7 @@ export function WeeklyTrainingCard({
   isOrganizer,
   currentPlan,
   completedChallengeIds = [],
+  lastResults = {},
 }: WeeklyTrainingCardProps) {
   // Attempts saved in this view (per drill) that haven't been undone.
   const [sessionSaveCounts, setSessionSaveCounts] = useState<Record<string, number>>({});
@@ -191,6 +195,7 @@ export function WeeklyTrainingCard({
                     onClose={() => setExpandedItemId(null)}
                     onResultSaved={() => adjustSessionSaves(item.challengeId, 1)}
                     onResultUndone={() => adjustSessionSaves(item.challengeId, -1)}
+                    lastResult={lastResults[item.challengeId] ?? null}
                   />
                 </div>
               )}

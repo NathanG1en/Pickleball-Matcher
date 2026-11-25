@@ -144,6 +144,8 @@ export interface DomainRepository {
   listTrainingResultsForChallenge(challengeId: string, options?: { accountId?: string; playerId?: string; groupId?: string; limit?: number }): Promise<readonly TrainingResultRecord[]>;
   listTrainingResultsForPlan(planId: string): Promise<readonly TrainingResultRecord[]>;
   getPlayerPersonalBests(accountId?: string, playerId?: string): Promise<ReadonlyMap<string, number>>;
+  /** Most recent result per challenge for a player (as logger or participant), keyed by challenge id. */
+  getPlayerLatestTrainingResults(accountId?: string, playerId?: string): Promise<ReadonlyMap<string, TrainingResultRecord>>;
   getPlayerTrainingProgress(accountId?: string, playerId?: string): Promise<TrainingProgressSummary>;
   getPersonalWeeklyTrainingPlan(accountId: string, year: number, weekNumber: number): Promise<{ plan: PersonalTrainingPlanRecord; items: readonly PersonalTrainingPlanItemRecord[] } | null>;
   savePersonalWeeklyTrainingPlan(plan: PersonalTrainingPlanRecord, items: readonly PersonalTrainingPlanItemRecord[]): Promise<void>;
