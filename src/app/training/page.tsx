@@ -8,7 +8,7 @@ import {
 import { ChallengeCard } from "@/components/training/challenge-card";
 import { PersonalTrainingPlanCard } from "@/components/training/personal-training-plan-card";
 import { GroupWeeklyPlanCard } from "@/components/training/group-weekly-plan-card";
-import { CalendarIcon, TargetIcon, TrophyIcon, ZapIcon } from "@/components/ui/icons";
+import { TargetIcon } from "@/components/ui/icons";
 import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type {
   ChallengeSkillCategory,
@@ -320,29 +320,39 @@ export default async function TrainingHubPage({
         <section
           aria-labelledby="practice-totals-heading"
           data-testid="practice-totals"
-          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] px-5 py-4 sm:px-6 sm:py-5"
+          className="bg-[#FFFDF7] border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] px-5 py-5 sm:px-6"
         >
-          <h2 id="practice-totals-heading" className="text-[13px] font-semibold text-neutral-500 mb-3">
+          <h2 id="practice-totals-heading" className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight mb-4">
             All-time practice
           </h2>
-          {/* Phones: 2 x 2. Wider screens: one row of content-width columns so the stats read as a group. */}
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-[repeat(4,max-content)] sm:gap-x-14">
+          {/* Label above value, content-width columns split by short rules. Phones and small tablets: 2 x 2. md and up: one row. */}
+          <dl className="grid grid-cols-2 gap-y-5 md:flex md:flex-nowrap">
             {[
-              { label: "Attempts logged", value: progressSummary.totalCompleted, Icon: TargetIcon },
-              { label: "Personal bests", value: progressSummary.personalBestsCount, Icon: TrophyIcon },
-              { label: "Days practiced", value: progressSummary.currentStreakDays, Icon: CalendarIcon },
-              { label: "Practice points", value: progressSummary.totalImprovementPoints, Icon: ZapIcon },
-            ].map(({ label, value, Icon }) => (
-              <div key={label} className="flex flex-col-reverse gap-1.5 min-w-0">
-                <dt className="flex items-center gap-1.5 text-sm font-medium leading-5 text-neutral-600">
-                  <Icon aria-hidden="true" className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
-                  <span className="truncate">{label}</span>
-                </dt>
-                <dd className="font-display text-[32px] font-bold leading-none tracking-tight text-black tabular-nums">
-                  {value.toLocaleString("en-US")}
-                </dd>
-              </div>
-            ))}
+              { label: "Attempts logged", value: progressSummary.totalCompleted },
+              { label: "Personal bests", value: progressSummary.personalBestsCount },
+              { label: "Days practiced", value: progressSummary.currentStreakDays },
+              { label: "Practice points", value: progressSummary.totalImprovementPoints },
+            ].map(({ label, value }, index) => {
+              // Rule after the left column in the 2 x 2 grid, after every column but the last in the single row.
+              const divider =
+                index === 0 || index === 2
+                  ? "after:block"
+                  : index === 1
+                  ? "after:hidden md:after:block"
+                  : "after:hidden";
+              const spacing = index % 2 === 1 ? "pl-5 md:pl-0" : "";
+              return (
+                <div
+                  key={label}
+                  className={`relative flex flex-col gap-1 min-w-0 pr-5 md:pr-7 md:mr-7 last:pr-0 last:mr-0 ${spacing} after:content-[''] after:absolute after:right-0 after:top-1 after:bottom-1 after:w-0.5 after:rounded-full after:bg-black/15 ${divider}`}
+                >
+                  <dt className="text-sm sm:text-[15px] font-medium text-neutral-600 leading-5 truncate">{label}</dt>
+                  <dd className="font-display text-[30px] sm:text-[32px] font-bold leading-none tracking-tight text-black tabular-nums">
+                    {value.toLocaleString("en-US")}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </section>
       )}
