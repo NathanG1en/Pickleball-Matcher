@@ -232,3 +232,48 @@ export function toLastResultRecord(
   }
   return record;
 }
+
+/**
+ * A player's best results for one drill, best first. Ties keep the earlier attempt ahead,
+ * since it reached that result first.
+ */
+export function rankPersonalBests(
+  results: readonly TrainingResultRecord[],
+  higherIsBetter: boolean,
+  limit = 3,
+): TrainingResultRecord[] {
+  return [...results]
+    .sort((a, b) => {
+      if (a.metricValue !== b.metricValue) {
+        return higherIsBetter ? b.metricValue - a.metricValue : a.metricValue - b.metricValue;
+      }
+      return a.recordedAt.getTime() - b.recordedAt.getTime();
+    })
+    .slice(0, limit);
+}
+
+/**
+ * Splits a result into a headline value and a supporting line, like "20:04" over "4:01 /km":
+ * accuracy → "80%" / "16 of 20 drops", timed → "27.8s" / "seconds", counts → "42" / "dinks".
+ */
+export function formatResultHeadline(
+  challenge: Pick<ChallengeTemplateRecord, "trackingFormat" | "scoreUnit">,
+  result: Pick<TrainingResultRecord, "scorePrimary" | "scoreSecondary" | "metricValue">,
+): { readonly value: string; readonly detail: string } {
+  const metric = Math.round(result.metricValue * 10) / 10;
+  switch (challenge.trackingFormat) {
+    case "accuracy":
+      return {
+        value: `${metric}%`,
+        detail: result.scoreSecondary
+          ? `${result.scorePrimary} of ${result.scoreSecondary} ${challenge.scoreUnit}`
+          : challenge.scoreUnit,
+      };
+    case "timed":
+      return { value: `${metric}s`, detail: "seconds" };
+    case "wins":
+      return { value: `${result.scorePrimary}`, detail: result.scorePrimary === 1 ? "win" : "wins" };
+    default:
+      return { value: `${result.scorePrimary}`, detail: challenge.scoreUnit };
+  }
+}

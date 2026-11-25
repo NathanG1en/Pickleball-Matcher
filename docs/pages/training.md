@@ -99,7 +99,11 @@ Opened from **History** on a drill card's personal best row or from the logger's
 - **Date range:** **Last 90 days** (default) or **All time** (`?range=all`). If nothing falls in the last 90 days the headline says so and **All time** shows older results.
 - **Trend chart:** Shown once there are two or more practice days. Plots the best result per day on a date-scaled axis (gaps between sessions are visible), labels the first and last dates and the value range, and draws the drill's target benchmark as a dashed "Target" line. Timed drills are captioned "lower is better". The chart has an accessible text summary.
 - **Record from history:** The standard result logger (with Last time and Undo) sits below the summary; saving or undoing refreshes the headline, chart, and list.
-- **Attempts list:** Newest first, with value, weekday and date, notes, and a **PB** tag on the first attempt that reached the personal best. Attempts the player logged themselves have a two-step **Delete** (Delete → Delete / Keep) for correcting mistakes; on failure an error and **Retry delete** are shown. Attempts logged by a partner are listed without a delete control.
+- **Personal Bests:** A card listing the player's top three results for the drill (all time, regardless of the date range). Ties go to whichever attempt reached the result first.
+  - **#1 (open by default):** a lime pickleball medal marked **PB** with yellow sun rays, the result as a large value with a supporting line (e.g. "42" / "dinks", "80%" / "16 of 20 drops", "27.8s" / "seconds"), then a divider, the attempt's note as a bold title (if any), and the local date and time (e.g. "Wed, Nov 25, 2026 at 2:39 PM").
+  - **#2 and #3 (collapsed):** silver and bronze pickleball medals marked **2** and **3** with the value and supporting line; tapping a row expands the same note and date details.
+  - A chevron on each entry opens or closes it. Expanded entries the player logged themselves include the two-step **Delete**.
+- **Attempts list:** Newest first, with value, weekday and date, and notes. The three podium attempts carry small matching pickleball medals (**PB**, **2**, **3**). Attempts the player logged themselves have a two-step **Delete** (Delete → Delete / Keep) for correcting mistakes; on failure an error and **Retry delete** are shown. Attempts logged by a partner are listed without a delete control.
 - **Signed out:** Shows a sign-in prompt that returns to the same history page.
 
 ## Create Weekly Plan (Organizers) — `/g/[groupId]/training/plan/new`

@@ -6,6 +6,8 @@ import {
   formatDaysAgo,
   formatLastResultValue,
   formatRelativeDay,
+  formatResultHeadline,
+  rankPersonalBests,
   summarizeDrillTrend,
   toLastResultRecord,
 } from "@/lib/domain/training-history";
@@ -123,5 +125,24 @@ describe("training history", () => {
     expect(toLastResultRecord(latest, now)).toEqual({
       ch_1: { scorePrimary: 16, scoreSecondary: 20, metricValue: 16, dateLabel: "Yesterday" },
     });
+  });
+
+  it("ranks the top results best first, with ties going to the earlier attempt", () => {
+    const early = result(new Date(2026, 10, 1, 9), 40);
+    const late = result(new Date(2026, 10, 9, 9), 40);
+    const top = result(new Date(2026, 10, 5, 9), 45);
+    const low = result(new Date(2026, 10, 6, 9), 10);
+    expect(rankPersonalBests([late, low, top, early], true).map((r) => r.id)).toEqual([top.id, early.id, late.id]);
+    // Lower is better for timed drills
+    const fast = result(new Date(2026, 10, 2, 9), 27.8);
+    const slow = result(new Date(2026, 10, 3, 9), 31);
+    expect(rankPersonalBests([slow, fast], false).map((r) => r.id)).toEqual([fast.id, slow.id]);
+  });
+
+  it("splits a result into a headline value and supporting line", () => {
+    expect(formatResultHeadline(accuracy, { scorePrimary: 16, scoreSecondary: 20, metricValue: 80 })).toEqual({ value: "80%", detail: "16 of 20 drops" });
+    expect(formatResultHeadline(timed, { scorePrimary: 27.8, metricValue: 27.8 })).toEqual({ value: "27.8s", detail: "seconds" });
+    expect(formatResultHeadline(streak, { scorePrimary: 42, metricValue: 42 })).toEqual({ value: "42", detail: "dinks" });
+    expect(formatResultHeadline({ trackingFormat: "wins", scoreUnit: "games" }, { scorePrimary: 1, metricValue: 1 })).toEqual({ value: "1", detail: "win" });
   });
 });

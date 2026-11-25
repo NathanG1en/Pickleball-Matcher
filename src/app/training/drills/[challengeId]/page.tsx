@@ -15,8 +15,11 @@ import {
   formatMetricValue,
   formatShortDate,
   summarizeDrillTrend,
+  rankPersonalBests,
   toLastResultSummary,
 } from "@/lib/domain/training-history";
+import { PersonalBests } from "@/components/training/personal-bests";
+import { PickleballMedal } from "@/components/training/pickleball-medal";
 
 const RANGE_DAYS = 90;
 
@@ -107,12 +110,10 @@ export default async function DrillHistoryPage({
   const latestOverall = allTimeSummary.latest;
   const lastResult = latestOverall ? toLastResultSummary(latestOverall, now) : null;
 
-  // Mark the first attempt that reached the all-time best as the personal best.
+  // All-time podium; ties go to whoever reached the result first.
   const bestValue = allTimeSummary.best;
-  const pbResultId =
-    bestValue === null
-      ? null
-      : [...allResults].reverse().find((r) => r.metricValue === bestValue)?.id ?? null;
+  const podium = rankPersonalBests(allResults, challenge.higherIsBetter, 3);
+  const podiumRank = new Map(podium.map((r, i) => [r.id, (i + 1) as 1 | 2 | 3]));
 
   const isOwnResult = (r: (typeof allResults)[number]) =>
     (accountId !== null && r.accountId === accountId) ||
@@ -203,6 +204,13 @@ export default async function DrillHistoryPage({
         />
       </section>
 
+      <PersonalBests
+        challenge={challenge}
+        ranked={podium}
+        ownResultIds={podium.filter((r) => isOwnResult(r)).map((r) => r.id)}
+        groupId={groupId ?? null}
+      />
+
       {/* Attempt log */}
       {results.length > 0 && (
         <section className="space-y-2.5" aria-labelledby="attempts-heading">
@@ -222,11 +230,7 @@ export default async function DrillHistoryPage({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-display text-sm font-black text-black">{value}</span>
-                      {r.id === pbResultId && (
-                        <span className="px-1.5 py-0.5 rounded bg-[#ccff00] text-black font-display font-black text-[10px] uppercase border border-black">
-                          PB
-                        </span>
-                      )}
+                      {podiumRank.has(r.id) && <PickleballMedal rank={podiumRank.get(r.id)!} size={22} />}
                     </div>
                     <span className="text-xs font-medium text-neutral-600 block">
                       {r.recordedAt.toLocaleDateString("en-US", { weekday: "short" })}, {dateLabel}

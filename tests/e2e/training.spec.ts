@@ -39,6 +39,8 @@ test("records solo and group challenge attempts and displays personal bests", as
   await wallCard.getByRole("link", { name: /history$/i }).first().click();
   await expect(page).toHaveURL(/\/training\/drills\/ch_wall_streak_100/);
   await expect(page.getByTestId("drill-trend-headline")).toContainText("Starting point: 42 dinks");
+  await expect(page.getByTestId("personal-best-1")).toContainText("42");
+  await expect(page.getByTestId("personal-best-1").getByRole("img", { name: "Personal best" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Attempts" })).toBeVisible();
   await page.getByRole("link", { name: "← Training" }).click();
   await expect(page).toHaveURL(/\/training$/);
