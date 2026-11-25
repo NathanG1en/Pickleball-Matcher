@@ -22,6 +22,7 @@ import { GroupTournamentsList } from "@/components/tournaments/group-tournaments
 import { WeeklyTrainingCard } from "@/components/training/weekly-training-card";
 import { getGuestPlayerIdForGroup } from "@/lib/auth/guest-session";
 import type { MatchRecord } from "@/lib/domain/types";
+import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 
 /** Request-time check used to surface a session summary shortly after it ends. */
 function endedWithinHours(endedAt: Date | null, hours: number): boolean {
@@ -91,12 +92,9 @@ export default async function GroupDashboardPage({
   // Right after a session ends, the dashboard points straight at its summary.
   const showRecentSummaryLink = !activeSession && endedWithinHours(latestCompletedSession?.endedAt ?? null, 12);
 
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
-  const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
 
-  const currentTrainingPlan = await repository.getWeeklyTrainingPlan(groupId, now.getFullYear(), currentWeekNumber);
+  const currentTrainingPlan = await repository.getWeeklyTrainingPlan(groupId, currentYear, currentWeekNumber);
   let completedChallengeIds: string[] = [];
   if (currentTrainingPlan && (accountId || viewerPlayerId)) {
     const planResults = await repository.listTrainingResultsForPlan(currentTrainingPlan.plan.id);

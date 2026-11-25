@@ -101,14 +101,31 @@ export function getSundayFromYearWeek(year: number, weekNumber: number): Date {
 }
 
 /**
+ * Returns the [start, end) instant range covered by a Sunday-start training week.
+ * Use this instead of database week functions (which use Monday-start ISO weeks)
+ * so stored results line up with the weeks shown in the app.
+ */
+export function getWeekRange(year: number, weekNumber: number): { start: Date; end: Date } {
+  const start = getSundayFromYearWeek(year, weekNumber);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+}
+
+/**
  * Calculates (year, weekNumber) from a date.
  */
 export function getWeekNumberFromDate(d: Date = new Date()): { year: number; weekNumber: number } {
   const date = new Date(d);
-  const startOfYear = new Date(date.getFullYear(), 0, 1);
-  const pastDaysOfYear = (date.getTime() - startOfYear.getTime()) / 86400000;
-  const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
-  return { year: date.getFullYear(), weekNumber };
+  const year = date.getFullYear();
+  const startOfYear = new Date(year, 0, 1);
+  // Whole calendar days since Jan 1 (UTC math avoids DST and time-of-day drift;
+  // a fractional day would push Saturdays into the following week).
+  const pastDaysOfYear = Math.round(
+    (Date.UTC(year, date.getMonth(), date.getDate()) - Date.UTC(year, 0, 1)) / 86400000,
+  );
+  const weekNumber = Math.floor((pastDaysOfYear + startOfYear.getDay()) / 7) + 1;
+  return { year, weekNumber };
 }
 
 /**

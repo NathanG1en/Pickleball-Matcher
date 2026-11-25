@@ -26,10 +26,20 @@ export function GroupWeeklyPlanCard({
   rosterPlayers = [],
   isOrganizer = false,
 }: GroupWeeklyPlanCardProps) {
-  const [completedIds, setCompletedIds] = useState<string[]>(() => [...completedChallengeIds]);
+  // Attempts saved in this view (per drill) that haven't been undone.
+  const [sessionSaveCounts, setSessionSaveCounts] = useState<Record<string, number>>({});
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
-  const completedSet = new Set(completedIds);
+  const completedSet = new Set([
+    ...completedChallengeIds,
+    ...Object.keys(sessionSaveCounts).filter((id) => (sessionSaveCounts[id] ?? 0) > 0),
+  ]);
+  const adjustSessionSaves = (challengeId: string, delta: number) => {
+    setSessionSaveCounts((prev) => ({
+      ...prev,
+      [challengeId]: Math.max(0, (prev[challengeId] ?? 0) + delta),
+    }));
+  };
   const completedCount = items.filter((i) => completedSet.has(i.challengeId)).length;
   const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
   const allDone = items.length > 0 && completedCount === items.length;
@@ -164,9 +174,8 @@ export function GroupWeeklyPlanCard({
                     initialOpen={true}
                     hideToggleButton={true}
                     onClose={() => setExpandedItemId(null)}
-                    onResultSaved={() => {
-                      setCompletedIds((prev) => Array.from(new Set([...prev, item.challengeId])));
-                    }}
+                    onResultSaved={() => adjustSessionSaves(item.challengeId, 1)}
+                    onResultUndone={() => adjustSessionSaves(item.challengeId, -1)}
                   />
                 </div>
               )}

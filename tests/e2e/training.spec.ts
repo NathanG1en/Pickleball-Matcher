@@ -23,6 +23,17 @@ test("records solo and group challenge attempts and displays personal bests", as
   await expect(wallCard.getByText("42 dinks")).toBeVisible();
   await expect(wallCard.getByText("✓ Done")).toBeVisible();
 
+  // Undo the attempt: the personal best and Done badge roll back
+  await wallCard.getByRole("button", { name: "Undo" }).click();
+  await expect(wallCard.getByText("Attempt removed.")).toBeVisible();
+  await expect(wallCard.getByText("No attempts yet")).toBeVisible();
+  await expect(wallCard.getByText("✓ Done")).toHaveCount(0);
+
+  // Save it again (the form keeps the entered values)
+  await wallCard.getByRole("button", { name: "Save Attempt" }).click();
+  await expect(wallCard.getByText("42 dinks")).toBeVisible();
+  await expect(wallCard.getByText("✓ Done")).toBeVisible();
+
   // Navigate back to group and publish a weekly training plan
   await page.goto(`/g/${groupId}`);
   const trainingCard = page.getByTestId("weekly-training-card");

@@ -25,6 +25,7 @@ Signed-in players always have a default weekly training plan ready on `/training
 - **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw week numbers.
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
 - **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s") via **Edit My Plan**.
+- **Training Weeks:** A training week runs Sunday through Saturday. An attempt counts toward a weekly plan when it is recorded between that Sunday at 00:00 and the next Sunday at 00:00 (server time).
 - **Weekly Progress Tracking:** Displays an active progress bar with "X / Y Goals Met", drill checkmarks, and visual strike-throughs as attempts are recorded throughout the week.
 - **Direct In-Plan Result Recording:** Players can record attempts directly on each drill item in their plan card via **+ Record** without searching for the drill in the library. An inline logger expands right in the plan card, and saving instantly marks the drill done, awards points, and updates the progress bar live.
 - **Add Drill from Library:** Plans feature **+ Add Drill from Library** linking directly to the drill browser. In the library, every eligible drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓**) to seamlessly append drills to the current weekly plan.
@@ -78,6 +79,7 @@ Each drill is presented in an editorial neobrutalist card with:
   - Tailors inputs to the tracking format (e.g. Shots In vs Total Attempts for accuracy with live percentage preview; duration in seconds for timed sprints; +/- steppers with 16px numeric inputs).
   - **Partner Selector:** In a group context, partner and group drills allow selecting a partner from the active group roster. A single shared result is written with participant links, avoiding duplicate entries.
   - **Instant Feedback:** Celebratory banner on save highlighting practice points earned and whether a new personal best was achieved.
+  - **Undo:** The save confirmation includes an **Undo** button that deletes that attempt. The card's personal best, **✓ Done** badge, and plan checkmarks/progress roll back to their state before the attempt (a drill stays done if it already had another attempt that week). The banner then reads "Attempt removed." If undo fails, the error is shown and **Undo** stays available to retry. Signed-in players and roster guests (in a group context) can undo their own attempts.
 
 ## Create Weekly Plan (Organizers) — `/g/[groupId]/training/plan/new`
 

@@ -35,7 +35,10 @@ export function ChallengeCard({
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
-  const [completed, setCompleted] = useState(isCompletedThisWeek);
+  // Attempts saved from this card that haven't been undone; the drill stays
+  // "Done" if it was already done this week or any of these remain.
+  const [sessionSaveCount, setSessionSaveCount] = useState(0);
+  const completed = isCompletedThisWeek || sessionSaveCount > 0;
   const [inPersonalPlan, setInPersonalPlan] = useState(isInPersonalPlan);
   const [isAdding, startAddTransition] = useTransition();
   const [planFeedback, setPlanFeedback] = useState<string | null>(null);
@@ -51,10 +54,15 @@ export function ChallengeCard({
   };
 
   const handleSaved = (metricValue: number, isPB: boolean) => {
-    setCompleted(true);
+    setSessionSaveCount((count) => count + 1);
     if (isPB) {
       setCurrentPB(metricValue);
     }
+  };
+
+  const handleUndone = (personalBest: number | null) => {
+    setSessionSaveCount((count) => Math.max(0, count - 1));
+    setCurrentPB(personalBest);
   };
 
   const filterHref =
@@ -226,6 +234,7 @@ export function ChallengeCard({
         rosterPlayers={rosterPlayers}
         currentUserId={currentUserId}
         onResultSaved={handleSaved}
+        onResultUndone={handleUndone}
       />
     </div>
   );

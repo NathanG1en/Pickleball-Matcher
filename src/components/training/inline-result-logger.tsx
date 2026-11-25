@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { recordTrainingResultAction } from "@/app/actions/training";
+import { deleteTrainingResultAction, recordTrainingResultAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { CheckIcon } from "@/components/ui/icons";
 
@@ -18,6 +18,8 @@ export interface InlineResultLoggerProps {
   readonly rosterPlayers?: readonly RosterPlayerOption[];
   readonly currentUserId?: string | null;
   readonly onResultSaved?: (metricValue: number, isPersonalBest: boolean) => void;
+  /** Called after a saved attempt is undone, with the drill's personal best after removal. */
+  readonly onResultUndone?: (personalBest: number | null) => void;
   readonly initialOpen?: boolean;
   readonly hideToggleButton?: boolean;
   readonly onClose?: () => void;
@@ -29,12 +31,15 @@ export function InlineResultLogger({
   planItemId,
   rosterPlayers = [],
   onResultSaved,
+  onResultUndone,
   initialOpen = false,
   hideToggleButton = false,
   onClose,
 }: InlineResultLoggerProps) {
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [isPending, startTransition] = useTransition();
+  const [isUndoing, startUndoTransition] = useTransition();
+  const [lastSavedResultId, setLastSavedResultId] = useState<string | null>(null);
   const [scorePrimary, setScorePrimary] = useState<number>(() => {
     if (challenge.trackingFormat === "accuracy") return 15;
     if (challenge.trackingFormat === "timed") return 30;
@@ -55,6 +60,7 @@ export function InlineResultLogger({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+    setLastSavedResultId(null);
 
     startTransition(async () => {
       const payload = {
@@ -71,6 +77,7 @@ export function InlineResultLogger({
 
       const result = await recordTrainingResultAction(payload);
       if (result.ok) {
+        setLastSavedResultId(result.data.resultId);
         setFeedback({
           success: true,
           message: `Attempt saved! (+${result.data.pointsEarned} pts)`,
@@ -84,6 +91,29 @@ export function InlineResultLogger({
           success: false,
           message: result.error,
         });
+      }
+    });
+  };
+
+  const handleUndo = () => {
+    const resultId = lastSavedResultId;
+    if (!resultId) return;
+
+    startUndoTransition(async () => {
+      const result = await deleteTrainingResultAction({
+        resultId,
+        challengeId: challenge.id,
+        groupId: groupId ?? null,
+      });
+      if (result.ok) {
+        setLastSavedResultId(null);
+        setFeedback({ success: true, message: "Attempt removed." });
+        if (onResultUndone) {
+          onResultUndone(result.data.personalBest);
+        }
+      } else {
+        // Keep the result id so the player can retry the undo.
+        setFeedback({ success: false, message: result.error });
       }
     });
   };
@@ -301,6 +331,7 @@ export function InlineResultLogger({
           {/* Feedback banner */}
           {feedback && (
             <div
+              role="status"
               className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
                 feedback.success
                   ? "bg-lime-100 text-lime-900 border border-lime-500"
@@ -309,10 +340,20 @@ export function InlineResultLogger({
             >
               {feedback.success && <CheckIcon className="w-3.5 h-3.5 text-lime-700 stroke-2 shrink-0" />}
               <span className="leading-tight">{feedback.message}</span>
-              {feedback.isPersonalBest && (
+              {feedback.isPersonalBest && lastSavedResultId && (
                 <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black font-display font-black text-[10px] uppercase border border-black shrink-0">
                   New PB!
                 </span>
+              )}
+              {lastSavedResultId && (
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={isUndoing}
+                  className={`${feedback.isPersonalBest ? "" : "ml-auto "}min-h-[32px] px-2.5 rounded-lg bg-white text-black border border-black font-display font-black text-[11px] uppercase tracking-wider shrink-0 cursor-pointer touch-manipulation select-none disabled:opacity-50`}
+                >
+                  {isUndoing ? "Undoing..." : "Undo"}
+                </button>
               )}
             </div>
           )}
@@ -320,7 +361,7 @@ export function InlineResultLogger({
           {/* Submit Action */}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isUndoing}
             className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
           >
             {isPending ? "Saving..." : "Save Attempt"}

@@ -6,7 +6,9 @@ import {
   savePersonalWeeklyPlanAction,
   addDrillToPersonalPlanAction,
   addDrillToGroupPlanAction,
+  deleteTrainingResultAction,
 } from "@/app/actions/training";
+import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { InMemoryRepositories } from "@/test-support/in-memory-repositories";
 import { setActionRepository } from "@/app/actions/action-context";
 
@@ -245,9 +247,7 @@ describe("Training Server Actions", () => {
 
   it("allows players to construct and update their personal weekly training plan", async () => {
     const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
-    const currentWeekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+    const { weekNumber: currentWeekNumber } = getWeekNumberFromDate(now);
 
     const res = await savePersonalWeeklyPlanAction({
       year: now.getFullYear(),
@@ -277,6 +277,67 @@ describe("Training Server Actions", () => {
     expect(completedResults).toHaveLength(1);
     expect(completedResults[0].challengeId).toBe("ch_wall_streak");
     expect(completedResults[0].planItemId).toBeNull();
+  });
+
+  it("counts a Sunday attempt toward that week's personal plan and not the next week's", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      // Sunday Nov 22, 2026 is the first day of week 48 in the app.
+      vi.setSystemTime(new Date(2026, 10, 22, 10, 0));
+      const { year, weekNumber } = getWeekNumberFromDate();
+      expect(weekNumber).toBe(48);
+
+      await savePersonalWeeklyPlanAction({
+        year,
+        weekNumber,
+        title: "Sunday plan",
+        challengeIds: ["ch_wall_streak"],
+      });
+      const planData = await repository.getPersonalWeeklyTrainingPlan("acc-1", year, weekNumber);
+      expect(planData).not.toBeNull();
+
+      await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 20 });
+
+      // The following Sunday starts week 49 and must not count toward week 48.
+      vi.setSystemTime(new Date(2026, 10, 29, 10, 0));
+      await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 25 });
+
+      const weekResults = await repository.listTrainingResultsForPersonalPlan(planData!.plan.id);
+      expect(weekResults.map((r) => r.scorePrimary)).toEqual([20]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("undoes a saved attempt and returns the restored personal best", async () => {
+    const first = await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 30 });
+    const second = await recordTrainingResultAction({ challengeId: "ch_wall_streak", scorePrimary: 45 });
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    expect(second.data.isPersonalBest).toBe(true);
+
+    const undo = await deleteTrainingResultAction({
+      resultId: second.data.resultId,
+      challengeId: "ch_wall_streak",
+    });
+    expect(undo).toEqual({ ok: true, data: { personalBest: 30 } });
+
+    const pbs = await repository.getPlayerPersonalBests("acc-1");
+    expect(pbs.get("ch_wall_streak")).toBe(30);
+
+    // Undoing the only remaining attempt clears the personal best.
+    const undoFirst = await deleteTrainingResultAction({
+      resultId: first.data.resultId,
+      challengeId: "ch_wall_streak",
+    });
+    expect(undoFirst).toEqual({ ok: true, data: { personalBest: null } });
+
+    // A second undo of the same attempt fails with a clear message.
+    const again = await deleteTrainingResultAction({
+      resultId: first.data.resultId,
+      challengeId: "ch_wall_streak",
+    });
+    expect(again.ok).toBe(false);
   });
 
   it("rejects personal weekly plan if a group drill is included", async () => {

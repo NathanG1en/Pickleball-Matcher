@@ -37,6 +37,7 @@ import type {
 } from "@/lib/domain/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { getWeekRange } from "@/lib/domain/training-calculator";
 import { RepositoryConflictError } from "@/lib/db/postgres-repositories";
 import { SYSTEM_CHALLENGE_TEMPLATES } from "@/lib/domain/default-challenges";
 
@@ -1493,14 +1494,12 @@ export class InMemoryRepositories implements DomainRepository {
       this.state.personalTrainingPlanItems.filter((i) => i.planId === planId).map((i) => i.challengeId),
     );
 
+    const { start, end } = getWeekRange(plan.year, plan.weekNumber);
     const results = this.state.trainingResults.filter((r) => {
       if (r.accountId !== plan.accountId) return false;
       if (!planChallengeIds.has(r.challengeId)) return false;
-      const rec = new Date(r.recordedAt);
-      const startOfYear = new Date(rec.getFullYear(), 0, 1);
-      const pastDays = (rec.getTime() - startOfYear.getTime()) / 86400000;
-      const week = Math.ceil((pastDays + startOfYear.getDay() + 1) / 7);
-      return rec.getFullYear() === plan.year && week === plan.weekNumber;
+      const recordedAt = new Date(r.recordedAt).getTime();
+      return recordedAt >= start.getTime() && recordedAt < end.getTime();
     });
 
     return structuredClone(results);

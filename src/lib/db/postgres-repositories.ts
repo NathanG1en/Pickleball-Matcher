@@ -52,6 +52,7 @@ import {
 import type { ScoreBreakdown } from "@/lib/matchmaking/types";
 import { updateSynergyState } from "@/lib/synergy/calculator";
 import { replayRatings } from "@/lib/domain/rating-replay";
+import { getWeekRange } from "@/lib/domain/training-calculator";
 
 export class RepositoryConflictError extends Error {
   constructor(message = "The record changed before this update was saved.") {
@@ -2760,14 +2761,15 @@ export class PostgresRepositories implements DomainRepository {
     `;
     if (!planRows[0]) return [];
     const plan = planRows[0];
+    const { start, end } = getWeekRange(Number(plan.year), Number(plan.week_number));
 
     const rows = await this.query<TrainingResultRow[]>`
       select r.* from training_results r
       join personal_training_plan_items i on i.challenge_id = r.challenge_id
       where i.plan_id = ${planId}
         and r.account_id = ${plan.account_id}
-        and extract(isoyear from r.recorded_at) = ${plan.year}
-        and extract(week from r.recorded_at) = ${plan.week_number}
+        and r.recorded_at >= ${start}
+        and r.recorded_at < ${end}
       order by r.recorded_at desc
     `;
     return rows.map(mapTrainingResult);

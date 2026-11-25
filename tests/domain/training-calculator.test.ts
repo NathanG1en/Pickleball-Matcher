@@ -7,6 +7,7 @@ import {
   getSundayFromYearWeek,
   getWeekNumberFromDate,
   formatWeekOf,
+  getWeekRange,
 } from "@/lib/domain/training-calculator";
 
 describe("Training Calculator", () => {
@@ -143,6 +144,20 @@ describe("Training Calculator", () => {
       const { year, weekNumber } = getWeekNumberFromDate(date);
       expect(year).toBe(2026);
       expect(weekNumber).toBe(48);
+    });
+
+    it("returns a Sunday-to-Sunday range that contains every day of the week", () => {
+      const { start, end } = getWeekRange(2026, 48);
+      expect(start).toEqual(new Date(2026, 10, 22));
+      expect(end).toEqual(new Date(2026, 10, 29));
+
+      // Sunday (start of the app's week) and Saturday night both fall in week 48,
+      // matching getWeekNumberFromDate.
+      for (const day of [new Date(2026, 10, 22, 9), new Date(2026, 10, 28, 23, 30)]) {
+        expect(getWeekNumberFromDate(day)).toEqual({ year: 2026, weekNumber: 48 });
+        expect(day >= start && day < end).toBe(true);
+      }
+      expect(new Date(2026, 10, 29, 0, 0) < end).toBe(false);
     });
 
     it("formats week for display as Nov 22, 2026", () => {

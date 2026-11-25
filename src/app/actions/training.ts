@@ -301,23 +301,44 @@ export async function savePersonalWeeklyPlanAction(
   return { ok: true, data: { planId } };
 }
 
-export async function deleteTrainingResultAction(
-  resultId: string,
-): Promise<ActionResult<void>> {
-  const accountId = await getActivePlayerAccountId();
+/**
+ * Deletes a recorded attempt (used for undo) and returns the player's
+ * personal best for that drill after the deletion.
+ */
+export async function deleteTrainingResultAction(input: {
+  readonly resultId: string;
+  readonly challengeId: string;
+  readonly groupId?: string | null;
+}): Promise<ActionResult<{ personalBest: number | null }>> {
+  const { resultId, challengeId, groupId } = input ?? {};
+  if (typeof resultId !== "string" || !resultId || typeof challengeId !== "string" || !challengeId) {
+    return { ok: false, error: "Invalid result." };
+  }
+
   const repo = getActionRepository();
+  const accountId = await getActivePlayerAccountId();
+  const guestPlayerId = !accountId && groupId ? await getActiveGuestPlayerId(groupId) : null;
+  const actorId = accountId ?? guestPlayerId;
 
-  if (!accountId) {
-    return { ok: false, error: "You must be signed in to delete a result." };
+  if (!actorId) {
+    return { ok: false, error: "You must be signed in to undo a result." };
   }
 
-  const success = await repo.deleteTrainingResult(resultId, accountId);
+  const success = await repo.deleteTrainingResult(resultId, actorId);
   if (!success) {
-    return { ok: false, error: "Result not found or you do not have permission to delete it." };
+    return { ok: false, error: "Couldn't undo this attempt. It may already be removed." };
   }
+
+  const personalBests = await repo.getPlayerPersonalBests(
+    accountId ?? undefined,
+    guestPlayerId ?? undefined,
+  );
 
   revalidatePath("/training");
-  return { ok: true, data: undefined };
+  if (groupId) {
+    revalidatePath(`/g/${groupId}`);
+  }
+  return { ok: true, data: { personalBest: personalBests.get(challengeId) ?? null } };
 }
 
 export async function addDrillToPersonalPlanAction(
