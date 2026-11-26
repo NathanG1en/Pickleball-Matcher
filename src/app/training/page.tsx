@@ -207,13 +207,13 @@ export default async function TrainingHubPage({
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <Link
               href={`/g/${selectedGroupId}`}
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
             >
               ← Back to Group
             </Link>
             <Link
               href="/training"
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
             >
               Browse All Drills
             </Link>
@@ -246,7 +246,7 @@ export default async function TrainingHubPage({
               {isGroupOrganizer && (
                 <Link
                   href={`/g/${selectedGroupId}/training/plan/new`}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center"
                 >
                   Edit Plan
                 </Link>
@@ -285,14 +285,14 @@ export default async function TrainingHubPage({
             {isGroupOrganizer && (
               <Link
                 href={`/g/${selectedGroupId}/training/plan/new`}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all text-center"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center"
               >
                 Create Weekly Plan →
               </Link>
             )}
             <Link
               href="/training"
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all text-center"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center"
             >
               Browse All Drills →
             </Link>

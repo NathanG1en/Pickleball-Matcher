@@ -163,12 +163,12 @@ export function WeeklyTrainingCard({
                     <button
                       type="button"
                       onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                      className={`px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider transition-all shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer touch-manipulation select-none ${
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
                         isExpanded
                           ? "bg-black text-[#ccff00]"
                           : isDone
                           ? "bg-white text-black hover:bg-neutral-100"
-                          : "bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+                          : "bg-[#ccff00] text-black hover:bg-[#b8e600]"
                       }`}
                     >
                       {isExpanded ? "Close" : isDone ? "Log Again" : "+ Record"}
@@ -207,14 +207,14 @@ export function WeeklyTrainingCard({
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={`/training?group=${groupId}`}
-          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-center text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center select-none"
+          className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-center text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors flex items-center justify-center select-none"
         >
           Practice Weekly Drills →
         </Link>
         {isOrganizer && (
           <Link
             href={`/g/${groupId}/training/plan/new`}
-            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] text-center flex items-center justify-center select-none"
+            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center flex items-center justify-center select-none"
           >
             Edit
           </Link>

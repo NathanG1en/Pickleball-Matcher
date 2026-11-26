@@ -139,7 +139,7 @@ export function ChallengeCard({
             {challenge.participantFormat === "group" ? (
               <span
                 data-testid={`badge-group-drill-${challenge.id}`}
-                className="px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider bg-neutral-100 text-neutral-500 border border-neutral-300 select-none cursor-default"
+                className="px-2.5 py-1 rounded-xl text-xs font-black uppercase bg-neutral-100 text-neutral-500 border-2 border-neutral-300 select-none cursor-default"
                 title="Group drills can only be added to group training plans"
               >
                 Group Drill
@@ -161,10 +161,10 @@ export function ChallengeCard({
                     }
                   });
                 }}
-                className={`px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider transition-all border border-black shadow-[1.5px_1.5px_0px_0px_#000] select-none touch-manipulation ${
+                className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] select-none touch-manipulation transition-colors ${
                   inPersonalPlan
-                    ? "bg-lime-100 text-lime-900 border-lime-600 cursor-default"
-                    : "bg-white hover:bg-[#ccff00] text-black cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                    ? "bg-lime-100 text-black cursor-default"
+                    : "bg-[#ccff00] hover:bg-[#b8e600] text-black cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
                 }`}
                 title={
                   inPersonalPlan
@@ -177,7 +177,7 @@ export function ChallengeCard({
             ) : (
               <Link
                 href="/player-login?returnTo=/training"
-                className="px-2.5 py-1 rounded-xl font-display text-[11px] font-black uppercase tracking-wider transition-all border border-black shadow-[1.5px_1.5px_0px_0px_#000] bg-white hover:bg-neutral-100 text-black select-none touch-manipulation"
+                className="px-3 py-1.5 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none touch-manipulation"
                 title="Sign in to add this drill to your weekly plan"
               >
                 + Add to Plan

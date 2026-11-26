@@ -262,7 +262,7 @@ export function PersonalPlanForm({
                 key={cat.key}
                 type="button"
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all border-2 select-none active:translate-x-0.5 active:translate-y-0.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-xs font-black uppercase transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
                   isActive
                     ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                     : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
@@ -377,7 +377,7 @@ export function PersonalPlanForm({
         <button
           type="submit"
           disabled={isPending || selectedIds.length === 0}
-          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
         >
           {isPending ? "Saving Plan..." : "Save Weekly Training Plan →"}
         </button>

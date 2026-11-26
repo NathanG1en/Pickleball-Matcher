@@ -60,7 +60,7 @@ export function DrillLibrary({ categories, items, scopeLabel }: DrillLibraryProp
                 aria-pressed={isActive}
                 data-active={isActive ? "true" : "false"}
                 onClick={() => selectCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center font-display text-xs font-black uppercase tracking-wider transition-all border-2 select-none cursor-pointer touch-manipulation active:translate-x-0.5 active:translate-y-0.5 ${
+                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-xs font-black uppercase transition-all border-2 select-none cursor-pointer touch-manipulation active:translate-x-[1px] active:translate-y-[1px] ${
                   isActive
                     ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                     : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"

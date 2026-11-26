@@ -27,7 +27,7 @@ Signed-in players see an **All-time practice** card below their weekly plans (hi
 Signed-in players always have a default weekly training plan ready on `/training` for the current week, eliminating any requirement to "create plan" to get started:
 - **Header:** "Week of [Sunday Date]" above the heading **My Weekly Plan**. A custom plan title replaces the heading; auto-generated "Week of … Plan" titles are not shown because they repeat the week.
 - **Default Empty Plan:** When visiting `/training`, players see their active weekly plan container immediately. If empty, it reads **No drills yet** ("Add up to 6 drills to practice this week.") with a highlighted **+ Add Drills** button.
-- **Plan Actions:** Two controls: **+ Add Drills** toggles an inline drill picker (it reads **Done Adding** while open and is hidden once the plan has 6 drills), and an **Edit Plan** text link opens `/training/plan/new` for titles, notes, goals, and removing drills.
+- **Plan Actions:** Two controls: **+ Add Drills** toggles an inline drill picker (it reads **Done Adding** while open and is hidden once the plan has 6 drills), and an **Edit Plan** button opens `/training/plan/new` for titles, notes, goals, and removing drills.
 - **Participant Format Restrictions:** Group drills (`participantFormat === "group"`) cannot be added to an individual plan. In the drill library, group drills display a dedicated **Group Drill** badge instead of "+ Add to Plan", and are omitted from individual plan selectors. Individual plans support individual and partner drills.
 - **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw week numbers.
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
@@ -35,7 +35,7 @@ Signed-in players always have a default weekly training plan ready on `/training
 - **Training Weeks:** A training week runs Sunday through Saturday. An attempt counts toward a weekly plan when it is recorded between that Sunday at 00:00 and the next Sunday at 00:00 (server time).
 - **Weekly Progress Tracking:** Once the plan has drills, a progress bar with the label "X of Y drills practiced" (a drill counts once any attempt is logged that week, whether or not its goal was met), drill checkmarks, and visual strike-throughs update as attempts are recorded.
 - **Direct In-Plan Result Recording:** Players can record attempts directly on each drill item in their plan card via **+ Record** without searching for the drill in the library. An inline logger expands right in the plan card, and saving instantly marks the drill done, awards points, and updates the progress bar live.
-- **Add to Plan from the Library:** In the Drill Library below, every eligible drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓**) to append drills to the current weekly plan.
+- **Add to Plan from the Library:** In the Drill Library below, every eligible drill card provides a one-click **+ Add to Plan** button (updating to **In Plan ✓** with a black border and black text) to append drills to the current weekly plan.
 
 ## Group Weekly Training Plans Under Personal Plan
 

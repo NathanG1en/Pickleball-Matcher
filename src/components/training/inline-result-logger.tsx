@@ -150,14 +150,14 @@ export function InlineResultLogger({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-[#ccff00] active:bg-[#ccff00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
+          className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-[#ccff00] active:bg-[#ccff00] text-black border-2 border-black text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
         >
           <span>+ Record Attempt</span>
         </button>
       ) : isOpen ? (
         <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5 overflow-hidden max-w-full">
           <div className="flex items-center justify-between">
-            <span className="font-display text-xs font-black uppercase text-neutral-800 tracking-wider">
+            <span className="text-xs font-black uppercase text-neutral-800">
               Record Attempt · {challenge.scoreUnit}
             </span>
             <button
@@ -332,7 +332,7 @@ export function InlineResultLogger({
 
           {/* Accuracy Live Preview */}
           {calculatedAccuracy !== null && (
-            <div className="text-center py-1.5 px-2 rounded-xl bg-neutral-100 border border-black/10 font-display text-xs font-black text-black">
+            <div className="text-center py-1.5 px-2 rounded-xl bg-neutral-100 border border-black/10 text-xs font-black text-black">
               Result: {scorePrimary}/{scoreSecondary} ({calculatedAccuracy}%)
             </div>
           )}
@@ -384,7 +384,7 @@ export function InlineResultLogger({
               {feedback.success && <CheckIcon className="w-3.5 h-3.5 text-lime-700 stroke-2 shrink-0" />}
               <span className="leading-tight">{feedback.message}</span>
               {feedback.isPersonalBest && lastSavedResultId && (
-                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black font-display font-black text-[10px] uppercase border border-black shrink-0">
+                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black text-[10px] font-black uppercase border border-black shrink-0">
                   New PB!
                 </span>
               )}
@@ -393,7 +393,7 @@ export function InlineResultLogger({
                   type="button"
                   onClick={handleUndo}
                   disabled={isUndoing}
-                  className={`${feedback.isPersonalBest ? "" : "ml-auto "}min-h-[32px] px-2.5 rounded-lg bg-white text-black border border-black font-display font-black text-[11px] uppercase tracking-wider shrink-0 cursor-pointer touch-manipulation select-none disabled:opacity-50`}
+                  className={`${feedback.isPersonalBest ? "" : "ml-auto "}min-h-[32px] px-2.5 rounded-lg bg-white hover:bg-neutral-100 text-black border-2 border-black text-[11px] font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] shrink-0 cursor-pointer touch-manipulation select-none disabled:opacity-50 transition-colors`}
                 >
                   {isUndoing ? "Undoing..." : "Undo"}
                 </button>
@@ -405,7 +405,7 @@ export function InlineResultLogger({
           <button
             type="submit"
             disabled={isPending || isUndoing}
-            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer disabled:opacity-50 touch-manipulation select-none"
           >
             {isPending ? "Saving..." : "Save Attempt"}
           </button>

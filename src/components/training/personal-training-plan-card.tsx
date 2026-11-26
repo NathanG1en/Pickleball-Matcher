@@ -229,12 +229,12 @@ export function PersonalTrainingPlanCard({
                       <button
                         type="button"
                         onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                        className={`px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider transition-all shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer touch-manipulation select-none ${
+                        className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
                           isExpanded
                             ? "bg-black text-[#ccff00]"
                             : isDone
                             ? "bg-white text-black hover:bg-neutral-100"
-                            : "bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+                            : "bg-[#ccff00] text-black hover:bg-[#b8e600]"
                         }`}
                       >
                         {isExpanded ? "Close" : isDone ? "Log Again" : "+ Record"}
@@ -301,12 +301,12 @@ export function PersonalTrainingPlanCard({
                     type="button"
                     disabled={inPlan || isAddingThis || (items.length >= 6 && !inPlan) || isPending}
                     onClick={() => handleAddDrill(challenge)}
-                    className={`px-2.5 py-1 rounded-lg font-display text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000] transition-all shrink-0 ${
+                    className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
                       inPlan
-                        ? "bg-lime-100 text-lime-900 border-lime-600 cursor-default"
+                        ? "bg-lime-100 text-black cursor-default"
                         : items.length >= 6
-                        ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed"
-                        : "bg-[#ccff00] text-black hover:bg-[#b8eb00] cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                        ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed shadow-none"
+                        : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
                     }`}
                   >
                     {inPlan ? "In Plan ✓" : isAddingThis ? "..." : "+ Add"}
@@ -326,8 +326,8 @@ export function PersonalTrainingPlanCard({
             data-testid="expand-plan-picker-btn"
             aria-expanded={isPickerExpanded}
             onClick={() => setIsPickerExpanded((prev) => !prev)}
-            className={`min-h-[44px] py-2.5 px-4 rounded-xl border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer select-none ${
-              items.length === 0 ? "bg-[#ccff00] hover:bg-[#b8eb00] text-black" : "bg-white hover:bg-neutral-100 text-black"
+            className={`min-h-[40px] px-3.5 py-2 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer select-none ${
+              items.length === 0 ? "bg-[#ccff00] hover:bg-[#b8e600] text-black" : "bg-white hover:bg-neutral-100 text-black"
             }`}
           >
             {isPickerExpanded ? "Done Adding" : "+ Add Drills"}
@@ -336,7 +336,7 @@ export function PersonalTrainingPlanCard({
 
         <Link
           href="/training/plan/new"
-          className="min-h-[44px] px-3 inline-flex items-center text-xs font-black uppercase tracking-wider text-neutral-700 underline underline-offset-2 hover:text-black touch-manipulation select-none"
+          className="min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center touch-manipulation select-none"
         >
           Edit Plan
         </Link>
