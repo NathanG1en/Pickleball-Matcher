@@ -9,7 +9,7 @@ import type {
   ChallengeTemplateRecord,
 } from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
-import { TargetIcon, CheckIcon, ZapIcon } from "@/components/ui/icons";
+import { TargetIcon, CheckIcon, ZapIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { InlineResultLogger } from "@/components/training/inline-result-logger";
 import { PlanProgress, isGeneratedPlanTitle } from "@/components/training/plan-progress";
 import type { LastResultSummary } from "@/lib/domain/training-history";
@@ -27,6 +27,27 @@ export interface PersonalTrainingPlanCardProps {
   /** Most recent result per drill id, shown as "Last time" in the logger. */
   readonly lastResults?: Readonly<Record<string, LastResultSummary>>;
 }
+
+const categoryLabels: Record<string, string> = {
+  dinking: "Dinking",
+  third_shot: "Third Shot",
+  kitchen_defense: "Defense",
+  resets: "Resets",
+  serves_returns: "Serves",
+  speedups_firefights: "Speedups",
+  strategy: "Strategy",
+};
+
+const categories = [
+  { key: "all", label: "All Drills" },
+  { key: "dinking", label: "Dinking" },
+  { key: "third_shot", label: "Third Shot" },
+  { key: "kitchen_defense", label: "Defense" },
+  { key: "resets", label: "Resets" },
+  { key: "serves_returns", label: "Serves" },
+  { key: "speedups_firefights", label: "Speedups" },
+  { key: "strategy", label: "Strategy" },
+];
 
 export function PersonalTrainingPlanCard({
   currentPlan,
@@ -49,6 +70,8 @@ export function PersonalTrainingPlanCard({
   const [sessionSaveCounts, setSessionSaveCounts] = useState<Record<string, number>>({});
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [isPickerExpanded, setIsPickerExpanded] = useState(false);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState("");
+  const [pickerCategory, setPickerCategory] = useState("all");
   const [isAddingId, setIsAddingId] = useState<string | null>(null);
   const [pickerFeedback, setPickerFeedback] = useState<string | null>(null);
   const [isPending, startAddTransition] = useTransition();
@@ -104,6 +127,21 @@ export function PersonalTrainingPlanCard({
   const completedCount = items.filter((i) => completedSet.has(i.challengeId)).length;
   const planTitle = isGeneratedPlanTitle(currentPlan?.plan.title) ? "My Weekly Plan" : currentPlan!.plan.title;
   const focusNotes = currentPlan?.plan.focusNotes ?? null;
+
+  const visibleAvailableChallenges = availableChallenges.filter((c) => {
+    if (pickerCategory !== "all" && c.skillCategory !== pickerCategory) {
+      return false;
+    }
+    if (pickerSearchQuery.trim()) {
+      const q = pickerSearchQuery.trim().toLowerCase();
+      const catLabel = (categoryLabels[c.skillCategory] ?? c.skillCategory).toLowerCase();
+      const inTitle = c.title.toLowerCase().includes(q);
+      const inDesc = c.description.toLowerCase().includes(q);
+      const inCat = catLabel.includes(q);
+      if (!inTitle && !inDesc && !inCat) return false;
+    }
+    return true;
+  });
 
   const handleAddDrill = (challenge: ChallengeTemplateRecord) => {
     if (items.some((i) => i.challengeId === challenge.id)) return;
@@ -271,50 +309,116 @@ export function PersonalTrainingPlanCard({
 
       {/* Expandable Drill Picker right inside the card */}
       {isPickerExpanded && availableChallenges.length > 0 && (
-        <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-neutral-100 border-2 border-black space-y-2.5">
+        <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-neutral-100 border-2 border-black space-y-3">
           <div className="flex items-center justify-between gap-2">
             <span className="font-display text-xs font-black uppercase text-black">
               Pick Focus Drills for This Week ({items.length}/6)
             </span>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-            {availableChallenges.map((challenge) => {
-              const inPlan = items.some((i) => i.challengeId === challenge.id);
-              const isAddingThis = isAddingId === challenge.id;
+          {/* Search Drills Input */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+              <SearchIcon className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              value={pickerSearchQuery}
+              onChange={(e) => setPickerSearchQuery(e.target.value)}
+              placeholder="Search drills by name or skill..."
+              aria-label="Search drills"
+              data-testid="picker-drill-search-input"
+              className="w-full pl-9 pr-8 py-2 bg-white border-2 border-black rounded-xl text-xs sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+            />
+            {pickerSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setPickerSearchQuery("")}
+                aria-label="Clear drill search"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {categories.map((cat) => {
+              const isActive = pickerCategory === cat.key;
               return (
-                <div
-                  key={challenge.id}
-                  className="bg-white p-2.5 rounded-xl border border-black/20 flex items-center justify-between gap-2"
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setPickerCategory(cat.key)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
+                    isActive
+                      ? "bg-black text-[#ccff00] border-black shadow-[1.5px_1.5px_0px_0px_#000]"
+                      : "bg-white hover:bg-neutral-50 text-neutral-800 border-black shadow-[1.5px_1.5px_0px_0px_#000]"
+                  }`}
                 >
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block truncate">
-                      {challenge.skillCategory}
-                    </span>
-                    <h4 className="font-display text-xs font-black uppercase text-black truncate">
-                      {challenge.title}
-                    </h4>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={inPlan || isAddingThis || (items.length >= 6 && !inPlan) || isPending}
-                    onClick={() => handleAddDrill(challenge)}
-                    className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
-                      inPlan
-                        ? "bg-lime-100 text-black cursor-default"
-                        : items.length >= 6
-                        ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed shadow-none"
-                        : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
-                    }`}
-                  >
-                    {inPlan ? "In Plan ✓" : isAddingThis ? "..." : "+ Add"}
-                  </button>
-                </div>
+                  {cat.label}
+                </button>
               );
             })}
           </div>
+
+          {visibleAvailableChallenges.length === 0 ? (
+            <div className="p-4 text-center rounded-xl bg-white border-2 border-black space-y-1.5 shadow-[2px_2px_0px_0px_#000]">
+              <p className="font-display text-xs font-black uppercase text-black">No matching drills found</p>
+              <p className="text-[11px] font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
+              {(pickerSearchQuery || pickerCategory !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickerSearchQuery("");
+                    setPickerCategory("all");
+                  }}
+                  className="mt-1 px-3 py-1 rounded-lg border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              {visibleAvailableChallenges.map((challenge) => {
+                const inPlan = items.some((i) => i.challengeId === challenge.id);
+                const isAddingThis = isAddingId === challenge.id;
+
+                return (
+                  <div
+                    key={challenge.id}
+                    className="bg-white p-2.5 rounded-xl border border-black/20 flex items-center justify-between gap-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block truncate">
+                        {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
+                      </span>
+                      <h4 className="font-display text-xs font-black uppercase text-black truncate">
+                        {challenge.title}
+                      </h4>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={inPlan || isAddingThis || (items.length >= 6 && !inPlan) || isPending}
+                      onClick={() => handleAddDrill(challenge)}
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
+                        inPlan
+                          ? "bg-lime-100 text-black cursor-default"
+                          : items.length >= 6
+                          ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed shadow-none"
+                          : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
+                      }`}
+                    >
+                      {inPlan ? "In Plan ✓" : isAddingThis ? "..." : "+ Add"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

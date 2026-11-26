@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { publishWeeklyPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord } from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
-import { CheckIcon } from "@/components/ui/icons";
+import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 
 export interface NewPlanFormProps {
   readonly groupId: string;
@@ -55,6 +55,7 @@ export function NewPlanForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const categoryLabels: Record<string, string> = {
     dinking: "Dinking",
@@ -77,9 +78,20 @@ export function NewPlanForm({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const visibleChallenges = eligibleChallenges.filter(
-    (c) => selectedCategory === "all" || c.skillCategory === selectedCategory,
-  );
+  const visibleChallenges = eligibleChallenges.filter((c) => {
+    if (selectedCategory !== "all" && c.skillCategory !== selectedCategory) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const catLabel = (categoryLabels[c.skillCategory] ?? c.skillCategory).toLowerCase();
+      const inTitle = c.title.toLowerCase().includes(q);
+      const inDesc = c.description.toLowerCase().includes(q);
+      const inCat = catLabel.includes(q);
+      if (!inTitle && !inDesc && !inCat) return false;
+    }
+    return true;
+  });
 
   const toggleChallenge = (id: string) => {
     setSelectedIds((prev) =>
@@ -192,6 +204,32 @@ export function NewPlanForm({
           <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
         </div>
 
+        {/* Search Drills Input */}
+        <div className="relative">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+            <SearchIcon className="w-4 h-4" />
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search drills by name or skill..."
+            aria-label="Search drills"
+            data-testid="search-drills-input"
+            className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-base sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear drill search"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+            >
+              <XIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* Category Filter Pills */}
         <div className="flex flex-wrap items-center gap-1.5">
           {categories.map((cat) => {
@@ -230,7 +268,25 @@ export function NewPlanForm({
           })}
         </div>
 
-        <div className="space-y-2">
+        {visibleChallenges.length === 0 ? (
+          <div className="p-6 text-center rounded-2xl bg-white border-2 border-black space-y-2 shadow-[2px_2px_0px_0px_#000]">
+            <p className="font-display text-sm font-black uppercase text-black">No matching drills found</p>
+            <p className="text-xs font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
+            {(searchQuery || selectedCategory !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
+                className="mt-1 px-3.5 py-1.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
           {visibleChallenges.map((challenge) => {
             const isSelected = selectedIds.includes(challenge.id);
             return (
@@ -297,6 +353,7 @@ export function NewPlanForm({
             );
           })}
         </div>
+      )}
       </section>
 
       {/* Submit Button */}

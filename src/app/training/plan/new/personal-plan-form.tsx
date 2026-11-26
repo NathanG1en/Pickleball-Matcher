@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { savePersonalWeeklyPlanAction } from "@/app/actions/training";
 import type { ChallengeTemplateRecord, PersonalTrainingPlanRecord, PersonalTrainingPlanItemRecord } from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
-import { CheckIcon } from "@/components/ui/icons";
+import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 
 export interface PersonalPlanFormProps {
   readonly challenges: readonly ChallengeTemplateRecord[];
@@ -96,6 +96,7 @@ export function PersonalPlanForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const categoryLabels: Record<string, string> = {
     dinking: "Dinking",
@@ -118,9 +119,20 @@ export function PersonalPlanForm({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const visibleChallenges = eligibleChallenges.filter(
-    (c) => selectedCategory === "all" || c.skillCategory === selectedCategory,
-  );
+  const visibleChallenges = eligibleChallenges.filter((c) => {
+    if (selectedCategory !== "all" && c.skillCategory !== selectedCategory) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const catLabel = (categoryLabels[c.skillCategory] ?? c.skillCategory).toLowerCase();
+      const inTitle = c.title.toLowerCase().includes(q);
+      const inDesc = c.description.toLowerCase().includes(q);
+      const inCat = catLabel.includes(q);
+      if (!inTitle && !inDesc && !inCat) return false;
+    }
+    return true;
+  });
 
   const toggleChallenge = (id: string) => {
     setSelectedIds((prev) =>
@@ -245,6 +257,32 @@ export function PersonalPlanForm({
           <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
         </div>
 
+        {/* Search Drills Input */}
+        <div className="relative">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+            <SearchIcon className="w-4 h-4" />
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search drills by name or skill..."
+            aria-label="Search drills"
+            data-testid="search-drills-input"
+            className="w-full pl-9 pr-8 py-2 bg-neutral-50 border-2 border-black rounded-xl text-base sm:text-sm font-bold text-black placeholder-neutral-400 shadow-[2px_2px_0px_0px_#000] focus:bg-white focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear drill search"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+            >
+              <XIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* Category Filter Pills */}
         <div className="flex flex-wrap items-center gap-1.5">
           {categories.map((cat) => {
@@ -283,93 +321,112 @@ export function PersonalPlanForm({
           })}
         </div>
 
-        <div className="space-y-2.5">
-          {visibleChallenges.map((challenge) => {
-            const isSelected = selectedIds.includes(challenge.id);
-            return (
-              <div
-                key={challenge.id}
-                className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all ${
-                  isSelected
-                    ? "bg-[#ccff00]/15 border-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white border-black/30 hover:border-black"
-                }`}
+        {visibleChallenges.length === 0 ? (
+          <div className="p-6 text-center rounded-2xl bg-white border-2 border-black space-y-2 shadow-[2px_2px_0px_0px_#000]">
+            <p className="font-display text-sm font-black uppercase text-black">No matching drills found</p>
+            <p className="text-xs font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
+            {(searchQuery || selectedCategory !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
+                className="mt-1 px-3.5 py-1.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
               >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {visibleChallenges.map((challenge) => {
+              const isSelected = selectedIds.includes(challenge.id);
+              return (
                 <div
-                  role="checkbox"
-                  aria-checked={isSelected}
-                  tabIndex={0}
-                  onClick={() => toggleChallenge(challenge.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === " " || e.key === "Enter") {
-                      e.preventDefault();
-                      toggleChallenge(challenge.id);
-                    }
-                  }}
-                  className="w-full text-left flex items-start gap-2.5 sm:gap-3 cursor-pointer touch-manipulation select-none"
+                  key={challenge.id}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all ${
+                    isSelected
+                      ? "bg-[#ccff00]/15 border-black shadow-[2px_2px_0px_0px_#000]"
+                      : "bg-white border-black/30 hover:border-black"
+                  }`}
                 >
-                  <span
-                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                      isSelected
-                        ? "bg-[#ccff00] border-black text-black"
-                        : "border-black/30 bg-white"
-                    }`}
+                  <div
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onClick={() => toggleChallenge(challenge.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault();
+                        toggleChallenge(challenge.id);
+                      }
+                    }}
+                    className="w-full text-left flex items-start gap-2.5 sm:gap-3 cursor-pointer touch-manipulation select-none"
                   >
-                    {isSelected && <CheckIcon className="w-4 h-4 stroke-3" />}
-                  </span>
+                    <span
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected
+                          ? "bg-[#ccff00] border-black text-black"
+                          : "border-black/30 bg-white"
+                      }`}
+                    >
+                      {isSelected && <CheckIcon className="w-4 h-4 stroke-3" />}
+                    </span>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                      <span className="font-display text-sm font-black uppercase text-black">
-                        {challenge.title}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCategory((prev) =>
-                            prev === challenge.skillCategory ? "all" : challenge.skillCategory,
-                          );
-                        }}
-                        className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer ${
-                          selectedCategory === challenge.skillCategory
-                            ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
-                            : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
-                        }`}
-                        title={
-                          selectedCategory === challenge.skillCategory
-                            ? "Clear filter (showing all)"
-                            : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
-                        }
-                      >
-                        {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
-                      </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        <span className="font-display text-sm font-black uppercase text-black">
+                          {challenge.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCategory((prev) =>
+                              prev === challenge.skillCategory ? "all" : challenge.skillCategory,
+                            );
+                          }}
+                          className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer ${
+                            selectedCategory === challenge.skillCategory
+                              ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                              : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
+                          }`}
+                          title={
+                            selectedCategory === challenge.skillCategory
+                              ? "Clear filter (showing all)"
+                              : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
+                          }
+                        >
+                          {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
+                        </button>
+                      </div>
+                      <p className="text-xs text-neutral-600 line-clamp-2">
+                        {challenge.description}
+                      </p>
                     </div>
-                    <p className="text-xs text-neutral-600 line-clamp-2">
-                      {challenge.description}
-                    </p>
                   </div>
-                </div>
 
-                {isSelected && (
-                  <div className="mt-2.5 pt-2.5 border-t border-black/15">
-                    <label htmlFor={`goal-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-700 mb-1">
-                      Custom Goal / Benchmark (Optional)
-                    </label>
-                    <input
-                      id={`goal-${challenge.id}`}
-                      type="text"
-                      placeholder={challenge.defaultTargetGoal ? `Target: ${challenge.defaultTargetGoal} ${challenge.scoreUnit}` : `e.g. 30 ${challenge.scoreUnit}`}
-                      value={customGoals[challenge.id] ?? ""}
-                      onChange={(e) => setGoalForChallenge(challenge.id, e.target.value)}
-                      className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {isSelected && (
+                    <div className="mt-2.5 pt-2.5 border-t border-black/15">
+                      <label htmlFor={`goal-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-700 mb-1">
+                        Custom Goal / Benchmark (Optional)
+                      </label>
+                      <input
+                        id={`goal-${challenge.id}`}
+                        type="text"
+                        placeholder={challenge.defaultTargetGoal ? `Target: ${challenge.defaultTargetGoal} ${challenge.scoreUnit}` : `e.g. 30 ${challenge.scoreUnit}`}
+                        value={customGoals[challenge.id] ?? ""}
+                        onChange={(e) => setGoalForChallenge(challenge.id, e.target.value)}
+                        className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Submit Button */}

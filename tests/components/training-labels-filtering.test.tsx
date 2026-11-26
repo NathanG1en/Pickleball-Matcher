@@ -147,6 +147,10 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Resets");
       expect(html).toContain("Conditioning");
 
+      // Verify drill search input is rendered
+      expect(html).toContain('data-testid="search-drills-input"');
+      expect(html).toContain('placeholder="Search drills by name or skill..."');
+
       // Verify drill items have category filter buttons with title
       expect(html).toContain('title="Filter by Dinking"');
       expect(html).toContain('title="Filter by Serving"');
@@ -164,7 +168,7 @@ describe("Training Labels and Filtering", () => {
   });
 
   describe("NewPlanForm (group plan)", () => {
-    it("renders category filter pills, interactive category buttons, and omits individual drills", () => {
+    it("renders category filter pills, interactive category buttons, drill search input, and omits individual drills", () => {
       const html = renderToStaticMarkup(
         <NewPlanForm
           groupId="grp_test_123"
@@ -178,6 +182,10 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Kitchen Dink 50");
       expect(html).toContain("Seven-Shot Patience");
       expect(html).not.toContain("Deep Serve Accuracy");
+
+      // Verify drill search input is rendered
+      expect(html).toContain('data-testid="search-drills-input"');
+      expect(html).toContain('placeholder="Search drills by name or skill..."');
 
       // Verify category filter pills rendered
       expect(html).toContain("All Drills");
