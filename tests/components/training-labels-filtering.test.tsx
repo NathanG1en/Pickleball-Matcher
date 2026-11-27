@@ -380,6 +380,7 @@ describe("Training Labels and Filtering", () => {
       expect(personalHtml).toContain("+ Record");
       expect(personalHtml).toContain("+ Add Drills");
       expect(personalHtml).toContain("Edit Plan");
+      expect(personalHtml).toContain("ml-auto");
       expect(personalHtml).not.toContain("+ Add Drill from Library");
       expect(personalHtml).toContain("0 of 1 drill practiced");
       expect(personalHtml).not.toContain("Goals Met");
@@ -418,6 +419,8 @@ describe("Training Labels and Filtering", () => {
       );
 
       expect(groupHtml).toContain("+ Record");
+      expect(groupHtml).toContain('href="/g/grp_1/training/plan/new?returnTo=/g/grp_1"');
+      expect(groupHtml).toContain("Edit");
     });
 
     it("renders + Add to Plan and In Plan badges on ChallengeCard", () => {
@@ -516,6 +519,30 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("+ Record");
       expect(html).toContain("Open Group Drills →");
       expect(html).not.toContain("Leaderboard");
+
+      const organizerHtml = renderToStaticMarkup(
+        <GroupWeeklyPlanCard
+          group={{ id: "grp_tuesday", name: "Tuesday Picklers" }}
+          isOrganizer={true}
+          plan={{
+            id: "gtp_1",
+            groupId: "grp_tuesday",
+            year: 2026,
+            weekNumber: 48,
+            title: "Tuesday Kitchen Control",
+            focusNotes: null,
+            status: "published",
+            publishedAt: new Date(),
+            createdByAccountId: "acc_1",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }}
+          items={[]}
+        />
+      );
+
+      expect(organizerHtml).toContain('href="/g/grp_tuesday/training/plan/new?returnTo=/training"');
+      expect(organizerHtml).toContain("Edit Group Plan");
     });
   });
   it("replaces auto-generated plan titles that repeat the week", async () => {

@@ -12,6 +12,7 @@ export interface NewPlanFormProps {
   readonly challenges: readonly ChallengeTemplateRecord[];
   readonly defaultWeekNumber: number;
   readonly defaultYear: number;
+  readonly returnTo?: string;
 }
 
 export function NewPlanForm({
@@ -19,6 +20,7 @@ export function NewPlanForm({
   challenges,
   defaultWeekNumber,
   defaultYear,
+  returnTo,
 }: NewPlanFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -119,7 +121,7 @@ export function NewPlanForm({
       });
 
       if (res.ok) {
-        router.push(`/g/${groupId}`);
+        router.push(returnTo ?? `/g/${groupId}`);
         router.refresh();
       } else {
         setError(res.error);

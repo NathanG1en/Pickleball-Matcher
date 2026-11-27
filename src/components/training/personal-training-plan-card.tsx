@@ -423,33 +423,35 @@ export function PersonalTrainingPlanCard({
       )}
 
       {/* Action buttons: one way to add drills, one way to edit */}
-      <div className="flex flex-wrap items-center gap-2">
-        {items.length < 6 && (
-          <button
-            type="button"
-            data-testid="expand-plan-picker-btn"
-            aria-expanded={isPickerExpanded}
-            onClick={() => setIsPickerExpanded((prev) => !prev)}
-            className={`min-h-[40px] px-3.5 py-2 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer select-none ${
-              items.length === 0 ? "bg-[#ccff00] hover:bg-[#b8e600] text-black" : "bg-white hover:bg-neutral-100 text-black"
-            }`}
-          >
-            {isPickerExpanded ? "Done Adding" : "+ Add Drills"}
-          </button>
-        )}
+      <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {items.length < 6 && (
+            <button
+              type="button"
+              data-testid="expand-plan-picker-btn"
+              aria-expanded={isPickerExpanded}
+              onClick={() => setIsPickerExpanded((prev) => !prev)}
+              className={`min-h-11 px-3.5 py-2 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer select-none ${
+                items.length === 0 ? "bg-[#ccff00] hover:bg-[#b8e600] text-black" : "bg-white hover:bg-neutral-100 text-black"
+              }`}
+            >
+              {isPickerExpanded ? "Done Adding" : "+ Add Drills"}
+            </button>
+          )}
+
+          {pickerFeedback && (
+            <span className="text-xs font-bold text-neutral-700 motion-safe:animate-pulse ml-1">
+              {pickerFeedback}
+            </span>
+          )}
+        </div>
 
         <Link
           href="/training/plan/new"
-          className="min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center touch-manipulation select-none"
+          className="ml-auto inline-flex items-center min-h-11 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors touch-manipulation select-none"
         >
           Edit Plan
         </Link>
-
-        {pickerFeedback && (
-          <span className="text-xs font-bold text-neutral-700 motion-safe:animate-pulse ml-1">
-            {pickerFeedback}
-          </span>
-        )}
       </div>
     </section>
   );

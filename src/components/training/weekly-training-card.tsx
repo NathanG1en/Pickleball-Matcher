@@ -67,7 +67,7 @@ export function WeeklyTrainingCard({
 
         <div>
           <Link
-            href={isOrganizer ? `/g/${groupId}/training/plan/new` : "/training"}
+            href={isOrganizer ? `/g/${groupId}/training/plan/new?returnTo=/g/${groupId}` : "/training"}
             className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
           >
             {isOrganizer ? "Create Weekly Plan →" : "Browse Training Hub →"}
@@ -213,7 +213,7 @@ export function WeeklyTrainingCard({
         </Link>
         {isOrganizer && (
           <Link
-            href={`/g/${groupId}/training/plan/new`}
+            href={`/g/${groupId}/training/plan/new?returnTo=/g/${groupId}`}
             className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center flex items-center justify-center select-none"
           >
             Edit

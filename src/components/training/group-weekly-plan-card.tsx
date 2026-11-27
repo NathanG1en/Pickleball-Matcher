@@ -180,7 +180,7 @@ export function GroupWeeklyPlanCard({
         </Link>
         {isOrganizer && (
           <Link
-            href={`/g/${group.id}/training/plan/new`}
+            href={`/g/${group.id}/training/plan/new?returnTo=/training`}
             className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none"
           >
             Edit Group Plan

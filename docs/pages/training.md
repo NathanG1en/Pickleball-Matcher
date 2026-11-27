@@ -27,7 +27,7 @@ Signed-in players see an **All-time practice** card below their weekly plans (hi
 Signed-in players always have a default weekly training plan ready on `/training` for the current week, eliminating any requirement to "create plan" to get started:
 - **Header:** "Week of [Sunday Date]" above the heading **My Weekly Plan**. A custom plan title replaces the heading; auto-generated "Week of … Plan" titles are not shown because they repeat the week.
 - **Default Empty Plan:** When visiting `/training`, players see their active weekly plan container immediately. If empty, it reads **No drills yet** ("Add up to 6 drills to practice this week.") with a highlighted **+ Add Drills** button.
-- **Plan Actions:** Two controls: **+ Add Drills** toggles an inline drill picker (featuring live drill search and category filter pills; reads **Done Adding** while open and is hidden once the plan has 6 drills), and an **Edit Plan** button opens `/training/plan/new` for titles, notes, goals, and removing drills.
+- **Plan Actions:** Two controls: **+ Add Drills** on the left toggles an inline drill picker (featuring live drill search and category filter pills; reads **Done Adding** while open and is hidden once the plan has 6 drills), and an **Edit Plan** button on the right opens `/training/plan/new` for titles, notes, goals, and removing drills.
 - **Participant Format Restrictions:** Group drills (`participantFormat === "group"`) cannot be added to an individual plan. In the drill library, group drills display a dedicated **Group Drill** badge instead of "+ Add to Plan", and are omitted from individual plan selectors. Individual plans support individual and partner drills.
 - **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw week numbers.
 - **Drill Search & Category Filtering:** Both the `/training/plan/new` form and the inline plan picker include a search input with clear button and category filter pills to quickly find drills by title, description, or skill category.
@@ -112,7 +112,7 @@ Opened from **History** on a drill card's personal best row or from the logger's
 Accessible to group hosts and organizers from the group dashboard:
 - **Fields:** Plan title, target week dropdown formatted as "Week of [Sunday Date]" (defaults to current Sunday week), and optional coach notes/tips.
 - **Category-Filtered Drill Picker:** Search and filter drills with live text search, category pills, and interactive badges with active selection counts. Select 1 to 6 challenges from the system and group drill library.
-- **Publishing:** Instantly activates the plan for the group, updating the group dashboard card and member training hub.
+- **Publishing & Contextual Cancel:** Instantly activates the plan for the group, updating the group dashboard card and member training hub. Cancelling or publishing returns the organizer to their originating context: returning to `/training` (or `/training?group=[groupId]`) when initiated from the Training Hub, or back to `/g/[groupId]` when opened from the group dashboard.
 
 ## Mobile-First Responsive Design
 
