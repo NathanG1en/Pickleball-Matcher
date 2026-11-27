@@ -245,7 +245,7 @@ export default async function TrainingHubPage({
             <div className="flex items-center gap-2">
               {isGroupOrganizer && (
                 <Link
-                  href={`/g/${selectedGroupId}/training/plan/new`}
+                  href={`/g/${selectedGroupId}/training/plan/new?returnTo=${encodeURIComponent(`/training?group=${selectedGroupId}`)}`}
                   className="px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center"
                 >
                   Edit Plan
@@ -284,7 +284,7 @@ export default async function TrainingHubPage({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             {isGroupOrganizer && (
               <Link
-                href={`/g/${selectedGroupId}/training/plan/new`}
+                href={`/g/${selectedGroupId}/training/plan/new?returnTo=${encodeURIComponent(`/training?group=${selectedGroupId}`)}`}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center"
               >
                 Create Weekly Plan →

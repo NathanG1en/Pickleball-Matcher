@@ -8,12 +8,21 @@ import {
 import { getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { NewPlanForm } from "./new-plan-form";
 
+function safeReturnPath(path: string | undefined): string | undefined {
+  return path && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") ? path : undefined;
+}
+
 export default async function NewWeeklyPlanPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ groupId: string }>;
+  searchParams?: Promise<{ returnTo?: string }>;
 }) {
-  const { groupId } = await params;
+  const [{ groupId }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams ? searchParams : Promise.resolve(undefined),
+  ]);
   const repo = getActionRepository();
 
   const [group, challenges] = await Promise.all([
@@ -25,10 +34,13 @@ export default async function NewWeeklyPlanPage({
     redirect("/players/groups");
   }
 
+  const returnTo = safeReturnPath(resolvedSearchParams?.returnTo);
+  const cancelHref = returnTo ?? `/g/${groupId}`;
+
   try {
     await requireOrganizer(groupId);
   } catch {
-    redirect(`/g/${groupId}`);
+    redirect(cancelHref);
   }
 
   // Calculate current week
@@ -46,7 +58,7 @@ export default async function NewWeeklyPlanPage({
           </h1>
         </div>
         <Link
-          href={`/g/${groupId}`}
+          href={cancelHref}
           className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all shrink-0"
         >
           Cancel
@@ -58,6 +70,7 @@ export default async function NewWeeklyPlanPage({
         challenges={challenges}
         defaultWeekNumber={currentWeekNumber}
         defaultYear={currentYear}
+        returnTo={returnTo}
       />
     </main>
   );
