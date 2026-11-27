@@ -33,7 +33,7 @@ Requires a signed-in player account. The creator becomes the host and is added t
 - **Feedback toasts:** Success feedback (e.g. adding a player or guest) uses a compact toast placed at the bottom of the screen on mobile devices so header navigation and group title remain clear and accessible. On larger screens it stays in the top-right corner. It includes an accessible announcement, a dismiss control, and a visual loader progress bar running along the bottom indicating how long the notification will remain visible before auto-dismissing.
 - **Primary session card:** this comes first on phones, right under the header. On desktop it sits at the top of the left column. What it shows depends on the viewer:
   - **Not part of the group:** the join card.
-  - **A session is running:** a card with a warm neutral surface (`#FFFDF7`), round number or session format badge, start date, and court count, plus current matchups (or recent games for open play). Every court is listed; the list doesn't scroll inside the card. If the viewer is playing this round, their court is listed first and tagged with a bright lime **You're here** badge. The primary action is a prominent bright lime button: **Resume Session** (or **Manage Open Play**) for organizers, and **View Live Session** (or **View Open Play**) for players. Organizers also get **End Session** (shortened to “End” on phones). **End** first opens an "End this session?" confirmation. For a normal session it says how many games are still in progress and won't be recorded; for open play it says players won't be able to log more games. It also warns that a session can't be reopened. **Keep playing** closes the dialog and leaves the session running.
+  - **A session is running:** a card with a warm neutral surface (`#FFFDF7`), a status badge ("Round N" once a round has started, or "Lineup being set" before the first round), start date, and court count, plus current matchups (or recent games for open play). Every court is listed; the list doesn't scroll inside the card. If the viewer is playing this round, their court is listed first and tagged with a bright lime **You're here** badge. The primary action is a prominent bright lime button: **Resume Session** (or **Manage Open Play**) for organizers, and **View Live Session** (or **View Open Play**) for players. Organizers also get **End Session** (shortened to “End” on phones). **End** first opens an "End this session?" confirmation. For a normal session it says how many games are still in progress and won't be recorded; for open play it says players won't be able to log more games. It also warns that a session can't be reopened. **Keep playing** closes the dialog and leaves the session running.
   - **No session, organizer:** “Ready to Play?” with **Start New Session**, which opens `/g/[groupId]/sessions/new`.
   - **No session, player:** “No Active Session” with an explanation.
 - **Organizers and roster:** on phones this follows the session card. On desktop it fills the right-hand column. Organizers can find players by username or add guests here. The roster supports search, filter, and sort.
@@ -59,7 +59,7 @@ This is the page the share/invite link opens.
 
 Displays the regular players and skill ratings for the group.
 
-- **Header:** Back button returning to the Group Dashboard, a "Roster" badge, group title, and role-appropriate description.
+- **Header:** a 44px **← Back to Group** button, the group title ("[Group] Roster", which wraps on narrow phones instead of overflowing), and a role-appropriate description.
 - **Organizer controls:**
   - When viewed by an organizer, a player search drawer allows searching registered accounts by name or `@username` to add them to the roster.
   - Initial player addition form for creating local guest players with custom or preset skill ratings.
@@ -77,5 +77,7 @@ Displays the regular players and skill ratings for the group.
     - If a player sets their visibility to **Group Members**, fellow group members can view their details, while non-members/public visitors only see their games played with rating and gender hidden.
     - Linked player usernames provide clickable links to their profile page (`/players/[username]`). For non-organizers, a right chevron or dropdown item also links to the profile.
 
+## Add to Home Screen tip
 
-
+- A yellow tip card ("Save 1-Tap App to Your Phone") explains installing the app; it offers **Install App to Home Screen →** where the browser supports it, or step-by-step instructions on iPhone. It never shows when the app is already installed, and a 44px **×** dismisses it for good on this device.
+- On desktop it sits at the bottom of the right-hand column; on phones it appears at the very end of the group dashboard, after Past Sessions, so it never comes between the roster and the group's main features.

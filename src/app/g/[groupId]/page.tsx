@@ -289,7 +289,7 @@ export default async function GroupDashboardPage({
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-black">
                       <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
-                      Round {activeSession.currentRoundNumber}
+                      {activeSession.currentRoundNumber > 0 ? `Round ${activeSession.currentRoundNumber}` : "Lineup being set"}
                     </span>
                   </div>
                   <div>
@@ -476,8 +476,10 @@ export default async function GroupDashboardPage({
             currentAccountId={accountId}
             isGroupMember={isPartOfGroup}
           />
-          {/* Mobile Add to Home Screen Tip */}
-          <HomeScreenTip />
+          {/* Add to Home Screen tip: in the sidebar on desktop; last on the page on phones (below). */}
+          <div className="hidden lg:block">
+            <HomeScreenTip />
+          </div>
         </div>
 
         {isPartOfGroup && (
@@ -522,6 +524,10 @@ export default async function GroupDashboardPage({
           </section>
           </div>
         )}
+
+        <div className="lg:hidden min-w-0 w-full">
+          <HomeScreenTip />
+        </div>
       </div>
     </main>
   );

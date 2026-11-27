@@ -207,16 +207,19 @@ export default async function TrainingHubPage({
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <Link
               href={`/g/${selectedGroupId}`}
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
+              className="inline-flex items-center min-h-11 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
             >
               ← Back to Group
             </Link>
-            <Link
-              href="/training"
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
-            >
-              Browse All Drills
-            </Link>
+            {/* With no plan, the empty state below already offers Browse All Drills. */}
+            {selectedGroupPlan && (
+              <Link
+                href="/training"
+                className="inline-flex items-center min-h-11 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
+              >
+                Browse All Drills
+              </Link>
+            )}
           </div>
         )}
       </div>

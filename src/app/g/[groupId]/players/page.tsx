@@ -43,21 +43,18 @@ export default async function GroupPlayersPage({
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-6 text-black">
+    <main className="min-h-screen w-full min-w-0 p-4 sm:p-6 lg:p-8 max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-6 text-black">
       <div className="flex items-center justify-between">
         <Link
           href={`/g/${groupId}`}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+          className="inline-flex min-h-11 items-center px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
         >
-          ← Group Dashboard
+          ← Back to Group
         </Link>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-          Roster
-        </span>
       </div>
 
       <header>
-        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black">
+        <h1 className="font-display text-3xl sm:text-4xl font-black uppercase tracking-tight text-black break-words [overflow-wrap:anywhere]">
           {group.name} Roster
         </h1>
         <p className="text-sm font-bold text-neutral-700 mt-1">

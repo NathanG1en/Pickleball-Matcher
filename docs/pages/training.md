@@ -56,8 +56,8 @@ When navigating to a group's plan (via "Practice Weekly Drills →" on the group
 - **Custom Drill Goals:** Each challenge card displays any custom target goals set for that drill in the weekly plan.
 - **Focused Filtering:** Category filter pills dynamically adapt to only display categories present in the current weekly plan (plus "All Plan Drills").
 - **Clean Context:** Suppresses the personal training plan card, other group banners, and the all-time practice totals while practicing the group's weekly drills.
-- **Navigation:** Header includes quick links to return to the group dashboard (`← Back to [Group]`) or explore the general drill library (`Browse All Drills`). Organizers have a direct `Edit Plan` shortcut.
-- **Empty State:** If no weekly plan has been published for the target week, a helpful empty state explains this and gives organizers a single-click action to create one.
+- **Navigation:** Header includes quick links to return to the group dashboard (`← Back to Group`) and, when a plan is published, to the general drill library (`Browse All Drills`). Organizers have a direct `Edit Plan` shortcut.
+- **Empty State:** If no weekly plan has been published for the target week, a helpful empty state explains this and gives organizers a single-click action to create one, plus **Browse All Drills →**. The category filters are hidden because there are no plan drills to filter.
 
 ## Category Filters & Filterable Labels
 

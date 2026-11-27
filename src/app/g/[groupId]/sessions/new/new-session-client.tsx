@@ -169,15 +169,6 @@ export function NewSessionClient({
           <div
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                Predetermined Matchups
-              </span>
-              <span className="text-xs font-bold text-neutral-600">
-                Structured
-              </span>
-            </div>
-
             <div>
               <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Normal Session
@@ -213,15 +204,6 @@ export function NewSessionClient({
           <div
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                Flexible Games
-              </span>
-              <span className="text-xs font-bold text-neutral-600">
-                Casual &amp; Drop-in
-              </span>
-            </div>
-
             <div>
               <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Open Play
@@ -247,7 +229,7 @@ export function NewSessionClient({
               type="button"
               data-testid="select-open-play-button"
               onClick={() => handleSelectFormat("open_play")}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base font-bold shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Open Play →
             </button>

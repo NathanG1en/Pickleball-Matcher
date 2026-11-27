@@ -9,6 +9,7 @@ A short wizard for organizers with calm, readable typography. Headings and cards
 1. **Choose Session Format.** Badge: “Step 1 · Format”. Two cards:
    - **Normal Session** (`select-normal-session-button`): algorithmic pairings, balanced court assignments with sit-out rotation, and synchronized rounds.
    - **Open Play** (`select-open-play-button`): flexible games that players can join, leave, and log at any time.
+   - Each card is just its title, description, feature list and a black **Select … →** button; the two choices are styled the same so neither looks preselected. There are no extra label pills on the cards.
    - **Back to Group** returns to the dashboard.
 2. **Normal: Start Matchmaking.** Badge: “Step 2 of 3”. Set the court count (with +/− controls) and choose who is attending; the player count is shown as “N players selected”. Selected players are white cards with a black border, shadow and checked box (unselected ones have a light grey border), the chosen court preset gets a black ring, and the lime **Continue to Pairings** button is the only lime element in the step. **Change Format** goes back to step 1, and **Continue to Pairings** moves on.
 3. **Normal: Stay Together Pairings.** Badge: “Step 3 of 3”. Optionally keep pairs of friends together as partners, then **Start Session** (`start-session-button`). **Back to Players** returns to step 2.

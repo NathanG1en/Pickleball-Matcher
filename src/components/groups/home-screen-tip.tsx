@@ -103,26 +103,23 @@ export function HomeScreenTip() {
       aria-label="Add to home screen tip"
       className="p-4 rounded-2xl bg-[#fef08a] border-[3px] border-black text-black space-y-2.5 relative min-w-0 overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border border-black">
-          <SmartphoneIcon className="h-3.5 w-3.5 shrink-0" />
-          <span>Courtside Pro Tip</span>
-        </span>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="flex items-center gap-2 font-display text-lg font-black uppercase text-black leading-tight">
+          <SmartphoneIcon className="h-4 w-4 shrink-0" />
+          Save 1-Tap App to Your Phone
+        </h3>
         <button
           type="button"
           onClick={handleDismiss}
           aria-label="Dismiss tip"
-          className="w-7 h-7 flex items-center justify-center rounded-lg border border-black bg-white hover:bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
         >
           <XIcon className="h-3.5 w-3.5" />
         </button>
       </div>
 
       <div>
-        <h3 className="font-display text-lg font-black uppercase text-black leading-tight">
-          Save 1-Tap App to Your Phone
-        </h3>
-        <p className="text-xs font-bold text-neutral-800 mt-1 leading-snug">
+        <p className="text-xs font-bold text-neutral-800 leading-snug">
           Open your group straight from your home screen during match days—no links or bookmarks needed.
         </p>
       </div>
