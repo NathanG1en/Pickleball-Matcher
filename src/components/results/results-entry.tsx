@@ -47,6 +47,8 @@ export interface ResultsEntryViewProps {
   readonly canManage?: boolean;
   readonly scoreDrafts?: ScoreDrafts;
   readonly hasUnsavedScores?: boolean;
+  /** Courts with unsaved score edits; Save All shows only when two or more are waiting. */
+  readonly unsavedScoreCount?: number;
   readonly onScoreChange?: (matchId: string, team: "team1" | "team2", value: string) => void;
   readonly courtCount?: number;
   readonly sittingNames?: readonly string[];
@@ -71,6 +73,11 @@ export function cancelMatchWarning(match: Pick<MatchScoreEntry, "status" | "team
 }
 
 /** Why Save & Start is unavailable, in words an organizer can act on; null when it isn't blocked. */
+export function isTiedScore(scores: { team1: string; team2: string }): boolean {
+  if (scores.team1.trim() === "" || scores.team2.trim() === "") return false;
+  return Number(scores.team1) === Number(scores.team2);
+}
+
 export function saveAndStartBlocker(
   matches: readonly MatchScoreEntry[],
   getScores: (match: MatchScoreEntry) => { team1: string; team2: string },
@@ -216,6 +223,7 @@ export function ResultsEntryView({
   canManage = true,
   scoreDrafts = {},
   hasUnsavedScores = false,
+  unsavedScoreCount,
   onScoreChange,
   courtCount,
   sittingNames = [],
@@ -275,7 +283,7 @@ export function ResultsEntryView({
 
   const hasNewScores = Boolean(hasUnsavedScores || hasValidSaveableScores || hasDraftDiffs);
   const isSaving = Boolean(savingMatchIds && savingMatchIds.size > 0);
-  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]));
+  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]) || (m.status !== "cancelled" && isTiedScore(getScores(m))));
 
   const isSaveDisabled = !hasNewScores || isPending || isSaving;
   const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
@@ -393,6 +401,7 @@ export function ResultsEntryView({
         {matches.map((match) => {
           const matchScores = getScores(match);
           const err = fieldErrors[match.id];
+          const isTie = isTiedScore(matchScores);
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
           const isMatchSaving = isPending || Boolean(savingMatchIds?.has(match.id));
@@ -571,6 +580,11 @@ export function ResultsEntryView({
               </div>
 
               {/* Error message */}
+              {isTie && !isCancelled && canManage && !err && (
+                <div role="alert" data-testid={`tie-warning-${match.courtNumber}`} className="p-2.5 rounded-lg bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
+                  Pickleball matches cannot end in a tie. Change one of the scores.
+                </div>
+              )}
               {err && (
                 <div role="alert" className="p-2.5 rounded-lg bg-[#ff6b6b] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
                   {err}
@@ -618,6 +632,7 @@ export function ResultsEntryView({
                         isMatchSaving ||
                         matchScores.team1 === "" ||
                         matchScores.team2 === "" ||
+                        isTie ||
                         (isCompleted &&
                           Number(matchScores.team1) === match.team1Score &&
                           Number(matchScores.team2) === match.team2Score)
@@ -663,7 +678,7 @@ export function ResultsEntryView({
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end min-w-0">
-              {onSaveAllScores && (
+              {onSaveAllScores && (unsavedScoreCount === undefined || unsavedScoreCount >= 2) && (
                 <Button
                   type="button"
                   variant="outline"

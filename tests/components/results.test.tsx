@@ -7,6 +7,7 @@ import {
   cancelMatchWarning,
   getMatchWinnerState,
   getViewerRoundState,
+  isTiedScore,
   saveAndStartBlocker,
   type MatchScoreEntry,
 } from "@/components/results/results-entry";
@@ -196,6 +197,66 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Save All");
     const button = html.match(/<button[^>]*data-testid="save-all-scores-button"[^>]*>/)?.[0] ?? "";
     expect(button).not.toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("hides Save All when only one court has unsaved scores", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={true}
+        unsavedScoreCount={1}
+        onSaveAllScores={() => {}}
+      />
+    );
+
+    expect(html).not.toContain('data-testid="save-all-scores-button"');
+  });
+
+  it("shows Save All when two or more courts have unsaved scores", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={sampleMatches}
+        fieldErrors={{}}
+        hasUnsavedScores={true}
+        unsavedScoreCount={2}
+        onSaveAllScores={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="save-all-scores-button"');
+  });
+
+  it("flags a tied draft on the card and disables that court's save", () => {
+    const html = renderToStaticMarkup(
+      <ResultsEntryView
+        roundId="r1"
+        roundNumber={1}
+        matches={[sampleMatches[0], { ...sampleMatches[1], status: "pending" as const }]}
+        fieldErrors={{}}
+        scoreDrafts={{ m2: { team1: "11", team2: "11" } }}
+        onSubmitResult={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="tie-warning-2"');
+    expect(html).toContain("Pickleball matches cannot end in a tie. Change one of the scores.");
+    expect(html).not.toContain('data-testid="tie-warning-1"');
+    const court2 = html.slice(html.indexOf('data-testid="court-match-2"'));
+    const saveButton = court2.match(/<button[^>]*>(?:(?!<\/button>).)*Save Result/)?.[0] ?? "";
+    expect(saveButton).toMatch(/\sdisabled([=>\s])/);
+  });
+
+  it("treats only matching, filled scores as a tie", () => {
+    expect(isTiedScore({ team1: "11", team2: "11" })).toBe(true);
+    expect(isTiedScore({ team1: "11", team2: "011" })).toBe(true);
+    expect(isTiedScore({ team1: "11", team2: "9" })).toBe(false);
+    expect(isTiedScore({ team1: "", team2: "" })).toBe(false);
+    expect(isTiedScore({ team1: "11", team2: "" })).toBe(false);
   });
 
   it("disables Save All Scores button when there are no new scores", () => {

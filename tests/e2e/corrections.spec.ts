@@ -89,8 +89,9 @@ test.describe("Corrections and Replay Workflow", () => {
     // The disabled button says why, naming the court that still needs a score.
     await expect(page.getByTestId("save-start-blocked-reason")).toContainText("Court 1 needs a score");
     await court1Team2.fill("11");
-    await page.getByRole("button", { name: "Update Score", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
+    // A tie is flagged on the card as soon as it is typed, and that court cannot be saved.
+    await expect(page.getByTestId("tie-warning-1")).toContainText("cannot end in a tie");
+    await expect(page.locator("[data-testid='court-match-1'] button:has-text('Update Score')")).toBeDisabled();
     await expect(court1Team2).toHaveValue("11");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
     await expect(page.getByTestId("end-session-button")).toBeEnabled();

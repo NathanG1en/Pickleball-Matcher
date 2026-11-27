@@ -1654,13 +1654,16 @@ export function SessionManagerClient({
       })
     : [];
 
-  const hasUnsavedScores = Boolean(isRoundInProgress) && scoreEntries.some((match) => {
-    const draft = scoreDrafts[match.id];
-    if (!draft || match.status === "cancelled") return false;
-    const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
-    const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
-    return team1 !== match.team1Score || team2 !== match.team2Score;
-  });
+  const unsavedScoreCount = isRoundInProgress
+    ? scoreEntries.filter((match) => {
+        const draft = scoreDrafts[match.id];
+        if (!draft || match.status === "cancelled") return false;
+        const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
+        const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
+        return team1 !== match.team1Score || team2 !== match.team2Score;
+      }).length
+    : 0;
+  const hasUnsavedScores = unsavedScoreCount > 0;
 
   const handleScoreChange = (matchId: string, team: "team1" | "team2", value: string) => {
     const match = scoreEntries.find((entry) => entry.id === matchId);
@@ -2423,6 +2426,7 @@ export function SessionManagerClient({
                 scoreDrafts={scoreDrafts}
                 onScoreChange={handleScoreChange}
                 hasUnsavedScores={hasUnsavedScores}
+                unsavedScoreCount={unsavedScoreCount}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
                 onSaveAllScores={canManage ? handleSaveAllScores : undefined}
                 onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}

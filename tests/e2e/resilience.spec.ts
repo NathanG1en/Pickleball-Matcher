@@ -60,10 +60,10 @@ test.describe("Resilience and Safe Drafts", () => {
 
     await t1Input.fill("11");
     await t2Input.fill("11");
-    await page.locator("button:has-text('Save Result')").click();
 
-    // Assert validation error is shown
-    await expect(page.locator("text=cannot end in a tie")).toBeVisible();
+    // The tie is flagged on the card before saving, and Save Result stays disabled
+    await expect(page.getByTestId("tie-warning-1")).toContainText("cannot end in a tie");
+    await expect(page.locator("button:has-text('Save Result')")).toBeDisabled();
 
     // Assert inputs were NOT wiped out
     await expect(t1Input).toHaveValue("11");
