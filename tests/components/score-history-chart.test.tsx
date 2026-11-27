@@ -81,7 +81,7 @@ describe("ScoreHistoryChart", () => {
     expect(html).toContain('r="3.5"');
   });
 
-  it("handles a single session record centered at x=200", () => {
+  it("describes a single session as a starting point instead of a one-dot chart", () => {
     const history: PlayerSessionHistoryRecord[] = [
       {
         sessionId: "s1",
@@ -94,9 +94,11 @@ describe("ScoreHistoryChart", () => {
       },
     ];
 
-    const html = renderToStaticMarkup(<ScoreHistoryChart history={history} />);
-    expect(html).toContain('data-testid="rating-point-0"');
-    expect(html).toContain('cx="200"');
+    const html = renderToStaticMarkup(<ScoreHistoryChart history={history} startingRating={950} />);
+    expect(html).toContain('data-testid="rating-chart-first-session"');
+    expect(html).toContain("rating after your first session.");
+    expect(html).toContain("Play another session to see your rating trend over time.");
+    expect(html).not.toContain('data-testid="rating-point-0"');
   });
 
   it("renders empty state when no sessions fall within truncated time range", () => {

@@ -12,8 +12,8 @@ Shows public groups and lets players search them. Requires a signed-in player ac
   - **Join** for signed-in non-members. The card refreshes to show the Member badge after joining.
   - **Leave** for members who aren't the host. It asks for confirmation first.
 - **Empty states:**
-  - *A search with no results* names the query (“No groups match “…””), notes that private groups never appear in search, suggests checking spelling or trying another name, and offers **Clear search** alongside a path to create a group (`/setup`, or create an account for signed-out visitors).
-  - *No public groups at all* (no search entered) shows “No public groups yet”, suggests asking an organizer for an invite link, and offers **Create a group** (`/setup`). Signed-out visitors see **Create an account** instead, which leads to signup and then on to `/setup`.
+  - *A search with no results* names the query (“No groups match “…””), notes that private groups never appear in search, suggests checking spelling or trying another name, and offers **Clear search**; signed-out visitors also get **Create an account** (signed-in players use the header's **+ Create Group**).
+  - *No public groups at all* (no search entered) shows “No public groups yet”, suggests asking an organizer for an invite link, with no extra button for signed-in players (the page header's **+ Create Group** already covers it). Signed-out visitors get **Create an account**, which leads to signup and then on to `/setup`.
 
 ## Create group — `/setup`
 

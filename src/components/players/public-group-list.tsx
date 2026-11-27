@@ -53,12 +53,15 @@ export function PublicGroupList({
                 <Link href="/players/groups" className={`${emptyActionClass} bg-white hover:bg-neutral-100`}>
                   Clear search
                 </Link>
-                <Link
-                  href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
-                  className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
-                >
-                  {isSignedIn ? "Create a group" : "Create an account"}
-                </Link>
+                {/* Signed-in players already have + Create Group in the page header. */}
+                {!isSignedIn && (
+                  <Link
+                    href={`/player-signup?next=${encodeURIComponent("/setup")}`}
+                    className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+                  >
+                    Create an account
+                  </Link>
+                )}
               </div>
             }
           />
@@ -68,12 +71,15 @@ export function PublicGroupList({
             title="No public groups yet"
             description="Most groups are private. Ask your organizer for an invite link, or start a group of your own."
             action={
-              <Link
-                href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
-                className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
-              >
-                {isSignedIn ? "Create a group" : "Create an account"}
-              </Link>
+              // Signed-in players already have + Create Group in the page header.
+              isSignedIn ? undefined : (
+                <Link
+                  href={`/player-signup?next=${encodeURIComponent("/setup")}`}
+                  className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+                >
+                  Create an account
+                </Link>
+              )
             }
           />
         )

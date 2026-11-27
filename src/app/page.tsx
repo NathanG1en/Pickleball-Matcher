@@ -13,7 +13,6 @@ import {
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
 import { UsersIcon, SearchIcon, ZapIcon } from "@/components/ui/icons";
-import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
 
 
 async function getGuestGroups(): Promise<Record<string, string>> {
@@ -116,7 +115,7 @@ export default async function HomePage() {
               </span>
             </h1>
             <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
-              An elevated pickleball experience.
+              Fair sit-outs, varied partners, balanced games.
             </p>
           </div>
 
@@ -195,7 +194,6 @@ export default async function HomePage() {
       )}
 
       {/* Recovery Email Prompt for Users without a connected or verified email */}
-      <RecoveryEmailBanner currentEmail={playerAccount.email} isVerified={playerAccount.emailVerified} />
 
       {/* 3. Hero Section: Refined brand introduction with compact profile footer */}
       <section
@@ -215,7 +213,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
-            An elevated pickleball experience.
+            Fair sit-outs, varied partners, balanced games.
           </p>
         </div>
 

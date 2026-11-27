@@ -46,6 +46,7 @@ The player profile page is where athletes can review their rating, track their g
 6. **Score History Chart**:
    - Visual trend of rating progression over time across completed sessions. Hidden if rating & stats are private.
    - Week, Month, Year and All filters. Under the chart, a line reads "from → to rating" for the selected range. For **All**, "from" is the player's starting rating, so the line shows a change even after the first session.
+   - **First session:** with exactly one session in range, there's no one-dot chart. A short note reads "[starting] → [current] rating after your first session." with "Play another session to see your rating trend over time." The chart appears from the second session.
    - **Interactive Swiping & Scrubbing**: Athletes can swipe across the rating timeline on touch devices or hover/drag on desktop to scrub through ratings over time without needing to tap individual dots. As you swipe across the chart, a vertical dashed guide line follows the gesture, highlighting the nearest session dot with an active ring, displaying a floating tooltip with the exact DUPR rating and session date, and updating active details under the chart. Tapping or releasing a swipe keeps the session pinned; clicking outside or pressing Escape dismisses the detail.
 7. **Past Sessions**:
    - Chronological list of completed sessions with date, group name, session type (e.g. Regular or Open Play), and win/loss match records.

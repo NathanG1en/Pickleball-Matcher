@@ -407,29 +407,9 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='rating-range-week']")).toBeVisible();
     await expect(page.locator("[data-testid='rating-range-month']")).toBeVisible();
     await expect(page.locator("[data-testid='rating-range-year']")).toBeVisible();
-    const ratingPoint = page.locator("[data-testid='rating-point-0']");
-    await expect(ratingPoint).toBeVisible();
-
-    // Hovering displays tooltip with rating and date below it
-    await ratingPoint.hover();
-    const tooltip = page.locator("[data-testid='rating-tooltip']");
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
-
-    // Moving mouse away hides tooltip
-    await page.mouse.move(0, 0);
-    await expect(tooltip).toBeHidden();
-
-    // Clicking rating point pins tooltip
-    await ratingPoint.click();
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
-
-    // Escape dismisses pinned tooltip
-    await page.keyboard.press("Escape");
-    await expect(tooltip).toBeHidden();
+    // One session is shown as a starting point rather than a one-dot chart
+    // (hover, pin and Escape on chart points are covered in rating-history.spec.ts).
+    await expect(page.getByTestId("rating-chart-first-session")).toContainText("rating after your first session.");
 
     // Session must be listed with (Open Play) next to group name
     const sessionId = sessionUrl.split("/sessions/")[1];

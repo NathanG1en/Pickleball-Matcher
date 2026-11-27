@@ -488,6 +488,14 @@ export function ScoreHistoryChart({
         <p className="text-xs font-semibold text-neutral-600">
           Your rating history will appear after your first session.
         </p>
+      ) : history.length === 1 && filtered.length === 1 ? (
+        // One session is a starting point, not a trend: say it in words instead of a one-dot chart.
+        <div className="py-4" data-testid="rating-chart-first-session">
+          <p className="text-sm font-bold text-black">
+            {formatDupr(startingRating ?? history[0].rating)} → {formatDupr(history[0].rating)} rating after your first session.
+          </p>
+          <p className="mt-1 text-xs font-semibold text-neutral-600">Play another session to see your rating trend over time.</p>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center" data-testid="rating-chart-empty-range">
           <p className="text-xs font-bold text-neutral-600">

@@ -36,7 +36,7 @@ When any group the viewer belongs to has a session in progress, a compact, infor
 The hero section introduces the application's core identity with balanced, refined proportions that do not dominate the initial viewport:
 
 - **Headlines:** "FAIR ROUNDS. FRESH PARTNERS." rendered in bold Barlow Condensed display typography, scaled to `text-[2.5rem]` on mobile and `text-6xl` on desktop, accented with a selective neon lime badge highlight.
-- **Tagline:** "An elevated pickleball experience.", styled at `text-base` font size.
+- **Tagline:** "Fair sit-outs, varied partners, balanced games.", styled at `text-base` font size.
 - **Interactive Court Divider:** The centered decorative bouncing pickleball divider (horizontal lines with the interactive pickleball button) sits below the subtitle, extending wider across desktop viewports (`max-w-xl`).
 - **Hero Footer / Contextual Actions:**
   - **Signed In:** Features a horizontally spread profile footer row beneath the divider spanning across the card with a neon-lime initial avatar and "PLAYING AS" @username on the left, and a distinct neon-lime "View Profile →" button on the right.
@@ -54,7 +54,7 @@ A cohesive 3-card layout provides unified access to primary features across both
 
 - **Signed In:**
   - Active live session status cards and organizer session indicators (if in progress).
-  - **Recovery email banner**: above the hero while the player has no verified recovery email. It's one compact strip. With an unverified email it shows a yellow envelope tile, **Recovery email not verified**, the email, **Resend code · Change email** and **Enter code →** on the right (on a phone, the links and button share a row). With no email it reads **Add a recovery email** with **Add email →** and **Not now**. See [auth.md](auth.md).
+  - **Recovery email banner**: not shown on the home page; it lives on the player's own profile (see [profile.md](profile.md)), so the home page stays focused on playing. On the profile it appears while the player has no verified recovery email. It's one compact strip. With an unverified email it shows a yellow envelope tile, **Recovery email not verified**, the email, **Resend code · Change email** and **Enter code →** on the right (on a phone, the links and button share a row). With no email it reads **Add a recovery email** with **Add email →** and **Not now**. See [auth.md](auth.md).
   - Refined hero section containing "FAIR ROUNDS. FRESH PARTNERS.", subtitle, pickleball divider, and the compact profile footer row (**Playing as @username** and **View Profile →**).
   - **Your groups** listing showing all active groups.
   - Cohesive 3-card action grid (**Find Groups**, **Find Players**, **Create A Group**).
