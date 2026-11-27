@@ -605,11 +605,12 @@ describe("SessionManagerClient Component", () => {
     // Cancelled match badge is displayed
     expect(html).toContain("Cancelled");
     // In-progress warning modal should not be visible when no pending games remain
-    expect(html).not.toContain("You have these games in progress:");
-    expect(html).not.toContain('data-testid="in-progress-warning-modal"');
-    // End Session button is present and not disabled by unsaved scores
+    expect(html).not.toContain('data-testid="end-session-dialog"');
+    // End session button is present at the bottom, away from Settings, and not disabled by unsaved scores
     expect(html).toContain('data-testid="end-session-button"');
-    expect(html).toContain("End Session");
+    expect(html).toContain("End session");
+    expect(html.indexOf('data-testid="end-session-button"')).toBeGreaterThan(html.indexOf('aria-label="Session Settings"'));
+    expect(html.indexOf('data-testid="end-session-button"')).toBeGreaterThan(html.indexOf('data-testid="court-match-1"'));
   });
 
   it("renders unified attendance toggle for managers and badges for non-managers", () => {

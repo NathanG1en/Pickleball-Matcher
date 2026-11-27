@@ -29,7 +29,7 @@ describe("SessionOptionsMenu Component", () => {
     expect(html).toContain("···");
     expect(html).toContain('aria-label="Session options"');
     expect(html).toContain('data-testid="session-options-menu-button"');
-    expect(html).toContain("h-7 w-7");
+    expect(html).toContain("h-11 w-11");
   });
 
   it("supports custom dataTestId", () => {

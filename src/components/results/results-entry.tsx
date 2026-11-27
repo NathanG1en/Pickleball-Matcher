@@ -303,7 +303,7 @@ export function ResultsEntryView({
                 type="button"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-[#ccff00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <span>+ Add Game</span>
               </button>
@@ -314,7 +314,7 @@ export function ResultsEntryView({
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <ShuffleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 <span>Reshuffle</span>
@@ -497,7 +497,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-1-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT1Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -556,7 +556,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-2-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT2Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"

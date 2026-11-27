@@ -15,6 +15,9 @@ export interface ConfirmDialogProps {
   confirmVariant?: "danger" | "primary";
   disabled?: boolean;
   confirmDataTestId?: string;
+  cancelDataTestId?: string;
+  /** Test id for the dialog body, for flows that need to assert its contents. */
+  dataTestId?: string;
 }
 
 export function ConfirmDialog({
@@ -28,6 +31,8 @@ export function ConfirmDialog({
   confirmVariant = "danger",
   disabled = false,
   confirmDataTestId,
+  cancelDataTestId,
+  dataTestId,
 }: ConfirmDialogProps) {
   return (
     <Modal
@@ -39,7 +44,7 @@ export function ConfirmDialog({
       closeOnBackdropClick={!disabled}
       closeOnEscape={!disabled}
     >
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid={dataTestId}>
         {title && (
           <h3 className="font-display text-2xl font-black uppercase tracking-tight text-black">
             {title}
@@ -54,6 +59,7 @@ export function ConfirmDialog({
             variant="outline"
             onClick={onClose}
             disabled={disabled}
+            data-testid={cancelDataTestId}
             className="text-sm"
           >
             {cancelText}

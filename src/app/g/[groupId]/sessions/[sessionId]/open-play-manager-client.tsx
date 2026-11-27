@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Toast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { endSessionWarning } from "@/components/groups/end-session-now-button";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
@@ -499,7 +501,14 @@ export function OpenPlayManagerClient({
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  // Styled confirmation for ending the session or deleting a game (no native confirm()).
+  const [pendingConfirm, setPendingConfirm] = useState<{ kind: "end" } | { kind: "delete"; matchId: string } | null>(null);
   const [justEndedSession, setJustEndedSession] = useState(false);
+  // End sits at the bottom of the page; once the session ends, bring the organizer back up
+  // to the completed summary so the sign-off plays in view. Instant, so the animation isn't missed.
+  useEffect(() => {
+    if (justEndedSession) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [justEndedSession]);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1325,8 +1334,11 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleDeleteMatch = async (matchId: string) => {
-    if (!confirm("Are you sure you want to delete this game result?")) return;
+  const handleDeleteMatch = (matchId: string) => {
+    setPendingConfirm({ kind: "delete", matchId });
+  };
+
+  const performDeleteMatch = async (matchId: string) => {
     setDeletedMatchIds((prev) => new Set([...prev, matchId]));
     try {
       const res = await deleteOpenPlayGameAction({
@@ -1355,8 +1367,12 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleEndSession = async () => {
-    if (!confirm("End this session? Match history and ratings will be finalized.")) return;
+  const handleEndSession = () => {
+    if (isEnding) return;
+    setPendingConfirm({ kind: "end" });
+  };
+
+  const performEndSession = async () => {
     setIsEnding(true);
     setError(null);
     try {
@@ -1416,34 +1432,14 @@ export function OpenPlayManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
-        {isSessionActive ? (
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {canManage && (
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isEnding}
-                aria-label="End Session"
-                data-testid="end-session-button"
-                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
-              >
-                {isEnding ? "Ending..." : (
-                  <>
-                    <span className="sm:hidden">End</span>
-                    <span className="hidden sm:inline">End Session</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        ) : (
+        {isSessionActive ? null : (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
+              className="shrink-0 h-11 px-3 text-sm font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -2392,7 +2388,7 @@ export function OpenPlayManagerClient({
                             type="button"
                             onClick={() => handleDeleteMatch(m.id)}
                             data-testid={`delete-game-button-${m.id}`}
-                            className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
+                            className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-red-700 hover:underline cursor-pointer"
                           >
                             Delete
                           </button>
@@ -2407,6 +2403,50 @@ export function OpenPlayManagerClient({
         )}
       </section>
       </div>
+
+      {/* End lives at the bottom, away from the game controls, so it can't be hit by mistake. */}
+      {isSessionActive && canManage && (
+        <section
+          aria-label="End session"
+          className="flex flex-col gap-3 rounded-2xl border-2 border-dashed border-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-sm font-bold text-neutral-800">
+            Finished playing? Ending stops new games from being logged, and a session can&apos;t be reopened.
+          </p>
+          <button
+            type="button"
+            onClick={handleEndSession}
+            disabled={isEnding}
+            data-testid="end-session-button"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-[#ff6b6b] px-4 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+          >
+            {isEnding ? "Ending..." : "End session"}
+          </button>
+        </section>
+      )}
+
+      <ConfirmDialog
+        isOpen={pendingConfirm !== null}
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          const action = pendingConfirm;
+          setPendingConfirm(null);
+          if (action?.kind === "end") void performEndSession();
+          else if (action?.kind === "delete") void performDeleteMatch(action.matchId);
+        }}
+        disabled={isEnding}
+        dataTestId={pendingConfirm?.kind === "end" ? "end-session-dialog" : "delete-game-dialog"}
+        title={pendingConfirm?.kind === "end" ? "End this session?" : "Delete this game?"}
+        description={
+          pendingConfirm?.kind === "end"
+            ? endSessionWarning("open_play", 0)
+            : "The result is removed from this session and from everyone's stats."
+        }
+        confirmText={pendingConfirm?.kind === "end" ? "End session" : "Delete game"}
+        cancelText={pendingConfirm?.kind === "end" ? "Keep playing" : "Keep game"}
+        confirmDataTestId={pendingConfirm?.kind === "end" ? "confirm-end-session-button" : "confirm-delete-game-button"}
+        cancelDataTestId={pendingConfirm?.kind === "end" ? "cancel-end-session-button" : undefined}
+      />
 
       {pendingDuplicateSubmission && (
         <DuplicateWarningModal

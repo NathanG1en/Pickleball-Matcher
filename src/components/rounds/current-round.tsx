@@ -385,7 +385,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={onAddGame}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-[#ccff00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <span>+ Add Game</span>
                   </button>
@@ -394,7 +394,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setIsUnlocked(false)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <LockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Lock</span>
@@ -403,7 +403,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <PencilIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Manual Edit</span>
@@ -445,7 +445,7 @@ function CurrentRoundEditor({
                 type="button"
                 disabled={isPending || isGeneratingRound}
                 onClick={() => onChangeMatchmakingVariety?.(opt.value)}
-                className={`px-2.5 py-1 rounded-md text-sm font-bold transition-all cursor-pointer ${
+                className={`min-h-11 px-3 rounded-md text-sm font-bold transition-all cursor-pointer ${
                   (matchmakingVariety ?? 0) === opt.value
                     ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
                     : "text-neutral-600 hover:text-black border border-transparent"
@@ -479,7 +479,7 @@ function CurrentRoundEditor({
                 <button
                   type="button"
                   onClick={handleResetToAlgorithm}
-                  className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
+                  className="min-h-11 px-3 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
                 >
                   ↺ Reset to Algorithm
                 </button>
@@ -514,7 +514,7 @@ function CurrentRoundEditor({
           <button
             type="button"
             onClick={() => setSelectedPlayerId(null)}
-            className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
+            className="min-h-11 px-3 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
           >
             Cancel
           </button>
@@ -657,7 +657,7 @@ function CurrentRoundEditor({
                             setDraggedPlayerId(null);
                           }}
                           onClick={() => handlePlayerClick(pId)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
+                          className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
                             isSelected
                               ? "bg-[#ccff00] ring-4 ring-black scale-105"
                               : isUnlocked
@@ -696,7 +696,7 @@ function CurrentRoundEditor({
                             setSelectedPlayerId(null);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-600 transition-all ${
+                        className={`min-h-11 px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-700 transition-all ${
                           selectedPlayerId
                             ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
@@ -795,7 +795,7 @@ function CurrentRoundEditor({
                             setDraggedPlayerId(null);
                           }}
                           onClick={() => handlePlayerClick(pId)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
+                          className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black font-black text-sm text-black transition-all ${
                             isSelected
                               ? "bg-[#ccff00] ring-4 ring-black scale-105"
                               : isUnlocked
@@ -834,7 +834,7 @@ function CurrentRoundEditor({
                             setSelectedPlayerId(null);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-600 transition-all ${
+                        className={`min-h-11 px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-700 transition-all ${
                           selectedPlayerId
                             ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
@@ -947,7 +947,7 @@ function CurrentRoundEditor({
                   setDraggedPlayerId(null);
                 }}
                 onClick={() => handlePlayerClick(id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black text-black text-sm font-black transition-all ${
+                className={`inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black text-black text-sm font-black transition-all ${
                   isSelected
                     ? "bg-[#ccff00] ring-4 ring-black scale-105"
                     : isUnlocked

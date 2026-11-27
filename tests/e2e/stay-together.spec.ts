@@ -51,8 +51,8 @@ test("organizer saves and refreshes session partners before starting a paired ro
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
   await page.getByTestId("save-and-start-next-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
-  page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("reshuffle-matchups-button").click();
+  await page.getByTestId("confirm-reshuffle-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   if (!showedSoloNotice) await expect(soloNotice).toBeVisible();
 });

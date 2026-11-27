@@ -30,7 +30,8 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, cancelMatchWarning, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
+import { endSessionWarning } from "@/components/groups/end-session-now-button";
+import { Button, Badge, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr, formatDuprDelta } from "@/lib/domain/rating-display";
@@ -269,8 +270,8 @@ export function SessionManagerClient({
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [showInProgressModal, setShowInProgressModal] = useState(false);
-  const [doNotAskAgain, setDoNotAskAgain] = useState(false);
+  // One styled confirmation for the live screen's irreversible actions (no native confirm()).
+  const [pendingConfirm, setPendingConfirm] = useState<"end" | "reshuffle" | "undo" | null>(null);
   const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(initialOpenSettingsModal);
 
   // Attendance rows stay in the section they were in when Settings opened, so a row
@@ -310,6 +311,11 @@ export function SessionManagerClient({
   // Only an actual end-session request says "Ending…"; other actions just disable the button.
   const [isEnding, setIsEnding] = useState(false);
   const [justEndedSession, setJustEndedSession] = useState(false);
+  // End sits at the bottom of the page; once the session ends, bring the organizer back up
+  // to the completed summary so the sign-off plays in view. Instant, so the animation isn't missed.
+  useEffect(() => {
+    if (justEndedSession) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [justEndedSession]);
   const [myAttendanceError, setMyAttendanceError] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -755,13 +761,11 @@ export function SessionManagerClient({
 
   const handleReshuffleInProgressRound = () => {
     if (!latestStarted || isPending) return;
-    if (
-      !confirm(
-        `Are you sure you want to reshuffle Round ${latestStarted.round.roundNumber} matchups? Any entered match scores for this round will be reset.`
-      )
-    ) {
-      return;
-    }
+    setPendingConfirm("reshuffle");
+  };
+
+  const performReshuffleInProgressRound = () => {
+    if (!latestStarted || isPending) return;
     setError(null);
     startGeneratingRound(async () => {
       try {
@@ -1337,9 +1341,11 @@ export function SessionManagerClient({
 
   const handleUndo = () => {
     if (!latestStarted || isPending) return;
-    if (!confirm("Are you sure you want to undo the latest round? This will revert results and ratings.")) {
-      return;
-    }
+    setPendingConfirm("undo");
+  };
+
+  const performUndo = () => {
+    if (!latestStarted || isPending) return;
     setError(null);
     startGeneratingRound(async () => {
       try {
@@ -1422,35 +1428,9 @@ export function SessionManagerClient({
     }
   };
 
-  const handleEndSession = async () => {
-    if (inProgressMatches.length > 0) {
-      const skipWarning =
-        typeof window !== "undefined" &&
-        window.localStorage.getItem("pickleball_skip_end_session_in_progress_warning") === "true";
-
-      if (!skipWarning) {
-        setShowInProgressModal(true);
-        return;
-      }
-    }
-
-    if (!confirm("End this session? Match history and ratings will be finalized.")) {
-      return;
-    }
-    await executeEndSession();
-  };
-
-  const handleConfirmEndSessionWithProgress = async () => {
-    if (doNotAskAgain && typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem("pickleball_skip_end_session_in_progress_warning", "true");
-      } catch {
-        // ignore storage errors
-      }
-    }
-    setShowInProgressModal(false);
-    setScoreDrafts({});
-    await executeEndSession();
+  const handleEndSession = () => {
+    if (isPending) return;
+    setPendingConfirm("end");
   };
 
   const viewerAttendance = currentViewerPlayerId
@@ -1826,6 +1806,61 @@ export function SessionManagerClient({
         confirmDataTestId="confirm-cancel-match"
       />
 
+      <ConfirmDialog
+        isOpen={pendingConfirm !== null}
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          const action = pendingConfirm;
+          setPendingConfirm(null);
+          if (action === "end") void executeEndSession();
+          else if (action === "reshuffle") performReshuffleInProgressRound();
+          else if (action === "undo") performUndo();
+        }}
+        disabled={isPending}
+        dataTestId={pendingConfirm === "end" ? "end-session-dialog" : undefined}
+        title={
+          pendingConfirm === "end"
+            ? "End this session?"
+            : pendingConfirm === "reshuffle"
+            ? `Reshuffle Round ${latestStarted?.round.roundNumber ?? ""}?`
+            : `Undo Round ${latestStarted?.round.roundNumber ?? ""}?`
+        }
+        description={
+          pendingConfirm === "end" ? (
+            <div className="space-y-3">
+              <p>{endSessionWarning(currentSession.type ?? null, inProgressMatches.length)}</p>
+              {inProgressMatches.length > 0 && (
+                <ul className="space-y-2 max-h-48 overflow-y-auto pr-1" data-testid="in-progress-match-list">
+                  {inProgressMatches.map((match) => {
+                    const { team1, team2 } = getMatchTeams(match);
+                    return (
+                      <li key={match.id} className="rounded-xl border-2 border-black bg-neutral-50 p-3 text-sm">
+                        <span className="block font-bold text-black">Court {match.courtNumber}</span>
+                        <span className="font-normal text-neutral-800">{team1} vs {team2}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          ) : pendingConfirm === "reshuffle" ? (
+            "Everyone gets new matchups, and any scores entered for this round are cleared."
+          ) : (
+            `This removes Round ${latestStarted?.round.roundNumber ?? ""} and its results, and recalculates everyone's ratings.`
+          )
+        }
+        confirmText={pendingConfirm === "end" ? "End session" : pendingConfirm === "reshuffle" ? "Reshuffle" : "Undo round"}
+        cancelText={pendingConfirm === "end" ? "Keep playing" : pendingConfirm === "reshuffle" ? "Keep matchups" : "Keep round"}
+        confirmDataTestId={
+          pendingConfirm === "end"
+            ? "confirm-end-session-button"
+            : pendingConfirm === "reshuffle"
+            ? "confirm-reshuffle-round-button"
+            : "confirm-undo-round-button"
+        }
+        cancelDataTestId={pendingConfirm === "end" ? "cancel-end-session-button" : undefined}
+      />
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -1837,14 +1872,14 @@ export function SessionManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
+              className="shrink-0 h-11 px-3 text-sm font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -1853,9 +1888,9 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <GearIcon className="h-4 w-4 shrink-0" />
               <span>
                 <span className="sm:hidden">Settings</span>
                 <span className="hidden sm:inline">Session Settings</span>
@@ -1868,31 +1903,14 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <GearIcon className="h-4 w-4 shrink-0" />
               <span>
                 <span className="sm:hidden">Settings</span>
                 <span className="hidden sm:inline">Session Settings</span>
               </span>
             </button>
-            {canManage && (
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isPending}
-                aria-label="End Session"
-                data-testid="end-session-button"
-                className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
-              >
-                {isEnding ? "Ending..." : (
-                  <>
-                    <span className="sm:hidden">End</span>
-                    <span className="hidden sm:inline">End Session</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -2633,6 +2651,27 @@ export function SessionManagerClient({
         </>
       )}
 
+      {/* End lives at the bottom, away from Settings and the round controls, so it can't be hit by mistake. */}
+      {canManage && !isCompletedSession && (
+        <section
+          aria-label="End session"
+          className="flex flex-col gap-3 rounded-2xl border-2 border-dashed border-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-sm font-bold text-neutral-800">
+            Finished playing? Ending finalizes ratings, and a session can&apos;t be reopened.
+          </p>
+          <button
+            type="button"
+            onClick={handleEndSession}
+            disabled={isPending}
+            data-testid="end-session-button"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-[#ff6b6b] px-4 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+          >
+            {isEnding ? "Ending..." : "End session"}
+          </button>
+        </section>
+      )}
+
       {/* Session Settings Modal */}
       {showSessionSettingsModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -3329,81 +3368,6 @@ export function SessionManagerClient({
             </div>
           </div>
         </div>
-      )}
-
-      {showInProgressModal && (
-        <Modal
-          isOpen={showInProgressModal}
-          onClose={() => !isPending && setShowInProgressModal(false)}
-          size="md"
-          role="alertdialog"
-          showCloseButton={false}
-          closeOnBackdropClick={!isPending}
-          closeOnEscape={!isPending}
-        >
-          <div className="space-y-4 text-black" data-testid="in-progress-warning-modal">
-            <h3 className="font-display text-xl font-black uppercase tracking-tight text-black">
-              End Session?
-            </h3>
-            <p className="text-sm font-bold text-neutral-800">
-              You have these games in progress:
-            </p>
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1" data-testid="in-progress-match-list">
-              {inProgressMatches.map((match) => {
-                const { team1, team2 } = getMatchTeams(match);
-                return (
-                  <div
-                    key={match.id}
-                    className="p-3 bg-neutral-50 border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]"
-                  >
-                    <div>
-                      <span className="font-black text-black block">Court {match.courtNumber}</span>
-                      <span className="font-bold text-neutral-700">{team1} vs {team2}</span>
-                    </div>
-                    <Badge variant="warning">In Play</Badge>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-sm font-bold text-neutral-800">
-              Are you sure you want to end it?
-            </p>
-            <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={doNotAskAgain}
-                onChange={(e) => setDoNotAskAgain(e.target.checked)}
-                data-testid="do-not-ask-again-checkbox"
-                className="w-4 h-4 rounded border-2 border-black accent-black cursor-pointer"
-              />
-              <span className="text-xs font-bold text-neutral-700">
-                Do not ask me again
-              </span>
-            </label>
-            <div className="flex gap-3 justify-end pt-3 border-t-2 border-neutral-100">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowInProgressModal(false)}
-                disabled={isPending}
-                data-testid="cancel-end-session-button"
-                className="text-sm"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleConfirmEndSessionWithProgress}
-                disabled={isPending}
-                data-testid="confirm-end-session-button"
-                className="text-sm bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
-              >
-                {isEnding ? "Ending..." : "End Session"}
-              </Button>
-            </div>
-          </div>
-        </Modal>
       )}
 
       {canManage && (

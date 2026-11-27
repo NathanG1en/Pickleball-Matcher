@@ -26,8 +26,8 @@ test("joining a new session without playing does not reset the rating graph", as
   await card.getByRole("spinbutton", { name: "Team 2 Score", exact: true }).fill("7");
   await card.getByTestId("submit-game-button").click();
   await expect(page.getByTestId("open-play-matches-list")).toContainText("11 – 7");
-  page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("end-session-button").click();
+  await page.getByTestId("confirm-end-session-button").click();
   await expect(page.getByTestId("completed-session-badge")).toBeVisible();
   await page.goto(`/g/${groupId}`);
   await page.getByTestId("start-new-session-button").click();

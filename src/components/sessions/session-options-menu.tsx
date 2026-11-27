@@ -220,7 +220,7 @@ export function SessionOptionsMenu({
         aria-label="Session options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}
-        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 select-none transition-colors"
+        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 select-none transition-colors"
       >
         ···
       </button>
