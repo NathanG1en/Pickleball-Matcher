@@ -60,7 +60,7 @@ export function DrillLibrary({ categories, items, scopeLabel }: DrillLibraryProp
                 aria-pressed={isActive}
                 data-active={isActive ? "true" : "false"}
                 onClick={() => selectCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-xs font-black uppercase transition-all border-2 select-none cursor-pointer touch-manipulation active:translate-x-[1px] active:translate-y-[1px] ${
+                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-sm font-bold transition-all border-2 select-none cursor-pointer touch-manipulation active:translate-x-[1px] active:translate-y-[1px] ${
                   isActive
                     ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                     : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
@@ -95,7 +95,7 @@ export function DrillLibrary({ categories, items, scopeLabel }: DrillLibraryProp
             <button
               type="button"
               onClick={() => selectCategory("all")}
-              className="inline-block px-3.5 py-1.5 rounded-xl bg-black text-[#ccff00] font-display text-xs font-black uppercase tracking-wider cursor-pointer"
+              className="inline-block px-3.5 py-1.5 rounded-xl bg-black text-[#ccff00] text-sm font-bold cursor-pointer"
             >
               {categories[0]?.label ?? "Show all"}
             </button>

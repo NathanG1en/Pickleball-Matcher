@@ -145,7 +145,7 @@ export function NewPlanForm({
 
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label htmlFor="plan-title" className="block text-xs font-black uppercase text-neutral-700 mb-1">
+            <label htmlFor="plan-title" className="block text-xs font-bold text-neutral-700 mb-1">
               Plan Title
             </label>
             <input
@@ -159,7 +159,7 @@ export function NewPlanForm({
           </div>
 
           <div>
-            <label htmlFor="target-week" className="block text-xs font-black uppercase text-neutral-700 mb-1">
+            <label htmlFor="target-week" className="block text-xs font-bold text-neutral-700 mb-1">
               Target Week
             </label>
             <select
@@ -183,7 +183,7 @@ export function NewPlanForm({
         </div>
 
         <div>
-          <label htmlFor="focus-notes" className="block text-xs font-black uppercase text-neutral-700 mb-1">
+          <label htmlFor="focus-notes" className="block text-xs font-bold text-neutral-700 mb-1">
             Focus Notes & Tips for Members (Optional)
           </label>
           <textarea
@@ -249,7 +249,7 @@ export function NewPlanForm({
                 key={cat.key}
                 type="button"
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-xs font-black uppercase transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl min-h-[38px] flex items-center justify-center text-sm font-bold transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
                   isActive
                     ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                     : "bg-white hover:bg-neutral-100 text-neutral-800 border-black shadow-[2px_2px_0px_0px_#000]"
@@ -272,7 +272,7 @@ export function NewPlanForm({
 
         {visibleChallenges.length === 0 ? (
           <div className="p-6 text-center rounded-2xl bg-white border-2 border-black space-y-2 shadow-[2px_2px_0px_0px_#000]">
-            <p className="font-display text-sm font-black uppercase text-black">No matching drills found</p>
+            <p className="text-sm font-bold text-black">No matching drills found</p>
             <p className="text-xs font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
             {(searchQuery || selectedCategory !== "all") && (
               <button
@@ -281,7 +281,7 @@ export function NewPlanForm({
                   setSearchQuery("");
                   setSelectedCategory("all");
                 }}
-                className="mt-1 px-3.5 py-1.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
+                className="mt-1 px-3.5 py-1.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
               >
                 Clear Filters
               </button>
@@ -322,7 +322,7 @@ export function NewPlanForm({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="font-display text-sm font-black uppercase text-black">
+                    <span className="text-sm font-bold text-black">
                       {challenge.title}
                     </span>
                     <button
@@ -333,7 +333,7 @@ export function NewPlanForm({
                           prev === challenge.skillCategory ? "all" : challenge.skillCategory,
                         );
                       }}
-                      className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer ${
+                      className={`px-2 py-0.5 rounded-lg text-xs sm:text-xs font-bold transition-colors border select-none cursor-pointer ${
                         selectedCategory === challenge.skillCategory
                           ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
                           : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
@@ -363,7 +363,7 @@ export function NewPlanForm({
         <button
           type="submit"
           disabled={isPending || selectedIds.length === 0}
-          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
         >
           {isPending ? "Publishing Plan..." : "Publish Weekly Plan →"}
         </button>

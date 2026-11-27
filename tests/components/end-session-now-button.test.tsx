@@ -46,8 +46,9 @@ describe("EndSessionNowButton Component", () => {
     expect(html).toContain("text-black");
     expect(html).toContain("border-2 border-black");
     expect(html).toContain("w-full");
-    expect(html).toContain("font-display");
-    expect(html).toContain("uppercase");
+    // Calm button type: bold body font in normal case, not all caps
+    expect(html).toContain("font-bold");
+    expect(html).not.toContain("uppercase");
   });
 
   it("renders correctly for open play sessions", () => {

@@ -317,7 +317,7 @@ export function AddPickupGameModal({
               setMatchType("doubles");
               setError(null);
             }}
-            className={`py-1.5 px-4 text-xs font-black uppercase whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-1.5 px-4 text-sm font-bold whitespace-nowrap cursor-pointer transition-colors ${
               matchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600 hover:bg-neutral-50"
             }`}
           >
@@ -331,7 +331,7 @@ export function AddPickupGameModal({
               setT2p2("");
               setError(null);
             }}
-            className={`py-1.5 px-4 text-xs font-black uppercase border-l-2 border-black whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-1.5 px-4 text-sm font-bold border-l-2 border-black whitespace-nowrap cursor-pointer transition-colors ${
               matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600 hover:bg-neutral-50"
             }`}
           >
@@ -372,7 +372,7 @@ export function AddPickupGameModal({
                 )}
 
                 <div className="pt-1">
-                  <label htmlFor="pickup-team-1-score" className="block text-[11px] font-black uppercase text-black mb-1">
+                  <label htmlFor="pickup-team-1-score" className="block text-xs font-bold text-black mb-1">
                     Team 1 Points
                   </label>
                   <input
@@ -420,7 +420,7 @@ export function AddPickupGameModal({
                 )}
 
                 <div className="pt-1">
-                  <label htmlFor="pickup-team-2-score" className="block text-[11px] font-black uppercase text-black mb-1">
+                  <label htmlFor="pickup-team-2-score" className="block text-xs font-bold text-black mb-1">
                     Team 2 Points
                   </label>
                   <input
@@ -466,7 +466,7 @@ export function AddPickupGameModal({
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
-              className="font-display uppercase text-xs tracking-wider"
+              className="text-sm"
             >
               Cancel
             </Button>
@@ -476,7 +476,7 @@ export function AddPickupGameModal({
               size="sm"
               disabled={isSubmitting}
               data-testid="submit-pickup-game-button"
-              className="font-display uppercase text-xs tracking-wider"
+              className="text-sm"
             >
               {isSubmitting ? "Saving..." : "Submit Game"}
             </Button>

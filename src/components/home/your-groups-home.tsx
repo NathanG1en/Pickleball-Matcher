@@ -30,7 +30,7 @@ export function LiveSessionsHome({ groups }: { groups: readonly HomeGroupSummary
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black">
+              <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border border-black">
                 <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
                 Live now · {liveLabel(group.liveSession!)}
               </span>
@@ -38,7 +38,7 @@ export function LiveSessionsHome({ groups }: { groups: readonly HomeGroupSummary
                 {group.name}
               </h2>
             </div>
-            <span className="flex min-h-11 items-center justify-center rounded-xl bg-black px-5 font-display text-sm font-black uppercase tracking-wide text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] shrink-0 self-start sm:self-auto group-hover:bg-neutral-900">
+            <span className="flex min-h-11 items-center justify-center rounded-xl bg-black px-5 text-sm font-bold text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] shrink-0 self-start sm:self-auto group-hover:bg-neutral-900">
               See my court →
             </span>
           </div>
@@ -57,7 +57,7 @@ export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[]
         <h2 id="your-groups-heading" className="font-display text-2xl font-black uppercase text-black">
           Your groups
         </h2>
-        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
+        <span className="text-xs font-bold text-neutral-500">
           {groups.length} {groups.length === 1 ? "group" : "groups"}
         </span>
       </div>
@@ -69,7 +69,7 @@ export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[]
               className="flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 border-black bg-white px-4 py-2.5 hover:bg-neutral-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
             >
               <span className="min-w-0 font-display text-lg font-black uppercase text-black break-words">{group.name}</span>
-              <span className="shrink-0 text-xs font-black uppercase tracking-wider text-black bg-[#fde047] border border-black px-2.5 py-1 rounded-lg">Open →</span>
+              <span className="shrink-0 text-xs font-bold text-black bg-[#fde047] border border-black px-2.5 py-1 rounded-lg">Open →</span>
             </Link>
           </li>
         ))}

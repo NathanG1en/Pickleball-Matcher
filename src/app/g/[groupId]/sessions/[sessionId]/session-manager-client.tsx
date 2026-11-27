@@ -1837,14 +1837,14 @@ export function SessionManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center"
+              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -1853,7 +1853,7 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span>
@@ -1868,7 +1868,7 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span>
@@ -1883,7 +1883,7 @@ export function SessionManagerClient({
                 disabled={isPending}
                 aria-label="End Session"
                 data-testid="end-session-button"
-                className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
                 {isEnding ? "Ending..." : (
                   <>
@@ -1971,11 +1971,11 @@ export function SessionManagerClient({
               >
                 <div>
                   <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                    <span className="font-display text-sm font-black uppercase text-black">
+                    <span className="text-sm font-bold text-black">
                       {choice.title}
                     </span>
                     <span
-                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-black ${
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full border border-black ${
                         choice.sitting === 0
                           ? "bg-[#ccff00] text-black"
                           : "bg-amber-100 text-amber-950"
@@ -2001,7 +2001,7 @@ export function SessionManagerClient({
                 setModalTab("court_config");
                 setShowSessionSettingsModal(true);
               }}
-              className="text-xs font-black uppercase text-neutral-800 hover:text-black underline cursor-pointer"
+              className="text-sm font-bold text-neutral-800 hover:text-black underline cursor-pointer"
             >
               Customize court sizes manually →
             </button>
@@ -2027,7 +2027,7 @@ export function SessionManagerClient({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {groupName && (
-                  <span className="text-xs font-black uppercase tracking-wider text-neutral-500 block mb-1">
+                  <span className="text-xs font-bold text-neutral-500 block mb-1">
                     {groupName}
                   </span>
                 )}
@@ -2071,19 +2071,19 @@ export function SessionManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Courts</span>
+                <span className="text-xs font-bold text-neutral-500 block">Courts</span>
                 <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Rounds</span>
+                <span className="text-xs font-bold text-neutral-500 block">Rounds</span>
                 <span className="font-display text-xl font-black text-black">{allSessionRounds.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{totalSessionMatches}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-500 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{sessionPlayerStats.length}</span>
               </div>
             </div>
@@ -2094,20 +2094,20 @@ export function SessionManagerClient({
                 data-testid="personal-session-summary"
                 className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
               >
-                <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+                <span className="text-xs font-bold text-neutral-800 block">
                   Your Session
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -2322,7 +2322,7 @@ export function SessionManagerClient({
                                   variant="primary"
                                   onClick={() => handleHistoricalSaveResult(m.id, m.version)}
                                   disabled={isPending}
-                                  className="font-display text-xs uppercase"
+                                  className="text-sm"
                                 >
                                   Save Score
                                 </Button>
@@ -2333,7 +2333,7 @@ export function SessionManagerClient({
                                     variant="outline"
                                     onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
                                     disabled={isPending}
-                                    className="font-display text-xs uppercase"
+                                    className="text-sm"
                                   >
                                     Cancel Match
                                   </Button>
@@ -2341,7 +2341,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-xs font-black uppercase text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2357,7 +2357,7 @@ export function SessionManagerClient({
                                       team2: m.team2Score !== null ? String(m.team2Score) : "",
                                     });
                                   }}
-                                  className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
+                                  className="text-sm font-bold text-black hover:underline cursor-pointer"
                                 >
                                   Edit Result
                                 </button>
@@ -2453,10 +2453,10 @@ export function SessionManagerClient({
                 </p>
                 {canManage ? (
                   <div className="flex flex-wrap items-center justify-center gap-3">
-                    <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="font-display text-lg uppercase tracking-wider">
+                    <Button type="button" variant="primary" onClick={() => handleRegenerate()} disabled={isPending} className="text-lg">
                       {isGeneratingRound ? <RoundGenerationIndicator /> : `Generate Round ${(latestStarted?.round.roundNumber ?? 0) + 1}`}
                     </Button>
-                    <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="font-display text-lg uppercase tracking-wider whitespace-nowrap shrink-0">
+                    <Button type="button" variant="secondary" onClick={() => setShowAddPickupModal(true)} disabled={isPending} className="text-lg whitespace-nowrap shrink-0">
                       + Add Game
                     </Button>
                   </div>
@@ -2485,7 +2485,7 @@ export function SessionManagerClient({
                 onClick={() => void handleSetMyAttendance(viewerAttendance.leftRound !== null)}
                 disabled={isMyAttendancePending}
                 data-testid={viewerAttendance.leftRound === null ? "leave-after-game-button" : "stay-in-session-button"}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
               >
                 {isMyAttendancePending
                   ? "Saving…"
@@ -2508,7 +2508,7 @@ export function SessionManagerClient({
               <div className="space-y-4">
                 {pastRounds.map((past) => (
                   <div key={past.round.id} className="border-2 border-black rounded-xl p-4 bg-neutral-50 shadow-[3px_3px_0px_0px_#000] space-y-2">
-                    <div className="flex items-center justify-between text-xs font-black uppercase">
+                    <div className="flex items-center justify-between text-xs font-bold">
                       <span className="font-display text-base text-black">Round {past.round.roundNumber}</span>
                       <Badge variant="muted">Completed</Badge>
                     </div>
@@ -2580,7 +2580,7 @@ export function SessionManagerClient({
                                   variant="primary"
                                   onClick={() => handleHistoricalSaveResult(m.id, m.version)}
                                   disabled={isPending}
-                                  className="font-display text-xs uppercase"
+                                  className="text-sm"
                                 >
                                   Save Score
                                 </Button>
@@ -2591,7 +2591,7 @@ export function SessionManagerClient({
                                     variant="outline"
                                     onClick={() => handleHistoricalCancelMatch(m.id, m.version)}
                                     disabled={isPending}
-                                    className="font-display text-xs uppercase"
+                                    className="text-sm"
                                   >
                                     Cancel Match
                                   </Button>
@@ -2599,7 +2599,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-xs font-black uppercase text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2615,7 +2615,7 @@ export function SessionManagerClient({
                                       team2: m.team2Score !== null ? String(m.team2Score) : "",
                                     });
                                   }}
-                                  className="text-xs font-black uppercase text-black hover:underline cursor-pointer"
+                                  className="text-sm font-bold text-black hover:underline cursor-pointer"
                                 >
                                   Edit Result
                                 </button>
@@ -2663,7 +2663,7 @@ export function SessionManagerClient({
                   aria-controls="tabpanel-attendance"
                   aria-selected={modalTab === "attendance"}
                   onClick={() => setModalTab("attendance")}
-                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer shrink-0 ${
                     modalTab === "attendance"
                       ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                       : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
@@ -2679,7 +2679,7 @@ export function SessionManagerClient({
                     aria-controls="tabpanel-court-config"
                     aria-selected={modalTab === "court_config"}
                     onClick={() => setModalTab("court_config")}
-                    className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                    className={`px-3 py-1.5 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer shrink-0 ${
                       modalTab === "court_config"
                         ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                         : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
@@ -2695,7 +2695,7 @@ export function SessionManagerClient({
                   aria-controls="tabpanel-partners"
                   aria-selected={modalTab === "partners" || modalTab === "stay_together"}
                   onClick={() => setModalTab("partners")}
-                  className={`px-3 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer shrink-0 ${
                     modalTab === "partners" || modalTab === "stay_together"
                       ? "bg-[#ccff00] border-black text-black shadow-[2px_2px_0px_0px_#000]"
                       : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
@@ -2731,7 +2731,7 @@ export function SessionManagerClient({
                       data-testid="toggle-session-add-guest"
                       className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
                     >
-                      <span className="block text-xs font-black uppercase tracking-wider text-black">
+                      <span className="block text-xs font-bold text-black">
                         Add Guest Player
                       </span>
                       <ChevronDownIcon
@@ -2772,7 +2772,7 @@ export function SessionManagerClient({
                             <button
                               type="submit"
                               disabled={!guestName.trim() || isAddingGuest}
-                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                             >
                               {isAddingGuest ? "Adding..." : "Add"}
                             </button>
@@ -2828,7 +2828,7 @@ export function SessionManagerClient({
                     <button
                       type="button"
                       onClick={() => setAttendanceSearchQuery("")}
-                      className="mt-2 text-xs font-black uppercase text-black underline cursor-pointer"
+                      className="mt-2 text-sm font-bold text-black underline cursor-pointer"
                     >
                       Clear search
                     </button>
@@ -2841,7 +2841,7 @@ export function SessionManagerClient({
                         className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black uppercase text-neutral-700 block">
+                          <span className="text-xs font-bold text-neutral-700 block">
                             Quick Presets ({presentCount} Present):
                           </span>
                           {!isOverCapacity && (
@@ -2872,7 +2872,7 @@ export function SessionManagerClient({
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                                  <span className="text-xs font-bold">{choice.title}</span>
                                   <span className="text-[10px] font-black">{choice.badge}</span>
                                 </div>
                                 <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
@@ -2953,7 +2953,7 @@ export function SessionManagerClient({
                                         aria-pressed={isPresent}
                                         title="Mark Present"
                                         data-testid={`attendance-present-${p.name}`}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                        className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
@@ -2970,7 +2970,7 @@ export function SessionManagerClient({
                                         aria-pressed={!isPresent}
                                         title="Mark as not playing"
                                         data-testid={`attendance-left-${p.name}`}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                        className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
@@ -3063,7 +3063,7 @@ export function SessionManagerClient({
                                         aria-pressed={isPresent}
                                         title="Mark Present"
                                         data-testid={`attendance-present-${p.name}`}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                        className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
@@ -3080,7 +3080,7 @@ export function SessionManagerClient({
                                         aria-pressed={!isPresent}
                                         title="Mark as not playing"
                                         data-testid={`attendance-left-${p.name}`}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                        className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
@@ -3134,7 +3134,7 @@ export function SessionManagerClient({
                     >
                       {courtConfigCourts}
                     </span>
-                    <span className="block text-xs uppercase font-black tracking-wider text-neutral-500 mt-0.5">
+                    <span className="block text-xs font-bold text-neutral-500 mt-0.5">
                       {courtConfigCourts === 1 ? "Court" : "Courts"}
                     </span>
                   </div>
@@ -3152,7 +3152,7 @@ export function SessionManagerClient({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {courtConfigPlayerCounts.slice(0, courtConfigCourts).map((size, index) => (
                     <div key={index} className="flex items-center justify-between gap-1.5 rounded-xl border-2 border-black p-2 sm:p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
-                      <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
+                      <span className="text-xs font-bold text-neutral-900 shrink-0">Court {index + 1}</span>
                       <CustomDropdown
                         ariaLabel={`Players on court ${index + 1}`}
                         value={String(size)}
@@ -3176,7 +3176,7 @@ export function SessionManagerClient({
 
                 {rebalanceChoices.length > 0 && (
                   <div className="p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
-                    <span className="text-xs font-black uppercase text-neutral-700 block">
+                    <span className="text-xs font-bold text-neutral-700 block">
                       Quick Presets ({presentCount} Present):
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -3194,7 +3194,7 @@ export function SessionManagerClient({
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                            <span className="text-xs font-bold">{choice.title}</span>
                             <span className="text-[10px] font-black">{choice.badge}</span>
                           </div>
                           <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
@@ -3221,7 +3221,7 @@ export function SessionManagerClient({
                     <div className="space-y-1">
                       <label
                         htmlFor="matchup-confirmation-toggle"
-                        className="font-display text-sm font-black uppercase text-black block cursor-pointer"
+                        className="text-sm font-bold text-black block cursor-pointer"
                       >
                         Matchup Confirmation
                       </label>
@@ -3251,7 +3251,7 @@ export function SessionManagerClient({
                     type="button"
                     onClick={handleSaveCourtConfig}
                     disabled={isPending || isOverCapacity || courtConfigCourts < 1}
-                    className="w-full font-display text-sm uppercase"
+                    className="w-full text-sm"
                   >
                     {isPending ? "Saving..." : "Save Court Configuration"}
                   </Button>
@@ -3271,7 +3271,7 @@ export function SessionManagerClient({
                     <div className="space-y-1">
                       <label
                         htmlFor="matchup-confirmation-toggle-pref"
-                        className="font-display text-sm font-black uppercase text-black block cursor-pointer"
+                        className="text-sm font-bold text-black block cursor-pointer"
                       >
                         Matchup Confirmation
                       </label>
@@ -3387,7 +3387,7 @@ export function SessionManagerClient({
                 onClick={() => setShowInProgressModal(false)}
                 disabled={isPending}
                 data-testid="cancel-end-session-button"
-                className="font-display uppercase tracking-wider text-xs"
+                className="text-sm"
               >
                 Cancel
               </Button>
@@ -3397,7 +3397,7 @@ export function SessionManagerClient({
                 onClick={handleConfirmEndSessionWithProgress}
                 disabled={isPending}
                 data-testid="confirm-end-session-button"
-                className="font-display uppercase tracking-wider text-xs bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
+                className="text-sm bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
               >
                 {isEnding ? "Ending..." : "End Session"}
               </Button>

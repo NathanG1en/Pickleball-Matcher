@@ -27,7 +27,7 @@ export function StatCard({
       {...props}
     >
       <p className="font-display text-2xl sm:text-3xl font-black">{value}</p>
-      <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-neutral-700 mt-0.5">
+      <p className="text-xs sm:text-xs font-bold text-neutral-700 mt-0.5">
         {label}
       </p>
       {subtext && (

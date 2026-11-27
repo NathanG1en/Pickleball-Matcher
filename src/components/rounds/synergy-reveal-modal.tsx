@@ -207,7 +207,7 @@ export function SynergyPanel({
                 <div className="rounded-xl border border-black/20 bg-[#e0f2fe] p-2.5 space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-black text-sky-950 truncate">{t1Names}</span>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t1Res.badgeStyle}`}>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t1Res.badgeStyle}`}>
                       {t1Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
                       {t1Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
                       <span>{t1Res.badgeText}</span>
@@ -229,7 +229,7 @@ export function SynergyPanel({
                 <div className="rounded-xl border border-black/20 bg-[#ffedd5] p-2.5 space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-black text-amber-950 truncate">{t2Names}</span>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t2Res.badgeStyle}`}>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold shadow-[1px_1px_0px_0px_#000] inline-flex items-center gap-1 ${t2Res.badgeStyle}`}>
                       {t2Res.badgeIcon === "zap" && <ZapIcon className="h-3 w-3 shrink-0" />}
                       {t2Res.badgeIcon === "warning" && <AlertTriangleIcon className="h-3 w-3 shrink-0" />}
                       <span>{t2Res.badgeText}</span>
@@ -281,7 +281,7 @@ export function SynergyRevealModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-xl border-2 border-black bg-neutral-100 p-2 text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-[1px] active:translate-y-[1px]"
+            className="rounded-xl border-2 border-black bg-neutral-100 p-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-200 active:translate-x-[1px] active:translate-y-[1px]"
           >
             <XIcon className="h-4 w-4" />
           </button>
@@ -298,7 +298,7 @@ export function SynergyRevealModal({
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-xl border-2 border-black bg-black py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neutral-900 active:translate-x-[1px] active:translate-y-[1px]"
+          className="mt-6 w-full rounded-xl border-2 border-black bg-black py-2.5 text-sm font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neutral-900 active:translate-x-[1px] active:translate-y-[1px]"
         >
           Close Breakdown
         </button>

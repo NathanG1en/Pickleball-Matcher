@@ -88,7 +88,7 @@ export function PersonalTrainingPlanCard({
               <ZapIcon className="w-4 h-4 text-black" />
             </span>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+              <span className="text-xs font-bold text-neutral-500 block">
                 Week of {weekDateStr}
               </span>
               <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -105,7 +105,7 @@ export function PersonalTrainingPlanCard({
         <div>
           <Link
             href="/player-login?returnTo=/training"
-            className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all touch-manipulation select-none"
+            className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all touch-manipulation select-none"
           >
             Sign In to Track Plan →
           </Link>
@@ -189,7 +189,7 @@ export function PersonalTrainingPlanCard({
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+            <span className="text-xs font-bold text-neutral-500 block">
               Week of {weekDateStr}
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -212,7 +212,7 @@ export function PersonalTrainingPlanCard({
         </div>
       ) : (
         <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50 border-2 border-dashed border-black/20 text-center space-y-1.5 mb-4">
-          <p className="font-display text-sm font-black uppercase text-neutral-800">No drills yet</p>
+          <p className="text-sm font-bold text-neutral-800">No drills yet</p>
           <p className="text-xs font-medium text-neutral-600 max-w-md mx-auto">
             Add up to 6 drills to practice this week.
           </p>
@@ -247,7 +247,7 @@ export function PersonalTrainingPlanCard({
                       {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
                     </span>
                     <span
-                      className={`font-display text-sm font-black uppercase truncate ${
+                      className={`text-sm font-bold truncate ${
                         isDone ? "line-through opacity-80" : ""
                       }`}
                     >
@@ -267,7 +267,7 @@ export function PersonalTrainingPlanCard({
                       <button
                         type="button"
                         onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                        className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
+                        className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
                           isExpanded
                             ? "bg-black text-[#ccff00]"
                             : isDone
@@ -311,7 +311,7 @@ export function PersonalTrainingPlanCard({
       {isPickerExpanded && availableChallenges.length > 0 && (
         <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-neutral-100 border-2 border-black space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-display text-xs font-black uppercase text-black">
+            <span className="text-xs font-bold text-black">
               Pick Focus Drills for This Week ({items.length}/6)
             </span>
           </div>
@@ -351,7 +351,7 @@ export function PersonalTrainingPlanCard({
                   key={cat.key}
                   type="button"
                   onClick={() => setPickerCategory(cat.key)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border-2 select-none active:translate-x-[1px] active:translate-y-[1px] cursor-pointer ${
                     isActive
                       ? "bg-black text-[#ccff00] border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                       : "bg-white hover:bg-neutral-50 text-neutral-800 border-black shadow-[1.5px_1.5px_0px_0px_#000]"
@@ -365,7 +365,7 @@ export function PersonalTrainingPlanCard({
 
           {visibleAvailableChallenges.length === 0 ? (
             <div className="p-4 text-center rounded-xl bg-white border-2 border-black space-y-1.5 shadow-[2px_2px_0px_0px_#000]">
-              <p className="font-display text-xs font-black uppercase text-black">No matching drills found</p>
+              <p className="text-xs font-bold text-black">No matching drills found</p>
               <p className="text-[11px] font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
               {(pickerSearchQuery || pickerCategory !== "all") && (
                 <button
@@ -374,7 +374,7 @@ export function PersonalTrainingPlanCard({
                     setPickerSearchQuery("");
                     setPickerCategory("all");
                   }}
-                  className="mt-1 px-3 py-1 rounded-lg border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-[11px] font-black uppercase shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
+                  className="mt-1 px-3 py-1 rounded-lg border-2 border-black bg-[#ccff00] hover:bg-[#b8e600] text-black text-xs font-bold shadow-[1.5px_1.5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer"
                 >
                   Clear Filters
                 </button>
@@ -392,7 +392,7 @@ export function PersonalTrainingPlanCard({
                     className="bg-white p-2.5 rounded-xl border border-black/20 flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block truncate">
+                      <span className="text-xs font-bold text-neutral-500 block truncate">
                         {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
                       </span>
                       <h4 className="font-display text-xs font-black uppercase text-black truncate">
@@ -404,7 +404,7 @@ export function PersonalTrainingPlanCard({
                       type="button"
                       disabled={inPlan || isAddingThis || (items.length >= 6 && !inPlan) || isPending}
                       onClick={() => handleAddDrill(challenge)}
-                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
                         inPlan
                           ? "bg-lime-100 text-black cursor-default"
                           : items.length >= 6

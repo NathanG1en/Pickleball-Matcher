@@ -120,7 +120,7 @@ function CurrentRoundEditor({
         ? "bg-amber-100 text-amber-900"
         : "bg-neutral-100 text-neutral-800";
     return (
-      <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-[10px] font-black uppercase`}>
+      <span className={`inline-flex items-center gap-1 rounded-full border border-black ${badgeStyle} px-2 py-0.5 text-xs font-bold `}>
         <ZapIcon className="h-3 w-3 shrink-0" />
         <span>{score > 0 ? `+${score}%` : `${score}%`} Synergy</span>
       </span>
@@ -385,7 +385,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={onAddGame}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <span>+ Add Game</span>
                   </button>
@@ -394,7 +394,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setIsUnlocked(false)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <LockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Lock</span>
@@ -403,7 +403,7 @@ function CurrentRoundEditor({
                   <button
                     type="button"
                     onClick={() => setShowUnlockModal(true)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
                   >
                     <PencilIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>Manual Edit</span>
@@ -423,7 +423,7 @@ function CurrentRoundEditor({
       {round.status === "proposed" && canManage && allowRegenerate && (
         <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000]">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-black uppercase tracking-wide text-neutral-800">Matchmaking Variety:</span>
+            <span className="text-xs font-bold text-neutral-800">Matchmaking Variety:</span>
             <button
               type="button"
               onClick={() => setShowVarietyInfo(true)}
@@ -445,7 +445,7 @@ function CurrentRoundEditor({
                 type="button"
                 disabled={isPending || isGeneratingRound}
                 onClick={() => onChangeMatchmakingVariety?.(opt.value)}
-                className={`px-2.5 py-1 rounded-md text-xs font-black uppercase transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-sm font-bold transition-all cursor-pointer ${
                   (matchmakingVariety ?? 0) === opt.value
                     ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
                     : "text-neutral-600 hover:text-black border border-transparent"
@@ -479,7 +479,7 @@ function CurrentRoundEditor({
                 <button
                   type="button"
                   onClick={handleResetToAlgorithm}
-                  className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-xs font-black uppercase hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
+                  className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
                 >
                   ↺ Reset to Algorithm
                 </button>
@@ -488,7 +488,7 @@ function CurrentRoundEditor({
           </div>
 
           {hasModifications && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-300 border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-300 border-2 border-black text-xs font-bold shadow-[2px_2px_0px_0px_#000]">
               <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
               <span>{modificationCount} manual position {modificationCount === 1 ? "change" : "changes"} active</span>
             </div>
@@ -500,7 +500,7 @@ function CurrentRoundEditor({
       {selectedPlayerId && (
         <div className="sticky top-4 z-30 p-3 bg-[#ccff00] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-between gap-3 animate-pulse">
           <div className="flex items-center gap-2">
-            <span className="text-base font-black uppercase flex items-center gap-1.5">
+            <span className="text-base font-bold flex items-center gap-1.5">
               <TargetIcon className="h-4 w-4 shrink-0" />
               <span>Selected:</span>
             </span>
@@ -514,7 +514,7 @@ function CurrentRoundEditor({
           <button
             type="button"
             onClick={() => setSelectedPlayerId(null)}
-            className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-xs font-black uppercase hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
+            className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-sm font-bold hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000]"
           >
             Cancel
           </button>
@@ -557,7 +557,7 @@ function CurrentRoundEditor({
                   Court {court.courtNumber}
                 </span>
                 <span
-                  className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black border-2 border-black ${
+                  className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black border-2 border-black ${
                     isUnbalanced
                       ? "bg-[#ff6b6b]"
                     : isSingles || isTeamVsOne
@@ -608,7 +608,7 @@ function CurrentRoundEditor({
                   }}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs uppercase font-black tracking-wider text-black block">
+                    <span className="text-xs font-bold text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 1" : "Team 1"}
                     </span>
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
@@ -625,7 +625,7 @@ function CurrentRoundEditor({
                     )}
 
                     {isUnlocked && court.team1.length > 0 && (
-                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                      <span className="text-xs font-bold text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
                       </span>
                     )}
@@ -696,7 +696,7 @@ function CurrentRoundEditor({
                             setSelectedPlayerId(null);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-xs font-black uppercase text-neutral-600 transition-all ${
+                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-600 transition-all ${
                           selectedPlayerId
                             ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
@@ -714,7 +714,7 @@ function CurrentRoundEditor({
                   </div>
                 </div>
 
-                <div className="text-center font-display font-black text-sm uppercase tracking-widest text-black my-1">
+                <div className="text-center font-bold text-sm text-black my-1">
                   VS
                 </div>
 
@@ -746,7 +746,7 @@ function CurrentRoundEditor({
                   }}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs uppercase font-black tracking-wider text-black block">
+                    <span className="text-xs font-bold text-black block">
                       {court.team1.length <= 1 && court.team2.length <= 1 ? "Player 2" : "Team 2"}
                     </span>
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
@@ -763,7 +763,7 @@ function CurrentRoundEditor({
                     )}
 
                     {isUnlocked && court.team2.length > 0 && (
-                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                      <span className="text-xs font-bold text-neutral-500">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
                       </span>
                     )}
@@ -834,7 +834,7 @@ function CurrentRoundEditor({
                             setSelectedPlayerId(null);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-xs font-black uppercase text-neutral-600 transition-all ${
+                        className={`px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-600 transition-all ${
                           selectedPlayerId
                             ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
@@ -900,7 +900,7 @@ function CurrentRoundEditor({
                 moveToSitting(selectedPlayerId);
                 setSelectedPlayerId(null);
               }}
-              className="min-h-11 px-3 py-1.5 rounded-xl bg-[#fde047] border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] motion-safe:animate-bounce"
+              className="min-h-11 px-3 py-1.5 rounded-xl bg-[#fde047] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000]"
             >
               Move {nameFor(selectedPlayerId)} to Sitting
             </button>
@@ -910,7 +910,7 @@ function CurrentRoundEditor({
         {/* Sitting Drop Zone Callout when dragging */}
         {isUnlocked && (
           <div
-            className={`mb-3 p-3 rounded-xl border-2 border-dashed border-black text-center text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
+            className={`mb-3 p-3 rounded-xl border-2 border-dashed border-black text-center text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeDropZone === "sitting-pool"
                 ? "bg-[#fde047] border-black scale-[1.01]"
                 : "bg-neutral-50 text-neutral-600"
@@ -1004,7 +1004,7 @@ function CurrentRoundEditor({
                 type="button"
                 variant="outline"
                 onClick={() => setShowUnlockModal(false)}
-                className="font-display uppercase tracking-wider"
+                className=""
               >
                 Keep Algorithm Lineup
               </Button>
@@ -1015,7 +1015,7 @@ function CurrentRoundEditor({
                   setShowUnlockModal(false);
                   setIsUnlocked(true);
                 }}
-                className="font-display uppercase tracking-wider bg-[#ccff00] text-black hover:bg-[#b8eb00]"
+                className="bg-[#ccff00] text-black hover:bg-[#b8eb00]"
               >
                 Unlock Manual Swaps
               </Button>
@@ -1035,7 +1035,7 @@ function CurrentRoundEditor({
             {hasModifications ? (
               <div className="space-y-3">
                 <div className="p-3 bg-amber-100 rounded-xl border-2 border-black text-xs font-bold text-neutral-900 space-y-1 shadow-[2px_2px_0px_0px_#000]">
-                  <p className="font-black uppercase text-amber-950 flex items-center gap-1.5">
+                  <p className="font-bold text-amber-950 flex items-center gap-1.5">
                     <AlertTriangleIcon className="h-4 w-4 shrink-0" />
                     <span>Manual Overrides Active ({modificationCount} modifications)</span>
                   </p>
@@ -1071,7 +1071,7 @@ function CurrentRoundEditor({
                   setShowConfirmStart(false);
                   setAcknowledgedOverride(false);
                 }}
-                className="font-display uppercase tracking-wider text-xs"
+                className="text-sm"
               >
                 Cancel
               </Button>
@@ -1084,7 +1084,7 @@ function CurrentRoundEditor({
                     handleResetToAlgorithm();
                     setShowConfirmStart(false);
                   }}
-                  className="font-display uppercase tracking-wider text-xs"
+                  className="text-sm"
                 >
                   Reset Lineup
                 </Button>
@@ -1095,7 +1095,7 @@ function CurrentRoundEditor({
                 variant="primary"
                 onClick={handleStartConfirm}
                 disabled={isPending || isGeneratingRound || (hasModifications && !acknowledgedOverride) || !isValidLineup}
-                className="font-display uppercase tracking-wider text-xs"
+                className="text-sm"
               >
                 Confirm &amp; Start
               </Button>
@@ -1116,7 +1116,7 @@ function CurrentRoundEditor({
                 onClick={onRegenerate}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="flex-1 font-display text-lg uppercase tracking-wider inline-flex items-center justify-center gap-2"
+                className="flex-1 text-lg inline-flex items-center justify-center gap-2"
               >
                 {isGeneratingRound ? (
                   <RoundGenerationIndicator />
@@ -1143,7 +1143,7 @@ function CurrentRoundEditor({
                   }
                 }}
                 disabled={isPending || isGeneratingRound || !isValidLineup}
-                className="flex-1 font-display text-lg uppercase tracking-wider"
+                className="flex-1 text-lg"
               >
                 Start Round
               </Button>
@@ -1156,7 +1156,7 @@ function CurrentRoundEditor({
                 size="lg"
                 onClick={onEnterResults}
                 disabled={isPending}
-                className="flex-1 font-display text-lg uppercase tracking-wider"
+                className="flex-1 text-lg"
               >
                 Enter Scores
               </Button>
@@ -1177,19 +1177,19 @@ function CurrentRoundEditor({
             </p>
             <div className="space-y-3">
               <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
-                <p className="font-black text-black uppercase text-xs">Balanced (Default)</p>
+                <p className="font-bold text-black text-xs">Balanced (Default)</p>
                 <p className="text-xs text-neutral-700 mt-1 font-semibold">
                   Strict mathematical optimization. Minimizes rating disparities and partner/opponent repeats. Best for competitive, closely-matched play.
                 </p>
               </div>
               <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
-                <p className="font-black text-black uppercase text-xs">Varied (Moderate)</p>
+                <p className="font-bold text-black text-xs">Varied (Moderate)</p>
                 <p className="text-xs text-neutral-700 mt-1 font-semibold">
                   Explores top-tier alternative pairings. Maintains strong skill balance while rotating partners and opponents who rarely play together.
                 </p>
               </div>
               <div className="p-3 bg-neutral-50 rounded-xl border-2 border-black">
-                <p className="font-black text-black uppercase text-xs">Wild (High Variety)</p>
+                <p className="font-bold text-black text-xs">Wild (High Variety)</p>
                 <p className="text-xs text-neutral-700 mt-1 font-semibold">
                   Maximizes lineup diversity for surprising matchups and high social variety, while still respecting player sitting limits and 2v1 protections.
                 </p>

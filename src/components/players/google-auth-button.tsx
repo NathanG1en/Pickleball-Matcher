@@ -52,7 +52,7 @@ export function GoogleAuthButton({
         onClick={startGoogleSignIn}
         disabled={pending}
         data-testid="google-sign-in-button"
-        className={`flex min-h-11 w-full items-center justify-center gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-black uppercase tracking-wide text-black shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:cursor-wait disabled:opacity-70 ${className}`}
+        className={`flex min-h-11 w-full items-center justify-center gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-bold text-black shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 hover:shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:cursor-wait disabled:opacity-70 ${className}`}
       >
         <GoogleIcon className="h-5 w-5 shrink-0" />
         <span>{pending ? "Opening Google…" : label}</span>

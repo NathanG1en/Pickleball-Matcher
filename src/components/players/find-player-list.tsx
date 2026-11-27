@@ -38,7 +38,7 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                   {player.name}
                 </h2>
                 {isSelf && (
-                  <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                  <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-xs font-bold whitespace-nowrap">
                     You
                   </span>
                 )}
@@ -52,11 +52,11 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
                     {genderLabel && (
                       <>
                         <span aria-hidden="true">·</span>
-                        <span className="uppercase">{genderLabel}</span>
+                        <span className="">{genderLabel}</span>
                       </>
                     )}
                     <span aria-hidden="true">·</span>
-                    <span className="uppercase text-neutral-700">
+                    <span className="text-neutral-700">
                       Rating: <span className="font-black text-black">{formattedRating}</span>
                     </span>
                   </>
@@ -67,7 +67,7 @@ export function FindPlayerList({ players, currentAccountId }: FindPlayerListProp
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/players/${encodeURIComponent(player.username)}`}
-                className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-transform"
+                className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-transform"
               >
                 View Profile
               </Link>

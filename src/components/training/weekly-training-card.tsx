@@ -92,7 +92,7 @@ export function WeeklyTrainingCard({
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+            <span className="text-xs font-bold text-neutral-500 block">
               Week of {formatWeekOf(plan.year, plan.weekNumber)} · Training
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -100,7 +100,7 @@ export function WeeklyTrainingCard({
             </h2>
           </div>
         </div>
-        <span className="px-2.5 py-1 rounded-xl bg-neutral-100 border border-black font-display text-xs font-black uppercase text-black">
+        <span className="px-2.5 py-1 rounded-xl bg-neutral-100 border border-black text-xs font-bold text-black">
           {completedCount} / {items.length} Done
         </span>
       </div>
@@ -146,7 +146,7 @@ export function WeeklyTrainingCard({
                     {isDone && <CheckIcon className="w-3.5 h-3.5 stroke-3" />}
                   </span>
                   <span
-                    className={`font-display text-sm font-black uppercase truncate ${
+                    className={`text-sm font-bold truncate ${
                       isDone ? "line-through opacity-80" : ""
                     }`}
                   >
@@ -163,7 +163,7 @@ export function WeeklyTrainingCard({
                     <button
                       type="button"
                       onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
+                      className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer touch-manipulation select-none transition-colors ${
                         isExpanded
                           ? "bg-black text-[#ccff00]"
                           : isDone
@@ -207,7 +207,7 @@ export function WeeklyTrainingCard({
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={`/training?group=${groupId}`}
-          className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-center text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors flex items-center justify-center select-none"
+          className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-center text-sm sm:text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors flex items-center justify-center select-none"
         >
           Practice Weekly Drills →
         </Link>

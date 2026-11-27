@@ -150,14 +150,14 @@ export function InlineResultLogger({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-[#ccff00] active:bg-[#ccff00] text-black border-2 border-black text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
+          className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-[#ccff00] active:bg-[#ccff00] text-black border-2 border-black text-sm sm:text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
         >
           <span>+ Record Attempt</span>
         </button>
       ) : isOpen ? (
         <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 bg-white/95 rounded-2xl border-2 border-black space-y-3.5 overflow-hidden max-w-full">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase text-neutral-800">
+            <span className="text-xs font-bold text-neutral-800">
               Record Attempt · {challenge.scoreUnit}
             </span>
             <button
@@ -203,7 +203,7 @@ export function InlineResultLogger({
           {challenge.trackingFormat === "accuracy" ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <label htmlFor={`shots-in-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
+                <label htmlFor={`shots-in-${challenge.id}`} className="block text-xs font-bold text-neutral-600 mb-1">
                   Shots In
                 </label>
                 <div className="flex items-center">
@@ -234,7 +234,7 @@ export function InlineResultLogger({
               </div>
 
               <div>
-                <label htmlFor={`total-shots-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
+                <label htmlFor={`total-shots-${challenge.id}`} className="block text-xs font-bold text-neutral-600 mb-1">
                   Total Attempts
                 </label>
                 <div className="flex items-center">
@@ -265,7 +265,7 @@ export function InlineResultLogger({
             </div>
           ) : challenge.trackingFormat === "timed" ? (
             <div>
-              <label htmlFor={`seconds-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
+              <label htmlFor={`seconds-${challenge.id}`} className="block text-xs font-bold text-neutral-600 mb-1">
                 Duration (Seconds)
               </label>
               <div className="flex items-center">
@@ -296,7 +296,7 @@ export function InlineResultLogger({
             </div>
           ) : (
             <div>
-              <label htmlFor={`primary-score-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
+              <label htmlFor={`primary-score-${challenge.id}`} className="block text-xs font-bold text-neutral-600 mb-1">
                 {challenge.trackingFormat === "wins"
                   ? "Games Won"
                   : challenge.trackingFormat === "highest_score"
@@ -340,7 +340,7 @@ export function InlineResultLogger({
           {/* Partner selector for partner or group formats */}
           {challenge.participantFormat !== "individual" && rosterPlayers.length > 0 && (
             <div>
-              <label htmlFor={`partner-select-${challenge.id}`} className="block text-[11px] font-black uppercase text-neutral-600 mb-1">
+              <label htmlFor={`partner-select-${challenge.id}`} className="block text-xs font-bold text-neutral-600 mb-1">
                 Partner / Co-Participant (Optional)
               </label>
               <select
@@ -384,7 +384,7 @@ export function InlineResultLogger({
               {feedback.success && <CheckIcon className="w-3.5 h-3.5 text-lime-700 stroke-2 shrink-0" />}
               <span className="leading-tight">{feedback.message}</span>
               {feedback.isPersonalBest && lastSavedResultId && (
-                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black text-[10px] font-black uppercase border border-black shrink-0">
+                <span className="ml-auto px-1.5 py-0.5 rounded bg-[#ccff00] text-black text-xs font-bold border border-black shrink-0">
                   New PB!
                 </span>
               )}
@@ -393,7 +393,7 @@ export function InlineResultLogger({
                   type="button"
                   onClick={handleUndo}
                   disabled={isUndoing}
-                  className={`${feedback.isPersonalBest ? "" : "ml-auto "}min-h-[32px] px-2.5 rounded-lg bg-white hover:bg-neutral-100 text-black border-2 border-black text-[11px] font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] shrink-0 cursor-pointer touch-manipulation select-none disabled:opacity-50 transition-colors`}
+                  className={`${feedback.isPersonalBest ? "" : "ml-auto "}min-h-[32px] px-2.5 rounded-lg bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-bold shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] shrink-0 cursor-pointer touch-manipulation select-none disabled:opacity-50 transition-colors`}
                 >
                   {isUndoing ? "Undoing..." : "Undo"}
                 </button>
@@ -405,7 +405,7 @@ export function InlineResultLogger({
           <button
             type="submit"
             disabled={isPending || isUndoing}
-            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-sm sm:text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer disabled:opacity-50 touch-manipulation select-none"
           >
             {isPending ? "Saving..." : "Save Attempt"}
           </button>

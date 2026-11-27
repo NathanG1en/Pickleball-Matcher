@@ -22,7 +22,7 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isPending}
-      className="rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wide text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60"
+      className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60"
     >
       {isPending ? "Signing Out…" : "Log Out"}
     </button>

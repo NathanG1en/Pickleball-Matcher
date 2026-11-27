@@ -156,7 +156,7 @@ export default function NeonAuthTestPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-block h-3 w-3 rounded-full bg-[#00E599] animate-pulse" />
-              <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+              <span className="text-xs font-bold text-neutral-600">
                 Evaluation Environment
               </span>
             </div>
@@ -166,7 +166,7 @@ export default function NeonAuthTestPage() {
           </div>
           <Link
             href="/"
-            className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase hover:bg-neutral-100"
+            className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold hover:bg-neutral-100"
           >
             ← Back Home
           </Link>
@@ -174,7 +174,7 @@ export default function NeonAuthTestPage() {
 
         {/* Configuration Overview Card */}
         <div className="rounded-2xl border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_#000] text-xs space-y-1.5">
-          <div className="font-black uppercase text-black text-sm flex items-center justify-between">
+          <div className="font-bold text-black text-sm flex items-center justify-between">
             <span>Neon Branch & Auth Settings</span>
             <span className="rounded bg-black text-[#00E599] px-2 py-0.5 text-[10px] font-black">
               LIVE BRANCH: test
@@ -201,7 +201,7 @@ export default function NeonAuthTestPage() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+                className="rounded-lg border-2 border-black bg-white px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
               >
                 Sign Out
               </button>
@@ -240,7 +240,7 @@ export default function NeonAuthTestPage() {
             <button
               type="button"
               onClick={() => setActiveTab("signup")}
-              className={`rounded-xl border-2 border-black px-3 py-1.5 font-display text-xs font-black uppercase transition-colors ${
+              className={`rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold transition-colors ${
                 activeTab === "signup" ? "bg-[#CCFF00] shadow-[2px_2px_0px_0px_#000]" : "bg-white hover:bg-neutral-100"
               }`}
             >
@@ -249,7 +249,7 @@ export default function NeonAuthTestPage() {
             <button
               type="button"
               onClick={() => setActiveTab("verify")}
-              className={`rounded-xl border-2 border-black px-3 py-1.5 font-display text-xs font-black uppercase transition-colors ${
+              className={`rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold transition-colors ${
                 activeTab === "verify" ? "bg-[#CCFF00] shadow-[2px_2px_0px_0px_#000]" : "bg-white hover:bg-neutral-100"
               }`}
             >
@@ -258,7 +258,7 @@ export default function NeonAuthTestPage() {
             <button
               type="button"
               onClick={() => setActiveTab("signin")}
-              className={`rounded-xl border-2 border-black px-3 py-1.5 font-display text-xs font-black uppercase transition-colors ${
+              className={`rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold transition-colors ${
                 activeTab === "signin" ? "bg-[#CCFF00] shadow-[2px_2px_0px_0px_#000]" : "bg-white hover:bg-neutral-100"
               }`}
             >
@@ -270,7 +270,7 @@ export default function NeonAuthTestPage() {
           {activeTab === "signup" && (
             <form onSubmit={handleSignUp} className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">Display Name</label>
+                <label className="block text-xs font-bold text-black mb-1">Display Name</label>
                 <input
                   type="text"
                   required
@@ -282,7 +282,7 @@ export default function NeonAuthTestPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Your Real Email Address
                 </label>
                 <input
@@ -299,7 +299,7 @@ export default function NeonAuthTestPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">Password</label>
+                <label className="block text-xs font-bold text-black mb-1">Password</label>
                 <input
                   type="password"
                   required
@@ -313,7 +313,7 @@ export default function NeonAuthTestPage() {
               <button
                 type="submit"
                 disabled={signUpLoading}
-                className="w-full rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 font-display text-sm font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
+                className="w-full rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
               >
                 {signUpLoading ? "Contacting Neon Auth…" : "Sign Up & Send Code →"}
               </button>
@@ -336,7 +336,7 @@ export default function NeonAuthTestPage() {
           {activeTab === "verify" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">Email</label>
+                <label className="block text-xs font-bold text-black mb-1">Email</label>
                 <input
                   type="email"
                   required
@@ -348,7 +348,7 @@ export default function NeonAuthTestPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   6-Digit OTP Code
                 </label>
                 <input
@@ -369,7 +369,7 @@ export default function NeonAuthTestPage() {
                 <button
                   type="submit"
                   disabled={verifyLoading}
-                  className="flex-1 rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 font-display text-sm font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
+                  className="flex-1 rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
                 >
                   {verifyLoading ? "Verifying…" : "Confirm Code →"}
                 </button>
@@ -377,7 +377,7 @@ export default function NeonAuthTestPage() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={verifyLoading}
-                  className="rounded-xl border-2 border-black bg-white px-4 py-2.5 font-display text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 disabled:opacity-50"
+                  className="rounded-xl border-2 border-black bg-white px-4 py-2.5 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:bg-neutral-100 disabled:opacity-50"
                 >
                   Resend Code
                 </button>
@@ -401,7 +401,7 @@ export default function NeonAuthTestPage() {
           {activeTab === "signin" && (
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">Email</label>
+                <label className="block text-xs font-bold text-black mb-1">Email</label>
                 <input
                   type="email"
                   required
@@ -413,7 +413,7 @@ export default function NeonAuthTestPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">Password</label>
+                <label className="block text-xs font-bold text-black mb-1">Password</label>
                 <input
                   type="password"
                   required
@@ -427,7 +427,7 @@ export default function NeonAuthTestPage() {
               <button
                 type="submit"
                 disabled={signInLoading}
-                className="w-full rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 font-display text-sm font-black uppercase shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
+                className="w-full rounded-xl border-2 border-black bg-[#CCFF00] py-2.5 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
               >
                 {signInLoading ? "Signing In…" : "Sign In →"}
               </button>
@@ -457,7 +457,7 @@ export default function NeonAuthTestPage() {
               type="button"
               onClick={checkServerSession}
               disabled={serverCheckLoading}
-              className="rounded-lg border-2 border-black bg-[#CCFF00] px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
+              className="rounded-lg border-2 border-black bg-[#CCFF00] px-3 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8e600] disabled:opacity-50"
             >
               {serverCheckLoading ? "Querying Server…" : "Check Server Session"}
             </button>

@@ -13,7 +13,7 @@ export function Label({
   const isNormalCase = className.includes("normal-case");
   return (
     <label
-      className={`block text-xs font-black ${isNormalCase ? "normal-case tracking-normal" : "uppercase tracking-wider"} text-black mb-1.5 ${className}`}
+      className={`block text-xs font-bold ${isNormalCase ? "normal-case tracking-normal" : " "} text-black mb-1.5 ${className}`}
       {...props}
     >
       {children}

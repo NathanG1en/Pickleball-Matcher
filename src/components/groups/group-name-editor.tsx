@@ -81,14 +81,14 @@ export function GroupNameEditor({
             variant="primary"
             size="sm"
             disabled={nameSaving || !nameInput.trim()}
-            className="font-bold uppercase"
+            className="font-bold"
           >
             {nameSaving ? "Saving…" : "Save"}
           </Button>
           <button
             type="button"
             onClick={handleCancelEditName}
-            className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+            className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
           >
             Cancel
           </button>

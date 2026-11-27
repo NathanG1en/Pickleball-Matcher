@@ -105,7 +105,7 @@ describe("Share Group and Join Feature", () => {
       expect(html).toContain("Share");
       expect(html).toContain('aria-label="Share group link and QR code"');
       expect(html).toContain("h-7");
-      expect(html).toContain("text-[10px]");
+      expect(html).toContain("font-bold text-xs sm:text-sm");
     });
 
     it("renders ShareGroupModal with group name, link, and QR code instructions when open", () => {

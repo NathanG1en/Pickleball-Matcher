@@ -163,7 +163,7 @@ export function GroupSettingsModal({
                   aria-controls={`settings-tabpanel-${tab.id}`}
                   onClick={() => setActiveTab(tab.id)}
                   data-testid={`settings-tab-${tab.id}`}
-                  className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                     isActive
                       ? isDanger
                         ? "bg-[#E32929] text-white border-2 border-black shadow-[2px_2px_0px_0px_#000]"

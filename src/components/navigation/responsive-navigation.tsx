@@ -155,7 +155,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
               <Link
                 href="/"
                 aria-current={isHomeActive ? "page" : undefined}
-                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isHomeActive
                     ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
@@ -166,7 +166,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
               <Link
                 href="/players/groups"
                 aria-current={isGroupsActive ? "page" : undefined}
-                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isGroupsActive
                     ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
@@ -177,7 +177,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
               <Link
                 href="/players/find"
                 aria-current={isPlayersActive ? "page" : undefined}
-                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isPlayersActive
                     ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
@@ -188,7 +188,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
               <Link
                 href="/training"
                 aria-current={isTrainingActive ? "page" : undefined}
-                className={`px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isTrainingActive
                     ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
@@ -213,10 +213,10 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                       : "bg-white hover:bg-neutral-50 text-black border-black shadow-[2px_2px_0px_0px_#000]"
                   }`}
                 >
-                  <span className="w-6 h-6 rounded-full bg-[#fde047] border border-black flex items-center justify-center font-display font-black text-xs uppercase text-black">
+                  <span className="w-6 h-6 rounded-full bg-[#fde047] border border-black flex items-center justify-center font-bold text-xs text-black">
                     {playerAccount.username ? playerAccount.username.charAt(0).toUpperCase() : <UserIcon className="w-3.5 h-3.5" />}
                   </span>
-                  <span className="font-display text-sm font-black uppercase tracking-wider max-w-[120px] truncate">
+                  <span className="text-sm font-bold max-w-[120px] truncate">
                     @{playerAccount.username}
                   </span>
                 </Link>
@@ -242,7 +242,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                         href="/players"
                         role="menuitem"
                         onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm font-bold text-black hover:bg-neutral-100 transition-colors"
                       >
                         <UserIcon className="w-4 h-4" />
                         <span>My Profile</span>
@@ -251,7 +251,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                         href="/setup"
                         role="menuitem"
                         onClick={() => setAccountMenuOpen(false)}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-black hover:bg-neutral-100 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm font-bold text-black hover:bg-neutral-100 transition-colors"
                       >
                         <UsersIcon className="w-4 h-4" />
                         <span>Create A Group</span>
@@ -262,7 +262,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                         role="menuitem"
                         disabled={isLoggingOut}
                         onClick={handleLogout}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-black uppercase text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                       >
                         <LogOutIcon className="w-4 h-4 stroke-2" />
                         <span>{isLoggingOut ? "Signing out…" : "Log Out"}</span>
@@ -274,7 +274,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
             ) : (
               <Link
                 href="/player-login"
-                className="inline-flex items-center justify-center px-4 py-1.5 rounded-xl font-display text-sm font-black uppercase tracking-wider bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-4 py-1.5 rounded-xl text-sm font-bold bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
               >
                 Sign In
               </Link>
@@ -311,7 +311,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                   }`}
                 >
                   <Icon className="w-5 h-5 stroke-[2.2]" />
-                  <span className="font-display text-[10px] font-black uppercase tracking-wider mt-0.5 leading-none">
+                  <span className="text-xs font-bold mt-0.5 leading-none">
                     {item.label}
                   </span>
                 </Link>

@@ -478,7 +478,7 @@ export function UserSettingsModal({
               aria-controls="tabpanel-account"
               data-testid="tab-account"
               onClick={() => setActiveTab("account")}
-              className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 activeTab === "account"
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                   : "text-neutral-700 hover:text-black hover:bg-neutral-200 border-2 border-transparent"
@@ -495,7 +495,7 @@ export function UserSettingsModal({
               aria-controls="tabpanel-privacy"
               data-testid="tab-privacy"
               onClick={() => setActiveTab("privacy")}
-              className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 activeTab === "privacy"
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                   : "text-neutral-700 hover:text-black hover:bg-neutral-200 border-2 border-transparent"
@@ -539,7 +539,7 @@ export function UserSettingsModal({
                   (isEmailVerified ? (
                     <span
                       data-testid="email-verified-badge"
-                      className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-xs font-bold leading-none text-black"
                     >
                       <CheckIcon className="h-3 w-3" aria-hidden="true" />
                       Verified
@@ -547,7 +547,7 @@ export function UserSettingsModal({
                   ) : (
                     <span
                       data-testid="email-unverified-badge"
-                      className="inline-flex items-center rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[11px] font-black uppercase leading-none text-black"
+                      className="inline-flex items-center rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-xs font-bold leading-none text-black"
                     >
                       Not verified
                     </span>
@@ -604,7 +604,7 @@ export function UserSettingsModal({
               <div className="space-y-1">
                 <label
                   htmlFor="settings-email-input"
-                  className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                  className="block text-xs font-bold text-neutral-700"
                 >
                   {currentEmail ? "New email" : "Email"}
                 </label>
@@ -658,7 +658,7 @@ export function UserSettingsModal({
                     setEmailTouched(false);
                     setEmailError(null);
                   }}
-                  className="inline-flex min-h-11 items-center text-xs font-black uppercase text-neutral-700 underline decoration-2 underline-offset-4 hover:text-black"
+                  className="inline-flex min-h-11 items-center text-sm font-bold text-neutral-700 underline decoration-2 underline-offset-4 hover:text-black"
                 >
                   Cancel
                 </button>
@@ -666,7 +666,7 @@ export function UserSettingsModal({
                   type="submit"
                   disabled={emailSaving || !hasEmailChanges}
                   data-testid="save-email-button"
-                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
+                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
                   {emailSaving ? "Sending…" : "Send code"}
                 </button>
@@ -689,7 +689,7 @@ export function UserSettingsModal({
               <div className="space-y-1">
                 <label
                   htmlFor="settings-current-password"
-                  className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                  className="block text-xs font-bold text-neutral-700"
                 >
                   Current Password
                 </label>
@@ -743,7 +743,7 @@ export function UserSettingsModal({
               <div className="space-y-1">
                 <label
                   htmlFor="settings-new-password"
-                  className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                  className="block text-xs font-bold text-neutral-700"
                 >
                   New Password
                 </label>
@@ -795,7 +795,7 @@ export function UserSettingsModal({
               <div className="space-y-1">
                 <label
                   htmlFor="settings-confirm-password"
-                  className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                  className="block text-xs font-bold text-neutral-700"
                 >
                   Confirm New Password
                 </label>
@@ -859,7 +859,7 @@ export function UserSettingsModal({
                   type="submit"
                   disabled={passwordSaving || !hasPasswordChanges}
                   data-testid="save-password-button"
-                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
+                  className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
                 >
                   {passwordSaving ? "Saving…" : accountHasPassword ? "Update Password" : "Set Password"}
                 </button>
@@ -911,7 +911,7 @@ export function UserSettingsModal({
                     className="flex w-full items-center justify-between gap-3 p-3 text-left transition hover:bg-neutral-50 cursor-pointer"
                   >
                     <div className="min-w-0 flex-1">
-                      <span className="block text-xs font-black uppercase text-black">
+                      <span className="block text-xs font-bold text-black">
                         {portion.label}
                       </span>
                     </div>
@@ -1015,7 +1015,7 @@ export function UserSettingsModal({
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
                                   <Icon className="h-3.5 w-3.5 shrink-0 text-black" />
-                                  <span className="text-xs font-black uppercase text-black">
+                                  <span className="text-xs font-bold text-black">
                                     {opt.label}
                                   </span>
                                 </div>
@@ -1063,7 +1063,7 @@ export function UserSettingsModal({
               onClick={handleSavePrivacy}
               disabled={privacySaving || !hasPrivacyChanges}
               data-testid="save-privacy-settings-button"
-              className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
+              className="rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
             >
               {privacySaving ? "Saving…" : "Save Privacy Settings"}
             </button>

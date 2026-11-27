@@ -228,7 +228,7 @@ export default async function GroupDashboardPage({
             <Link
               href={`/g/${groupId}/sessions/${latestCompletedSession.id}`}
               data-testid="session-summary-link"
-              className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-3 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
+              className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5"
             >
               See the session summary →
             </Link>
@@ -263,7 +263,7 @@ export default async function GroupDashboardPage({
               {activeSession.type === "open_play" ? (
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-black">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-black">
                       <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
                       Open Play
                     </span>
@@ -287,7 +287,7 @@ export default async function GroupDashboardPage({
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-black">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-black">
                       <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
                       Round {activeSession.currentRoundNumber}
                     </span>
@@ -337,7 +337,7 @@ export default async function GroupDashboardPage({
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
-                                  <span className="text-[10px] font-black uppercase text-neutral-400 shrink-0">vs</span>
+                                  <span className="text-xs font-bold text-neutral-400 shrink-0">vs</span>
                                   <span>{t2.join(" & ")}</span>
                                 </span>
                               </div>
@@ -383,7 +383,7 @@ export default async function GroupDashboardPage({
                               <span className="font-black text-black flex items-center gap-2">
                                 Court {m.courtNumber}
                                 {isViewerMatch && (
-                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[11px] font-black uppercase text-black">You&apos;re here</span>
+                                  <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-xs font-bold text-black">You&apos;re here</span>
                                 )}
                               </span>
                               <span className="font-bold text-neutral-800">{t1.join(" & ")} vs {t2.join(" & ")}</span>
@@ -414,7 +414,7 @@ export default async function GroupDashboardPage({
                   </div>
                   <Link
                     href={`/g/${groupId}/sessions/${activeSession.id}`}
-                    className="col-span-3 flex items-center justify-center text-center py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base sm:text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                    className="col-span-3 flex items-center justify-center text-center py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base sm:text-lg font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
                   >
                     <span>
                       {activeSession.type === "open_play"
@@ -427,7 +427,7 @@ export default async function GroupDashboardPage({
                 <div className="relative z-20">
                   <Link
                     href={`/g/${groupId}/sessions/${activeSession.id}`}
-                    className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
+                    className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5"
                   >
                     <span>
                       {activeSession.type === "open_play"
@@ -448,7 +448,7 @@ export default async function GroupDashboardPage({
                 <Link
                   href={`/g/${groupId}/sessions/new`}
                   data-testid="start-new-session-button"
-                  className="inline-block text-center w-full py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+                  className="inline-block text-center w-full py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
                 >
                   Start New Session
                 </Link>
@@ -498,7 +498,7 @@ export default async function GroupDashboardPage({
               {isOrganizer && (
                 <Link
                   href={`/g/${groupId}/tournaments/new`}
-                  className="px-3 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                  className="px-3 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
                 >
                   + Create Tournament
                 </Link>

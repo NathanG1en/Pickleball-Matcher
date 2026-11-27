@@ -43,7 +43,7 @@ export default async function PlayerLoginPage({
           <Link
             href={joinHref}
             data-testid="login-join-group-link"
-            className="mt-5 flex min-h-11 items-center justify-center rounded-xl border-2 border-dashed border-black px-3 text-xs font-black uppercase text-black hover:bg-[#ccff00]"
+            className="mt-5 flex min-h-11 items-center justify-center rounded-xl border-2 border-dashed border-black px-3 text-sm font-bold text-black hover:bg-[#ccff00]"
           >
             Not in this group yet? Join as a guest →
           </Link>

@@ -294,7 +294,7 @@ export function SessionOptionsMenu({
           <div>
             <label
               htmlFor="rename-session-name-input"
-              className="block text-xs font-black uppercase tracking-wider text-black mb-1.5"
+              className="block text-xs font-bold text-black mb-1.5"
             >
               Session Name
             </label>
@@ -323,7 +323,7 @@ export function SessionOptionsMenu({
               type="button"
               onClick={handleCloseRename}
               disabled={isPending}
-              className="px-4 py-2 rounded-xl border-2 border-black bg-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-xl border-2 border-black bg-white text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
@@ -331,7 +331,7 @@ export function SessionOptionsMenu({
               type="submit"
               disabled={isPending || !renameInput.trim()}
               data-testid="confirm-rename-session-button"
-              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
             >
               {isPending ? "Saving..." : "Save"}
             </button>

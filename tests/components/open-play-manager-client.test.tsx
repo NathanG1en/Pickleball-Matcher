@@ -148,7 +148,7 @@ describe("OpenPlayManagerClient Component", () => {
 
     // End session button matches normal session styling
     expect(html).toContain("bg-[#ff6b6b]");
-    expect(html).toContain("border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black");
+    expect(html).toContain("border-2 border-black font-bold text-xs sm:text-sm text-black");
     expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
 
     // "In Progress" badge is removed

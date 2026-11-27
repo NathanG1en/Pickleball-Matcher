@@ -41,7 +41,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
             disabled={pending}
             aria-pressed={isPublic}
             data-testid="group-visibility-public-button"
-            className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            className={`rounded px-2 py-0.5 text-xs font-bold transition-all cursor-pointer ${
               isPublic
                 ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
@@ -55,7 +55,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
             disabled={pending}
             aria-pressed={!isPublic}
             data-testid="group-visibility-private-button"
-            className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+            className={`rounded px-2 py-0.5 text-xs font-bold transition-all cursor-pointer ${
               !isPublic
                 ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
@@ -100,11 +100,11 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
               >
                 <div className="space-y-1.5 text-xs">
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Public:</span>{" "}
+                    <span className="font-bold text-black">Public:</span>{" "}
                     <span className="text-neutral-700">Players can find and join this group.</span>
                   </p>
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Private:</span>{" "}
+                    <span className="font-bold text-black">Private:</span>{" "}
                     <span className="text-neutral-700">This group is private and hidden from search.</span>
                   </p>
                 </div>

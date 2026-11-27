@@ -111,8 +111,8 @@ function SkillHexagon({ skills }: { readonly skills: readonly PracticeSkillScore
             className="practice-profile-label"
             style={{ "--practice-i": i } as React.CSSProperties}
           >
-            <text x={p.x} y={nameY} textAnchor={anchor} fontSize="12" fontWeight="800" className="fill-black uppercase" style={{ letterSpacing: "0.04em" }}>
-              {s.label.toUpperCase()}
+            <text x={p.x} y={nameY} textAnchor={anchor} fontSize="13" fontWeight="700" className="fill-black">
+              {s.label}
             </text>
             <text x={p.x} y={nameY + 15} textAnchor={anchor} fontSize="12" fontWeight="700" className={s.score === null ? "fill-neutral-400" : "fill-neutral-600"}>
               {s.score === null ? "Not tested" : `${toPercentOfTarget(s.score)}%`}
@@ -175,13 +175,13 @@ function FocusSuggestion({ profile }: { readonly profile: PracticeProfile }) {
       }`}
     >
       <div className="min-w-0">
-        <p className="font-display text-base font-black uppercase leading-tight text-black">{title}</p>
+        <p className="text-base font-bold leading-tight text-black">{title}</p>
         <p className="text-xs font-bold text-neutral-800">{detail}</p>
       </div>
       <div className="flex items-center gap-2">
         <Link
           href={href}
-          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 font-display text-xs font-black uppercase tracking-wider text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5"
         >
           {cta}
           <ArrowRightIcon className="h-3.5 w-3.5" />

@@ -471,7 +471,7 @@ export function ScoreHistoryChart({
               aria-pressed={isActive}
               aria-label={item.label}
               data-testid={`rating-range-${item.id}`}
-              className={`rounded-lg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isActive
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                   : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
@@ -659,7 +659,7 @@ export function ScoreHistoryChart({
               >
                 <div data-testid="tooltip-rating" className="font-display text-base font-black text-black leading-tight">
                   {formatDupr(activeRecord.rating)}{" "}
-                  <span className="text-xs font-bold uppercase text-neutral-500">Rating</span>
+                  <span className="text-xs font-bold text-neutral-500">Rating</span>
                 </div>
                 <div data-testid="tooltip-date" className="text-xs font-bold text-neutral-600 leading-tight mt-0.5">
                   {formatDate(activeRecord.startedAt, isHydrated)}

@@ -154,9 +154,9 @@ function ViewerRoundCard({ state }: { state: NonNullable<ViewerRoundState> }) {
         You&apos;re on Court {match.courtNumber}
       </h2>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="font-black uppercase text-black/70">With</dt>
+        <dt className="font-bold text-black/70">With</dt>
         <dd className="font-black text-black">{partners.length > 0 ? partners.join(" & ") : "Singles"}</dd>
-        <dt className="font-black uppercase text-black/70">Vs</dt>
+        <dt className="font-bold text-black/70">Vs</dt>
         <dd className="font-black text-black">{opponents.join(" & ")}</dd>
       </dl>
       {match.status === "cancelled" ? (
@@ -291,7 +291,7 @@ export function ResultsEntryView({
             Round {roundNumber}
           </h1>
           {!canManage && (
-            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[1px_1px_0px_0px_#000] shrink-0">
+            <span className="inline-block px-2 py-0.5 rounded-full text-xs sm:text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[1px_1px_0px_0px_#000] shrink-0">
               Live Games
             </span>
           )}
@@ -303,7 +303,7 @@ export function ResultsEntryView({
                 type="button"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <span>+ Add Game</span>
               </button>
@@ -314,7 +314,7 @@ export function ResultsEntryView({
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <ShuffleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 <span>Reshuffle</span>
@@ -331,7 +331,7 @@ export function ResultsEntryView({
       {((sittingNames && sittingNames.length > 0) || (playCountRows && playCountRows.length > 0)) && (
         <div data-testid="sitting-out-panel" className="space-y-3 p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-black uppercase text-neutral-500">Sitting Out:</span>
+            <span className="text-xs font-bold text-neutral-500">Sitting Out:</span>
             <span className="text-xs font-black text-black">
               {sittingNames && sittingNames.length > 0 ? sittingNames.join(", ") : "None"}
             </span>
@@ -350,7 +350,7 @@ export function ResultsEntryView({
       {upcomingProposal && (
         <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <details data-testid="upcoming-lineup-preview" className="group cursor-pointer">
-            <summary className="flex items-center justify-between font-black uppercase text-xs text-neutral-800 select-none">
+            <summary className="flex items-center justify-between font-bold text-sm text-neutral-800 select-none">
               <span className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block animate-pulse" />
                 <span>Up Next: Round {roundNumber + 1} Lineup Preview</span>
@@ -371,7 +371,7 @@ export function ResultsEntryView({
               </div>
               {upcomingProposal.sitting.length > 0 && (
                 <p className="text-xs font-bold text-neutral-600">
-                  <span className="font-black uppercase text-neutral-500">Sitting Next: </span>
+                  <span className="font-bold text-neutral-500">Sitting Next: </span>
                   {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
                 </p>
               )}
@@ -433,12 +433,12 @@ export function ResultsEntryView({
                     Court {match.courtNumber}
                   </span>
                   {isPickup && (
-                    <span className="text-xs font-black uppercase text-black bg-[#ccff00] border border-black px-2 py-0.5 rounded-md shadow-[1px_1px_0px_0px_#000]">
+                    <span className="text-xs font-bold text-black bg-[#ccff00] border border-black px-2 py-0.5 rounded-md shadow-[1px_1px_0px_0px_#000]">
                       Pickup Game
                     </span>
                   )}
                   {isSingles && (
-                    <span className="text-xs font-black uppercase text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-bold text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded-md">
                       Singles (Optional)
                     </span>
                   )}
@@ -459,7 +459,7 @@ export function ResultsEntryView({
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team1Names.join(" & ")}</span>
                     {isViewerTeam1 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -497,7 +497,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-1-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT1Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -518,7 +518,7 @@ export function ResultsEntryView({
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team2Names.join(" & ")}</span>
                     {isViewerTeam2 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-black uppercase shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -556,7 +556,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-2-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT2Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -603,7 +603,7 @@ export function ResultsEntryView({
                       type="button"
                       onClick={() => onCancelMatch(match.id)}
                       disabled={isMatchSaving}
-                      className="-ml-3 inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-black uppercase text-[#b91c1c] hover:bg-[#fee2e2] hover:text-[#7f1d1d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent"
+                      className="-ml-3 inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-[#b91c1c] hover:bg-[#fee2e2] hover:text-[#7f1d1d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       Cancel match
                     </button>
@@ -622,7 +622,7 @@ export function ResultsEntryView({
                           Number(matchScores.team1) === match.team1Score &&
                           Number(matchScores.team2) === match.team2Score)
                       }
-                      className="ml-auto min-h-11 font-display text-base uppercase tracking-wider"
+                      className="ml-auto min-h-11 text-base"
                     >
                       {isMatchSaving ? "Saving..." : (isCompleted ? "Update Score" : "Save Result")}
                     </Button>
@@ -657,8 +657,8 @@ export function ResultsEntryView({
           )}
           <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
             <div className="text-left shrink-0">
-              <p className="text-[10px] sm:text-xs uppercase font-black tracking-wider text-neutral-500 leading-none mb-0.5">Round Progress</p>
-              <p className="font-display text-sm sm:text-base font-black uppercase text-black tracking-tight leading-tight">
+              <p className="text-xs sm:text-xs font-bold text-neutral-500 leading-none mb-0.5">Round Progress</p>
+              <p className="text-sm sm:text-base font-bold text-black tracking-tight leading-tight">
                 {matches.filter((m) => m.status !== "pending").length} of {matches.length} done
               </p>
             </div>
@@ -671,7 +671,7 @@ export function ResultsEntryView({
                   disabled={isSaveDisabled}
                   onClick={onSaveAllScores}
                   data-testid="save-all-scores-button"
-                  className="min-h-11 font-display text-xs sm:text-sm tracking-wide uppercase px-2 py-1.5 shrink-0"
+                  className="min-h-11 text-sm sm:text-sm px-2 py-1.5 shrink-0"
                 >
                   {isSaving ? "Saving..." : "Save All"}
                 </Button>
@@ -693,7 +693,7 @@ export function ResultsEntryView({
                       ? `Save all scores and review Round ${roundNumber + 1} matchups`
                       : `Save all scores and start Round ${roundNumber + 1}`
                   }
-                  className="min-h-11 font-display text-xs sm:text-sm tracking-wide uppercase px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
+                  className="min-h-11 text-sm sm:text-sm px-2.5 py-1.5 shrink-0 shadow-[2px_2px_0px_0px_#000] active:shadow-[1px_1px_0px_0px_#000] bg-[#ccff00] text-black"
                 >
                   {isGeneratingRound ? (
                     <RoundGenerationIndicator />

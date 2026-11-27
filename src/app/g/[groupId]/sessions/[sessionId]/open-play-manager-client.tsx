@@ -116,7 +116,7 @@ export function DuplicateWarningModal({
             type="button"
             onClick={onCancel}
             data-testid="duplicate-modal-cancel-button"
-            className="rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+            className="rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-center text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
           >
             It&apos;s a Duplicate
           </button>
@@ -124,7 +124,7 @@ export function DuplicateWarningModal({
             type="button"
             onClick={onConfirm}
             data-testid="duplicate-modal-confirm-button"
-            className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+            className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-center text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
           >
             It&apos;s a New Game
           </button>
@@ -1416,7 +1416,7 @@ export function OpenPlayManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isSessionActive ? (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -1427,7 +1427,7 @@ export function OpenPlayManagerClient({
                 disabled={isEnding}
                 aria-label="End Session"
                 data-testid="end-session-button"
-                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
                 {isEnding ? "Ending..." : (
                   <>
@@ -1443,7 +1443,7 @@ export function OpenPlayManagerClient({
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-[10px] sm:text-xs font-black uppercase flex items-center"
+              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -1495,11 +1495,11 @@ export function OpenPlayManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-500 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
               </div>
             </div>
@@ -1510,20 +1510,20 @@ export function OpenPlayManagerClient({
                 data-testid="personal-session-summary"
                 className="p-4 rounded-2xl border-2 border-black bg-[#ccff00]/25 shadow-[2px_2px_0px_0px_#000] space-y-2"
               >
-                <span className="text-xs font-black uppercase tracking-wider text-neutral-800 block">
+                <span className="text-xs font-bold text-neutral-800 block">
                   Your Session
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -1618,7 +1618,7 @@ export function OpenPlayManagerClient({
             onClick={handleJoin}
             disabled={isJoining}
             data-testid="join-open-play-button"
-            className="py-3 px-6 rounded-2xl bg-black hover:bg-neutral-800 text-white font-display text-xs sm:text-sm font-black uppercase tracking-wider border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer shrink-0 transition-transform"
+            className="py-3 px-6 rounded-2xl bg-black hover:bg-neutral-800 text-white text-sm sm:text-sm font-bold border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer shrink-0 transition-transform"
           >
             {isJoining ? "Joining..." : "Join Open Play"}
           </button>
@@ -1657,7 +1657,7 @@ export function OpenPlayManagerClient({
                 aria-controls="tabpanel-add-member"
                 data-testid="tab-add-member"
                 onClick={() => setAddPlayerTab("member")}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                   addPlayerTab === "member"
                     ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                     : "text-neutral-800 hover:bg-black/10"
@@ -1674,7 +1674,7 @@ export function OpenPlayManagerClient({
                 aria-controls="tabpanel-add-guest"
                 data-testid="tab-add-guest"
                 onClick={() => setAddPlayerTab("guest")}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                   addPlayerTab === "guest"
                     ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                     : "text-neutral-800 hover:bg-black/10"
@@ -1694,7 +1694,7 @@ export function OpenPlayManagerClient({
               aria-labelledby="tab-add-member"
               className="pt-2 border-t-2 border-neutral-200 space-y-2"
             >
-              <label className="block text-xs font-black uppercase tracking-wider text-black">
+              <label className="block text-xs font-bold text-black">
                 Add Existing Group Member
               </label>
               {availableRosterPlayers.length > 0 ? (
@@ -1774,7 +1774,7 @@ export function OpenPlayManagerClient({
                   <button
                     type="submit"
                     disabled={!guestName.trim() || isAddingGuest}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                   >
                     {isAddingGuest ? "Adding..." : "Add"}
                   </button>
@@ -1857,7 +1857,7 @@ export function OpenPlayManagerClient({
                         {formatDupr(p.rating)}
                       </span>
                       {isViewer && (
-                        <span className="text-[9px] uppercase font-black bg-black text-white px-1.5 py-0.5 rounded-full">
+                        <span className="text-xs font-bold bg-black text-white px-1.5 py-0.5 rounded-full">
                           You
                         </span>
                       )}
@@ -1903,7 +1903,7 @@ export function OpenPlayManagerClient({
                 <button
                   type="button"
                   onClick={() => setMatchType("doubles")}
-                  className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase whitespace-nowrap ${
+                  className={`py-1 px-1.5 sm:px-3 text-xs sm:text-sm font-bold whitespace-nowrap ${
                     matchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                   }`}
                 >
@@ -1916,7 +1916,7 @@ export function OpenPlayManagerClient({
                     setT1p2("");
                     setT2p2("");
                   }}
-                  className={`py-1 px-1.5 sm:px-3 text-[10px] sm:text-xs font-black uppercase border-l-2 border-black whitespace-nowrap ${
+                  className={`py-1 px-1.5 sm:px-3 text-xs sm:text-sm font-bold border-l-2 border-black whitespace-nowrap ${
                     matchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                   }`}
                 >
@@ -1937,7 +1937,7 @@ export function OpenPlayManagerClient({
                   onClick={handleJoin}
                   disabled={isJoining}
                   data-testid="join-open-play-submit-button"
-                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
                 >
                   {isJoining ? "Joining..." : "Join Open Play to Record Games"}
                 </button>
@@ -2002,7 +2002,7 @@ export function OpenPlayManagerClient({
                       onClick={() => handleSelectWinner(1)}
                       data-testid="team-1-winner-button"
                       aria-label={matchType === "singles" ? "Select Player 1 as Winner" : "Select Team 1 as Winner"}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT1Winner
                           ? "bg-black text-[#ccff00]"
                           : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -2034,7 +2034,7 @@ export function OpenPlayManagerClient({
                     )}
 
                     <div className="pt-2">
-                      <label className="block text-[11px] font-black uppercase text-black mb-1">
+                      <label className="block text-xs font-bold text-black mb-1">
                         {matchType === "singles" ? "Player 1 Points" : "Team 1 Points"}
                       </label>
                       <input
@@ -2063,7 +2063,7 @@ export function OpenPlayManagerClient({
                       onClick={() => handleSelectWinner(2)}
                       data-testid="team-2-winner-button"
                       aria-label={matchType === "singles" ? "Select Player 2 as Winner" : "Select Team 2 as Winner"}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 ${
                         isT2Winner
                           ? "bg-black text-[#ccff00]"
                           : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -2095,7 +2095,7 @@ export function OpenPlayManagerClient({
                     )}
 
                     <div className="pt-2">
-                      <label className="block text-[11px] font-black uppercase text-black mb-1">
+                      <label className="block text-xs font-bold text-black mb-1">
                         {matchType === "singles" ? "Player 2 Points" : "Team 2 Points"}
                       </label>
                       <input
@@ -2118,7 +2118,7 @@ export function OpenPlayManagerClient({
                 type="submit"
                 disabled={isSubmittingGame}
                 data-testid="submit-game-button"
-                className="w-full py-3.5 px-6 rounded-xl bg-black hover:bg-neutral-900 text-white font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer transition-all"
+                className="w-full py-3.5 px-6 rounded-xl bg-black hover:bg-neutral-900 text-white text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer transition-all"
               >
                 {isSubmittingGame ? "Recording Game..." : isSessionActive ? "Record Game Result" : "Add Game Result"}
               </button>
@@ -2160,7 +2160,7 @@ export function OpenPlayManagerClient({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black uppercase text-black">
+                        <span className="text-xs font-bold text-black">
                           Edit Game {idx + 1}
                         </span>
                         {m.completedAt && (
@@ -2174,7 +2174,7 @@ export function OpenPlayManagerClient({
                         <button
                           type="button"
                           onClick={() => setEditMatchType("doubles")}
-                          className={`py-0.5 px-2 text-[10px] sm:text-[11px] font-black uppercase whitespace-nowrap ${
+                          className={`py-0.5 px-2 text-xs sm:text-xs font-bold whitespace-nowrap ${
                             editMatchType === "doubles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                           }`}
                         >
@@ -2187,7 +2187,7 @@ export function OpenPlayManagerClient({
                             setEditT1p2("");
                             setEditT2p2("");
                           }}
-                          className={`py-0.5 px-2 text-[10px] sm:text-[11px] font-black uppercase border-l-2 border-black whitespace-nowrap ${
+                          className={`py-0.5 px-2 text-xs sm:text-xs font-bold border-l-2 border-black whitespace-nowrap ${
                             editMatchType === "singles" ? "bg-[#ccff00] text-black" : "bg-white text-neutral-600"
                           }`}
                         >
@@ -2199,7 +2199,7 @@ export function OpenPlayManagerClient({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Team 1 / Player 1 */}
                       <div className="p-3 bg-[#ccff00]/20 border-2 border-black rounded-xl space-y-2">
-                        <span className="text-[11px] font-black uppercase text-black block">
+                        <span className="text-xs font-bold text-black block">
                           {editMatchType === "singles" ? "Player 1" : "Team 1"}
                         </span>
                         <FilterablePlayerSelect
@@ -2223,7 +2223,7 @@ export function OpenPlayManagerClient({
                           />
                         )}
                         <div>
-                          <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
+                          <label className="block text-xs font-bold text-black mb-0.5">Score</label>
                           <input
                             type="number"
                             inputMode="numeric"
@@ -2239,7 +2239,7 @@ export function OpenPlayManagerClient({
 
                       {/* Team 2 / Player 2 */}
                       <div className="p-3 bg-[#fde047]/20 border-2 border-black rounded-xl space-y-2">
-                        <span className="text-[11px] font-black uppercase text-black block">
+                        <span className="text-xs font-bold text-black block">
                           {editMatchType === "singles" ? "Player 2" : "Team 2"}
                         </span>
                         <FilterablePlayerSelect
@@ -2263,7 +2263,7 @@ export function OpenPlayManagerClient({
                           />
                         )}
                         <div>
-                          <label className="block text-[10px] font-black uppercase text-black mb-0.5">Score</label>
+                          <label className="block text-xs font-bold text-black mb-0.5">Score</label>
                           <input
                             type="number"
                             inputMode="numeric"
@@ -2284,7 +2284,7 @@ export function OpenPlayManagerClient({
                         onClick={handleCancelEdit}
                         disabled={isSavingEdit}
                         data-testid={`cancel-edit-game-button-${m.id}`}
-                        className="py-1 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-xs font-black uppercase tracking-wider cursor-pointer"
+                        className="py-1 px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-sm font-bold cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -2292,7 +2292,7 @@ export function OpenPlayManagerClient({
                         type="submit"
                         disabled={isSavingEdit}
                         data-testid={`save-edit-game-button-${m.id}`}
-                        className="py-1 px-4 rounded-xl border-2 border-black bg-black text-white hover:bg-neutral-900 text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
+                        className="py-1 px-4 rounded-xl border-2 border-black bg-black text-white hover:bg-neutral-900 text-sm font-bold shadow-[2px_2px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
                       >
                         {isSavingEdit ? "Saving..." : "Save Changes"}
                       </button>
@@ -2334,7 +2334,7 @@ export function OpenPlayManagerClient({
                             dismissDuplicateWarning(session.id, m.id, dupInfo.otherMatchId)
                           }
                           data-testid={`dismiss-duplicate-button-${m.id}`}
-                          className="px-2.5 py-1 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-xs font-bold shadow-[1px_1px_0px_0px_#000] cursor-pointer"
                         >
                           Dismiss
                         </button>
@@ -2345,7 +2345,7 @@ export function OpenPlayManagerClient({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block">
+                        <span className="text-xs font-bold text-neutral-500 block">
                           Game {idx + 1}
                         </span>
                         {isCompleted && m.completedAt && (

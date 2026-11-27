@@ -151,7 +151,7 @@ export function PermissionsTab({
                 <div className="space-y-1 min-w-0 flex-1">
                   <label
                     htmlFor={inputId}
-                    className="text-xs sm:text-sm font-black uppercase text-black block cursor-pointer select-none"
+                    className="text-xs sm:text-sm font-bold text-black block cursor-pointer select-none"
                   >
                     {def.label}
                   </label>
@@ -184,7 +184,7 @@ export function PermissionsTab({
                   ) : (
                     <span
                       data-testid={`permission-status-${def.key}`}
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black text-[10px] font-black uppercase tracking-wider ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black text-xs font-bold ${
                         isEnabled
                           ? "bg-[#ccff00] text-black"
                           : "bg-neutral-200 text-neutral-600"
@@ -207,7 +207,7 @@ export function PermissionsTab({
             type="submit"
             disabled={!hasChanges || saving}
             data-testid="save-permissions-button"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-sm font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? "Saving Permissions…" : "Save Permissions"}
           </button>

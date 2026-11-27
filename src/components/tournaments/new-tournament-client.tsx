@@ -42,11 +42,11 @@ export function NewTournamentClient({
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${groupId}`}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
           >
             ← Back to Group
           </Link>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 1 of 2
           </span>
         </div>
@@ -64,10 +64,10 @@ export function NewTournamentClient({
           {/* Card 1: Division Brackets */}
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all">
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Single Elimination
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+              <span className="text-xs font-bold text-neutral-600">
                 Divisions
               </span>
             </div>
@@ -97,7 +97,7 @@ export function NewTournamentClient({
               type="button"
               data-testid="select-bracket-tournament-button"
               onClick={() => handleSelectFormat("bracket")}
-              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Division Brackets →
             </button>
@@ -106,10 +106,10 @@ export function NewTournamentClient({
           {/* Card 2: Team Tournament */}
           <div className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all">
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Team Clash &amp; MLP
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+              <span className="text-xs font-bold text-neutral-600">
                 Teams &amp; Partners
               </span>
             </div>
@@ -139,7 +139,7 @@ export function NewTournamentClient({
               type="button"
               data-testid="select-team-tournament-button"
               onClick={() => handleSelectFormat("team_dual")}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base font-bold shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Team Tournament →
             </button>
@@ -155,11 +155,11 @@ export function NewTournamentClient({
         <button
           type="button"
           onClick={() => handleSelectFormat(null)}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         >
           ← Change Format
         </button>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
           Step 2 of 2
         </span>
       </div>

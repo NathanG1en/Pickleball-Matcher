@@ -249,14 +249,14 @@ export function OrganizersTab({
                   {org.isHost ? (
                     <span
                       data-testid="organizer-host-badge"
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md border-2 border-black bg-[#fde047] text-[10px] font-black uppercase tracking-wider text-black shadow-[1px_1px_0px_0px_#000]"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md border-2 border-black bg-[#fde047] text-xs font-bold text-black shadow-[1px_1px_0px_0px_#000]"
                     >
                       <CrownIcon className="h-3 w-3 text-black" />
                       <span>Host</span>
                     </span>
                   ) : (
                     <>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black bg-[#bae6fd] text-[10px] font-black uppercase tracking-wider text-black">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black bg-[#bae6fd] text-xs font-bold text-black">
                         Organizer
                       </span>
                       {canManageOrganizers && (
@@ -283,7 +283,7 @@ export function OrganizersTab({
               return (
                 <div
                   key={accId}
-                  className="flex items-center justify-between gap-3 p-3 bg-lime-50/70 border-l-4 border-l-[#ccff00]"
+                  className="flex items-center justify-between gap-3 p-3 bg-lime-50/70"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -294,7 +294,7 @@ export function OrganizersTab({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black bg-[#ccff00] text-[10px] font-black uppercase tracking-wider text-black">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md border-2 border-black bg-[#ccff00] text-xs font-bold text-black">
                       Staged Add
                     </span>
                     <button
@@ -326,7 +326,7 @@ export function OrganizersTab({
                     <button
                       type="button"
                       onClick={() => handleCancelStagedRemove(accId)}
-                      className="text-[11px] font-black uppercase underline hover:text-black cursor-pointer"
+                      className="text-xs font-bold underline hover:text-black cursor-pointer"
                     >
                       Undo
                     </button>
@@ -419,7 +419,7 @@ export function OrganizersTab({
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] font-black uppercase text-neutral-500">
+                    <span className="text-xs font-bold text-neutral-500">
                       {isChecked ? "Selected" : "Select"}
                     </span>
                   </label>
@@ -436,7 +436,7 @@ export function OrganizersTab({
           type="submit"
           disabled={!hasChanges || saving || !canManageOrganizers}
           data-testid="save-organizers-button"
-          className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-sm font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
         >
           {saving ? "Saving Changes…" : "Save Changes"}
         </button>
