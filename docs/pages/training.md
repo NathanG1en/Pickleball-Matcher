@@ -63,7 +63,7 @@ When navigating to a group's plan (via "Practice Weekly Drills →" on the group
 
 All visible drill labels across the drill browser, individual plan builder, and group plan builder are directly filterable:
 - **Interactive Category Badges:** Tapping the Category badge on any drill card or item filters the list directly to that category (and toggles back to All Drills if tapped again).
-- **Filter Pills:** Category pill controls allow quick filtering across **All Drills**, **Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, **Conditioning**, and **Strategy**. In plan builders, pills indicate how many focus drills are currently selected within each category.
+- **Filter Pills:** Category pill controls allow quick filtering across **All Drills** and each category that has drills (**Dinking**, **Third Shot**, **Serving**, **Volleys**, **Resets**, **Strategy**; **Conditioning** appears only once it has drills). In plan builders, pills indicate how many focus drills are currently selected within each category.
 - **Instant Filtering on `/training`:** On the Training Hub and group drills view, filter pills are toggle buttons (the active one is marked pressed) that filter the already-loaded drill cards in the browser without reloading the page. The active category is kept in the URL (`?category=[key]`, replaced in place rather than adding history entries), so a filtered view can be shared or reloaded. Hidden cards stay mounted, so an open result logger keeps its entries when switching filters. If no drills match (for example from a shared URL), an empty state offers a button to show all drills.
 - **Removed Unfilterable Labels:** Metadata that cannot be cleanly filtered (such as participant format and tracking format) is omitted from drill cards and selection lists to eliminate clutter and keep filtering fast and intuitive.
 
@@ -82,8 +82,9 @@ The drill library contains 30 standardized drills spanning 6 core skill categori
 Each drill is presented in an editorial neobrutalist card with:
 - **Filterable Category Badge:** Tapping filters the browser to that category.
 - **Done Badge:** Highlights drills with completed attempts in the current calendar week.
-- **Personal Best Banner:** A small pickleball medal marked **PB** (the same medal as the drill history podium; greyed out until the drill has a result), then the player's lifetime highest score or best time for that drill, or "No attempts yet". Once the drill has attempts, a **History** link opens the drill history page.
-- **Instructions & Setup:** Expandable guide outlining court setup, target cones, and drill rules.
+- **Compact layout:** each card is a short, scannable list item: category (and **✓ Done** / plan status) on top, the drill name, one personal-best line, then **About this drill** and **+ Record Attempt** side by side. The description, setup and target are folded away until opened, which keeps the 30-drill library about a third shorter on phones.
+- **Personal Best line:** A small pickleball medal marked **PB** (the same medal as the drill history podium; greyed out until the drill has a result), then the player's lifetime highest score or best time for that drill, or "No attempts yet". Once the drill has attempts, a 44px **History** link opens the drill history page.
+- **About this drill:** a 44px toggle (**About this drill** / **Hide details**) that reveals the drill description, **How to practice** (court setup, target cones, rules) and the **Target Benchmark**.
 - **Inline Multi-Attempt Logger (`+ Record Attempt`):**
   - Allows logging multiple attempts in one practice session directly on the card without page reloads.
   - **Last time:** Above the inputs, a muted line shows the player's most recent result for that drill (e.g. "Last time · 16/20 (80%) · Yesterday") with a **History** link to the drill's history page. Inputs are pre-filled from that result. Before the first attempt it reads "First attempt. This will be your starting point." After a save the line shows the new result ("Just now"); **Undo** restores the previous one.

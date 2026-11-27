@@ -171,9 +171,10 @@ export default async function TrainingHubPage({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const availableCategories = selectedGroupId && selectedGroupPlan
-    ? allCategories.filter((cat) => targetChallenges.some((c) => c.skillCategory === cat.key))
-    : allCategories;
+  // Only offer categories that have drills to show (e.g. no "Conditioning" pill while it has none).
+  const availableCategories = allCategories.filter((cat) =>
+    targetChallenges.some((c) => c.skillCategory === cat.key),
+  );
 
   const categories = [
     { key: "all" as const, label: selectedGroupId && selectedGroupPlan ? "All Plan Drills" : "All Drills" },
