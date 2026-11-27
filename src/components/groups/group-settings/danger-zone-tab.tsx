@@ -80,7 +80,7 @@ export function DangerZoneTab({
               setShowConfirmModal(true);
             }}
             data-testid="delete-group-menu-item"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-black bg-[#E32929] hover:bg-red-700 text-white font-display text-xs sm:text-sm font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-black bg-[#E32929] hover:bg-red-700 text-white text-sm sm:text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer"
           >
             <Trash2Icon className="h-4 w-4 stroke-2" />
             <span>Delete Group</span>

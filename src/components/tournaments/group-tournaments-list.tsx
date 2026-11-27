@@ -28,7 +28,7 @@ export function GroupTournamentsList({
         {isOrganizer && (
           <Link
             href={`/g/${groupId}/tournaments/new`}
-            className="inline-block px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            className="inline-block px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
           >
             Create First Tournament →
           </Link>
@@ -60,14 +60,14 @@ export function GroupTournamentsList({
 
           <div className="flex flex-wrap gap-1.5">
             {tourney.format === "team_dual" ? (
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-md border border-black bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]">
                 Team Tournament
               </span>
             ) : (
               tourney.divisions.map((div) => (
                 <span
                   key={div}
-                  className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000]"
+                  className="text-xs font-bold px-2 py-0.5 rounded-md border border-black bg-neutral-100 text-black shadow-[1px_1px_0px_0px_#000]"
                 >
                   {TOURNAMENT_DIVISION_LABELS[div] ?? div}
                 </span>
@@ -77,7 +77,7 @@ export function GroupTournamentsList({
 
           <Link
             href={`/g/${groupId}/tournaments/${tourney.id}`}
-            className="block text-center w-full py-2 px-3 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]"
+            className="block text-center w-full py-2 px-3 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]"
           >
             {isOrganizer ? "Manage Bracket →" : "View Bracket →"}
           </Link>

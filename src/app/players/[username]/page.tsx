@@ -93,7 +93,7 @@ export default async function PlayerPublicProfilePage({
               </p>
             </div>
             <div className="mt-3 flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-200 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
+              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-200 px-2.5 py-0.5 text-xs font-bold text-black">
                 <LockIcon className="h-2.5 w-2.5 shrink-0" />
                 <span>{isRestrictedByGroup ? "Restricted" : "Private"}</span>
               </span>
@@ -177,7 +177,7 @@ export default async function PlayerPublicProfilePage({
                 @{targetAccount.username}
               </p>
               {targetAccount.gender && (
-                <p className="text-xs font-bold uppercase text-neutral-600">
+                <p className="text-xs font-bold text-neutral-600">
                   {targetAccount.gender === "male" ? "Male" : "Female"}
                 </p>
               )}
@@ -189,7 +189,7 @@ export default async function PlayerPublicProfilePage({
                       : visibilitySettings.profile === "group_members"
                       ? "bg-[#e0e7ff]"
                       : "bg-neutral-200"
-                  } px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black`}
+                  } px-2.5 py-0.5 text-xs font-bold text-black`}
                 >
                   {visibilitySettings.profile === "everyone" ? (
                     <>
@@ -211,11 +211,11 @@ export default async function PlayerPublicProfilePage({
               </div>
               <div className="pt-2 border-t-2 border-neutral-100">
                 {canViewRatingStats ? (
-                  <p className="text-xs font-bold uppercase text-neutral-600">
+                  <p className="text-xs font-bold text-neutral-600">
                     {getSkillTier(eloToDupr(currentRating)).name} · current rating {formatDupr(currentRating)}
                   </p>
                 ) : (
-                  <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase text-neutral-500">
+                  <p className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500">
                     <LockIcon className="h-3 w-3" />
                     <span>Rating &amp; stats are private</span>
                   </p>
@@ -234,7 +234,7 @@ export default async function PlayerPublicProfilePage({
               <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                    <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
                     <LockIcon className="h-3 w-3 text-neutral-500" />
                   </div>
                   <h2 className="font-display text-xl font-black uppercase text-neutral-800">Chemistry Private</h2>
@@ -248,7 +248,7 @@ export default async function PlayerPublicProfilePage({
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
+                      <p className="text-xs font-bold text-neutral-800">Chemistry Spotlight</p>
                       <SynergyExplainerButton />
                     </div>
                     <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
@@ -288,7 +288,7 @@ export default async function PlayerPublicProfilePage({
               <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                    <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
                     <SynergyExplainerButton />
                   </div>
                   <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
@@ -342,8 +342,8 @@ export default async function PlayerPublicProfilePage({
                   </h2>
                   {isOwner && (
                     <div className="flex gap-2">
-                      <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
-                      <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
+                      <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
+                      <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
                     </div>
                   )}
                 </div>
@@ -385,7 +385,7 @@ export default async function PlayerPublicProfilePage({
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Mutual Chemistry</p>
+                    <p className="text-xs font-bold text-neutral-500">Mutual Chemistry</p>
                     <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
                     <p className="mt-1 text-xs font-bold text-neutral-600">
                       {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together

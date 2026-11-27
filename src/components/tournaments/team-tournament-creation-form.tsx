@@ -350,7 +350,7 @@ export function TeamTournamentCreationForm({
           Team Tournament Details
         </h2>
         <div>
-          <label htmlFor="team-tournament-name" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+          <label htmlFor="team-tournament-name" className="block text-xs font-bold text-black mb-1.5">
             Tournament Name
           </label>
           <input
@@ -379,7 +379,7 @@ export function TeamTournamentCreationForm({
             <button
               type="button"
               onClick={selectAllPlayers}
-              className="text-xs font-black uppercase text-[#65a30d] hover:underline"
+              className="text-sm font-bold text-[#65a30d] hover:underline"
             >
               Select All
             </button>
@@ -387,7 +387,7 @@ export function TeamTournamentCreationForm({
             <button
               type="button"
               onClick={clearAllPlayers}
-              className="text-xs font-black uppercase text-neutral-500 hover:underline"
+              className="text-sm font-bold text-neutral-500 hover:underline"
             >
               Clear
             </button>
@@ -425,7 +425,7 @@ export function TeamTournamentCreationForm({
 
         {/* Add Guest Form */}
         <div className="pt-3 border-t-2 border-dashed border-neutral-200 space-y-2">
-          <label className="block text-xs font-black uppercase tracking-wider text-black">
+          <label className="block text-xs font-bold text-black">
             Add Guest Player
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -454,7 +454,7 @@ export function TeamTournamentCreationForm({
                 type="button"
                 onClick={(e) => void handleAddGuest(e)}
                 disabled={!guestName.trim()}
-                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
               >
                 Add
               </button>
@@ -497,7 +497,7 @@ export function TeamTournamentCreationForm({
                   className="flex items-center justify-between p-3 bg-neutral-50 border-2 border-black rounded-xl text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-[#ccff00] text-black font-black uppercase text-[10px] border border-black">
+                    <span className="px-2 py-0.5 rounded-md bg-[#ccff00] text-black font-bold text-xs border border-black">
                       Pair #{idx + 1}
                     </span>
                     <span className="font-black text-black">
@@ -510,7 +510,7 @@ export function TeamTournamentCreationForm({
                   <button
                     type="button"
                     onClick={() => handleRemovePair(idx)}
-                    className="text-rose-600 hover:text-rose-800 font-black uppercase text-xs cursor-pointer"
+                    className="text-rose-600 hover:text-rose-800 font-bold text-sm cursor-pointer"
                   >
                     Unlink
                   </button>
@@ -522,7 +522,7 @@ export function TeamTournamentCreationForm({
 
         {/* Pair creator form */}
         <div className="p-3 bg-neutral-50 border-2 border-black rounded-xl space-y-3">
-          <span className="block text-xs font-black uppercase text-neutral-700">
+          <span className="block text-xs font-bold text-neutral-700">
             Link Two Players as Doubles Partners
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -568,7 +568,7 @@ export function TeamTournamentCreationForm({
               type="button"
               onClick={handleCreatePair}
               disabled={!selectedP1 || !selectedP2 || selectedP1 === selectedP2}
-              className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-neutral-800 disabled:opacity-40 text-white font-black text-xs uppercase cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-neutral-800 disabled:opacity-40 text-white font-bold text-sm cursor-pointer"
             >
               + Lock Partner Pair
             </button>
@@ -576,7 +576,7 @@ export function TeamTournamentCreationForm({
               <button
                 type="button"
                 onClick={handleAutoPairRemaining}
-                className="px-3.5 py-1.5 rounded-xl bg-white border-2 border-black hover:bg-neutral-100 text-black font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-white border-2 border-black hover:bg-neutral-100 text-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] cursor-pointer"
               >
                 Auto-Pair Remaining Free Agents
               </button>
@@ -600,7 +600,7 @@ export function TeamTournamentCreationForm({
             type="button"
             data-testid="auto-balance-teams-button"
             onClick={handleAutoBalance}
-            className="px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] cursor-pointer"
           >
             ⚡ Auto-Balance Teams
           </button>
@@ -643,7 +643,7 @@ export function TeamTournamentCreationForm({
                     }}
                     className="font-display font-black text-base uppercase bg-transparent border-b-2 border-neutral-300 focus:border-black focus:outline-none"
                   />
-                  <span className="text-xs font-black uppercase text-neutral-600">
+                  <span className="text-xs font-bold text-neutral-600">
                     Avg: {totalCount > 0 ? formatDupr(avgDupr) : "—"}
                   </span>
                 </div>
@@ -667,7 +667,7 @@ export function TeamTournamentCreationForm({
                           <button
                             type="button"
                             onClick={() => movePairToTeam(pIdx, otherTeamIdx)}
-                            className="text-[10px] font-black uppercase text-neutral-500 hover:text-black cursor-pointer"
+                            className="text-xs font-bold text-neutral-500 hover:text-black cursor-pointer"
                           >
                             ⇄ Move
                           </button>
@@ -698,7 +698,7 @@ export function TeamTournamentCreationForm({
                           <button
                             type="button"
                             onClick={() => moveSoloToTeam(soloId, otherTeamIdx)}
-                            className="text-[10px] font-black uppercase text-neutral-500 hover:text-black cursor-pointer"
+                            className="text-xs font-bold text-neutral-500 hover:text-black cursor-pointer"
                           >
                             ⇄ Move
                           </button>
@@ -734,7 +734,7 @@ export function TeamTournamentCreationForm({
           type="submit"
           data-testid="create-team-tournament-button"
           disabled={isSubmitting || selectedPlayerIds.size < 2}
-          className="w-full py-4 px-6 rounded-2xl bg-black hover:bg-neutral-800 disabled:opacity-50 text-white font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+          className="w-full py-4 px-6 rounded-2xl bg-black hover:bg-neutral-800 disabled:opacity-50 text-white text-lg font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
         >
           {isSubmitting ? "Generating Match Lines..." : "Create Team Tournament →"}
         </button>

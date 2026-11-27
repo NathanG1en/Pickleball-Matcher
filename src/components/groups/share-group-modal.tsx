@@ -85,7 +85,7 @@ export function ShareGroupModal({
         </button>
 
         <div className="space-y-1 pr-6 text-left">
-          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#ccff00] border-2 border-black">
+          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-[#ccff00] border-2 border-black">
             Share Group
           </span>
           <h2 id="share-group-title" className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black">
@@ -99,7 +99,7 @@ export function ShareGroupModal({
         {/* QR Code Container */}
         <div className="flex flex-col items-center justify-center py-2 space-y-2">
           <QRCodeDisplay url={shareUrl} size={190} />
-          <p className="text-[11px] font-black uppercase tracking-wider text-neutral-700">
+          <p className="text-xs font-bold text-neutral-700">
             Scan with phone camera to join
           </p>
         </div>
@@ -118,7 +118,7 @@ export function ShareGroupModal({
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display font-black uppercase text-xs tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
               {copied ? (
                 <>
@@ -138,7 +138,7 @@ export function ShareGroupModal({
             <button
               type="button"
               onClick={handleNativeShare}
-              className="w-full py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 text-black border-2 border-black font-display font-black uppercase text-xs tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 text-black border-2 border-black font-bold text-sm shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
               Share via Apps…
             </button>
@@ -170,7 +170,7 @@ export function ShareGroupButton({
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Share group link and QR code"
-        className={`h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-black uppercase text-[10px] sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${className}`}
+        className={`h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${className}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

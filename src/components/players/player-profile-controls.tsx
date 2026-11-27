@@ -273,7 +273,7 @@ export function PlayerProfileHeader({
                 onClick={handleCancelClick}
                 disabled={saving}
                 data-testid="cancel-edit-profile-button"
-                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -282,7 +282,7 @@ export function PlayerProfileHeader({
                 onClick={handleSave}
                 disabled={saving || !isFormValid || !hasProfileChanges}
                 data-testid="save-profile-button"
-                className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
+                className="rounded-xl border-2 border-black bg-[#ccff00] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-neutral-200 disabled:hover:text-neutral-500 disabled:active:translate-x-0 disabled:active:translate-y-0"
               >
                 {saving ? "Saving…" : "Save Changes"}
               </button>
@@ -293,7 +293,7 @@ export function PlayerProfileHeader({
                 type="button"
                 onClick={handleEnterEditMode}
                 data-testid="edit-profile-button"
-                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                className="rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
               >
                 Edit Profile
               </button>
@@ -307,7 +307,7 @@ export function PlayerProfileHeader({
         /* Edit Mode View */
         <form onSubmit={handleSave} className="space-y-4 pt-1">
           <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
-            <span className="text-xs font-black uppercase tracking-wider text-neutral-500">
+            <span className="text-xs font-bold text-neutral-500">
               General Information
             </span>
           </div>
@@ -317,7 +317,7 @@ export function PlayerProfileHeader({
             <div className="space-y-1">
               <label
                 htmlFor="profile-name-input"
-                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                className="block text-xs font-bold text-neutral-700"
               >
                 Display Name
               </label>
@@ -337,7 +337,7 @@ export function PlayerProfileHeader({
             <div className="space-y-1">
               <label
                 htmlFor="profile-username-input"
-                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                className="block text-xs font-bold text-neutral-700"
               >
                 Username
               </label>
@@ -375,7 +375,7 @@ export function PlayerProfileHeader({
             <div className="space-y-1 sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">
               <label
                 htmlFor="profile-gender-input"
-                className="block text-xs font-black uppercase tracking-wider text-neutral-700"
+                className="block text-xs font-bold text-neutral-700"
               >
                 Gender
               </label>
@@ -403,7 +403,7 @@ export function PlayerProfileHeader({
           )}
 
           <div className="pt-2 border-t-2 border-neutral-100">
-            <p className="text-xs font-bold uppercase text-neutral-600">
+            <p className="text-xs font-bold text-neutral-600">
               {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
             </p>
           </div>
@@ -419,7 +419,7 @@ export function PlayerProfileHeader({
           </div>
 
           {gender && (
-            <p className="text-xs font-bold uppercase text-neutral-600">
+            <p className="text-xs font-bold text-neutral-600">
               {gender === "male" ? "Male" : "Female"}
             </p>
           )}
@@ -433,7 +433,7 @@ export function PlayerProfileHeader({
                   : visibilitySettings.profile === "group_members"
                   ? "bg-[#e0e7ff]"
                   : "bg-neutral-200"
-              } px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black`}
+              } px-2.5 py-0.5 text-xs font-bold text-black`}
             >
               {visibilitySettings.profile === "everyone" ? (
                 <>
@@ -486,19 +486,19 @@ export function PlayerProfileHeader({
                   >
                     <div className="space-y-1.5 text-xs">
                       <p className="font-bold leading-snug">
-                        <span className="font-black text-black uppercase">Everyone:</span>{" "}
+                        <span className="font-bold text-black">Everyone:</span>{" "}
                         <span className="text-neutral-700">
                           Your profile is discoverable in player search and viewable by everyone.
                         </span>
                       </p>
                       <p className="font-bold leading-snug">
-                        <span className="font-black text-black uppercase">Group Members:</span>{" "}
+                        <span className="font-bold text-black">Group Members:</span>{" "}
                         <span className="text-neutral-700">
                           Your profile is only viewable by athletes who share a group with you.
                         </span>
                       </p>
                       <p className="font-bold leading-snug">
-                        <span className="font-black text-black uppercase">Only You:</span>{" "}
+                        <span className="font-bold text-black">Only You:</span>{" "}
                         <span className="text-neutral-700">
                           Your profile is private; stats are hidden from public search.
                         </span>
@@ -511,7 +511,7 @@ export function PlayerProfileHeader({
           </div>
 
           <div className="pt-2 border-t-2 border-neutral-100">
-            <p className="text-xs font-bold uppercase text-neutral-600">
+            <p className="text-xs font-bold text-neutral-600">
               {getSkillTier(eloToDupr(displayRating)).name} · current rating {formatDupr(displayRating)}
             </p>
           </div>
@@ -614,7 +614,7 @@ export function PlayerVisibilityControl({
           disabled={pending}
           aria-label={`Account visibility: currently ${isPublic ? "Everyone" : "Only You"}. Click to switch.`}
           title={isPublic ? "Click to switch to Only You" : "Click to switch to Everyone"}
-          className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-xs font-bold text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
         >
           {pending ? (
             <span>Saving…</span>
@@ -664,15 +664,15 @@ export function PlayerVisibilityControl({
               >
                 <div className="space-y-1.5 text-xs">
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Everyone:</span>{" "}
+                    <span className="font-bold text-black">Everyone:</span>{" "}
                     <span className="text-neutral-700">Your profile is discoverable in player search and viewable by everyone.</span>
                   </p>
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Group Members:</span>{" "}
+                    <span className="font-bold text-black">Group Members:</span>{" "}
                     <span className="text-neutral-700">Your profile is only viewable by athletes who share a group with you.</span>
                   </p>
                   <p className="font-bold leading-snug">
-                    <span className="font-black text-black uppercase">Only You:</span>{" "}
+                    <span className="font-bold text-black">Only You:</span>{" "}
                     <span className="text-neutral-700">Your profile is private; stats are hidden from public search.</span>
                   </p>
                 </div>
@@ -724,7 +724,7 @@ export function PlayerNameEditor({ initialName }: { initialName: string }) {
   };
   return (
     <form onSubmit={save} className="space-y-2">
-      <label htmlFor="profile-name" className="block text-xs font-black uppercase tracking-wider">
+      <label htmlFor="profile-name" className="block text-xs font-bold">
         Display name
       </label>
       <div className="flex gap-2">
@@ -762,7 +762,7 @@ export function PlayerLogoutButton({ className }: { className?: string } = {}) {
       disabled={pending}
       className={
         className ??
-        "rounded-xl border-2 border-black bg-white px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60 cursor-pointer"
+        "rounded-xl border-2 border-black bg-white px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] disabled:opacity-60 cursor-pointer"
       }
     >
       {pending ? "Signing out…" : "Log Out"}
@@ -807,7 +807,7 @@ export function LeaveGroupButton({
           setShowModal(true);
         }}
         disabled={pending}
-        className="rounded-xl border-2 border-black bg-white px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff6b6b] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+        className="rounded-xl border-2 border-black bg-white px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff6b6b] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
       >
         Leave
       </button>

@@ -423,7 +423,7 @@ describe("ResultsEntryView Component", () => {
     expect(html).toContain("Reshuffle");
     expect(html).toContain('data-testid="reshuffle-matchups-button"');
     expect(html).toContain("shadow-[2px_2px_0px_0px_#000]");
-    expect(html).toContain("text-[10px] sm:text-xs");
+    expect(html).toContain("text-xs sm:text-sm");
     expect(html).toContain("bg-[#ccff00]");
     expect(html).toContain("bg-white");
   });

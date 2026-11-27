@@ -62,7 +62,7 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
         <div className="pt-2 text-center">
           <Link
             href="/player-login"
-            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+            className="inline-block rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-sm font-bold text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
           >
             Sign In with New Password →
           </Link>
@@ -86,7 +86,7 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
 
         <form onSubmit={submit} className="rounded-2xl border-2 border-black bg-white p-4 space-y-3 shadow-[3px_3px_0px_0px_#000]">
           <div className="space-y-1 text-center">
-            <p className="text-xs font-black uppercase tracking-wider text-neutral-800 text-left sm:text-center">
+            <p className="text-xs font-bold text-neutral-800 text-left sm:text-center">
               Enter your 6-digit reset code.
             </p>
             <div className="flex justify-center my-2">
@@ -143,7 +143,7 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
             variant="primary"
             size="lg"
             disabled={pending || !code || !password || !confirmPassword}
-            className="w-full font-display text-lg uppercase"
+            className="w-full text-lg"
           >
             {pending ? "Resetting Password…" : "Reset Password"}
           </Button>
@@ -152,7 +152,7 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
         <div className="pt-2 text-center">
           <Link
             href="/forgot-password"
-            className="inline-block rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 font-display text-sm font-black uppercase text-black hover:bg-neutral-100"
+            className="inline-block rounded-xl border-2 border-black bg-[#FFFDF7] px-4 py-2 text-sm font-bold text-black hover:bg-neutral-100"
           >
             Request Reset Link →
           </Link>
@@ -204,7 +204,7 @@ export function ResetPasswordForm({ token, email }: { token?: string; email?: st
         variant="primary"
         size="lg"
         disabled={pending || !password || !confirmPassword}
-        className="w-full font-display text-lg uppercase"
+        className="w-full text-lg"
       >
         {pending ? "Resetting Password…" : "Reset Password"}
       </Button>

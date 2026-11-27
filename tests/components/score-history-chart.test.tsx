@@ -72,7 +72,7 @@ describe("ScoreHistoryChart", () => {
       expect(html).toContain(`data-testid="rating-range-${range.id}"`);
     }
     // "All time" is active by default
-    expect(html).toContain('data-testid="rating-range-all" class="rounded-lg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer bg-[#ccff00]');
+    expect(html).toContain('data-testid="rating-range-all" class="rounded-lg px-2 sm:px-2.5 py-1 text-xs sm:text-sm font-bold transition-all cursor-pointer bg-[#ccff00]');
     expect(html).toContain('top-12 sm:top-0');
 
     // Clearer line, dots, and larger chart dimensions

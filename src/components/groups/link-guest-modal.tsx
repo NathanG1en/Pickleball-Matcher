@@ -157,7 +157,7 @@ export function LinkGuestModal({
         </button>
 
         <div className="space-y-1 pr-6 text-left">
-          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#ccff00] border-2 border-black">
+          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-[#ccff00] border-2 border-black">
             Link Guest Player
           </span>
           <h2
@@ -198,7 +198,7 @@ export function LinkGuestModal({
                 autoFocus
               />
               {isSearching && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-neutral-500 animate-pulse">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-500 animate-pulse">
                   Searching…
                 </span>
               )}
@@ -206,7 +206,7 @@ export function LinkGuestModal({
             <button
               type="submit"
               disabled={isSearching || query.replace(/^@/, "").trim().length < 2}
-              className="rounded-xl border-2 border-black bg-black px-4 py-2 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
+              className="rounded-xl border-2 border-black bg-black px-4 py-2 text-sm font-bold text-white shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer"
             >
               Search
             </button>
@@ -223,7 +223,7 @@ export function LinkGuestModal({
         {query.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+              <span className="text-xs font-bold text-neutral-500">
                 Matching Accounts ({searchResults.length})
               </span>
             </div>
@@ -261,7 +261,7 @@ export function LinkGuestModal({
 
                     {result.alreadyInGroup ? (
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="inline-flex items-center gap-1 rounded-lg border-2 border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-black uppercase text-neutral-600">
+                        <span className="inline-flex items-center gap-1 rounded-lg border-2 border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-600">
                           <span>In Roster</span>
                           <CheckIcon className="h-3 w-3 shrink-0" />
                         </span>
@@ -270,7 +270,7 @@ export function LinkGuestModal({
                           disabled={isLinking}
                           onClick={() => void handleLink(result)}
                           data-testid={`link-target-${result.username}`}
-                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-xs font-black uppercase bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
                         >
                           {linkingAccountId === result.accountId ? "Merging…" : "Merge"}
                         </button>
@@ -281,7 +281,7 @@ export function LinkGuestModal({
                         disabled={isLinking}
                         onClick={() => void handleLink(result)}
                         data-testid={`link-target-${result.username}`}
-                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-xs font-black uppercase bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
                       >
                         {linkingAccountId === result.accountId ? "Linking…" : "Link Player"}
                       </button>
@@ -297,7 +297,7 @@ export function LinkGuestModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 px-4 py-2 text-xs font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer"
+            className="w-full rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 px-4 py-2 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer"
           >
             Cancel
           </button>

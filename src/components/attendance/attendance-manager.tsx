@@ -286,7 +286,7 @@ export function AttendanceManager({
                 >
                   {courts}
                 </span>
-                <span className="block text-xs uppercase font-black tracking-wider text-neutral-500 mt-0.5">
+                <span className="block text-xs font-bold text-neutral-500 mt-0.5">
                   {courts === 1 ? "Court" : "Courts"}
                 </span>
               </div>
@@ -304,7 +304,7 @@ export function AttendanceManager({
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {courtPlayerCounts.slice(0, courts).map((size, index) => (
                 <div key={index} className="flex items-center justify-between gap-1.5 rounded-xl border-2 border-black p-2 sm:p-2.5 font-bold bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]">
-                  <span className="text-xs font-black uppercase tracking-wide text-neutral-900 shrink-0">Court {index + 1}</span>
+                  <span className="text-xs font-bold text-neutral-900 shrink-0">Court {index + 1}</span>
                   <CustomDropdown
                     ariaLabel={`Players on court ${index + 1}`}
                     value={String(size)}
@@ -324,7 +324,7 @@ export function AttendanceManager({
             </div>
             {rebalanceChoices.length > 1 && (
               <div className="mt-4 p-3 bg-neutral-100 rounded-xl border-2 border-black space-y-2">
-                <span className="text-xs font-black uppercase text-neutral-700 block">
+                <span className="text-xs font-bold text-neutral-700 block">
                   Quick Presets ({count} Players):
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -344,7 +344,7 @@ export function AttendanceManager({
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-display text-xs font-black uppercase">{choice.title}</span>
+                        <span className="text-xs font-bold">{choice.title}</span>
                         <span className="text-[10px] font-black">{choice.badge}</span>
                       </div>
                       <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
@@ -373,7 +373,7 @@ export function AttendanceManager({
             <button
               type="button"
               onClick={selectAll}
-              className="text-xs font-black uppercase text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-black hover:underline p-1 cursor-pointer"
             >
               Select All
             </button>
@@ -381,7 +381,7 @@ export function AttendanceManager({
             <button
               type="button"
               onClick={clearAll}
-              className="text-xs font-black uppercase text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -434,7 +434,7 @@ export function AttendanceManager({
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="mt-2 text-xs font-black uppercase text-black underline cursor-pointer"
+              className="mt-2 text-sm font-bold text-black underline cursor-pointer"
             >
               Clear search
             </button>
@@ -505,7 +505,7 @@ export function AttendanceManager({
               data-testid="toggle-add-guest"
               className="w-full flex items-center justify-between text-left cursor-pointer p-3.5 group hover:bg-neutral-100 transition-colors"
             >
-              <span className="block text-xs font-black uppercase tracking-wider text-black">
+              <span className="block text-xs font-bold text-black">
                 Add Guest Player
               </span>
               <ChevronDownIcon
@@ -541,7 +541,7 @@ export function AttendanceManager({
                   <button
                     type="submit"
                     disabled={!guestName.trim()}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                   >
                     Add
                   </button>
@@ -569,8 +569,8 @@ export function AttendanceManager({
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-[#FFFDF7]/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
-            <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
-            <p className="font-display text-base font-black uppercase text-black tracking-tight">
+            <p className="text-xs font-bold text-neutral-500">Ready</p>
+            <p className="text-base font-bold text-black tracking-tight">
               {count} players · {courts} court{courts > 1 ? "s" : ""}
             </p>
           </div>
@@ -581,7 +581,7 @@ export function AttendanceManager({
             disabled={count < 2 || capacity > count || isPending}
             onClick={handleSubmit}
             data-testid="continue-to-pairings-button"
-            className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+            className="flex-1 max-w-xs text-lg"
           >
             {isPending
               ? "Saving..."

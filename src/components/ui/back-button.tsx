@@ -26,7 +26,7 @@ export function BackButton({
   const buttonClass =
     className ??
     // The pseudo-element grows the tap area to about 44px without changing the look.
-    "relative inline-flex items-center font-black uppercase text-xs text-black active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-['']";
+    "relative inline-flex items-center font-bold text-sm text-black active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-['']";
 
   if (href) {
     return (

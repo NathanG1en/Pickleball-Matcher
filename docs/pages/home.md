@@ -16,7 +16,7 @@ The application features an Instagram-inspired responsive navigation system shar
     3. **Players** (`/players/find`)
     4. **Training** (`/training`)
     5. **Profile** (`/players`)
-  - Features recognizable icons with uppercase text labels underneath.
+  - Features recognizable icons with short normal-case text labels underneath.
   - Active destinations are highlighted with the neon lime accent (`#ccff00`), black border, and subtle neo-brutalist offset drop shadow.
   - Subdued inactive states.
   - Supports mobile safe-area insets (`env(safe-area-inset-bottom)`).

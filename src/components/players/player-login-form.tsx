@@ -54,7 +54,7 @@ export function PlayerLoginForm({
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />
-        <span className="text-xs font-black uppercase tracking-wider text-neutral-500">or</span>
+        <span className="text-xs font-bold text-neutral-500">or</span>
         <div className="h-0.5 flex-1 bg-black/15" />
       </div>
 
@@ -104,7 +104,7 @@ export function PlayerLoginForm({
         variant="primary"
         size="lg"
         disabled={pending || !identifier.trim() || !password}
-        className="w-full font-display text-lg uppercase"
+        className="w-full text-lg"
       >
         {pending ? "Signing in…" : "Sign In"}
       </Button>

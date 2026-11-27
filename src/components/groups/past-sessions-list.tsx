@@ -180,7 +180,7 @@ export function PastSessionsList({
                               className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs space-y-1.5"
                               data-testid={`match-card-${m.id}`}
                             >
-                              <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
+                              <div className="flex items-center justify-between text-xs font-bold text-neutral-600">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span>Game {idx + 1}</span>
                                   {m.status === "completed" && m.completedAt && (
@@ -252,7 +252,7 @@ export function PastSessionsList({
                     ) : (
                       session.rounds.map((round) => (
                         <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
-                          <div className="flex items-center justify-between text-xs font-black uppercase text-neutral-600 bg-[#FFFDF7] px-3.5 py-1.5 rounded-xl border-2 border-black/20">
+                          <div className="flex items-center justify-between text-xs font-bold text-neutral-600 bg-[#FFFDF7] px-3.5 py-1.5 rounded-xl border-2 border-black/20">
                             <span>Round {round.roundNumber}</span>
                             <span className="text-[10px] font-bold text-neutral-500">
                               {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
@@ -282,7 +282,7 @@ export function PastSessionsList({
                                   className="p-3 bg-[#FFFDF7] border-2 border-black rounded-xl text-xs space-y-1.5"
                                   data-testid={`match-card-${m.id}`}
                                 >
-                                  <div className="flex items-center justify-between text-[11px] font-black uppercase text-neutral-600">
+                                  <div className="flex items-center justify-between text-xs font-bold text-neutral-600">
                                     <span>Court {m.courtNumber}</span>
                                     {m.status === "completed" &&
                                     m.team1Score !== null &&
@@ -373,7 +373,7 @@ export function PastSessionsList({
                   </span>
                   <Link
                     href={`/g/${groupId}/sessions/${session.id}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 shrink-0"
                     data-testid={`view-full-session-link-${session.id}`}
                   >
                     <span>View Full Session</span>

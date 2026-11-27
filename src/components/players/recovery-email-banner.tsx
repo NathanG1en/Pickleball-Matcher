@@ -19,7 +19,7 @@ const linkButtonClass =
   "inline-flex min-h-11 items-center font-black text-black underline decoration-2 underline-offset-4 hover:decoration-[#ccff00] disabled:opacity-60";
 
 const actionButtonClass =
-  "inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#ccff00] px-4 font-display text-sm font-black uppercase text-black shadow-[2px_2px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5";
+  "inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#ccff00] px-4 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5";
 
 /**
  * One compact strip. Desktop: icon, title and detail, small links under them, the action on the
@@ -141,7 +141,7 @@ export function RecoveryEmailBanner({
         />
       </FormField>
       <div className="flex items-center gap-3">
-        <Button type="submit" variant="primary" size="sm" disabled={pending !== null || !emailInput.trim()} className="min-h-11 font-display uppercase">
+        <Button type="submit" variant="primary" size="sm" disabled={pending !== null || !emailInput.trim()} className="min-h-11">
           {pending === "save" ? "Sending…" : submitLabel}
         </Button>
         <button type="button" onClick={() => setIsEditing(false)} className={`${linkButtonClass} text-sm`}>

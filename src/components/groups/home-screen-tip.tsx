@@ -104,7 +104,7 @@ export function HomeScreenTip() {
       className="p-4 rounded-2xl bg-[#fef08a] border-[3px] border-black text-black space-y-2.5 relative min-w-0 overflow-hidden"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-white border border-black">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border border-black">
           <SmartphoneIcon className="h-3.5 w-3.5 shrink-0" />
           <span>Courtside Pro Tip</span>
         </span>
@@ -131,7 +131,7 @@ export function HomeScreenTip() {
         <button
           type="button"
           onClick={handleInstallClick}
-          className="w-full py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-black text-xs uppercase tracking-wide border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer font-display"
+          className="w-full py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-bold text-sm border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
         >
           Install App to Home Screen →
         </button>

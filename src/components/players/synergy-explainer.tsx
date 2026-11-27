@@ -39,7 +39,7 @@ export function SynergyExplainerButton({
             className="absolute left-0 top-6 sm:left-6 sm:top-1/2 sm:-translate-y-1/2 z-50 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border-2 border-black bg-white p-3 text-left text-black tooltip-animate"
           >
             <div className="flex items-center justify-between gap-2 border-b border-neutral-200 pb-1.5 mb-1.5">
-              <span className="text-[11px] font-black uppercase tracking-wider">How Synergy Works</span>
+              <span className="text-xs font-bold">How Synergy Works</span>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}

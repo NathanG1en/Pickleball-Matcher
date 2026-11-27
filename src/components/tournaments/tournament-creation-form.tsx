@@ -199,7 +199,7 @@ export function TournamentCreationForm({
         </p>
 
         <div>
-          <label htmlFor="tournament-name" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+          <label htmlFor="tournament-name" className="block text-xs font-bold text-black mb-1.5">
             Tournament Name
           </label>
           <input
@@ -229,7 +229,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={selectAllDivisions}
-              className="text-xs font-black uppercase text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-black hover:underline p-1 cursor-pointer"
             >
               Select All
             </button>
@@ -237,7 +237,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={clearAllDivisions}
-              className="text-xs font-black uppercase text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -274,7 +274,7 @@ export function TournamentCreationForm({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <span className="font-black text-base block">{TOURNAMENT_DIVISION_LABELS[division]}</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-black/40 bg-white/80 shrink-0">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded border border-black/40 bg-white/80 shrink-0">
                       {entrantCount} {entrantCount === 1 ? "entrant" : "entrants"}
                     </span>
                   </div>
@@ -308,7 +308,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={selectAllPlayers}
-              className="text-xs font-black uppercase text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-black hover:underline p-1 cursor-pointer"
             >
               Select All
             </button>
@@ -316,7 +316,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={clearAllPlayers}
-              className="text-xs font-black uppercase text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -354,7 +354,7 @@ export function TournamentCreationForm({
                   {player.name}
                 </span>
                 <div className="flex flex-col items-end justify-center shrink-0 text-right">
-                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-black/30 bg-white/80 shrink-0 text-black leading-none mb-1">
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded border border-black/30 bg-white/80 shrink-0 text-black leading-none mb-1">
                     {genderLabel}
                   </span>
                   <span
@@ -372,7 +372,7 @@ export function TournamentCreationForm({
 
         {/* Add Guest / Quick Player Form */}
         <div className="mt-4 pt-4 border-t-2 border-neutral-100 space-y-3">
-          <label className="block text-xs font-black uppercase tracking-wider text-black">
+          <label className="block text-xs font-bold text-black">
             Add Guest Player
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -400,7 +400,7 @@ export function TournamentCreationForm({
                 type="button"
                 onClick={handleAddGuest}
                 disabled={!guestName.trim()}
-                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
               >
                 Add
               </button>
@@ -423,8 +423,8 @@ export function TournamentCreationForm({
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
-            <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
-            <p className="font-display text-base font-black uppercase text-black tracking-tight">
+            <p className="text-xs font-bold text-neutral-500">Ready</p>
+            <p className="text-base font-bold text-black tracking-tight">
               {divisionsCount} division{divisionsCount === 1 ? "" : "s"} · {playersCount} players
             </p>
           </div>
@@ -433,7 +433,7 @@ export function TournamentCreationForm({
             variant="primary"
             size="lg"
             disabled={divisionsCount === 0 || playersCount < 2 || isSubmitting}
-            className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+            className="flex-1 max-w-xs text-lg"
           >
             {isSubmitting ? "Generating..." : "Create Tournament →"}
           </Button>

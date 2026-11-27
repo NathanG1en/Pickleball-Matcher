@@ -235,7 +235,7 @@ export function RatingSlider({
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <label htmlFor={id} className="block text-xs font-black uppercase tracking-wider text-black">
+        <label htmlFor={id} className="block text-xs font-bold text-black">
           {label}
         </label>
       )}
@@ -362,7 +362,7 @@ export function RatingSlider({
             <span className="font-mono font-black text-xs bg-[#ccff00] text-black border border-black px-1.5 py-0.5 rounded shadow-[1px_1px_0px_0px_#000]">
               {value.toFixed(2)}
             </span>
-            <span className="font-black uppercase tracking-wider text-black">
+            <span className="font-bold text-black">
               {tier.name}
             </span>
           </div>

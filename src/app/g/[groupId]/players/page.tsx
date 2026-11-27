@@ -47,11 +47,11 @@ export default async function GroupPlayersPage({
       <div className="flex items-center justify-between">
         <Link
           href={`/g/${groupId}`}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
         >
           ← Group Dashboard
         </Link>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
           Roster
         </span>
       </div>

@@ -99,7 +99,7 @@ export function ChallengeCard({
                 type="button"
                 onClick={() => onCategorySelect(challenge.skillCategory)}
                 aria-pressed={activeCategory === challenge.skillCategory}
-                className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
+                className={`px-2 py-0.5 rounded-lg text-xs sm:text-xs font-bold transition-colors border select-none cursor-pointer inline-block ${
                 activeCategory === challenge.skillCategory
                   ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
                   : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
@@ -111,7 +111,7 @@ export function ChallengeCard({
             ) : (
               <Link
                 href={filterHref}
-                className={`px-2 py-0.5 rounded-lg font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors border select-none cursor-pointer inline-block ${
+                className={`px-2 py-0.5 rounded-lg text-xs sm:text-xs font-bold transition-colors border select-none cursor-pointer inline-block ${
                 activeCategory === challenge.skillCategory
                   ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
                   : "bg-black text-[#ccff00] hover:bg-neutral-800 border-black"
@@ -123,7 +123,7 @@ export function ChallengeCard({
             )}
 
             {completed && (
-              <span className="px-2 py-0.5 rounded-lg bg-[#ccff00] text-black font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="px-2 py-0.5 rounded-lg bg-[#ccff00] text-black text-xs sm:text-xs font-bold border border-black shadow-[1px_1px_0px_0px_#000]">
                 ✓ Done
               </span>
             )}
@@ -132,14 +132,14 @@ export function ChallengeCard({
           {/* Add to Plan action */}
           <div className="flex items-center gap-1.5">
             {planFeedback && (
-              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-600 animate-pulse">
+              <span className="text-xs font-bold text-neutral-600 animate-pulse">
                 {planFeedback}
               </span>
             )}
             {challenge.participantFormat === "group" ? (
               <span
                 data-testid={`badge-group-drill-${challenge.id}`}
-                className="px-2.5 py-1 rounded-xl text-xs font-black uppercase bg-neutral-100 text-neutral-500 border-2 border-neutral-300 select-none cursor-default"
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-neutral-100 text-neutral-500 border-2 border-neutral-300 select-none cursor-default"
                 title="Group drills can only be added to group training plans"
               >
                 Group Drill
@@ -161,7 +161,7 @@ export function ChallengeCard({
                     }
                   });
                 }}
-                className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] select-none touch-manipulation transition-colors ${
+                className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] select-none touch-manipulation transition-colors ${
                   inPersonalPlan
                     ? "bg-lime-100 text-black cursor-default"
                     : "bg-[#ccff00] hover:bg-[#b8e600] text-black cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
@@ -177,7 +177,7 @@ export function ChallengeCard({
             ) : (
               <Link
                 href="/player-login?returnTo=/training"
-                className="px-3 py-1.5 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none touch-manipulation"
+                className="px-3 py-1.5 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none touch-manipulation"
                 title="Sign in to add this drill to your weekly plan"
               >
                 + Add to Plan
@@ -196,7 +196,7 @@ export function ChallengeCard({
 
         {customGoalDescription && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-lime-100 border border-lime-600/40 text-xs text-lime-950 mb-2.5 font-bold">
-            <span className="text-[10px] uppercase font-black tracking-wider bg-lime-300 px-1.5 py-0.5 rounded border border-lime-700 shrink-0">
+            <span className="text-xs font-bold bg-lime-300 px-1.5 py-0.5 rounded border border-lime-700 shrink-0">
               Goal
             </span>
             <span className="truncate">{customGoalDescription}</span>
@@ -248,12 +248,12 @@ export function ChallengeCard({
           {instructionsOpen && (
             <div className="mt-2 p-3 bg-neutral-50 rounded-xl border border-black/10 text-xs text-neutral-700 space-y-2">
               <div>
-                <span className="font-black uppercase text-[10px] text-neutral-500 block mb-0.5">Instructions</span>
+                <span className="font-bold text-xs text-neutral-500 block mb-0.5">Instructions</span>
                 <p className="leading-relaxed">{challenge.instructions}</p>
               </div>
               {challenge.defaultTargetGoal && (
                 <div>
-                  <span className="font-black uppercase text-[10px] text-neutral-500 block mb-0.5">Target Benchmark</span>
+                  <span className="font-bold text-xs text-neutral-500 block mb-0.5">Target Benchmark</span>
                   <p className="font-bold text-black">
                     {challenge.defaultTargetGoal} {challenge.scoreUnit}
                   </p>

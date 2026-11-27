@@ -131,23 +131,23 @@ export default async function HomePage() {
           <div className="pt-2 max-w-md mx-auto space-y-3">
             <Link
               href="/player-login"
-              className="block w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-base sm:text-lg border-2 border-black shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display cursor-pointer"
+              className="block w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-bold text-base sm:text-lg border-2 border-black shadow-[3px_3px_0px_0px_#000] sm:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all text-center cursor-pointer"
             >
               Sign In to Play →
             </Link>
             <Link
               href="/player-signup"
-              className="block w-full py-3 sm:py-3.5 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-black text-sm sm:text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display cursor-pointer"
+              className="block w-full py-3 sm:py-3.5 px-6 rounded-2xl bg-white hover:bg-neutral-100 text-black font-bold text-sm sm:text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center cursor-pointer"
             >
               Create an Account
             </Link>
             <div className="border-t-2 border-dashed border-neutral-300 pt-3">
-              <p className="mb-2 text-xs font-black uppercase tracking-wider text-neutral-600">
+              <p className="mb-2 text-xs font-bold text-neutral-600">
                 In a rush?
               </p>
               <Link
                 href="/temporary"
-                className="block w-full py-2.5 sm:py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-black text-sm sm:text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center tracking-wide uppercase font-display cursor-pointer"
+                className="block w-full py-2.5 sm:py-3 px-6 rounded-2xl bg-[#e0f2fe] hover:bg-sky-200 text-black font-bold text-sm sm:text-base border-2 border-black shadow-[3px_3px_0px_0px_#000] transition-all text-center cursor-pointer"
               >
                 Start a Quick Session
               </Link>
@@ -171,7 +171,7 @@ export default async function HomePage() {
         >
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-black bg-[#ccff00] border border-black">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border border-black">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
                 Organizer Session
               </span>
@@ -187,7 +187,7 @@ export default async function HomePage() {
 
           <Link
             href={`/g/${activeGroup.id}`}
-            className="inline-flex items-center justify-center py-3 px-5 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-black text-sm uppercase tracking-wide border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] active:translate-x-0.5 active:translate-y-0.5 transition-all font-display shrink-0"
+            className="inline-flex items-center justify-center py-3 px-5 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-bold text-sm border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] active:translate-x-0.5 active:translate-y-0.5 transition-all shrink-0"
           >
             Resume Group Dashboard →
           </Link>
@@ -236,17 +236,17 @@ export default async function HomePage() {
               {playerAccount.username.charAt(0).toUpperCase()}
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-neutral-500 leading-none">
+              <p className="text-xs sm:text-xs font-bold text-neutral-500 leading-none">
                 Playing as
               </p>
-              <p className="font-display text-sm sm:text-base font-black uppercase text-black leading-tight mt-0.5 truncate">
+              <p className="text-sm sm:text-base font-bold text-black leading-tight mt-0.5 truncate">
                 @{playerAccount.username}
               </p>
             </div>
           </div>
           <Link
             href="/players"
-            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-black text-xs sm:text-sm uppercase tracking-wider border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all font-display shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black font-bold text-sm sm:text-sm border-2 border-black shadow-[2.5px_2.5px_0px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all shrink-0 cursor-pointer"
           >
             View Profile →
           </Link>
@@ -280,7 +280,7 @@ export default async function HomePage() {
                 Discover recurring pickleball groups, check skill levels, and join rosters.
               </p>
             </div>
-            <span className="mt-5 inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-black group-hover:underline">
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-black group-hover:underline">
               Browse groups →
             </span>
           </Link>
@@ -306,7 +306,7 @@ export default async function HomePage() {
                 Look up players across groups, inspect chemistry rankings, and match history.
               </p>
             </div>
-            <span className="mt-5 inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-black group-hover:underline">
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-black group-hover:underline">
               Search roster →
             </span>
           </Link>
@@ -332,7 +332,7 @@ export default async function HomePage() {
                 Configure courts, invite members, and auto-generate balanced round-robins.
               </p>
             </div>
-            <span className="mt-5 inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-black group-hover:underline">
+            <span className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-black group-hover:underline">
               Start group setup →
             </span>
           </Link>

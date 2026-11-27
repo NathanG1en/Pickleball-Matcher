@@ -59,7 +59,7 @@ export function DeleteAttemptButton({
           setConfirming(true);
         }}
         aria-label={`Delete attempt ${attemptLabel}`}
-        className="min-h-[36px] px-2.5 rounded-lg text-[11px] font-black uppercase tracking-wider text-neutral-600 hover:text-black hover:bg-neutral-100 cursor-pointer touch-manipulation select-none"
+        className="min-h-[36px] px-2.5 rounded-lg text-xs font-bold text-neutral-600 hover:text-black hover:bg-neutral-100 cursor-pointer touch-manipulation select-none"
       >
         Delete
       </button>
@@ -88,7 +88,7 @@ export function DeleteAttemptButton({
           });
         }}
         aria-label={`Confirm delete attempt ${attemptLabel}`}
-        className="min-h-[36px] px-2.5 rounded-lg bg-rose-600 text-white border border-black text-[11px] font-black uppercase tracking-wider cursor-pointer touch-manipulation select-none disabled:opacity-50"
+        className="min-h-[36px] px-2.5 rounded-lg bg-rose-600 text-white border border-black text-xs font-bold cursor-pointer touch-manipulation select-none disabled:opacity-50"
       >
         {isPending ? "Deleting..." : error ? "Retry delete" : "Delete"}
       </button>
@@ -96,7 +96,7 @@ export function DeleteAttemptButton({
         type="button"
         disabled={isPending}
         onClick={() => setConfirming(false)}
-        className="min-h-[36px] px-2.5 rounded-lg bg-white border border-black text-[11px] font-black uppercase tracking-wider cursor-pointer touch-manipulation select-none"
+        className="min-h-[36px] px-2.5 rounded-lg bg-white border border-black text-xs font-bold cursor-pointer touch-manipulation select-none"
       >
         Keep
       </button>

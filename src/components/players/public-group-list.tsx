@@ -10,7 +10,7 @@ import { Alert, EmptyState } from "@/components/ui";
 import { LeaveGroupButton } from "@/components/players/player-profile-controls";
 
 const emptyActionClass =
-  "inline-flex min-h-11 items-center rounded-xl border-2 border-black px-4 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all";
+  "inline-flex min-h-11 items-center rounded-xl border-2 border-black px-4 text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all";
 
 export function PublicGroupList({
   groups,
@@ -90,15 +90,15 @@ export function PublicGroupList({
                     {group.name}
                   </h2>
                   {group.isHost ? (
-                    <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                    <span className="rounded-md border-2 border-black bg-[#fde047] px-1.5 py-0.5 text-xs font-bold whitespace-nowrap">
                       Host
                     </span>
                   ) : group.isOrganizer ? (
-                    <span className="rounded-md border-2 border-black bg-[#bae6fd] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                    <span className="rounded-md border-2 border-black bg-[#bae6fd] px-1.5 py-0.5 text-xs font-bold whitespace-nowrap">
                       Organizer
                     </span>
                   ) : group.isMember ? (
-                    <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                    <span className="rounded-md border-2 border-black bg-[#ccff00] px-1.5 py-0.5 text-xs font-bold whitespace-nowrap">
                       Member
                     </span>
                   ) : null}
@@ -110,7 +110,7 @@ export function PublicGroupList({
               <div className="flex items-center gap-2 w-full sm:w-auto sm:shrink-0 pt-0.5 sm:pt-0">
                 <Link
                   href={`/g/${group.id}`}
-                  className="inline-flex items-center justify-center flex-1 sm:flex-initial sm:w-auto rounded-xl border-2 border-black bg-white px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer text-center whitespace-nowrap"
+                  className="inline-flex items-center justify-center flex-1 sm:flex-initial sm:w-auto rounded-xl border-2 border-black bg-white px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer text-center whitespace-nowrap"
                 >
                   View Group
                 </Link>
@@ -125,14 +125,14 @@ export function PublicGroupList({
                     type="button"
                     onClick={() => join(group.id, group.name)}
                     disabled={pendingGroup !== null}
-                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer whitespace-nowrap"
                   >
                     {pendingGroup === group.id ? "Joining…" : "Join"}
                   </button>
                 ) : (
                   <Link
                     href="/player-login"
-                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer whitespace-nowrap"
+                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer whitespace-nowrap"
                   >
                     Sign in to join
                   </Link>

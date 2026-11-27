@@ -240,7 +240,7 @@ function MergeGuestModalContent({
               data-testid="merge-confirm-no"
               disabled={isSaving}
               onClick={() => setIsConfirming(false)}
-              className="font-display text-xs uppercase tracking-wider"
+              className="text-sm"
             >
               No
             </Button>
@@ -250,7 +250,7 @@ function MergeGuestModalContent({
               data-testid="merge-confirm-yes"
               disabled={isSaving}
               onClick={handleExecuteMerge}
-              className="font-display text-xs uppercase tracking-wider bg-[#ccff00] hover:bg-[#b8e600] text-black"
+              className="text-sm bg-[#ccff00] hover:bg-[#b8e600] text-black"
             >
               {isSaving ? "Merging…" : "Yes"}
             </Button>
@@ -260,7 +260,7 @@ function MergeGuestModalContent({
         <form onSubmit={handleOpenConfirm} data-testid="merge-guest-modal" className="space-y-4 pt-1">
           {/* Merged Name Field */}
           <div>
-            <Label htmlFor={nameInputId} className="text-neutral-800 font-bold text-xs uppercase">
+            <Label htmlFor={nameInputId} className="text-neutral-800 font-bold text-xs">
               Merged Player Name
             </Label>
             <Input
@@ -285,7 +285,7 @@ function MergeGuestModalContent({
           {/* Select Guests */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor={searchInputId} className="text-neutral-800 font-bold text-xs uppercase">
+              <Label htmlFor={searchInputId} className="text-neutral-800 font-bold text-xs">
                 Select Guests to Merge ({selectedIds.size} selected)
               </Label>
               {selectedIds.size < 2 && (
@@ -340,7 +340,7 @@ function MergeGuestModalContent({
                           {player.name}
                         </span>
                         {player.id === guestPlayer.id && (
-                          <span className="rounded bg-black/10 px-1.5 py-0.5 text-[9px] font-black uppercase text-neutral-700">
+                          <span className="rounded bg-black/10 px-1.5 py-0.5 text-xs font-bold text-neutral-700">
                             Current
                           </span>
                         )}
@@ -369,7 +369,7 @@ function MergeGuestModalContent({
               variant="outline"
               onClick={onClose}
               disabled={isSaving}
-              className="font-display text-xs uppercase tracking-wider"
+              className="text-sm"
             >
               Cancel
             </Button>
@@ -378,7 +378,7 @@ function MergeGuestModalContent({
               variant="primary"
               data-testid="merge-guest-submit-button"
               disabled={isSaving || selectedIds.size < 2 || !mergedName.trim()}
-              className="font-display text-xs uppercase tracking-wider bg-[#ccff00] hover:bg-[#b8e600] text-black"
+              className="text-sm bg-[#ccff00] hover:bg-[#b8e600] text-black"
             >
               {isSaving ? "Merging…" : "Merge Players"}
             </Button>

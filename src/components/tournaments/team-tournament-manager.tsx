@@ -201,7 +201,7 @@ export function TeamTournamentManager({
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${tournament.groupId}`}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
           >
             ← Back to Group
           </Link>
@@ -245,14 +245,14 @@ export function TeamTournamentManager({
                   variant="primary"
                   type="submit"
                   disabled={isPending || !tournamentName.trim()}
-                  className="font-bold uppercase"
+                  className="font-bold"
                 >
                   Save
                 </Button>
                 <button
                   type="button"
                   onClick={() => setEditingName(false)}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
                 >
                   Cancel
                 </button>
@@ -286,7 +286,7 @@ export function TeamTournamentManager({
                 type="button"
                 onClick={handleToggleStatus}
                 disabled={isPending}
-                className="px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer bg-[#ccff00] hover:bg-[#b8eb00] text-black"
+                className="px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] cursor-pointer bg-[#ccff00] hover:bg-[#b8eb00] text-black"
               >
                 Finish Tournament
               </button>
@@ -310,7 +310,7 @@ export function TeamTournamentManager({
           <div className="flex items-center justify-between text-center gap-4">
             {/* Team 1 Banner */}
             <div className="flex-1 space-y-1">
-              <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider text-white bg-rose-600 border border-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold text-white bg-rose-600 border border-black shadow-[1px_1px_0px_0px_#000]">
                 Team 1
               </span>
               <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-black truncate">
@@ -325,13 +325,13 @@ export function TeamTournamentManager({
             </div>
 
             {/* VS Divider */}
-            <div className="px-3 py-1 rounded-xl bg-neutral-100 border-2 border-black font-display font-black text-xs uppercase text-neutral-600 shadow-[2px_2px_0px_0px_#000]">
+            <div className="px-3 py-1 rounded-xl bg-neutral-100 border-2 border-black font-bold text-xs text-neutral-600 shadow-[2px_2px_0px_0px_#000]">
               {scoreSummary.isTied ? "TIED" : "VS"}
             </div>
 
             {/* Team 2 Banner */}
             <div className="flex-1 space-y-1">
-              <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider text-white bg-sky-600 border border-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold text-white bg-sky-600 border border-black shadow-[1px_1px_0px_0px_#000]">
                 Team 2
               </span>
               <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-black truncate">
@@ -348,7 +348,7 @@ export function TeamTournamentManager({
 
           {scoreSummary.leaderTeamId && tournament.status === "completed" && (
             <div className="pt-2 border-t-2 border-neutral-100 text-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ccff00] text-black font-black text-xs uppercase border border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ccff00] text-black font-bold text-xs border border-black shadow-[2px_2px_0px_0px_#000]">
                 <TrophyIcon className="h-4 w-4" /> Winner:{" "}
                 {scoreSummary.leaderTeamId === team1.id ? team1.name : team2.name}
               </span>
@@ -368,7 +368,7 @@ export function TeamTournamentManager({
               type="button"
               data-testid="add-line-button"
               onClick={() => setIsAddingLine(true)}
-              className="px-3 py-1.5 rounded-xl bg-white border-2 border-black hover:bg-neutral-50 text-black font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-white border-2 border-black hover:bg-neutral-50 text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] cursor-pointer"
             >
               + Add Deciding Line
             </button>
@@ -388,7 +388,7 @@ export function TeamTournamentManager({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-neutral-100 border border-black">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-neutral-100 border border-black">
                       {line.type === "doubles" ? "2v2 Doubles" : "1v1 Singles"}
                     </span>
                     <h4 className="font-display font-black text-base uppercase text-black">
@@ -396,7 +396,7 @@ export function TeamTournamentManager({
                     </h4>
                   </div>
                   <span
-                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-black ${
+                    className={`text-xs font-bold px-2 py-0.5 rounded-md border border-black ${
                       isCompleted
                         ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
                         : line.status === "in_progress"
@@ -416,7 +416,7 @@ export function TeamTournamentManager({
                     }`}
                   >
                     <div>
-                      <span className="block text-[10px] font-black uppercase text-rose-600">
+                      <span className="block text-xs font-bold text-rose-600">
                         {team1?.name}
                       </span>
                       <span className="font-black text-xs text-black">
@@ -435,7 +435,7 @@ export function TeamTournamentManager({
                     }`}
                   >
                     <div>
-                      <span className="block text-[10px] font-black uppercase text-sky-600">
+                      <span className="block text-xs font-bold text-sky-600">
                         {team2?.name}
                       </span>
                       <span className="font-black text-xs text-black">
@@ -453,7 +453,7 @@ export function TeamTournamentManager({
                     <button
                       type="button"
                       onClick={() => handleOpenScoreModal(line)}
-                      className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] cursor-pointer"
                     >
                       {isCompleted ? "Edit Score & Players" : "Enter Score →"}
                     </button>
@@ -475,7 +475,7 @@ export function TeamTournamentManager({
           <div className="space-y-4 text-black">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-black uppercase text-rose-600 mb-1">
+                <label className="block text-xs font-bold text-rose-600 mb-1">
                   {team1?.name} Score
                 </label>
                 <input
@@ -489,7 +489,7 @@ export function TeamTournamentManager({
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase text-sky-600 mb-1">
+                <label className="block text-xs font-bold text-sky-600 mb-1">
                   {team2?.name} Score
                 </label>
                 <input
@@ -509,14 +509,14 @@ export function TeamTournamentManager({
                 type="button"
                 onClick={handleSaveScore}
                 disabled={isPending}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-sm font-black uppercase cursor-pointer"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold cursor-pointer"
               >
                 Save Score
               </button>
               <button
                 type="button"
                 onClick={() => setEditingLine(null)}
-                className="py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black font-display text-sm font-black uppercase cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black text-sm font-bold cursor-pointer"
               >
                 Cancel
               </button>
@@ -534,7 +534,7 @@ export function TeamTournamentManager({
         >
           <form onSubmit={handleAddLineSubmit} className="space-y-4 text-black">
             <div>
-              <label className="block text-xs font-black uppercase text-black mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Line Name
               </label>
               <input
@@ -547,7 +547,7 @@ export function TeamTournamentManager({
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase text-black mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Line Type
               </label>
               <div className="flex gap-4">
@@ -576,14 +576,14 @@ export function TeamTournamentManager({
               <button
                 type="submit"
                 disabled={isPending || !newLineName.trim()}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-sm font-black uppercase cursor-pointer"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold cursor-pointer"
               >
                 Add Line
               </button>
               <button
                 type="button"
                 onClick={() => setIsAddingLine(false)}
-                className="py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black font-display text-sm font-black uppercase cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black text-sm font-bold cursor-pointer"
               >
                 Cancel
               </button>

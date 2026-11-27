@@ -196,7 +196,7 @@ export function PlayerRoster({
           </div>
 
           <div>
-            <label htmlFor="player-gender-select" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+            <label htmlFor="player-gender-select" className="block text-xs font-bold text-black mb-1.5">
               Gender
             </label>
             <CustomDropdown
@@ -215,7 +215,7 @@ export function PlayerRoster({
           </div>
 
           <div>
-            <label htmlFor="player-rating-select" className="block text-xs uppercase font-black tracking-wider text-black mb-1.5">
+            <label htmlFor="player-rating-select" className="block text-xs font-bold text-black mb-1.5">
               Initial Skill Level
             </label>
             <CustomDropdown
@@ -269,7 +269,7 @@ export function PlayerRoster({
             )}
           </div>
 
-          <Button type="submit" variant="primary" disabled={!name.trim() || isPending} className="font-display text-base uppercase tracking-wider">
+          <Button type="submit" variant="primary" disabled={!name.trim() || isPending} className="text-base">
             Add Player
           </Button>
         </form>
@@ -308,7 +308,7 @@ export function PlayerRoster({
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1.5">
-                <label htmlFor="player-roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+                <label htmlFor="player-roster-filter" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                   Filter:
                 </label>
                 <CustomDropdown
@@ -328,7 +328,7 @@ export function PlayerRoster({
 
               {hasGenderData && (
                 <div className="flex items-center gap-1.5">
-                  <label htmlFor="player-roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+                  <label htmlFor="player-roster-gender-filter" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                     Gender:
                   </label>
                   <CustomDropdown
@@ -347,7 +347,7 @@ export function PlayerRoster({
               )}
 
               <div className="flex items-center gap-1.5">
-                <label htmlFor="player-roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+                <label htmlFor="player-roster-sort" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                   Sort:
                 </label>
                 <CustomDropdown
@@ -381,7 +381,7 @@ export function PlayerRoster({
                     setFilterType("all");
                     setFilterGender("all");
                   }}
-                  className="font-black uppercase text-neutral-900 underline hover:text-black cursor-pointer"
+                  className="font-bold text-neutral-900 underline hover:text-black cursor-pointer"
                 >
                   Reset
                 </button>
@@ -402,7 +402,7 @@ export function PlayerRoster({
                 setFilterType("all");
                 setFilterGender("all");
               }}
-              className="text-xs font-black uppercase underline hover:text-black cursor-pointer"
+              className="text-sm font-bold underline hover:text-black cursor-pointer"
             >
               Reset Filters
             </button>
@@ -439,9 +439,9 @@ export function PlayerRoster({
                         {player.gender && (
                           <>
                             <span aria-hidden="true" className="text-neutral-400">·</span>
-                            <span className="uppercase text-[11px] font-bold text-neutral-600">
+                            <span className="text-xs font-bold text-neutral-600">
                               <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
-                              <span className="hidden sm:inline">{player.gender}</span>
+                              <span className="hidden sm:inline">{player.gender === "male" ? "Male" : player.gender === "female" ? "Female" : player.gender}</span>
                             </span>
                           </>
                         )}
@@ -491,7 +491,7 @@ export function PlayerRoster({
                         type="button"
                         onClick={() => setPlayerToDelete(player)}
                         disabled={isPending}
-                        className="text-xs font-black uppercase text-rose-600 hover:text-rose-800 hover:underline cursor-pointer ml-1"
+                        className="text-sm font-bold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer ml-1"
                       >
                         Delete
                       </button>

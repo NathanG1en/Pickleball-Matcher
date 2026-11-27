@@ -128,7 +128,7 @@ export function GeneralTab({
         <div className="space-y-1.5">
           <label
             htmlFor="group-settings-name"
-            className="block text-xs font-black uppercase tracking-wider text-black"
+            className="block text-xs font-bold text-black"
           >
             Group Name
           </label>
@@ -156,7 +156,7 @@ export function GeneralTab({
         {/* Group Privacy Field */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="block text-xs font-black uppercase tracking-wider text-black">
+            <span className="block text-xs font-bold text-black">
               Group Privacy
             </span>
             <span className="text-[11px] font-bold text-neutral-600">
@@ -178,7 +178,7 @@ export function GeneralTab({
               }}
               aria-pressed={isPublic}
               data-testid="group-settings-privacy-public-button"
-              className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed ${
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed ${
                 isPublic
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                   : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
@@ -195,7 +195,7 @@ export function GeneralTab({
               }}
               aria-pressed={!isPublic}
               data-testid="group-settings-privacy-private-button"
-              className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed ${
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed ${
                 !isPublic
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                   : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
@@ -231,7 +231,7 @@ export function GeneralTab({
         <div className="space-y-1.5 pt-2 border-t-2 border-neutral-200">
           <label
             htmlFor="group-settings-id"
-            className="block text-xs font-black uppercase tracking-wider text-black"
+            className="block text-xs font-bold text-black"
           >
             Group ID
           </label>
@@ -249,7 +249,7 @@ export function GeneralTab({
               onClick={handleCopyGroupId}
               aria-label="Copy Group ID"
               data-testid="copy-group-id-button"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white hover:bg-[#ccff00] text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black bg-white hover:bg-[#ccff00] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer shrink-0"
             >
               {copied ? (
                 <>
@@ -276,7 +276,7 @@ export function GeneralTab({
           type="submit"
           disabled={!hasChanges || saving}
           data-testid="save-general-settings-button"
-          className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black font-display text-sm font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
         >
           {saving ? "Saving Changes…" : "Save Changes"}
         </button>

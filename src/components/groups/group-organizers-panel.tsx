@@ -608,7 +608,7 @@ export function GroupOrganizersPanel({
                     setAddMode("search");
                     setAddError(null);
                   }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                     addMode === "search"
                       ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                       : "text-neutral-800 hover:bg-black/10"
@@ -623,7 +623,7 @@ export function GroupOrganizersPanel({
                     setAddMode("guest");
                     setAddError(null);
                   }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase rounded-lg transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                     addMode === "guest"
                       ? "bg-black text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]"
                       : "text-neutral-800 hover:bg-black/10"
@@ -661,7 +661,7 @@ export function GroupOrganizersPanel({
                     className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                   {isSearching && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-neutral-500 animate-pulse">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-500 animate-pulse">
                       Searching…
                     </span>
                   )}
@@ -672,7 +672,7 @@ export function GroupOrganizersPanel({
               {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
                 <div className="mt-2 rounded-xl border-2 border-black bg-[#FFFDF7] p-2 space-y-2">
                   <div className="px-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                    <span className="text-xs font-bold text-neutral-500">
                       Public Accounts ({searchResults.length})
                     </span>
                   </div>
@@ -716,7 +716,7 @@ export function GroupOrganizersPanel({
                             type="button"
                             disabled={result.alreadyInGroup || addingAccountId === result.accountId}
                             onClick={() => handleAddSearchedPlayer(result.accountId)}
-                            className={`shrink-0 rounded-lg border-2 border-black px-2.5 py-1 text-[11px] font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
+                            className={`shrink-0 rounded-lg border-2 border-black px-2.5 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
                               result.alreadyInGroup
                                 ? "bg-neutral-200 text-neutral-500 cursor-default"
                                 : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
@@ -789,7 +789,7 @@ export function GroupOrganizersPanel({
                   <button
                     type="submit"
                     disabled={guestSaving || !guestName.trim()}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
                   >
                     {guestSaving ? "Adding..." : "Add"}
                   </button>
@@ -856,7 +856,7 @@ export function GroupOrganizersPanel({
           {/* Filter & Sort controls row */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <label htmlFor="roster-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+              <label htmlFor="roster-filter" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                 Filter:
               </label>
               <CustomDropdown
@@ -878,7 +878,7 @@ export function GroupOrganizersPanel({
 
             {hasGenderData && (
               <div className="flex items-center gap-1.5">
-                <label htmlFor="roster-gender-filter" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+                <label htmlFor="roster-gender-filter" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                   Gender:
                 </label>
                 <CustomDropdown
@@ -898,7 +898,7 @@ export function GroupOrganizersPanel({
             )}
 
             <div className="flex items-center gap-1.5">
-              <label htmlFor="roster-sort" className="sr-only sm:not-sr-only text-[10px] font-black uppercase text-neutral-800 shrink-0">
+              <label htmlFor="roster-sort" className="sr-only sm:not-sr-only text-xs font-bold text-neutral-800 shrink-0">
                 Sort:
               </label>
               <CustomDropdown
@@ -933,7 +933,7 @@ export function GroupOrganizersPanel({
                   setFilterType("all");
                   setFilterGender("all");
                 }}
-                className="font-black uppercase text-neutral-900 underline hover:text-black cursor-pointer"
+                className="font-bold text-neutral-900 underline hover:text-black cursor-pointer"
               >
                 Reset
               </button>
@@ -956,7 +956,7 @@ export function GroupOrganizersPanel({
               setFilterType("all");
               setFilterGender("all");
             }}
-            className="text-xs font-black uppercase underline hover:text-black cursor-pointer"
+            className="text-sm font-bold underline hover:text-black cursor-pointer"
           >
             Reset Filters
           </button>
@@ -997,9 +997,9 @@ export function GroupOrganizersPanel({
                           {player.gender && (
                             <>
                               <span aria-hidden="true" className="text-neutral-400">·</span>
-                              <span className="uppercase text-[11px] font-bold text-neutral-600">
+                              <span className="text-xs font-bold text-neutral-600">
                                 <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
-                                <span className="hidden sm:inline">{player.gender}</span>
+                                <span className="hidden sm:inline">{player.gender === "male" ? "Male" : player.gender === "female" ? "Female" : player.gender}</span>
                               </span>
                             </>
                           )}
@@ -1016,7 +1016,7 @@ export function GroupOrganizersPanel({
                     </div>
                     {organizer && (
                       <span
-                        className={`rounded-md border-2 border-black px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                        className={`rounded-md border-2 border-black px-1.5 py-0.5 text-xs font-bold whitespace-nowrap shrink-0 ${
                           organizer.isHost ? "bg-[#fde047]" : "bg-[#bae6fd]"
                         }`}
                       >

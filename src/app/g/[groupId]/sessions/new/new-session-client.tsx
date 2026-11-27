@@ -140,11 +140,11 @@ export function NewSessionClient({
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${groupId}`}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
           >
             ← Back to Group
           </Link>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 1 · Format
           </span>
         </div>
@@ -203,7 +203,7 @@ export function NewSessionClient({
               type="button"
               data-testid="select-normal-session-button"
               onClick={() => handleSelectFormat("normal")}
-              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Normal Session →
             </button>
@@ -247,7 +247,7 @@ export function NewSessionClient({
               type="button"
               data-testid="select-open-play-button"
               onClick={() => handleSelectFormat("open_play")}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base font-bold shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Open Play →
             </button>
@@ -266,11 +266,11 @@ export function NewSessionClient({
               type="button"
               onClick={() => setNormalStep("attendance")}
               data-testid="back-to-players-button"
-              className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
             >
               ← Back to Players
             </button>
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
               Step 3 of 3
             </span>
           </div>
@@ -304,8 +304,8 @@ export function NewSessionClient({
           <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
             <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
               <div className="text-left">
-                <p className="text-xs uppercase font-black tracking-wider text-neutral-500">Ready</p>
-                <p className="font-display text-base font-black uppercase text-black tracking-tight">
+                <p className="text-xs font-bold text-neutral-500">Ready</p>
+                <p className="text-base font-bold text-black tracking-tight">
                   {normalConfig.selectedPlayerIds.length} players · {stayTogetherPairs.length} {stayTogetherPairs.length === 1 ? "pair" : "pairs"}
                 </p>
               </div>
@@ -323,7 +323,7 @@ export function NewSessionClient({
                   })
                 }
                 data-testid="start-session-button"
-                className="flex-1 max-w-xs font-display text-lg tracking-wide uppercase"
+                className="flex-1 max-w-xs text-lg"
               >
                 {isPending ? "Starting..." : "Start Session"}
               </Button>
@@ -339,11 +339,11 @@ export function NewSessionClient({
           <button
             type="button"
             onClick={() => handleSelectFormat(null)}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
           >
             ← Change Format
           </button>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 2 of 3
           </span>
         </div>
@@ -394,11 +394,11 @@ export function NewSessionClient({
         <button
           type="button"
           onClick={() => handleSelectFormat(null)}
-          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         >
           ← Change Format
         </button>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
           Step 2 of 2
         </span>
       </div>
@@ -421,7 +421,7 @@ export function NewSessionClient({
 
         <div className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-5">
           <div>
-            <label htmlFor="open-play-name-input" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+            <label htmlFor="open-play-name-input" className="block text-xs font-bold text-black mb-1.5">
               Session Name (Optional)
             </label>
             <input
@@ -460,7 +460,7 @@ export function NewSessionClient({
             disabled={isPending}
             data-testid="start-open-play-button"
             onClick={handleStartOpenPlay}
-            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
           >
             {isPending ? "Starting Open Play..." : "Start Open Play"}
           </button>

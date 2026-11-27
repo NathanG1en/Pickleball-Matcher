@@ -108,7 +108,7 @@ export function JoinGroupClient({
         >
           ×
         </Link>
-        <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ccff00] border-2 border-black">
+        <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#ccff00] border-2 border-black">
           {isOrganizer ? "Group Organizer" : "Already a Member"}
         </div>
         <div>
@@ -127,13 +127,13 @@ export function JoinGroupClient({
         <div className="pt-2 space-y-3">
           <Link
             href={destination}
-            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
+            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000]"
           >
             {continueTo ? "Continue →" : "Go to Group Dashboard →"}
           </Link>
           <Link
             href="/"
-            className="block text-center text-xs font-black uppercase tracking-wider text-neutral-600 underline hover:text-black"
+            className="block text-center text-sm font-bold text-neutral-600 underline hover:text-black"
           >
             Back to Home
           </Link>
@@ -154,7 +154,7 @@ export function JoinGroupClient({
           ×
         </Link>
 
-        <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ccff00] border-2 border-black">
+        <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#ccff00] border-2 border-black">
           Group Invitation
         </div>
 
@@ -168,7 +168,7 @@ export function JoinGroupClient({
         </div>
 
         <div className="rounded-2xl border-2 border-black bg-neutral-50 p-4 text-left shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 block mb-1">
+          <span className="text-xs font-bold text-neutral-500 block mb-1">
             Signing in as
           </span>
           <div className="font-display text-lg font-black uppercase text-black">
@@ -190,7 +190,7 @@ export function JoinGroupClient({
             type="button"
             onClick={handleAccountJoin}
             disabled={accountJoining}
-            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-lg font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
+            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
           >
             {accountJoining ? "Joining Group…" : "Join Group Now"}
           </button>
@@ -219,7 +219,7 @@ export function JoinGroupClient({
         ×
       </Link>
 
-      <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#ccff00] border-2 border-black">
+      <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#ccff00] border-2 border-black">
         Group Invitation
       </div>
 
@@ -239,11 +239,11 @@ export function JoinGroupClient({
       {/* Option 1: Guest Join Form */}
       <div className="rounded-2xl border-2 border-black bg-[#fefce8] p-4 text-left shadow-[3px_3px_0px_0px_#000] space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+          <span className="text-xs font-bold text-black flex items-center gap-1.5">
             <ZapIcon className="h-3.5 w-3.5 shrink-0" />
             <span>Quick Guest Join</span>
           </span>
-          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-black text-[#ccff00]">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-black text-[#ccff00]">
             No Password
           </span>
         </div>
@@ -259,7 +259,7 @@ export function JoinGroupClient({
 
         <form onSubmit={handleGuestJoin} className="space-y-3">
           <div>
-            <label htmlFor="guest-join-name" className="block text-[11px] font-black uppercase tracking-wider text-black mb-1">
+            <label htmlFor="guest-join-name" className="block text-xs font-bold text-black mb-1">
               Your Name
             </label>
             <input
@@ -279,7 +279,7 @@ export function JoinGroupClient({
           </div>
 
           <div>
-            <label htmlFor="guest-join-skill" className="block text-[11px] font-black uppercase tracking-wider text-black mb-1">
+            <label htmlFor="guest-join-skill" className="block text-xs font-bold text-black mb-1">
               Skill Level
             </label>
             <CustomDropdown
@@ -301,7 +301,7 @@ export function JoinGroupClient({
           <button
             type="submit"
             disabled={guestJoining || !guestName.trim()}
-            className="w-full py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] font-display text-base font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl bg-black hover:bg-neutral-900 text-[#ccff00] text-base font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
           >
             {guestJoining ? "Joining as Guest…" : "Join as Guest"}
           </button>
@@ -311,7 +311,7 @@ export function JoinGroupClient({
       {/* Divider */}
       <div className="relative flex py-1 items-center">
         <div className="flex-grow border-t-2 border-neutral-200"></div>
-        <span className="flex-shrink mx-3 text-[10px] font-black uppercase tracking-widest text-neutral-500">
+        <span className="flex-shrink mx-3 text-xs font-bold text-neutral-500">
           Or with a Player Account
         </span>
         <div className="flex-grow border-t-2 border-neutral-200"></div>
@@ -321,13 +321,13 @@ export function JoinGroupClient({
       <div className="space-y-2">
         <Link
           href={`/player-login?next=${encodeURIComponent(joinPath)}`}
-          className="block text-center w-full py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+          className="block text-center w-full py-3 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base font-bold shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
         >
           Sign In to Existing Account
         </Link>
         <Link
           href={`/player-signup?next=${encodeURIComponent(joinPath)}`}
-          className="block text-center w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-50 text-black border-2 border-black font-display text-base font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+          className="block text-center w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-50 text-black border-2 border-black text-base font-bold shadow-[3px_3px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
         >
           Create New Account
         </Link>

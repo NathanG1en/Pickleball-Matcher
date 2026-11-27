@@ -357,7 +357,7 @@ export function TournamentBracketManager({
         <div className="flex items-center justify-between">
           <Link
             href={`/g/${tournament.groupId}`}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
           >
             ← Back to Group
           </Link>
@@ -401,14 +401,14 @@ export function TournamentBracketManager({
                   variant="primary"
                   type="submit"
                   disabled={isPending || !tournamentName.trim()}
-                  className="font-bold uppercase"
+                  className="font-bold"
                 >
                   Save
                 </Button>
                 <button
                   type="button"
                   onClick={() => setEditingName(false)}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
+                  className="rounded-xl border-2 border-black bg-white px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-100"
                 >
                   Cancel
                 </button>
@@ -441,7 +441,7 @@ export function TournamentBracketManager({
               <button
                 type="button"
                 onClick={handleToggleStatus}
-                className="px-3 py-1.5 rounded-xl border-2 border-black font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer bg-[#ccff00] hover:bg-[#b8eb00] text-black"
+                className="px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] cursor-pointer bg-[#ccff00] hover:bg-[#b8eb00] text-black"
               >
                 Mark Finished
               </button>
@@ -459,7 +459,7 @@ export function TournamentBracketManager({
                   key={div}
                   type="button"
                   onClick={() => setActiveDivision(div)}
-                  className={`px-3.5 py-1.5 rounded-xl border-2 font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer ${
                     isActive
                       ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
                       : "bg-white border-neutral-300 text-neutral-700 hover:border-black"
@@ -503,7 +503,7 @@ export function TournamentBracketManager({
             size="sm"
             onClick={handleReshuffle}
             disabled={isPending}
-            className="font-display uppercase text-xs inline-flex items-center gap-1.5"
+            className="text-sm inline-flex items-center gap-1.5"
           >
             <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
             <span>Reshuffle Matchups</span>
@@ -544,10 +544,10 @@ export function TournamentBracketManager({
           return (
             <div key={roundNum} className="round-column space-y-3">
               <div className="flex items-center gap-2">
-                <span className="bg-black text-[#ccff00] px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider font-display border border-black shadow-[2px_2px_0px_0px_#000]">
+                <span className="bg-black text-[#ccff00] px-3 py-1 rounded-xl text-xs font-bold border border-black shadow-[2px_2px_0px_0px_#000]">
                   {roundName}
                 </span>
-                <span className="text-xs font-bold text-neutral-500 uppercase">
+                <span className="text-xs font-bold text-neutral-500">
                   {roundMatches.length} {roundMatches.length === 1 ? "Match" : "Matches"}
                 </span>
               </div>
@@ -568,24 +568,24 @@ export function TournamentBracketManager({
                     >
                       {/* Match Header */}
                       <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-neutral-100">
-                        <span className="text-xs font-black uppercase tracking-wider text-neutral-600">
+                        <span className="text-xs font-bold text-neutral-600">
                           Match {m.matchNumber} {isFinals ? "· Championship" : ""}
                         </span>
                         <div className="flex items-center gap-1.5">
                           {isBye ? (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-neutral-400 bg-neutral-100 text-neutral-600">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded border border-neutral-400 bg-neutral-100 text-neutral-600">
                               Skipped
                             </span>
                           ) : isCompleted ? (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-black bg-[#ccff00] text-black">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded border border-black bg-[#ccff00] text-black">
                               Done
                             </span>
                           ) : p1 && p2 ? (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-neutral-300 bg-white text-neutral-600">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded border border-neutral-300 bg-white text-neutral-600">
                               In Play
                             </span>
                           ) : (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-dashed border-neutral-400 bg-white text-neutral-600">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded border border-dashed border-neutral-400 bg-white text-neutral-600">
                               Waiting
                             </span>
                           )}
@@ -593,7 +593,7 @@ export function TournamentBracketManager({
                             <button
                               type="button"
                               onClick={() => openEditModal(m)}
-                              className="text-xs font-bold text-neutral-500 hover:text-black uppercase underline p-1 cursor-pointer"
+                              className="text-sm font-bold text-neutral-500 hover:text-black underline p-1 cursor-pointer"
                               title="Edit matchup or scores"
                             >
                               Edit
@@ -710,7 +710,7 @@ export function TournamentBracketManager({
                                 type="button"
                                 onClick={() => handleResetWinner(m.id)}
                                 disabled={isPending}
-                                className="text-[11px] font-black uppercase text-neutral-500 hover:text-black underline cursor-pointer"
+                                className="text-xs font-bold text-neutral-500 hover:text-black underline cursor-pointer"
                               >
                                 Reset Winner
                               </button>
@@ -721,7 +721,7 @@ export function TournamentBracketManager({
                             onClick={() => handleSaveMatchScore(m.id)}
                             disabled={isPending}
                             data-testid={`save-score-${m.id}`}
-                            className="px-3 py-1 rounded-xl bg-black hover:bg-neutral-800 text-white font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                            className="px-3 py-1 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                           >
                             Save
                           </button>
@@ -751,7 +751,7 @@ export function TournamentBracketManager({
 
             {/* Slot 1 Selection */}
             <div>
-              <label className="block text-xs font-black uppercase text-black mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Participant 1
               </label>
               <CustomDropdown
@@ -774,7 +774,7 @@ export function TournamentBracketManager({
 
             {/* Slot 2 Selection */}
             <div>
-              <label className="block text-xs font-black uppercase text-black mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Participant 2
               </label>
               <CustomDropdown
@@ -798,7 +798,7 @@ export function TournamentBracketManager({
             {/* Scores */}
             <div className="grid grid-cols-2 gap-3 pt-2 border-t-2 border-neutral-100">
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Score 1
                 </label>
                 <input
@@ -812,7 +812,7 @@ export function TournamentBracketManager({
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase text-black mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Score 2
                 </label>
                 <input

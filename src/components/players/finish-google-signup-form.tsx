@@ -111,7 +111,7 @@ export function FinishGoogleSignupForm({
       </FormField>
 
       <fieldset className="space-y-1.5" aria-describedby={fieldErrors.gender?.length ? "finish-gender-error" : undefined}>
-        <legend className="mb-1.5 block text-xs font-black uppercase tracking-wider text-black">Gender</legend>
+        <legend className="mb-1.5 block text-xs font-bold text-black">Gender</legend>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Gender">
           {GENDERS.map((option) => {
             const selected = gender === option.value;
@@ -123,7 +123,7 @@ export function FinishGoogleSignupForm({
                 aria-checked={selected}
                 data-testid={`finish-gender-${option.value}`}
                 onClick={() => setGender(option.value)}
-                className={`min-h-11 rounded-xl border-2 border-black px-3 font-display text-base font-black uppercase text-black transition-[transform,box-shadow,background-color] ${
+                className={`min-h-11 rounded-xl border-2 border-black px-3 text-base font-bold text-black transition-[transform,box-shadow,background-color] ${
                   selected ? "bg-[#ccff00] shadow-[3px_3px_0px_0px_#000] -translate-y-0.5" : "bg-white hover:bg-neutral-100"
                 }`}
               >
@@ -186,7 +186,7 @@ export function FinishGoogleSignupForm({
         </FormField>
       )}
 
-      <Button type="submit" variant="primary" size="lg" disabled={pending} className="min-h-11 w-full font-display text-lg uppercase">
+      <Button type="submit" variant="primary" size="lg" disabled={pending} className="min-h-11 w-full text-lg">
         {pending ? "Creating account…" : "Let's play →"}
       </Button>
     </form>

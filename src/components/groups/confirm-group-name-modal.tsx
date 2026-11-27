@@ -94,7 +94,7 @@ export function ConfirmGroupNameModal({
             variant="outline"
             onClick={handleClose}
             disabled={isPending}
-            className="font-display text-xs uppercase tracking-wider"
+            className="text-sm"
           >
             Cancel
           </Button>
@@ -102,7 +102,7 @@ export function ConfirmGroupNameModal({
             type="submit"
             variant={confirmVariant}
             disabled={!isConfirmed || isPending}
-            className="font-display text-xs uppercase tracking-wider"
+            className="text-sm"
           >
             {isPending ? pendingButtonText : confirmButtonText}
           </Button>

@@ -88,7 +88,7 @@ export function VerifyEmailView({
         </div>
         <Link
           href="/players"
-          className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-5 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+          className="inline-flex min-h-11 items-center rounded-xl border-2 border-black bg-[#ccff00] px-5 text-sm font-bold text-black shadow-[3px_3px_0px_0px_#000] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
         >
           Go to Profile →
         </Link>
@@ -159,7 +159,7 @@ export function VerifyEmailView({
           variant="primary"
           size="md"
           disabled={pending || !isCompleteOtp(manualCode)}
-          className="min-h-11 w-full font-display uppercase font-black"
+          className="min-h-11 w-full font-bold"
         >
           {pending ? "Checking…" : "Verify Code"}
         </Button>

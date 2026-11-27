@@ -60,11 +60,11 @@ export default async function DrillHistoryPage({
 
   const header = (
     <div className="space-y-2">
-      <Link href={backHref} className="inline-flex items-center min-h-[40px] text-xs font-black uppercase tracking-wider text-neutral-700 hover:text-black">
+      <Link href={backHref} className="inline-flex items-center min-h-[40px] text-sm font-bold text-neutral-700 hover:text-black">
         ← Training
       </Link>
       <div>
-        <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 block">
+        <span className="text-xs font-bold text-neutral-500 block">
           {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory} · History
         </span>
         <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black leading-tight">
@@ -82,7 +82,7 @@ export default async function DrillHistoryPage({
           <p className="text-sm font-medium text-neutral-700">Sign in to see your results for this drill.</p>
           <Link
             href={`/player-login?returnTo=${encodeURIComponent(rangeHref(showAllTime))}`}
-            className="inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-xl bg-[#ccff00] text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]"
+            className="inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-xl bg-[#ccff00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000]"
           >
             Sign In →
           </Link>
@@ -132,14 +132,14 @@ export default async function DrillHistoryPage({
           <>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 block">Latest</span>
+                <span className="text-xs font-bold text-neutral-500 block">Latest</span>
                 <span className="font-display text-3xl font-black text-black">
                   {formatLastResultValue(challenge, lastResult!)}
                 </span>
               </div>
               {bestValue !== null && (
                 <div className="text-right">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 block">Personal best</span>
+                  <span className="text-xs font-bold text-neutral-500 block">Personal best</span>
                   <span className="font-display text-lg font-black text-black">{formatMetricValue(challenge, bestValue)}</span>
                 </div>
               )}
@@ -171,7 +171,7 @@ export default async function DrillHistoryPage({
                     key={String(all)}
                     href={rangeHref(all)}
                     aria-current={active ? "page" : undefined}
-                    className={`min-h-[36px] px-3 inline-flex items-center rounded-xl border-2 border-black font-display text-[11px] font-black uppercase tracking-wider ${
+                    className={`min-h-[36px] px-3 inline-flex items-center rounded-xl border-2 border-black text-xs font-bold ${
                       active ? "bg-black text-[#ccff00]" : "bg-white text-black hover:bg-neutral-100"
                     }`}
                   >

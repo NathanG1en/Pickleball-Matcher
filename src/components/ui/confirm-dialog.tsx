@@ -54,7 +54,7 @@ export function ConfirmDialog({
             variant="outline"
             onClick={onClose}
             disabled={disabled}
-            className="font-display uppercase tracking-wider text-sm"
+            className="text-sm"
           >
             {cancelText}
           </Button>
@@ -64,7 +64,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={disabled}
             data-testid={confirmDataTestId}
-            className="font-display uppercase tracking-wider text-sm"
+            className="text-sm"
           >
             {confirmText}
           </Button>

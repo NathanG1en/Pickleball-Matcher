@@ -54,7 +54,7 @@ export default async function PlayerProfilePage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-neutral-800">Chemistry Spotlight</p>
+                    <p className="text-xs font-bold text-neutral-800">Chemistry Spotlight</p>
                     <SynergyExplainerButton />
                   </div>
                   <h2 className="font-display text-2xl font-black uppercase">Best Partner</h2>
@@ -87,7 +87,7 @@ export default async function PlayerProfilePage() {
             <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Chemistry Spotlight</p>
+                  <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
                   <SynergyExplainerButton />
                 </div>
                 <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
@@ -117,8 +117,8 @@ export default async function PlayerProfilePage() {
             <div className="mb-3 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl font-black uppercase">My Groups</h2>
               <div className="flex gap-2">
-                <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
-                <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
+                <Link href="/setup" className="rounded-xl border-2 border-black bg-[#fde047] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Create</Link>
+                <Link href="/players/groups" className="rounded-xl border-2 border-black bg-[#FFFDF7] px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">Find groups</Link>
               </div>
             </div>
             {groups.length === 0 ? (

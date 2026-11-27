@@ -319,18 +319,18 @@ export function TemporaryGroupClient({
         <div className="flex items-center justify-between gap-2">
           <BackButton
             onClick={handleBack}
-            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-white border-2 border-black font-bold text-xs text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
           />
           <div className="flex items-center gap-2">
             {!accountId ? (
               <Link
                 href={`/player-login?next=${temporaryReturn}`}
-                className="px-3.5 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] border-2 border-black font-display font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
               >
                 Sign In
               </Link>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#dcfce7] border-2 border-black font-display font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#dcfce7] border-2 border-black font-bold text-xs text-black shadow-[2px_2px_0px_0px_#000]">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
                 Signed In
               </span>
@@ -340,7 +340,7 @@ export function TemporaryGroupClient({
 
         <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-black bg-[#fde047] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-black shadow-[1px_1px_0px_0px_#000]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-black bg-[#fde047] px-2.5 py-1 text-xs font-bold text-black shadow-[1px_1px_0px_0px_#000]">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
               Quick Session · Browser only
             </span>
@@ -400,7 +400,7 @@ export function TemporaryGroupClient({
         <>
           <section className="rounded-3xl border-[3px] border-black bg-[#fef08a] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border border-black shadow-[1px_1px_0px_0px_#000]">
                 Save Session
               </span>
               <h2 className="mt-2 font-display text-2xl font-black uppercase text-black">
@@ -418,7 +418,7 @@ export function TemporaryGroupClient({
                 <button
                   type="button"
                   onClick={() => setSaveDestination("existing")}
-                  className={`py-2 px-3 rounded-xl font-display text-xs font-black uppercase transition-all ${
+                  className={`py-2 px-3 rounded-xl text-sm font-bold transition-all ${
                     saveDestination === "existing"
                       ? "bg-black text-[#ccff00] shadow-[2px_2px_0px_0px_#000]"
                       : "bg-transparent text-black hover:bg-yellow-300"
@@ -429,7 +429,7 @@ export function TemporaryGroupClient({
                 <button
                   type="button"
                   onClick={() => setSaveDestination("new")}
-                  className={`py-2 px-3 rounded-xl font-display text-xs font-black uppercase transition-all ${
+                  className={`py-2 px-3 rounded-xl text-sm font-bold transition-all ${
                     saveDestination === "new"
                       ? "bg-black text-[#ccff00] shadow-[2px_2px_0px_0px_#000]"
                       : "bg-transparent text-black hover:bg-yellow-300"
@@ -443,7 +443,7 @@ export function TemporaryGroupClient({
             {accountId && saveDestination === "existing" && userGroups.length > 0 ? (
               <div className="space-y-3">
                 <div>
-                  <span className="block text-xs font-black uppercase text-black mb-1">
+                  <span className="block text-xs font-bold text-black mb-1">
                     Select Group
                   </span>
                   <CustomDropdown
@@ -470,7 +470,7 @@ export function TemporaryGroupClient({
                     className="rounded-2xl border-2 border-black bg-[#fee2e2] p-4 text-xs font-bold text-red-950 shadow-[3px_3px_0px_0px_#000] space-y-2.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-display text-xs font-black uppercase tracking-wide text-red-900 flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
                         <span>⚠️</span> Matching Names Not Incorporated
                       </span>
                       <button
@@ -482,7 +482,7 @@ export function TemporaryGroupClient({
                           }
                           setPlayerMappings(updated);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-black text-[#ccff00] font-display text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-black text-[#ccff00] text-xs font-bold shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                       >
                         Merge Matching
                       </button>
@@ -502,7 +502,7 @@ export function TemporaryGroupClient({
 
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-black uppercase text-black">
+                    <label className="block text-xs font-bold text-black">
                       Merge Session Players into Roster
                     </label>
                     <span className="text-[10px] font-bold text-neutral-600">
@@ -515,7 +515,7 @@ export function TemporaryGroupClient({
                         key={player.id}
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border-2 border-black bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000]"
                       >
-                        <span className="font-display text-xs font-black uppercase text-black truncate max-w-[140px]">
+                        <span className="text-xs font-bold text-black truncate max-w-[140px]">
                           {player.name}
                         </span>
                         <div className="flex items-center gap-1.5">
@@ -551,14 +551,14 @@ export function TemporaryGroupClient({
                   type="button"
                   onClick={saveToAccount}
                   disabled={saving || !selectedGroupId}
-                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 font-display text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? "Attaching Session…" : "Attach Session to Group →"}
                 </button>
               </div>
             ) : accountId ? (
               <div className="space-y-3">
-                <label className="block text-xs font-black uppercase text-black">
+                <label className="block text-xs font-bold text-black">
                   Group name
                   <input
                     aria-label="Temporary group name"
@@ -572,7 +572,7 @@ export function TemporaryGroupClient({
                   type="button"
                   onClick={saveToAccount}
                   disabled={saving}
-                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 font-display text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? "Creating Group & Saving Session…" : "Create Group & Save Session →"}
                 </button>
@@ -581,13 +581,13 @@ export function TemporaryGroupClient({
               <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                 <Link
                   href={`/player-login?next=${temporaryReturn}`}
-                  className="flex-1 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-2.5 text-center font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                  className="flex-1 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-2.5 text-center text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                 >
                   Sign in to save
                 </Link>
                 <Link
                   href={`/player-signup?next=${temporaryReturn}`}
-                  className="rounded-xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-2.5 text-center font-display text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                  className="rounded-xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-2.5 text-center text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                 >
                   Sign up
                 </Link>
@@ -604,7 +604,7 @@ export function TemporaryGroupClient({
           <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-2xl font-black uppercase">Players</h2>
-              <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
                 {state.players.length} total
               </span>
             </div>
@@ -625,7 +625,7 @@ export function TemporaryGroupClient({
               <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#ccff00] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase text-black">
+                    <span className="text-xs font-bold text-black">
                       Round {state.currentRound.roundNumber}
                     </span>
                     <button
@@ -633,7 +633,7 @@ export function TemporaryGroupClient({
                       onClick={reshuffle}
                       data-testid="reshuffle-round-button"
                       aria-label="Reshuffle matchups"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white hover:bg-neutral-100 border-2 border-black font-display font-black uppercase text-xs text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white hover:bg-neutral-100 border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                     >
                       <ShuffleIcon className="h-3.5 w-3.5 shrink-0" />
                       <span>Reshuffle</span>
@@ -650,7 +650,7 @@ export function TemporaryGroupClient({
                     <div key={court.courtNumber} className="rounded-2xl border-2 border-black bg-[#FFFDF7] p-4 shadow-[3px_3px_0px_0px_#000] space-y-3">
                       <div className="flex items-center justify-between border-b-2 border-neutral-100 pb-2">
                         <span className="font-display text-xl font-black uppercase">Court {court.courtNumber}</span>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-black bg-[#fef08a]">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md border border-black bg-[#fef08a]">
                           {court.team1.length + court.team2.length === 3 ? "2v1 · Unrated" : court.team1.length === 1 ? "Singles · Unrated" : "Doubles"}
                         </span>
                       </div>
@@ -672,7 +672,7 @@ export function TemporaryGroupClient({
                           />
                         </div>
 
-                        <div className="text-center font-display font-black text-xs uppercase tracking-widest text-neutral-500">
+                        <div className="text-center font-bold text-xs text-neutral-500">
                           VS
                         </div>
 
@@ -710,7 +710,7 @@ export function TemporaryGroupClient({
                   type="button"
                   disabled={!isRoundScored(state.currentRound)}
                   onClick={commitRound}
-                  className="w-full rounded-2xl border-2 border-black bg-black hover:bg-neutral-900 text-[#ccff00] px-4 py-3.5 font-display text-base font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-full rounded-2xl border-2 border-black bg-black hover:bg-neutral-900 text-[#ccff00] px-4 py-3.5 text-base font-bold shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                 >
                   Save Round
                 </button>
@@ -719,7 +719,7 @@ export function TemporaryGroupClient({
               <button
                 type="button"
                 onClick={propose}
-                className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 font-display text-lg font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer"
+                className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 text-lg font-bold shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all cursor-pointer"
               >
                 {state.rounds.length ? "Generate Next Round" : "Generate First Round"}
               </button>
@@ -728,7 +728,7 @@ export function TemporaryGroupClient({
             <section className="space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000]">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-2xl font-black uppercase">Completed Rounds</h2>
-                <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 border border-black shadow-[1px_1px_0px_0px_#000]">
                   {state.rounds.length} saved
                 </span>
               </div>
@@ -752,7 +752,7 @@ export function TemporaryGroupClient({
           className="space-y-5 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 shadow-[6px_6px_0px_0px_#000]"
         >
           <div className="space-y-1">
-            <label className="block text-xs font-black uppercase tracking-wide">
+            <label className="block text-xs font-bold">
               Player names · one per line
             </label>
             <textarea
@@ -775,7 +775,7 @@ export function TemporaryGroupClient({
           </div>
 
           <div className="space-y-1">
-            <span className="block text-xs font-black uppercase tracking-wide">
+            <span className="block text-xs font-bold">
               Number of courts
             </span>
             <CustomDropdown
@@ -836,7 +836,7 @@ export function TemporaryGroupClient({
           <button
             type="submit"
             disabled={parsedNames.length < 2 || parsedNames.length > 128 || courtCapacity > parsedNames.length}
-            className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 font-display text-lg font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all disabled:opacity-40 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] cursor-pointer disabled:cursor-not-allowed"
+            className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 text-lg font-bold shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all disabled:opacity-40 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] cursor-pointer disabled:cursor-not-allowed"
           >
             Start Quick Session
           </button>
@@ -895,14 +895,14 @@ function RoundSummary({ round, players }: { round: TemporaryRound; players: Temp
     <article className="rounded-2xl border-2 border-black bg-neutral-50 p-4 shadow-[3px_3px_0px_0px_#000] space-y-3">
       <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
         <h3 className="font-display text-lg font-black uppercase">Round {round.roundNumber}</h3>
-        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-black bg-[#dcfce7]">
+        <span className="text-xs font-bold px-2 py-0.5 rounded-md border border-black bg-[#dcfce7]">
           Final
         </span>
       </div>
       <ul className="space-y-2">
         {round.courts.map((court) => (
           <li key={court.courtNumber} className="flex items-center justify-between gap-2 text-sm font-bold bg-[#FFFDF7] p-2.5 rounded-xl border border-black">
-            <span className="text-xs font-black uppercase text-neutral-600 shrink-0">Court {court.courtNumber}</span>
+            <span className="text-xs font-bold text-neutral-600 shrink-0">Court {court.courtNumber}</span>
             <div className="flex items-center gap-2 truncate">
               <span className="truncate">{court.team1.map((id) => playerName(players, id)).join(" & ")}</span>
               <span className="font-display font-black px-2 py-0.5 rounded-md bg-neutral-100 border border-black text-xs">
@@ -928,7 +928,7 @@ export function ExitWarning({ accountId, onStay, onLeave }: { accountId: string 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="presentation">
       <section role="dialog" aria-modal="true" aria-labelledby="temporary-exit-title" className="w-full max-w-md space-y-4 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-6 sm:p-7 shadow-[8px_8px_0px_0px_#000]">
         <div className="space-y-1">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fee2e2] border border-black text-[10px] font-black uppercase tracking-wider text-red-900">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#fee2e2] border border-black text-xs font-bold text-red-900">
             Unsaved Progress
           </span>
           <h2 id="temporary-exit-title" className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight">
@@ -942,13 +942,13 @@ export function ExitWarning({ accountId, onStay, onLeave }: { accountId: string 
           <div className="grid grid-cols-2 gap-2.5">
             <Link
               href={`/player-login?next=${temporaryReturn}`}
-              className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-3 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-3 py-3 text-center text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
               Sign in to save
             </Link>
             <Link
               href={`/player-signup?next=${temporaryReturn}`}
-              className="rounded-2xl border-2 border-black bg-[#7dd3fc] hover:bg-sky-300 px-3 py-3 text-center text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="rounded-2xl border-2 border-black bg-[#7dd3fc] hover:bg-sky-300 px-3 py-3 text-center text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
               Sign up
             </Link>
@@ -962,7 +962,7 @@ export function ExitWarning({ accountId, onStay, onLeave }: { accountId: string 
         <button
           type="button"
           onClick={onStay}
-          className="w-full rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+          className="w-full rounded-2xl border-2 border-black bg-white hover:bg-neutral-100 px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
         >
           Keep playing
         </button>

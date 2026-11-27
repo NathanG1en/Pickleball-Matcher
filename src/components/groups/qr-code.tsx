@@ -61,7 +61,7 @@ export function QRCodeDisplay({
         className={`flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 animate-pulse ${className}`}
         aria-label="Loading QR code"
       >
-        <span className="text-xs font-black uppercase tracking-wider text-neutral-400">Loading…</span>
+        <span className="text-xs font-bold text-neutral-400">Loading…</span>
       </div>
     );
   }

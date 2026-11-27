@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
         </Alert>
         {localDevUrl && (
           <div className="rounded-xl border-2 border-black bg-[#ccff00] p-3 text-xs font-bold text-black shadow-[2px_2px_0px_0px_#000]">
-            <p className="font-black uppercase tracking-wider text-[11px]">Local Development Link:</p>
+            <p className="font-bold text-xs">Local Development Link:</p>
             <Link
               href={localDevUrl}
               className="mt-1 inline-block underline font-black text-black break-all"
@@ -55,13 +55,13 @@ export function ForgotPasswordForm() {
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
           <Link
             href={`/reset-password${identifier.includes("@") ? `?email=${encodeURIComponent(identifier)}` : ""}`}
-            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 font-display text-sm font-black uppercase text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-[#ccff00] px-4 py-2 text-sm font-bold text-black shadow-[3px_3px_0px_0px_#000] hover:bg-[#b8e600]"
           >
             Enter Reset Code →
           </Link>
           <Link
             href="/player-login"
-            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-white px-4 py-2 font-display text-sm font-black uppercase text-black hover:bg-neutral-100"
+            className="w-full sm:w-auto text-center rounded-xl border-2 border-black bg-white px-4 py-2 text-sm font-bold text-black hover:bg-neutral-100"
           >
             Back to Sign In
           </Link>
@@ -98,7 +98,7 @@ export function ForgotPasswordForm() {
         variant="primary"
         size="lg"
         disabled={pending || !identifier.trim()}
-        className="w-full font-display text-lg uppercase"
+        className="w-full text-lg"
       >
         {pending ? "Sending Link…" : "Send Reset Link"}
       </Button>

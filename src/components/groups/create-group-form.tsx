@@ -69,7 +69,7 @@ export function CreateGroupForm() {
         variant="primary"
         size="lg"
         disabled={isPending || !name.trim()}
-        className="w-full font-display text-lg uppercase"
+        className="w-full text-lg"
       >
         {isPending ? "Creating…" : "Create Group"}
       </Button>
