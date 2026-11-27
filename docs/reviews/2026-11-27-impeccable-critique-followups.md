@@ -54,14 +54,41 @@ Measurements were taken on the local test server with seeded test data, at a 390
 - **Manual Edit swap** keeps lime: it is the primary action in that mode.
 - **Grey-on-yellow advisory** from `impeccable detect` could not be reproduced on rendered pages. The measured combination is 5.9:1, which passes AA, so it is left as an advisory.
 
+## Second round: the items left open
+
+### Resilience test race (`4121e01`)
+`tests/e2e/resilience.spec.ts:6` was not flaky timing in live sync. It waited for `text=Final`, which also matched the End session note ("Ending finalizes ratings"), so it moved on before Court 1 had saved. The second tab then loaded an unscored round, and its Save & Start was disabled.
+- **Fix:** the test now waits for Court 1's own Final badge.
+- **Result:** it passes on Desktop and Mobile Chrome, and the stale-tab "session changed" check and the a11y audits run again.
+- **Note:** live session sync runs only for viewers, not organizers, so a second organizer tab still goes stale by design. That is what this test checks.
+
+### Acceptance spec (`40433d4`)
+- `acceptance.spec.ts:6` still looked for the old `in-progress-warning-modal` after End moved to the shared ConfirmDialog (`4e69b41`).
+- It now checks `end-session-dialog` and passes on both projects.
+
+### Nested cards and dashboard balance (`496f67c`)
+- **Flatter cards:**
+  - Court cards: team panels are flat white surfaces with no border or shadow. Only the viewer's team gets a black ring.
+  - Dashboard matchup rows are flat. The viewer's court keeps its outline and "You're here" tag.
+  - The roster list no longer draws a bordered, shadowed card inside the yellow roster panel.
+  - The home-screen tip shows its install steps as plain text, not a bordered box.
+  - The empty tournaments state is one line instead of a dashed box with a second "Create First Tournament" button. The section header already has + Create Tournament.
+- **Balance:** on desktop the dashboard roster list scrolls inside its panel after about seven players, with half a row showing as a cue. Phones show the whole list.
+  - Measured at 1280×800 with 8 players: the sidebar went from 1,197 to 1,117px, and the left column from 642 to 514px below the session card.
+  - Before this change, a big roster made the sidebar grow without limit. In a populated group, the session, training, tournaments and past sessions now fill the left column against a sidebar of bounded height.
+  - A brand-new group with little history will still have a taller sidebar than left column, which is expected for an empty group.
+
+### Playwright browser
+Ran `npx playwright install chromium`, which installed headless shell build 1243 to match Playwright 1.63. Targeted specs now run with the default `playwright.config.ts`, without the temporary executable-path config.
+
 ## Still open
-- **Nested cards:** some panels still stack a card inside a card inside a card. This needs a design pass, not a quick fix.
-- **Desktop dashboard columns are unbalanced:** the sidebar column is much shorter than the main column on wide screens.
-- **Flaky e2e:** `tests/e2e/resilience.spec.ts:6` fails at line 87, where the stale second tab finds Save & Start disabled. It fails the same way on commits from before this work, so it's likely timing in the multi-tab sync. Because it fails first, the a11y audit at the end of that test does not run.
-- **Local Playwright browser mismatch:** the installed headless shell is build 1255, but Playwright 1.63 expects 1243. Run `npx playwright install chromium` to fix local runs.
+Nothing from this critique.
+- **Dashboard roster row buttons:** the pin and ··· buttons are 32px, under the 44px target used elsewhere. They were not in the critique list, so I left them for a later pass.
 
 ## Verification
 - `npm run typecheck`, `npm run lint`, and `npm test` pass (1,142 tests).
 - Targeted e2e on Desktop and Mobile Chrome:
-  - `corrections.spec.ts` and `bulk-score-saving.spec.ts`: all 22 tests pass.
-  - `resilience.spec.ts:6`: passes the tie section, then hits the pre-existing failure described above.
+  - `corrections.spec.ts` and `bulk-score-saving.spec.ts`: 22 of 22 pass.
+  - `resilience.spec.ts:6`: passes.
+  - `player-live-session.spec.ts` and `permissions.spec.ts`: 30 of 30 pass.
+  - `acceptance.spec.ts`: 18 of 18 pass after the fix above.
