@@ -89,7 +89,7 @@ export function DrillTrendChart({ challenge, points, now = new Date() }: DrillTr
           {formatShortDate(last.date, now)}
         </text>
       </svg>
-      <figcaption className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500">
+      <figcaption className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600">
         <span>Best result per practice day{challenge.higherIsBetter ? "" : " · lower is better"}</span>
         {target !== null && (
           <span className="inline-flex items-center gap-1.5 text-lime-800">

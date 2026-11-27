@@ -237,7 +237,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={clearAllDivisions}
-              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-600 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -316,7 +316,7 @@ export function TournamentCreationForm({
             <button
               type="button"
               onClick={clearAllPlayers}
-              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-600 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -423,7 +423,7 @@ export function TournamentCreationForm({
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
-            <p className="text-xs font-bold text-neutral-500">Ready</p>
+            <p className="text-xs font-bold text-neutral-600">Ready</p>
             <p className="text-base font-bold text-black tracking-tight">
               {divisionsCount} division{divisionsCount === 1 ? "" : "s"} · {playersCount} players
             </p>

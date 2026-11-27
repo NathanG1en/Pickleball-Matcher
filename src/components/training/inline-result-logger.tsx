@@ -176,7 +176,7 @@ export function InlineResultLogger({
           {/* Previous result for comparison (kept visually distinct from the new entry) */}
           <div
             data-testid={`last-result-${challenge.id}`}
-            className="flex items-center justify-between gap-2 text-xs text-neutral-500"
+            className="flex items-center justify-between gap-2 text-xs text-neutral-600"
           >
             {shownLast ? (
               <span className="min-w-0">

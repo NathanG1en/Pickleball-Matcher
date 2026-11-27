@@ -429,7 +429,7 @@ function CurrentRoundEditor({
               onClick={() => setShowVarietyInfo(true)}
               aria-label="What is Matchmaking Variety?"
               title="What is Matchmaking Variety?"
-              className="relative inline-flex items-center justify-center w-4 h-4 rounded-full border border-black bg-neutral-100 text-[10px] font-black text-black hover:bg-[#ccff00] cursor-pointer before:absolute before:-inset-3.5 before:content-['']"
+              className="relative inline-flex items-center justify-center w-4 h-4 rounded-full border border-black bg-neutral-100 text-xs font-black text-black hover:bg-[#ccff00] cursor-pointer before:absolute before:-inset-3.5 before:content-['']"
             >
               i
             </button>
@@ -498,7 +498,7 @@ function CurrentRoundEditor({
 
       {/* Selected Player Floating Bar (Tap-to-Swap helper) */}
       {selectedPlayerId && (
-        <div className="sticky top-4 z-30 p-3 bg-[#ccff00] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-between gap-3 animate-pulse">
+        <div className="sticky top-4 z-30 p-3 bg-[#ccff00] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-between gap-3 motion-safe:animate-pulse">
           <div className="flex items-center gap-2">
             <span className="text-base font-bold flex items-center gap-1.5">
               <TargetIcon className="h-4 w-4 shrink-0" />
@@ -613,19 +613,19 @@ function CurrentRoundEditor({
                     </span>
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score === undefined && playerAccounts && playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] === null) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
                         <AlertTriangleIcon className="h-3 w-3 shrink-0" />
                         <span>Guest Partner</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team1.includes(currentViewerPlayerId) && court.team1.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team1.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-xs font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
                     )}
 
                     {isUnlocked && court.team1.length > 0 && (
-                      <span className="text-xs font-bold text-neutral-500">
+                      <span className="text-xs font-bold text-neutral-600">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
                       </span>
                     )}
@@ -665,7 +665,7 @@ function CurrentRoundEditor({
                               : "bg-white"
                           }`}
                         >
-                          {isUnlocked && <span className="text-neutral-400 select-none text-xs">⋮⋮</span>}
+                          {isUnlocked && <span className="text-neutral-600 select-none text-xs">⋮⋮</span>}
                           <span>{nameFor(pId)}</span>
                           {isUnlocked && (
                             <button
@@ -677,7 +677,7 @@ function CurrentRoundEditor({
                                 moveToSitting(pId);
                                 if (selectedPlayerId === pId) setSelectedPlayerId(null);
                               }}
-                              className="ml-1 p-0.5 text-neutral-400 hover:text-black rounded hover:bg-neutral-200"
+                              className="ml-1 p-0.5 text-neutral-600 hover:text-black rounded hover:bg-neutral-200"
                             >
                               <XIcon className="h-3 w-3" />
                             </button>
@@ -698,7 +698,7 @@ function CurrentRoundEditor({
                         }}
                         className={`min-h-11 px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-700 transition-all ${
                           selectedPlayerId
-                            ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
+                            ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black motion-safe:animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
                         }`}
                       >
@@ -707,7 +707,7 @@ function CurrentRoundEditor({
                     )}
 
                     {court.team1.length === 0 && (
-                      <span className="text-xs font-bold text-neutral-500 italic py-1">
+                      <span className="text-xs font-bold text-neutral-600 italic py-1">
                         Empty team slot
                       </span>
                     )}
@@ -751,19 +751,19 @@ function CurrentRoundEditor({
                     </span>
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy && partnerSynergy.score !== undefined) && renderPartnerBadge(partnerSynergy)}
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score === undefined && playerAccounts && playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] === null) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-900 shadow-[1px_1px_0px_0px_#000]" title="Synergy cannot be calculated for guest players">
                         <AlertTriangleIcon className="h-3 w-3 shrink-0" />
                         <span>Guest Partner</span>
                       </span>
                     )}
                     {Boolean(currentViewerPlayerId && court.team2.includes(currentViewerPlayerId) && court.team2.length === 2 && partnerSynergy?.score === undefined && (!playerAccounts || playerAccounts[court.team2.find((id) => id !== currentViewerPlayerId)!] !== null)) && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-xs font-bold text-neutral-600" title="Chemistry unlocks after your first match together">
                         New Duo
                       </span>
                     )}
 
                     {isUnlocked && court.team2.length > 0 && (
-                      <span className="text-xs font-bold text-neutral-500">
+                      <span className="text-xs font-bold text-neutral-600">
                         {isUnlocked ? "Drag / Tap to swap" : ""}
                       </span>
                     )}
@@ -803,7 +803,7 @@ function CurrentRoundEditor({
                               : "bg-white"
                           }`}
                         >
-                          {isUnlocked && <span className="text-neutral-400 select-none text-xs">⋮⋮</span>}
+                          {isUnlocked && <span className="text-neutral-600 select-none text-xs">⋮⋮</span>}
                           <span>{nameFor(pId)}</span>
                           {isUnlocked && (
                             <button
@@ -815,7 +815,7 @@ function CurrentRoundEditor({
                                 moveToSitting(pId);
                                 if (selectedPlayerId === pId) setSelectedPlayerId(null);
                               }}
-                              className="ml-1 p-0.5 text-neutral-400 hover:text-black rounded hover:bg-neutral-200"
+                              className="ml-1 p-0.5 text-neutral-600 hover:text-black rounded hover:bg-neutral-200"
                             >
                               <XIcon className="h-3 w-3" />
                             </button>
@@ -836,7 +836,7 @@ function CurrentRoundEditor({
                         }}
                         className={`min-h-11 px-3 py-1.5 rounded-lg border-2 border-dashed border-black/60 text-sm font-bold text-neutral-700 transition-all ${
                           selectedPlayerId
-                            ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black animate-pulse cursor-pointer"
+                            ? "bg-[#ccff00]/60 hover:bg-[#ccff00] border-black text-black motion-safe:animate-pulse cursor-pointer"
                             : "hover:border-black hover:text-black"
                         }`}
                       >
@@ -845,7 +845,7 @@ function CurrentRoundEditor({
                     )}
 
                     {court.team2.length === 0 && (
-                      <span className="text-xs font-bold text-neutral-500 italic py-1">
+                      <span className="text-xs font-bold text-neutral-600 italic py-1">
                         Empty team slot
                       </span>
                     )}
@@ -955,13 +955,13 @@ function CurrentRoundEditor({
                     : "bg-[#fde047]"
                 }`}
               >
-                {isUnlocked && <span className="text-neutral-500 select-none text-xs">⋮⋮</span>}
+                {isUnlocked && <span className="text-neutral-600 select-none text-xs">⋮⋮</span>}
                 {nameFor(id)}
               </span>
             );
           })}
           {localSitting.length === 0 && (
-            <span className="text-xs font-bold text-neutral-500 italic py-1">
+            <span className="text-xs font-bold text-neutral-600 italic py-1">
               No players sitting this round.
             </span>
           )}

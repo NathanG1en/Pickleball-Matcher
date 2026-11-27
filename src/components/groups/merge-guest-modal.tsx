@@ -277,7 +277,7 @@ function MergeGuestModalContent({
               maxLength={80}
               className="mt-1"
             />
-            <p className="mt-1 text-[11px] font-semibold text-neutral-500">
+            <p className="mt-1 text-xs font-semibold text-neutral-600">
               Auto-populated from one of the players. You can change this to any display name.
             </p>
           </div>
@@ -289,7 +289,7 @@ function MergeGuestModalContent({
                 Select Guests to Merge ({selectedIds.size} selected)
               </Label>
               {selectedIds.size < 2 && (
-                <span className="text-[11px] font-bold text-amber-700">
+                <span className="text-xs font-bold text-amber-700">
                   Select at least 2 guests
                 </span>
               )}
@@ -309,7 +309,7 @@ function MergeGuestModalContent({
 
             <div className="max-h-52 overflow-y-auto rounded-xl border-2 border-black bg-white p-1.5 shadow-[2px_2px_0px_0px_#000] space-y-1">
               {filteredCandidates.length === 0 ? (
-                <p className="p-3 text-center text-xs font-semibold text-neutral-500">
+                <p className="p-3 text-center text-xs font-semibold text-neutral-600">
                   No guest players found.
                 </p>
               ) : (
@@ -346,7 +346,7 @@ function MergeGuestModalContent({
                         )}
                       </label>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-bold text-neutral-500">
+                        <span className="text-xs font-bold text-neutral-600">
                           {formatDupr(player.rating)} · {player.ratedGamesPlayed}g
                         </span>
                       </div>

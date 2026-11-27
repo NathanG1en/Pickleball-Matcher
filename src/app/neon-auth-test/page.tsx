@@ -155,7 +155,7 @@ export default function NeonAuthTestPage() {
         <div className="flex items-center justify-between border-b-2 border-black pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 rounded-full bg-[#00E599] animate-pulse" />
+              <span className="inline-block h-3 w-3 rounded-full bg-[#00E599] motion-safe:animate-pulse" />
               <span className="text-xs font-bold text-neutral-600">
                 Evaluation Environment
               </span>
@@ -176,7 +176,7 @@ export default function NeonAuthTestPage() {
         <div className="rounded-2xl border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_#000] text-xs space-y-1.5">
           <div className="font-bold text-black text-sm flex items-center justify-between">
             <span>Neon Branch & Auth Settings</span>
-            <span className="rounded bg-black text-[#00E599] px-2 py-0.5 text-[10px] font-black">
+            <span className="rounded bg-black text-[#00E599] px-2 py-0.5 text-xs font-black">
               LIVE BRANCH: test
             </span>
           </div>
@@ -293,7 +293,7 @@ export default function NeonAuthTestPage() {
                   placeholder="your.email@example.com"
                   className="w-full rounded-xl border-2 border-black px-3 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#CCFF00]"
                 />
-                <p className="mt-1 text-[11px] font-bold text-neutral-600">
+                <p className="mt-1 text-xs font-bold text-neutral-600">
                   Neon Auth will send a real 6-digit verification code to this inbox.
                 </p>
               </div>
@@ -360,7 +360,7 @@ export default function NeonAuthTestPage() {
                   maxLength={6}
                   className="w-full rounded-xl border-2 border-black px-3 py-2 text-center text-xl font-mono font-black tracking-widest shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#CCFF00]"
                 />
-                <p className="mt-1 text-[11px] font-bold text-neutral-600">
+                <p className="mt-1 text-xs font-bold text-neutral-600">
                   Check the inbox of {verifyEmail || "your email"} for the code from <code>auth@mail.myneon.app</code>.
                 </p>
               </div>
@@ -462,11 +462,11 @@ export default function NeonAuthTestPage() {
               {serverCheckLoading ? "Querying Server…" : "Check Server Session"}
             </button>
           </div>
-          <p className="text-[11px] font-bold text-neutral-600">
+          <p className="text-xs font-bold text-neutral-600">
             Calls <code>neonAuth.getSession()</code> on the server to verify cookies are securely parsed by Server Components and Actions.
           </p>
           {serverSessionResult && (
-            <pre className="rounded-xl border-2 border-neutral-300 bg-neutral-900 p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto">
+            <pre className="rounded-xl border-2 border-neutral-300 bg-neutral-900 p-3 text-xs font-mono text-emerald-400 overflow-x-auto">
               {serverSessionResult}
             </pre>
           )}

@@ -105,8 +105,9 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("Singles (1v1)");
 
     // Verify smaller text and shrink-0 classes are applied for mobile fit
-    expect(html).toContain("text-[10px]");
-    expect(html).toContain("sm:text-xs");
+    // 12px minimum text; verified in a browser that "Singles (1v1)" fits at 320px wide
+    expect(html).toContain("text-xs sm:text-sm");
+    expect(html).not.toContain("text-[10px]");
     expect(html).toContain("shrink-0");
     expect(html).toContain("whitespace-nowrap");
     expect(html).not.toContain("Record a match played between session players.");

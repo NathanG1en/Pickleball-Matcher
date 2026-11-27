@@ -307,7 +307,7 @@ export function PlayerProfileHeader({
         /* Edit Mode View */
         <form onSubmit={handleSave} className="space-y-4 pt-1">
           <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
-            <span className="text-xs font-bold text-neutral-500">
+            <span className="text-xs font-bold text-neutral-600">
               General Information
             </span>
           </div>
@@ -342,7 +342,7 @@ export function PlayerProfileHeader({
                 Username
               </label>
               <div className="relative w-full">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-600">
                   @
                 </span>
                 <input

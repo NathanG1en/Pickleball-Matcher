@@ -31,7 +31,7 @@ export function LiveSessionsHome({ groups }: { groups: readonly HomeGroupSummary
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border border-black">
-                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-600 motion-safe:animate-ping" />
                 Live now · {liveLabel(group.liveSession!)}
               </span>
               <h2 className="mt-2 font-display text-2xl sm:text-3xl font-black uppercase leading-tight text-black break-words group-hover:text-neutral-900">
@@ -57,7 +57,7 @@ export function YourGroupsHome({ groups }: { groups: readonly HomeGroupSummary[]
         <h2 id="your-groups-heading" className="font-display text-2xl font-black uppercase text-black">
           Your groups
         </h2>
-        <span className="text-xs font-bold text-neutral-500">
+        <span className="text-xs font-bold text-neutral-600">
           {groups.length} {groups.length === 1 ? "group" : "groups"}
         </span>
       </div>

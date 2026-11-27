@@ -145,7 +145,7 @@ export function ShareGroupModal({
           )}
         </div>
 
-        <p className="text-[11px] font-semibold text-neutral-600 leading-tight">
+        <p className="text-xs font-semibold text-neutral-600 leading-tight">
           New players can sign in, create an account, or join as a guest right away.
         </p>
       </div>

@@ -1491,11 +1491,11 @@ export function OpenPlayManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-600 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-600 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
               </div>
             </div>
@@ -1511,15 +1511,15 @@ export function OpenPlayManagerClient({
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -1578,7 +1578,7 @@ export function OpenPlayManagerClient({
               <div key={stat.id} className="py-2.5 flex items-center justify-between">
                 <div>
                   <span className="font-black text-black text-sm block">{stat.name}</span>
-                  <span className="text-xs font-bold text-neutral-500">
+                  <span className="text-xs font-bold text-neutral-600">
                     {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
                   </span>
                 </div>
@@ -1708,7 +1708,7 @@ export function OpenPlayManagerClient({
                   disabled={isAddingPlayer}
                 />
               ) : (
-                <p className="text-xs font-bold text-neutral-500 italic py-1">
+                <p className="text-xs font-bold text-neutral-600 italic py-1">
                   All group members are currently checked in.
                 </p>
               )}
@@ -1729,7 +1729,7 @@ export function OpenPlayManagerClient({
                   data-testid="guest-description-banner"
                   className="flex items-center justify-between gap-2 p-2 bg-neutral-100/90 rounded-lg border border-neutral-300 text-neutral-700"
                 >
-                  <p className="text-[11px] font-bold text-neutral-600 leading-tight">
+                  <p className="text-xs font-bold text-neutral-600 leading-tight">
                     Adding a guest here will add them to your roster.
                   </p>
                   <button
@@ -1738,7 +1738,7 @@ export function OpenPlayManagerClient({
                     aria-label="Dismiss guest description"
                     title="Dismiss"
                     data-testid="dismiss-guest-desc-button"
-                    className="p-1 text-neutral-400 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
+                    className="p-1 text-neutral-600 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
                   >
                     <XIcon className="h-3.5 w-3.5" />
                   </button>
@@ -1834,7 +1834,7 @@ export function OpenPlayManagerClient({
             className="space-y-2 pt-2 border-t-2 border-neutral-200"
           >
             {checkedInPlayers.length === 0 ? (
-              <p className="text-xs font-bold text-neutral-500 italic py-1">
+              <p className="text-xs font-bold text-neutral-600 italic py-1">
                 No players checked in yet. Join or add players above!
               </p>
             ) : (
@@ -1849,7 +1849,7 @@ export function OpenPlayManagerClient({
                       }`}
                     >
                       <span className="font-black text-black">{p.name}</span>
-                      <span className="text-[10px] text-neutral-600 font-mono">
+                      <span className="text-xs text-neutral-600 font-mono">
                         {formatDupr(p.rating)}
                       </span>
                       {isViewer && (
@@ -1865,7 +1865,7 @@ export function OpenPlayManagerClient({
                             handleRemovePlayer(p.id);
                           }}
                           title="Leave / Remove from session"
-                          className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+                          className="ml-1 text-neutral-600 hover:text-black font-black text-sm cursor-pointer"
                         >
                           ×
                         </button>
@@ -1940,7 +1940,7 @@ export function OpenPlayManagerClient({
               )}
             </div>
           ) : selectableGamePlayers.length < (matchType === "doubles" ? 4 : 2) ? (
-            <p className="text-xs font-bold text-neutral-500 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
+            <p className="text-xs font-bold text-neutral-600 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
               Need at least {matchType === "doubles" ? "4 players" : "2 players"} to record a {matchType} game. Add or join players above!
             </p>
           ) : (
@@ -1954,7 +1954,7 @@ export function OpenPlayManagerClient({
                     disabled={!canRotate}
                     data-testid="rotate-partners-button"
                     title="Split and switch partners between the 4 players"
-                    className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
                   >
                     <RotateCwIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Rotate Partners</span>
@@ -1970,7 +1970,7 @@ export function OpenPlayManagerClient({
                       ? "Swap sides between Team 1 and Team 2"
                       : "Swap sides between Player 1 and Player 2"
                   }
-                  className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
                 >
                   <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
                   <span>Swap Sides</span>
@@ -1980,7 +1980,7 @@ export function OpenPlayManagerClient({
                   onClick={handleClearSlots}
                   data-testid="clear-slots-button"
                   title="Clear all player selections and scores"
-                  className="inline-flex items-center gap-1 py-1.5 px-2 sm:px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-[11px] sm:text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto whitespace-nowrap"
+                  className="inline-flex items-center gap-1 py-1.5 px-2 sm:px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-xs sm:text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto whitespace-nowrap"
                 >
                   <span>Clear</span>
                 </button>
@@ -2135,7 +2135,7 @@ export function OpenPlayManagerClient({
         </h2>
 
         {allMatches.length === 0 ? (
-          <p className="text-xs font-bold text-neutral-500 italic py-2">
+          <p className="text-xs font-bold text-neutral-600 italic py-2">
             No games submitted yet for this session. Record your first game above!
           </p>
         ) : (
@@ -2160,7 +2160,7 @@ export function OpenPlayManagerClient({
                           Edit Game {idx + 1}
                         </span>
                         {m.completedAt && (
-                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                          <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
                             <span>•</span>
                             <ClientTime date={m.completedAt} />
                           </span>
@@ -2341,11 +2341,11 @@ export function OpenPlayManagerClient({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-neutral-500 block">
+                        <span className="text-xs font-bold text-neutral-600 block">
                           Game {idx + 1}
                         </span>
                         {isCompleted && m.completedAt && (
-                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                          <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
                             <span>•</span>
                             <ClientTime date={m.completedAt} />
                           </span>
@@ -2355,7 +2355,7 @@ export function OpenPlayManagerClient({
                         <span className={isCompleted && isT1Winner ? "font-black underline" : ""}>
                           {m.team1Names.join(" & ")}
                         </span>
-                        <span className="text-xs font-normal text-neutral-500">vs</span>
+                        <span className="text-xs font-normal text-neutral-600">vs</span>
                         <span className={isCompleted && !isT1Winner ? "font-black underline" : ""}>
                           {m.team2Names.join(" & ")}
                         </span>

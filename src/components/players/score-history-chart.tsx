@@ -490,7 +490,7 @@ export function ScoreHistoryChart({
         </p>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center" data-testid="rating-chart-empty-range">
-          <p className="text-xs font-bold text-neutral-500">
+          <p className="text-xs font-bold text-neutral-600">
             No rating history in the selected time period.
           </p>
         </div>
@@ -659,7 +659,7 @@ export function ScoreHistoryChart({
               >
                 <div data-testid="tooltip-rating" className="font-display text-base font-black text-black leading-tight">
                   {formatDupr(activeRecord.rating)}{" "}
-                  <span className="text-xs font-bold text-neutral-500">Rating</span>
+                  <span className="text-xs font-bold text-neutral-600">Rating</span>
                 </div>
                 <div data-testid="tooltip-date" className="text-xs font-bold text-neutral-600 leading-tight mt-0.5">
                   {formatDate(activeRecord.startedAt, isHydrated)}
@@ -681,12 +681,12 @@ export function ScoreHistoryChart({
             {activeRecord ? (
               <p data-testid="active-rating-details" className="text-black font-black">
                 <span>{formatDupr(activeRecord.rating)} rating</span>
-                <span className="text-neutral-500 font-bold ml-1.5">
+                <span className="text-neutral-600 font-bold ml-1.5">
                   ({formatDate(activeRecord.startedAt, isHydrated)})
                 </span>
               </p>
             ) : filtered.length > 1 ? (
-              <p className="text-[11px] font-semibold text-neutral-400">
+              <p className="text-xs font-semibold text-neutral-600">
                 Swipe or hover to explore
               </p>
             ) : null}

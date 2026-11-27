@@ -64,7 +64,7 @@ export default async function DrillHistoryPage({
         ← Training
       </Link>
       <div>
-        <span className="text-xs font-bold text-neutral-500 block">
+        <span className="text-xs font-bold text-neutral-600 block">
           {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory} · History
         </span>
         <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black leading-tight">
@@ -132,14 +132,14 @@ export default async function DrillHistoryPage({
           <>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <span className="text-xs font-bold text-neutral-500 block">Latest</span>
+                <span className="text-xs font-bold text-neutral-600 block">Latest</span>
                 <span className="font-display text-3xl font-black text-black">
                   {formatLastResultValue(challenge, lastResult!)}
                 </span>
               </div>
               {bestValue !== null && (
                 <div className="text-right">
-                  <span className="text-xs font-bold text-neutral-500 block">Personal best</span>
+                  <span className="text-xs font-bold text-neutral-600 block">Personal best</span>
                   <span className="font-display text-lg font-black text-black">{formatMetricValue(challenge, bestValue)}</span>
                 </div>
               )}

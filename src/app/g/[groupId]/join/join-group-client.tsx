@@ -168,7 +168,7 @@ export function JoinGroupClient({
         </div>
 
         <div className="rounded-2xl border-2 border-black bg-neutral-50 p-4 text-left shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-xs font-bold text-neutral-500 block mb-1">
+          <span className="text-xs font-bold text-neutral-600 block mb-1">
             Signing in as
           </span>
           <div className="font-display text-lg font-black uppercase text-black">
@@ -311,7 +311,7 @@ export function JoinGroupClient({
       {/* Divider */}
       <div className="relative flex py-1 items-center">
         <div className="flex-grow border-t-2 border-neutral-200"></div>
-        <span className="flex-shrink mx-3 text-xs font-bold text-neutral-500">
+        <span className="flex-shrink mx-3 text-xs font-bold text-neutral-600">
           Or with a Player Account
         </span>
         <div className="flex-grow border-t-2 border-neutral-200"></div>
@@ -333,7 +333,7 @@ export function JoinGroupClient({
         </Link>
       </div>
 
-      <p className="text-[11px] font-semibold text-neutral-500">
+      <p className="text-xs font-semibold text-neutral-600">
         Player accounts keep track of ratings, matches, and synergies across all your devices.
       </p>
     </section>

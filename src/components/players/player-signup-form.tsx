@@ -80,7 +80,7 @@ export function PlayerSignupForm({ initialNext }: { initialNext?: string } = {})
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />
-        <span className="text-xs font-bold text-neutral-500">or register with username</span>
+        <span className="text-xs font-bold text-neutral-600">or register with username</span>
         <div className="h-0.5 flex-1 bg-black/15" />
       </div>
 

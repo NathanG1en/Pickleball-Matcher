@@ -91,7 +91,7 @@ export function PermissionsTab({
             className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border-2 border-black text-amber-900 text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
           >
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-pulse" />
               <span>You have unsaved changes in Permissions.</span>
             </span>
           </div>
@@ -121,13 +121,13 @@ export function PermissionsTab({
                   <p className="font-bold text-black">
                     Configure what organizers are allowed to do.
                   </p>
-                  <p className="text-[11px] text-neutral-600">
+                  <p className="text-xs text-neutral-600">
                     As the group host, you always retain full administrative control regardless of these toggle states.
                   </p>
                 </>
               ) : (
                 <div className="flex items-center gap-1.5 font-bold text-neutral-700">
-                  <LockIcon className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <LockIcon className="h-3.5 w-3.5 text-neutral-600 shrink-0" />
                   <span>
                     Read-only view. These permissions are configured and managed by the group host.
                   </span>
@@ -155,7 +155,7 @@ export function PermissionsTab({
                   >
                     {def.label}
                   </label>
-                  <p className="text-[11px] sm:text-xs font-medium text-neutral-600 leading-snug">
+                  <p className="text-xs sm:text-xs font-medium text-neutral-600 leading-snug">
                     {def.description}
                   </p>
                 </div>

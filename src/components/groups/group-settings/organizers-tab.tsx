@@ -192,7 +192,7 @@ export function OrganizersTab({
             className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border-2 border-black text-amber-900 text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
           >
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-pulse" />
               <span>
                 Pending changes: {stagedAddAccountIds.size > 0 && `+${stagedAddAccountIds.size} to add `}
                 {stagedRemoveAccountIds.size > 0 && `-${stagedRemoveAccountIds.size} to remove`}
@@ -222,7 +222,7 @@ export function OrganizersTab({
               Current Organizers ({displayOrganizers.length + stagedAddAccountIds.size})
             </h3>
             {stagedRemoveAccountIds.size > 0 && (
-              <span className="text-[11px] font-bold text-red-600">
+              <span className="text-xs font-bold text-red-600">
                 ({stagedRemoveAccountIds.size} staged for removal)
               </span>
             )}
@@ -238,7 +238,7 @@ export function OrganizersTab({
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-sm font-black text-black truncate">{org.name}</span>
                     {org.username && (
-                      <span className="text-xs font-bold text-neutral-500 truncate">
+                      <span className="text-xs font-bold text-neutral-600 truncate">
                         @{org.username}
                       </span>
                     )}
@@ -289,7 +289,7 @@ export function OrganizersTab({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-black truncate">{p.name}</span>
                       {p.username && (
-                        <span className="text-xs font-bold text-neutral-500">@{p.username}</span>
+                        <span className="text-xs font-bold text-neutral-600">@{p.username}</span>
                       )}
                     </div>
                   </div>
@@ -347,13 +347,13 @@ export function OrganizersTab({
               </h3>
             </div>
             {stagedAddAccountIds.size > 0 && (
-              <span className="text-[11px] font-black text-black bg-[#ccff00] px-2 py-0.5 rounded-full border border-black">
+              <span className="text-xs font-black text-black bg-[#ccff00] px-2 py-0.5 rounded-full border border-black">
                 {stagedAddAccountIds.size} selected
               </span>
             )}
           </div>
 
-          <p className="text-[11px] font-semibold text-neutral-600">
+          <p className="text-xs font-semibold text-neutral-600">
             Select one or more roster members with player accounts to give them organizer privileges.
           </p>
 
@@ -365,15 +365,15 @@ export function OrganizersTab({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter roster by player name or @username..."
               aria-label="Filter roster players"
-              className="w-full rounded-xl border-2 border-black bg-white pl-9 pr-3.5 py-2 text-base font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-400"
+              className="w-full rounded-xl border-2 border-black bg-white pl-9 pr-3.5 py-2 text-base font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none placeholder:text-neutral-500"
             />
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-600" />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
                 aria-label="Clear filter"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black font-black text-sm cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black font-black text-sm cursor-pointer"
               >
                 ×
               </button>
@@ -383,7 +383,7 @@ export function OrganizersTab({
           {/* Candidates List */}
           <div className="rounded-xl border-2 border-black bg-[#FFFDF7] p-2 max-h-48 overflow-y-auto space-y-1 shadow-[2px_2px_0px_0px_#000]">
             {filteredCandidates.length === 0 ? (
-              <p className="p-3 text-center text-xs font-bold text-neutral-500">
+              <p className="p-3 text-center text-xs font-bold text-neutral-600">
                 {candidatePlayers.length === 0
                   ? "All eligible account players are already organizers."
                   : `No eligible players matching "${searchQuery}".`}
@@ -413,13 +413,13 @@ export function OrganizersTab({
                           {player.name}
                         </span>
                         {player.username && (
-                          <span className="text-[11px] font-bold text-neutral-500 truncate block">
+                          <span className="text-xs font-bold text-neutral-600 truncate block">
                             @{player.username}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-neutral-500">
+                    <span className="text-xs font-bold text-neutral-600">
                       {isChecked ? "Selected" : "Select"}
                     </span>
                   </label>

@@ -77,7 +77,7 @@ export default async function PlayerProfilePage() {
                       </span>
                     );
                   })()}
-                  <p className="mt-1 text-[11px] font-bold text-neutral-800">
+                  <p className="mt-1 text-xs font-bold text-neutral-800">
                     {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
                   </p>
                 </div>
@@ -87,7 +87,7 @@ export default async function PlayerProfilePage() {
             <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
+                  <p className="text-xs font-bold text-neutral-600">Chemistry Spotlight</p>
                   <SynergyExplainerButton />
                 </div>
                 <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>

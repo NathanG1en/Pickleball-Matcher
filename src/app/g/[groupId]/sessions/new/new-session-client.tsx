@@ -304,7 +304,7 @@ export function NewSessionClient({
           <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
             <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
               <div className="text-left">
-                <p className="text-xs font-bold text-neutral-500">Ready</p>
+                <p className="text-xs font-bold text-neutral-600">Ready</p>
                 <p className="text-base font-bold text-black tracking-tight">
                   {normalConfig.selectedPlayerIds.length} players · {stayTogetherPairs.length} {stayTogetherPairs.length === 1 ? "pair" : "pairs"}
                 </p>
@@ -431,7 +431,7 @@ export function NewSessionClient({
               onChange={(e) => setOpenPlayName(e.target.value)}
               placeholder="e.g. Wednesday Night Open Play"
               maxLength={100}
-              className="w-full px-4 py-3 rounded-xl border-2 border-black font-bold text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-black font-bold text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
             />
           </div>
 

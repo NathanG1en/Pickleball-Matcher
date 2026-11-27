@@ -216,7 +216,7 @@ export default async function GroupDashboardPage({
             <Badge variant={group.isPublic ? "success" : "default"} data-testid="group-privacy-badge">
               {group.isPublic ? "Public Group" : "Private Group"}
             </Badge>
-            <span aria-hidden="true" className="text-xs font-bold text-neutral-400">·</span>
+            <span aria-hidden="true" className="text-xs font-bold text-neutral-600">·</span>
             <span className="text-xs font-bold text-neutral-600">
               {players.length} {players.length === 1 ? "player" : "players"} on roster
             </span>
@@ -337,7 +337,7 @@ export default async function GroupDashboardPage({
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
-                                  <span className="text-xs font-bold text-neutral-400 shrink-0">vs</span>
+                                  <span className="text-xs font-bold text-neutral-600 shrink-0">vs</span>
                                   <span>{t2.join(" & ")}</span>
                                 </span>
                               </div>

@@ -286,7 +286,7 @@ export function AttendanceManager({
                 >
                   {courts}
                 </span>
-                <span className="block text-xs font-bold text-neutral-500 mt-0.5">
+                <span className="block text-xs font-bold text-neutral-600 mt-0.5">
                   {courts === 1 ? "Court" : "Courts"}
                 </span>
               </div>
@@ -345,9 +345,9 @@ export function AttendanceManager({
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold">{choice.title}</span>
-                        <span className="text-[10px] font-black">{choice.badge}</span>
+                        <span className="text-xs font-black">{choice.badge}</span>
                       </div>
-                      <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                      <span className="text-xs font-bold text-neutral-600 block">{choice.summary}</span>
                     </button>
                   ))}
                 </div>
@@ -381,7 +381,7 @@ export function AttendanceManager({
             <button
               type="button"
               onClick={clearAll}
-              className="text-sm font-bold text-neutral-500 hover:text-black hover:underline p-1 cursor-pointer"
+              className="text-sm font-bold text-neutral-600 hover:text-black hover:underline p-1 cursor-pointer"
             >
               Clear
             </button>
@@ -391,7 +391,7 @@ export function AttendanceManager({
         {/* Search & Filter Bar */}
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="relative flex-1">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
               <SearchIcon className="w-4 h-4" />
             </span>
             <input
@@ -408,7 +408,7 @@ export function AttendanceManager({
                 type="button"
                 onClick={() => setSearchQuery("")}
                 aria-label="Clear player search"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-600 hover:text-black cursor-pointer"
               >
                 ✕
               </button>
@@ -428,7 +428,7 @@ export function AttendanceManager({
         {/* Player Roster Grid */}
         {displayedPlayers.length === 0 ? (
           <div className="p-6 text-center rounded-xl border-2 border-dashed border-neutral-300">
-            <p className="text-sm font-bold text-neutral-500">
+            <p className="text-sm font-bold text-neutral-600">
               No players match &ldquo;{searchQuery}&rdquo;
             </p>
             <button
@@ -483,7 +483,7 @@ export function AttendanceManager({
                     className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
                       isPinned
                         ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                        : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                        : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100"
                     }`}
                   >
                     <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -569,7 +569,7 @@ export function AttendanceManager({
       <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-[#FFFDF7]/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="text-left">
-            <p className="text-xs font-bold text-neutral-500">Ready</p>
+            <p className="text-xs font-bold text-neutral-600">Ready</p>
             <p className="text-base font-bold text-black tracking-tight">
               {count} players · {courts} court{courts > 1 ? "s" : ""}
             </p>

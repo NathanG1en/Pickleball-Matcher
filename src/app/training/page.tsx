@@ -233,7 +233,7 @@ export default async function TrainingHubPage({
                 <TargetIcon className="w-4 h-4 text-black" />
               </span>
               <div>
-                <span className="text-xs font-bold text-neutral-500 block">
+                <span className="text-xs font-bold text-neutral-600 block">
                   Week of {formatWeekOf(selectedGroupPlan.plan.year, selectedGroupPlan.plan.weekNumber)}
                 </span>
                 <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -271,7 +271,7 @@ export default async function TrainingHubPage({
           className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-[4px_4px_0px_0px_#000]"
         >
           <div className="w-12 h-12 rounded-2xl bg-neutral-100 border-2 border-black flex items-center justify-center mx-auto">
-            <TargetIcon className="w-6 h-6 text-neutral-500" />
+            <TargetIcon className="w-6 h-6 text-neutral-600" />
           </div>
           <div>
             <h2 className="font-display text-xl font-black uppercase text-black">

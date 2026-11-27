@@ -2045,7 +2045,7 @@ export function SessionManagerClient({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {groupName && (
-                  <span className="text-xs font-bold text-neutral-500 block mb-1">
+                  <span className="text-xs font-bold text-neutral-600 block mb-1">
                     {groupName}
                   </span>
                 )}
@@ -2089,19 +2089,19 @@ export function SessionManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Courts</span>
+                <span className="text-xs font-bold text-neutral-600 block">Courts</span>
                 <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Rounds</span>
+                <span className="text-xs font-bold text-neutral-600 block">Rounds</span>
                 <span className="font-display text-xl font-black text-black">{allSessionRounds.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-600 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{totalSessionMatches}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-600 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{sessionPlayerStats.length}</span>
               </div>
             </div>
@@ -2117,15 +2117,15 @@ export function SessionManagerClient({
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -2176,7 +2176,7 @@ export function SessionManagerClient({
                       <div key={stat.id} className="py-2.5 flex items-center justify-between">
                         <div>
                           <span className="font-black text-black text-sm block">{stat.name}</span>
-                          <span className="text-xs font-bold text-neutral-500">
+                          <span className="text-xs font-bold text-neutral-600">
                             {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
                           </span>
                         </div>
@@ -2253,7 +2253,7 @@ export function SessionManagerClient({
                               <div className="flex items-center gap-1.5">
                                 <span className="font-black text-black">Court {m.courtNumber}</span>
                                 {m.courtNumber > session.courtCount && (
-                                  <Badge variant="muted" className="text-[10px] py-0 px-1.5">
+                                  <Badge variant="muted" className="text-xs py-0 px-1.5">
                                     Pickup
                                   </Badge>
                                 )}
@@ -2295,7 +2295,7 @@ export function SessionManagerClient({
                             </div>
 
                             {m.status === "completed" && (sr.round.startedAt || m.completedAt || sr.round.completedAt) && (
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                                 {sr.round.startedAt && (
                                   <ClientTime
                                     date={sr.round.startedAt}
@@ -2359,7 +2359,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-600 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2553,7 +2553,7 @@ export function SessionManagerClient({
                             </div>
 
                             {m.status === "completed" && (past.round.startedAt || m.completedAt || past.round.completedAt) && (
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                                 {past.round.startedAt && (
                                   <ClientTime
                                     date={past.round.startedAt}
@@ -2617,7 +2617,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-600 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2834,7 +2834,7 @@ export function SessionManagerClient({
 
                 {sortedPlayers.length > 5 && (
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
                       <SearchIcon className="w-4 h-4" />
                     </span>
                     <input
@@ -2851,7 +2851,7 @@ export function SessionManagerClient({
                         type="button"
                         onClick={() => setAttendanceSearchQuery("")}
                         aria-label="Clear attendance search"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-600 hover:text-black cursor-pointer"
                       >
                         ✕
                       </button>
@@ -2861,7 +2861,7 @@ export function SessionManagerClient({
 
                 {displayedAttendancePlayers.length === 0 ? (
                   <div className="p-6 text-center rounded-xl border-2 border-dashed border-neutral-300">
-                    <p className="text-sm font-bold text-neutral-500">
+                    <p className="text-sm font-bold text-neutral-600">
                       No players match &ldquo;{attendanceSearchQuery}&rdquo;
                     </p>
                     <button
@@ -2887,7 +2887,7 @@ export function SessionManagerClient({
                             <button
                               type="button"
                               onClick={() => setShowAttendanceRebalancePrompt(false)}
-                              className="text-neutral-400 hover:text-black font-black text-xs p-1 cursor-pointer"
+                              className="text-neutral-600 hover:text-black font-black text-xs p-1 cursor-pointer"
                               aria-label="Dismiss court recommendation"
                             >
                               ✕
@@ -2912,9 +2912,9 @@ export function SessionManagerClient({
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-bold">{choice.title}</span>
-                                  <span className="text-[10px] font-black">{choice.badge}</span>
+                                  <span className="text-xs font-black">{choice.badge}</span>
                                 </div>
-                                <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                                <span className="text-xs font-bold text-neutral-600 block">{choice.summary}</span>
                               </button>
                             );
                           })}
@@ -2930,13 +2930,13 @@ export function SessionManagerClient({
                             Present ({displayedAttendancePlayers.filter((p) => isPresentNow(p.id)).length})
                           </h4>
                         </div>
-                        <span className="text-[11px] font-bold text-neutral-500">
+                        <span className="text-xs font-bold text-neutral-600">
                           Active in matchmaking
                         </span>
                       </div>
 
                       {presentAttendancePlayers.length === 0 ? (
-                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                        <p className="text-xs font-bold text-neutral-600 italic py-2">
                           No players currently marked present.
                         </p>
                       ) : (
@@ -2962,7 +2962,7 @@ export function SessionManagerClient({
                                       className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
                                         isPinned
                                           ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                          : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100"
                                       }`}
                                     >
                                       <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -2972,7 +2972,7 @@ export function SessionManagerClient({
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-black text-black text-sm block truncate">{p.name}</span>
                                     </div>
-                                    <span className="text-xs font-bold text-neutral-500">Rating: {formatDupr(p.rating)}</span>
+                                    <span className="text-xs font-bold text-neutral-600">Rating: {formatDupr(p.rating)}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -2995,7 +2995,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
@@ -3012,7 +3012,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
                                         {rec ? "Left" : "Not here"}
@@ -3040,13 +3040,13 @@ export function SessionManagerClient({
                             Not here / Left ({displayedAttendancePlayers.filter((p) => !isPresentNow(p.id)).length})
                           </h4>
                         </div>
-                        <span className="text-[11px] font-bold text-neutral-500">
+                        <span className="text-xs font-bold text-neutral-600">
                           Sitting out
                         </span>
                       </div>
 
                       {notPresentAttendancePlayers.length === 0 ? (
-                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                        <p className="text-xs font-bold text-neutral-600 italic py-2">
                           All players are currently present.
                         </p>
                       ) : (
@@ -3072,7 +3072,7 @@ export function SessionManagerClient({
                                       className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
                                         isPinned
                                           ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                          : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100"
                                       }`}
                                     >
                                       <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -3082,7 +3082,7 @@ export function SessionManagerClient({
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-black text-neutral-700 text-sm block truncate">{p.name}</span>
                                     </div>
-                                    <span className="text-xs font-bold text-neutral-400">Rating: {formatDupr(p.rating)}</span>
+                                    <span className="text-xs font-bold text-neutral-600">Rating: {formatDupr(p.rating)}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -3105,7 +3105,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
@@ -3122,7 +3122,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
                                         {rec ? "Left" : "Not here"}
@@ -3173,7 +3173,7 @@ export function SessionManagerClient({
                     >
                       {courtConfigCourts}
                     </span>
-                    <span className="block text-xs font-bold text-neutral-500 mt-0.5">
+                    <span className="block text-xs font-bold text-neutral-600 mt-0.5">
                       {courtConfigCourts === 1 ? "Court" : "Courts"}
                     </span>
                   </div>
@@ -3234,9 +3234,9 @@ export function SessionManagerClient({
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold">{choice.title}</span>
-                            <span className="text-[10px] font-black">{choice.badge}</span>
+                            <span className="text-xs font-black">{choice.badge}</span>
                           </div>
-                          <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                          <span className="text-xs font-bold text-neutral-600 block">{choice.summary}</span>
                         </button>
                       ))}
                     </div>
@@ -3283,7 +3283,7 @@ export function SessionManagerClient({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <p className="text-[11px] font-bold text-neutral-500 text-center">
+                  <p className="text-xs font-bold text-neutral-600 text-center">
                     Changes save automatically.
                   </p>
                   <Button

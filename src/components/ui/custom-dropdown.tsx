@@ -117,7 +117,7 @@ export function CustomDropdown({
             : "border-black bg-white"
         } ${sizeClasses[sizeVariant]} ${buttonClassName}`}
       >
-        <span className={`truncate ${!currentOption && placeholder ? "text-neutral-500 font-semibold" : ""}`}>
+        <span className={`truncate ${!currentOption && placeholder ? "text-neutral-600 font-semibold" : ""}`}>
           {displayLabel}
         </span>
         <ChevronDownIcon
@@ -153,7 +153,7 @@ export function CustomDropdown({
                 }}
                 className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-bold transition-colors select-none ${
                   opt.disabled
-                    ? "opacity-40 cursor-not-allowed text-neutral-400"
+                    ? "opacity-40 cursor-not-allowed text-neutral-600"
                     : isSelected
                     ? "bg-[#ccff00] text-black font-black cursor-pointer"
                     : "hover:bg-[#F0EEE7] active:bg-[#EAE5D9] text-black cursor-pointer"

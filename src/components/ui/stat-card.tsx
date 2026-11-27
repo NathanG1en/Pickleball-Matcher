@@ -31,7 +31,7 @@ export function StatCard({
         {label}
       </p>
       {subtext && (
-        <p className="text-[10px] font-bold text-neutral-600 mt-1">
+        <p className="text-xs font-bold text-neutral-600 mt-1">
           {subtext}
         </p>
       )}

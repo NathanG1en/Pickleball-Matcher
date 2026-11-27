@@ -92,7 +92,7 @@ export function WeeklyTrainingCard({
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
-            <span className="text-xs font-bold text-neutral-500 block">
+            <span className="text-xs font-bold text-neutral-600 block">
               Week of {formatWeekOf(plan.year, plan.weekNumber)} · Training
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -155,7 +155,7 @@ export function WeeklyTrainingCard({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                  <span className="text-xs font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
                     {item.customGoalDescription ?? item.challenge?.scoreUnit ?? ""}
                   </span>
 
@@ -178,7 +178,7 @@ export function WeeklyTrainingCard({
               </div>
 
               {item.customGoalDescription && (
-                <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                <div className="sm:hidden mt-1.5 text-xs font-bold text-neutral-600">
                   Goal: {item.customGoalDescription}
                 </div>
               )}

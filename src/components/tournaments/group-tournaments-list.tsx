@@ -21,7 +21,7 @@ export function GroupTournamentsList({
   if (tournaments.length === 0) {
     return (
       <div className="text-center py-6 px-4 rounded-2xl bg-neutral-50 border-2 border-dashed border-neutral-300 space-y-3">
-        <TrophyIcon className="h-8 w-8 mx-auto text-neutral-400" />
+        <TrophyIcon className="h-8 w-8 mx-auto text-neutral-600" />
         <p className="text-sm font-bold text-neutral-600">
           No tournaments created yet.
         </p>
@@ -49,7 +49,7 @@ export function GroupTournamentsList({
               <h3 className="font-display text-lg font-black uppercase text-black leading-tight">
                 {tourney.name}
               </h3>
-              <p className="text-xs font-bold text-neutral-500">
+              <p className="text-xs font-bold text-neutral-600">
                 Created <span suppressHydrationWarning>{new Date(tourney.createdAt).toLocaleDateString()}</span>
               </p>
             </div>

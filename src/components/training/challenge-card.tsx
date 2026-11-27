@@ -132,14 +132,14 @@ export function ChallengeCard({
           {/* Add to Plan action */}
           <div className="flex items-center gap-1.5">
             {planFeedback && (
-              <span className="text-xs font-bold text-neutral-600 animate-pulse">
+              <span className="text-xs font-bold text-neutral-600 motion-safe:animate-pulse">
                 {planFeedback}
               </span>
             )}
             {challenge.participantFormat === "group" ? (
               <span
                 data-testid={`badge-group-drill-${challenge.id}`}
-                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-neutral-100 text-neutral-500 border-2 border-neutral-300 select-none cursor-default"
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-neutral-100 text-neutral-600 border-2 border-neutral-300 select-none cursor-default"
                 title="Group drills can only be added to group training plans"
               >
                 Group Drill
@@ -248,12 +248,12 @@ export function ChallengeCard({
           {instructionsOpen && (
             <div className="mt-2 p-3 bg-neutral-50 rounded-xl border border-black/10 text-xs text-neutral-700 space-y-2">
               <div>
-                <span className="font-bold text-xs text-neutral-500 block mb-0.5">Instructions</span>
+                <span className="font-bold text-xs text-neutral-600 block mb-0.5">Instructions</span>
                 <p className="leading-relaxed">{challenge.instructions}</p>
               </div>
               {challenge.defaultTargetGoal && (
                 <div>
-                  <span className="font-bold text-xs text-neutral-500 block mb-0.5">Target Benchmark</span>
+                  <span className="font-bold text-xs text-neutral-600 block mb-0.5">Target Benchmark</span>
                   <p className="font-bold text-black">
                     {challenge.defaultTargetGoal} {challenge.scoreUnit}
                   </p>

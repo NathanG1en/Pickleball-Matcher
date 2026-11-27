@@ -54,7 +54,7 @@ export function PlayerLoginForm({
 
       <div className="flex items-center gap-3">
         <div className="h-0.5 flex-1 bg-black/15" />
-        <span className="text-xs font-bold text-neutral-500">or</span>
+        <span className="text-xs font-bold text-neutral-600">or</span>
         <div className="h-0.5 flex-1 bg-black/15" />
       </div>
 

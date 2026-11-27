@@ -331,7 +331,7 @@ export function ResultsEntryView({
       {((sittingNames && sittingNames.length > 0) || (playCountRows && playCountRows.length > 0)) && (
         <div data-testid="sitting-out-panel" className="space-y-3 p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-neutral-500">Sitting Out:</span>
+            <span className="text-xs font-bold text-neutral-600">Sitting Out:</span>
             <span className="text-xs font-black text-black">
               {sittingNames && sittingNames.length > 0 ? sittingNames.join(", ") : "None"}
             </span>
@@ -352,10 +352,10 @@ export function ResultsEntryView({
           <details data-testid="upcoming-lineup-preview" className="group cursor-pointer">
             <summary className="flex items-center justify-between font-bold text-sm text-neutral-800 select-none">
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block motion-safe:animate-pulse" />
                 <span>Up Next: Round {roundNumber + 1} Lineup Preview</span>
               </span>
-              <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
+              <span className="text-neutral-600 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -371,7 +371,7 @@ export function ResultsEntryView({
               </div>
               {upcomingProposal.sitting.length > 0 && (
                 <p className="text-xs font-bold text-neutral-600">
-                  <span className="font-bold text-neutral-500">Sitting Next: </span>
+                  <span className="font-bold text-neutral-600">Sitting Next: </span>
                   {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
                 </p>
               )}
@@ -485,7 +485,7 @@ export function ResultsEntryView({
                           {matchScores.team1}
                         </span>
                       ) : (
-                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                        <span className="text-xs font-bold text-neutral-600 italic py-2">
                           In Play
                         </span>
                       )
@@ -544,7 +544,7 @@ export function ResultsEntryView({
                           {matchScores.team2}
                         </span>
                       ) : (
-                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                        <span className="text-xs font-bold text-neutral-600 italic py-2">
                           In Play
                         </span>
                       )
@@ -579,7 +579,7 @@ export function ResultsEntryView({
 
               {/* Match Timestamps */}
               {isCompleted && (match.startedAt || match.completedAt) && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                   {match.startedAt && (
                     <ClientTime
                       date={match.startedAt}
@@ -657,7 +657,7 @@ export function ResultsEntryView({
           )}
           <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
             <div className="text-left shrink-0">
-              <p className="text-xs sm:text-xs font-bold text-neutral-500 leading-none mb-0.5">Round Progress</p>
+              <p className="text-xs sm:text-xs font-bold text-neutral-600 leading-none mb-0.5">Round Progress</p>
               <p className="text-sm sm:text-base font-bold text-black tracking-tight leading-tight">
                 {matches.filter((m) => m.status !== "pending").length} of {matches.length} done
               </p>

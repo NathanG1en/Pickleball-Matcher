@@ -99,7 +99,7 @@ export function EndSessionNowButton({
         confirmDataTestId="confirm-end-session-now"
       />
       {error && (
-        <p role="alert" className="text-[10px] font-bold text-red-600 mt-1 text-center">
+        <p role="alert" className="text-xs font-bold text-red-600 mt-1 text-center">
           {error}
         </p>
       )}

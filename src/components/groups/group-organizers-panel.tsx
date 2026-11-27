@@ -661,7 +661,7 @@ export function GroupOrganizersPanel({
                     className="w-full rounded-lg border-2 border-black bg-white px-3 py-2 text-base font-bold shadow-[2px_2px_0px_0px_#000] focus:outline-none"
                   />
                   {isSearching && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-500 animate-pulse">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-600 motion-safe:animate-pulse">
                       Searching…
                     </span>
                   )}
@@ -672,12 +672,12 @@ export function GroupOrganizersPanel({
               {username.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
                 <div className="mt-2 rounded-xl border-2 border-black bg-[#FFFDF7] p-2 space-y-2">
                   <div className="px-1">
-                    <span className="text-xs font-bold text-neutral-500">
+                    <span className="text-xs font-bold text-neutral-600">
                       Public Accounts ({searchResults.length})
                     </span>
                   </div>
                   {searchResults.length === 0 ? (
-                    <p className="px-2 py-1 text-xs font-bold text-neutral-500">
+                    <p className="px-2 py-1 text-xs font-bold text-neutral-600">
                       No registered players found matching &ldquo;{username}&rdquo;.
                     </p>
                   ) : (
@@ -687,18 +687,18 @@ export function GroupOrganizersPanel({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-sm font-black truncate">{result.name}</span>
-                              <span className="text-xs font-semibold text-neutral-500 truncate max-w-[140px] sm:max-w-none">
+                              <span className="text-xs font-semibold text-neutral-600 truncate max-w-[140px] sm:max-w-none">
                                 (@{result.username})
                               </span>
                               {result.isRestricted && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600">
                                   <LockIcon className="h-3 w-3 shrink-0" />
                                   <span>Private</span>
                                 </span>
                               )}
                             </div>
                             {!result.isRestricted && (
-                              <div className="flex items-center gap-2 text-[11px] font-bold text-neutral-600 mt-0.5 flex-wrap">
+                              <div className="flex items-center gap-2 text-xs font-bold text-neutral-600 mt-0.5 flex-wrap">
                                 {result.rating !== undefined && (
                                   <span>Rating: {formatDupr(result.rating)}</span>
                                 )}
@@ -718,7 +718,7 @@ export function GroupOrganizersPanel({
                             onClick={() => handleAddSearchedPlayer(result.accountId)}
                             className={`shrink-0 rounded-lg border-2 border-black px-2.5 py-1 text-xs font-bold shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:shadow-none ${
                               result.alreadyInGroup
-                                ? "bg-neutral-200 text-neutral-500 cursor-default"
+                                ? "bg-neutral-200 text-neutral-600 cursor-default"
                                 : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer"
                             }`}
                           >
@@ -747,7 +747,7 @@ export function GroupOrganizersPanel({
                   data-testid="guest-description-banner"
                   className="flex items-center justify-between gap-2 p-2 bg-neutral-100/90 rounded-lg border border-neutral-300 text-neutral-700"
                 >
-                  <p className="text-[11px] font-bold text-neutral-600 leading-tight">
+                  <p className="text-xs font-bold text-neutral-600 leading-tight">
                     Guests don&apos;t need an account to play, but their sessions won&apos;t be saved.
                   </p>
                   <button
@@ -756,7 +756,7 @@ export function GroupOrganizersPanel({
                     aria-label="Dismiss guest description"
                     title="Dismiss"
                     data-testid="dismiss-guest-desc-button"
-                    className="p-1 text-neutral-400 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
+                    className="p-1 text-neutral-600 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
                   >
                     <XIcon className="h-3.5 w-3.5" />
                   </button>
@@ -846,7 +846,7 @@ export function GroupOrganizersPanel({
                 type="button"
                 onClick={() => setSearchQuery("")}
                 aria-label="Clear search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black font-black text-sm cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black font-black text-sm cursor-pointer"
               >
                 ×
               </button>
@@ -922,7 +922,7 @@ export function GroupOrganizersPanel({
           </div>
 
           {(searchQuery || filterType !== "all" || filterGender !== "all") && (
-            <div className="flex items-center justify-between text-[11px] font-bold text-neutral-700 px-1 pt-0.5">
+            <div className="flex items-center justify-between text-xs font-bold text-neutral-700 px-1 pt-0.5">
               <span>
                 Showing {filteredAndSortedPlayers.length} of {players.length} players
               </span>
@@ -978,7 +978,7 @@ export function GroupOrganizersPanel({
                     {playerUsername && (
                       <Link
                         href={`/players/${encodeURIComponent(playerUsername)}`}
-                        className="truncate text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer shrink"
+                        className="truncate text-xs font-bold text-neutral-600 hover:text-black hover:underline cursor-pointer shrink"
                       >
                         @{playerUsername}
                       </Link>
@@ -996,14 +996,14 @@ export function GroupOrganizersPanel({
                           </span>
                           {player.gender && (
                             <>
-                              <span aria-hidden="true" className="text-neutral-400">·</span>
+                              <span aria-hidden="true" className="text-neutral-600">·</span>
                               <span className="text-xs font-bold text-neutral-600">
                                 <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
                                 <span className="hidden sm:inline">{player.gender === "male" ? "Male" : player.gender === "female" ? "Female" : player.gender}</span>
                               </span>
                             </>
                           )}
-                          <span aria-hidden="true" className="text-neutral-400">·</span>
+                          <span aria-hidden="true" className="text-neutral-600">·</span>
                           <span>
                             {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
                           </span>
@@ -1037,7 +1037,7 @@ export function GroupOrganizersPanel({
                         className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center transition-all cursor-pointer shadow-[1.5px_1.5px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none shrink-0 ${
                           isPinned
                             ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                            : "bg-[#FFFDF7] text-neutral-400 hover:text-black hover:bg-[#ccff00]"
+                            : "bg-[#FFFDF7] text-neutral-600 hover:text-black hover:bg-[#ccff00]"
                         }`}
                       >
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />

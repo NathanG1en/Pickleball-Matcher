@@ -916,12 +916,12 @@ export function UserSettingsModal({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-neutral-100 px-2.5 py-0.5 text-[11px] font-bold text-neutral-700">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-neutral-700">
                         <CurrentIcon className="h-3 w-3 shrink-0" />
                         <span>{currentSelected.label}</span>
                       </span>
                       <ChevronDownIcon
-                        className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${
+                        className={`h-4 w-4 text-neutral-600 transition-transform duration-200 ${
                           isOpenDrawer ? "rotate-180" : ""
                         }`}
                       />
@@ -935,7 +935,7 @@ export function UserSettingsModal({
                       className="border-t-2 border-neutral-100 bg-neutral-50/60 p-3 space-y-2"
                     >
                       {isCapped && (
-                        <p className="text-[10px] font-bold text-neutral-500 mb-1">
+                        <p className="text-xs font-bold text-neutral-600 mb-1">
                           Visibility ceiling:{" "}
                           {currentCeiling === "only_you" ? "Only You" : "Group Members"} (from Profile Page)
                         </p>
@@ -1019,7 +1019,7 @@ export function UserSettingsModal({
                                     {opt.label}
                                   </span>
                                 </div>
-                                <p className="mt-0.5 text-[11px] font-normal text-neutral-600 leading-snug">
+                                <p className="mt-0.5 text-xs font-normal text-neutral-600 leading-snug">
                                   {optionDesc}
                                 </p>
                               </div>

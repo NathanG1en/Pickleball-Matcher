@@ -254,12 +254,12 @@ export function PersonalPlanForm({
           <h2 className="font-display text-base sm:text-lg font-black uppercase text-black">
             Select Focus Drills ({selectedIds.length} Selected)
           </h2>
-          <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
+          <span className="text-xs font-bold text-neutral-600">Pick 1 to 6 drills</span>
         </div>
 
         {/* Search Drills Input */}
         <div className="relative">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
             <SearchIcon className="w-4 h-4" />
           </span>
           <input
@@ -276,7 +276,7 @@ export function PersonalPlanForm({
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="Clear drill search"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-600 hover:text-black cursor-pointer"
             >
               <XIcon className="w-4 h-4" />
             </button>
@@ -309,7 +309,7 @@ export function PersonalPlanForm({
                 <span>{cat.label}</span>
                 {count > 0 && (
                   <span
-                    className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                    className={`ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-black leading-none ${
                       isActive ? "bg-[#ccff00] text-black" : "bg-black text-[#ccff00]"
                     }`}
                   >

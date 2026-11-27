@@ -104,7 +104,7 @@ export function GeneralTab({
             className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border-2 border-black text-amber-900 text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
           >
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-pulse" />
               <span>You have unsaved changes in General settings.</span>
             </span>
           </div>
@@ -147,7 +147,7 @@ export function GeneralTab({
             className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold text-black shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] disabled:bg-neutral-100 disabled:text-neutral-500 disabled:cursor-not-allowed transition-shadow"
           />
           {!canEditGroupName && (
-            <p className="text-[11px] font-semibold text-neutral-500">
+            <p className="text-xs font-semibold text-neutral-600">
               Only authorized organizers or the host can edit the group name.
             </p>
           )}
@@ -159,7 +159,7 @@ export function GeneralTab({
             <span className="block text-xs font-bold text-black">
               Group Privacy
             </span>
-            <span className="text-[11px] font-bold text-neutral-600">
+            <span className="text-xs font-bold text-neutral-600">
               Currently: {isPublic ? "Public" : "Private"}
             </span>
           </div>
@@ -208,8 +208,8 @@ export function GeneralTab({
           {/* Privacy explanation banner */}
           <div className="rounded-xl border border-neutral-300 bg-neutral-50 p-2.5 text-xs text-neutral-700 space-y-1">
             <div className="flex items-start gap-1.5">
-              <InfoIcon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-neutral-500" />
-              <div className="space-y-0.5 text-[11px] font-medium leading-relaxed">
+              <InfoIcon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-neutral-600" />
+              <div className="space-y-0.5 text-xs font-medium leading-relaxed">
                 <p>
                   <strong className="font-black text-black">Public:</strong> Anyone can discover and join this group through group search.
                 </p>
@@ -221,7 +221,7 @@ export function GeneralTab({
           </div>
 
           {!canEditGroupPrivacy && (
-            <p className="text-[11px] font-semibold text-neutral-500">
+            <p className="text-xs font-semibold text-neutral-600">
               Only authorized organizers or the host can change group privacy.
             </p>
           )}
@@ -264,7 +264,7 @@ export function GeneralTab({
               )}
             </button>
           </div>
-          <p className="text-[11px] font-semibold text-neutral-500">
+          <p className="text-xs font-semibold text-neutral-600">
             This identifier uniquely identifies your group in links and URLs.
           </p>
         </div>

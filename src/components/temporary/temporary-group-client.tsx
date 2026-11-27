@@ -331,7 +331,7 @@ export function TemporaryGroupClient({
               </Link>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#dcfce7] border-2 border-black font-bold text-xs text-black shadow-[2px_2px_0px_0px_#000]">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-600 motion-safe:animate-pulse" />
                 Signed In
               </span>
             )}
@@ -341,7 +341,7 @@ export function TemporaryGroupClient({
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-black bg-[#fde047] px-2.5 py-1 text-xs font-bold text-black shadow-[1px_1px_0px_0px_#000]">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 motion-safe:animate-pulse" />
               Quick Session · Browser only
             </span>
             <div
@@ -505,7 +505,7 @@ export function TemporaryGroupClient({
                     <label className="block text-xs font-bold text-black">
                       Merge Session Players into Roster
                     </label>
-                    <span className="text-[10px] font-bold text-neutral-600">
+                    <span className="text-xs font-bold text-neutral-600">
                       Link to members or add as new
                     </span>
                   </div>
@@ -519,7 +519,7 @@ export function TemporaryGroupClient({
                           {player.name}
                         </span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-black text-neutral-400">→</span>
+                          <span className="text-xs font-black text-neutral-600">→</span>
                           <CustomDropdown
                             ariaLabel={`Merge ${player.name}`}
                             placeholder="(Create New Guest)"
@@ -672,7 +672,7 @@ export function TemporaryGroupClient({
                           />
                         </div>
 
-                        <div className="text-center font-bold text-xs text-neutral-500">
+                        <div className="text-center font-bold text-xs text-neutral-600">
                           VS
                         </div>
 
@@ -734,7 +734,7 @@ export function TemporaryGroupClient({
               </div>
 
               {state.rounds.length === 0 ? (
-                <div className="rounded-2xl border-2 border-dashed border-neutral-300 p-6 text-center text-xs font-bold text-neutral-500">
+                <div className="rounded-2xl border-2 border-dashed border-neutral-300 p-6 text-center text-xs font-bold text-neutral-600">
                   No completed rounds yet. Generate a round to begin play.
                 </div>
               ) : (
@@ -767,7 +767,7 @@ export function TemporaryGroupClient({
                 updateDraft({ playerNames: value, courtCount: courts, courtSizes: defaultCourtSizes(count, courts) });
               }}
               placeholder="Alex&#10;Jamie&#10;Morgan&#10;Riley"
-              className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold normal-case shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#ccff00] transition-shadow placeholder:font-normal placeholder:text-neutral-400"
+              className="w-full rounded-xl border-2 border-black bg-white px-3.5 py-2.5 text-base font-bold normal-case shadow-[2px_2px_0px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#ccff00] transition-shadow placeholder:font-normal placeholder:text-neutral-500"
             />
             <p className="text-xs font-bold text-neutral-600 pt-0.5">
               {parsedNames.length} names entered · at least 2 players
@@ -969,7 +969,7 @@ export function ExitWarning({ accountId, onStay, onLeave }: { accountId: string 
         <button
           type="button"
           onClick={onLeave}
-          className="w-full text-center text-xs font-bold text-neutral-500 hover:text-black underline cursor-pointer pt-1"
+          className="w-full text-center text-xs font-bold text-neutral-600 hover:text-black underline cursor-pointer pt-1"
         >
           Leave without saving
         </button>

@@ -88,7 +88,7 @@ export function PersonalTrainingPlanCard({
               <ZapIcon className="w-4 h-4 text-black" />
             </span>
             <div>
-              <span className="text-xs font-bold text-neutral-500 block">
+              <span className="text-xs font-bold text-neutral-600 block">
                 Week of {weekDateStr}
               </span>
               <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -189,7 +189,7 @@ export function PersonalTrainingPlanCard({
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
-            <span className="text-xs font-bold text-neutral-500 block">
+            <span className="text-xs font-bold text-neutral-600 block">
               Week of {weekDateStr}
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -256,7 +256,7 @@ export function PersonalTrainingPlanCard({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                    <span className="text-xs font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
                       {item.customGoalDescription ??
                         (item.challenge?.defaultTargetGoal
                           ? `Target: ${item.challenge.defaultTargetGoal} ${item.challenge.scoreUnit}`
@@ -282,7 +282,7 @@ export function PersonalTrainingPlanCard({
                 </div>
 
                 {item.customGoalDescription && (
-                  <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                  <div className="sm:hidden mt-1.5 text-xs font-bold text-neutral-600">
                     Goal: {item.customGoalDescription}
                   </div>
                 )}
@@ -318,7 +318,7 @@ export function PersonalTrainingPlanCard({
 
           {/* Search Drills Input */}
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
               <SearchIcon className="w-4 h-4" />
             </span>
             <input
@@ -335,7 +335,7 @@ export function PersonalTrainingPlanCard({
                 type="button"
                 onClick={() => setPickerSearchQuery("")}
                 aria-label="Clear drill search"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-600 hover:text-black cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
@@ -366,7 +366,7 @@ export function PersonalTrainingPlanCard({
           {visibleAvailableChallenges.length === 0 ? (
             <div className="p-4 text-center rounded-xl bg-white border-2 border-black space-y-1.5 shadow-[2px_2px_0px_0px_#000]">
               <p className="text-xs font-bold text-black">No matching drills found</p>
-              <p className="text-[11px] font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
+              <p className="text-xs font-medium text-neutral-600">Try adjusting your search terms or category filter.</p>
               {(pickerSearchQuery || pickerCategory !== "all") && (
                 <button
                   type="button"
@@ -392,7 +392,7 @@ export function PersonalTrainingPlanCard({
                     className="bg-white p-2.5 rounded-xl border border-black/20 flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-neutral-500 block truncate">
+                      <span className="text-xs font-bold text-neutral-600 block truncate">
                         {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
                       </span>
                       <h4 className="font-display text-xs font-black uppercase text-black truncate">
@@ -408,7 +408,7 @@ export function PersonalTrainingPlanCard({
                         inPlan
                           ? "bg-neutral-100 text-black cursor-default"
                           : items.length >= 6
-                          ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed shadow-none"
+                          ? "bg-neutral-100 text-neutral-600 border-neutral-300 cursor-not-allowed shadow-none"
                           : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
                       }`}
                     >
@@ -446,7 +446,7 @@ export function PersonalTrainingPlanCard({
         </Link>
 
         {pickerFeedback && (
-          <span className="text-xs font-bold text-neutral-700 animate-pulse ml-1">
+          <span className="text-xs font-bold text-neutral-700 motion-safe:animate-pulse ml-1">
             {pickerFeedback}
           </span>
         )}

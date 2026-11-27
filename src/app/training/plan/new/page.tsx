@@ -28,7 +28,7 @@ export default async function NewPersonalTrainingPlanPage() {
     <main className="min-h-screen p-4 sm:p-6 max-w-3xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold text-neutral-500 block mb-0.5">
+          <span className="text-xs font-bold text-neutral-600 block mb-0.5">
             Solo Practice
           </span>
           <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black leading-tight">
