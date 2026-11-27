@@ -133,7 +133,7 @@ export function HomeScreenTip() {
           Install App to Home Screen →
         </button>
       ) : isIOS ? (
-        <div className="p-2.5 rounded-xl bg-white/90 border border-black text-xs font-bold text-neutral-900 space-y-1">
+        <div className="text-xs font-bold text-neutral-900 space-y-1">
           <p>
             1. Tap the <strong className="font-black">Share</strong> icon (square with arrow ↑) in Safari.
           </p>
@@ -142,7 +142,7 @@ export function HomeScreenTip() {
           </p>
         </div>
       ) : (
-        <div className="p-2.5 rounded-xl bg-white/90 border border-black text-xs font-bold text-neutral-900 space-y-1">
+        <div className="text-xs font-bold text-neutral-900 space-y-1">
           <p>
             Tap browser menu (<strong className="font-black">⋮</strong>), then tap <strong className="font-black">&quot;Add to Home screen&quot;</strong> or <strong className="font-black">&quot;Install App&quot;</strong>.
           </p>

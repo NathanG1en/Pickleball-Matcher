@@ -20,19 +20,11 @@ export function GroupTournamentsList({
 }: GroupTournamentsListProps) {
   if (tournaments.length === 0) {
     return (
-      <div className="text-center py-6 px-4 rounded-2xl bg-neutral-50 border-2 border-dashed border-neutral-300 space-y-3">
-        <TrophyIcon className="h-8 w-8 mx-auto text-neutral-600" />
-        <p className="text-sm font-bold text-neutral-600">
-          No tournaments created yet.
+      <div className="flex items-center gap-3 py-2">
+        <TrophyIcon className="h-6 w-6 shrink-0 text-neutral-600" />
+        <p className="text-sm font-bold text-neutral-700">
+          No tournaments yet.
         </p>
-        {isOrganizer && (
-          <Link
-            href={`/g/${groupId}/tournaments/new`}
-            className="inline-block px-4 py-2 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
-          >
-            Create First Tournament →
-          </Link>
-        )}
       </div>
     );
   }

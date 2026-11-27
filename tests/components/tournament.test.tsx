@@ -269,8 +269,9 @@ describe("Tournament UI Components", () => {
         />
       );
 
-      expect(html).toContain("No tournaments created yet");
-      expect(html).toContain("Create First Tournament →");
+      expect(html).toContain("No tournaments yet.");
+      // The section header already has + Create Tournament, so the empty state doesn't repeat it.
+      expect(html).not.toContain("Create First Tournament");
     });
 
     it("renders tournament items with status badges and division pills", () => {

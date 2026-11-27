@@ -463,7 +463,7 @@ export function ResultsEntryView({
                 {/* Team 1 */}
                 <div
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-white ring-2 ring-black ring-offset-2 ring-offset-[#FFFDF7]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl bg-white ${isViewerTeam1 ? "ring-2 ring-black" : ""}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team1Names.join(" & ")}</span>
@@ -522,7 +522,7 @@ export function ResultsEntryView({
                 {/* Team 2 */}
                 <div
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-white ring-2 ring-black ring-offset-2 ring-offset-[#FFFDF7]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl bg-white ${isViewerTeam2 ? "ring-2 ring-black" : ""}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team2Names.join(" & ")}</span>

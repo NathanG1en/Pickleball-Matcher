@@ -40,7 +40,7 @@ Players (members who are not organizers) get a read-only view of the session.
   - **Playing:** "You're on Court N", with their partner (or "Singles") and their opponents. When the game ends it shows the result from their side, for example "Final · You won 11–8". If the organizer cancels the game, it says so.
   - **Sitting out:** "You're sitting out", with a note that they'll have priority when the next round is made.
   - **Not in this round:** for example, a player who arrived late and isn't checked in. No card is shown.
-- **Team highlight:** the viewer's team on its court card is outlined with a double black ring on a white panel and tagged with a black **You** label (lime text). Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
+- **Team highlight:** each team sits on a flat white panel inside its court card; the viewer's team panel is outlined with a black ring and tagged with a black **You** label (lime text). Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
 
 ### Games played · rounds sat out
 

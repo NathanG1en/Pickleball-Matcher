@@ -962,7 +962,7 @@ export function GroupOrganizersPanel({
           </button>
         </div>
       ) : (
-        <ul className="divide-y-2 divide-neutral-200 rounded-xl border-2 border-black bg-[#FFFDF7] px-3.5 shadow-[4px_4px_0px_0px_#171717]" data-testid="roster-players-list">
+        <ul className="divide-y-2 divide-neutral-200 rounded-xl bg-[#FFFDF7] px-3.5 lg:max-h-[30rem] lg:overflow-y-auto" data-testid="roster-players-list" aria-label="Roster players">
           {filteredAndSortedPlayers.map((player) => {
             const organizer = player.accountId ? organizers.find(({ accountId }) => accountId === player.accountId) : undefined;
             const playerUsername = player.username || organizer?.username;

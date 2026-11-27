@@ -333,7 +333,7 @@ export default async function GroupDashboardPage({
                             .filter((mp) => mp.matchId === m.id && mp.team === 2)
                             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                           return (
-                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 shadow-[1px_1px_0px_0px_#000]">
+                            <div key={m.id} className="p-3 bg-white rounded-xl text-xs flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
@@ -377,7 +377,7 @@ export default async function GroupDashboardPage({
                           <div
                             key={m.id}
                             data-viewer-match={isViewerMatch ? "true" : undefined}
-                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000] ring-2 ring-black" : "bg-white shadow-[1px_1px_0px_0px_#000]"}`}
+                            className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 bg-white ${isViewerMatch ? "ring-2 ring-black" : ""}`}
                           >
                             <div>
                               <span className="font-black text-black flex items-center gap-2">
