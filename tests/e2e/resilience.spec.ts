@@ -72,7 +72,8 @@ test.describe("Resilience and Safe Drafts", () => {
     // Fix the score to valid (11 - 9)
     await t2Input.fill("9");
     await page.locator("button:has-text('Save Result')").click();
-    await expect(page.locator("text=Final")).toBeVisible();
+    // Wait for this court's Final badge; a bare "Final" text match also hits the End session note.
+    await expect(page.getByTestId("court-match-1").getByText("Final", { exact: true })).toBeVisible();
 
     // 6. Stale second tab handling
     const page2 = await context.newPage();
