@@ -211,8 +211,7 @@ export function OtpInput({
             shadow-[2px_2px_0px_0px_#000] outline-none
             transition-[transform,background-color,box-shadow] duration-150 ease-out
             hover:-translate-y-0.5
-            focus:-translate-y-1 focus:bg-[#ccff00] focus:shadow-[3px_4px_0px_0px_#000] focus:ring-2 focus:ring-black focus:ring-offset-1
-            disabled:cursor-not-allowed disabled:opacity-60
+            focus:-translate-y-1 focus:bg-[#ccff00] focus:shadow-[3px_4px_0px_0px_#000] focus:ring-2 focus:ring-black focus:ring-offset-1 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200
             cursor-pointer
           `}
         />

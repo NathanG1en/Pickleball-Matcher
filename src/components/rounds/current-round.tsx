@@ -115,7 +115,7 @@ function CurrentRoundEditor({
     const score = syn.score;
     const badgeStyle =
       score > 0
-        ? "bg-[#ccff00] text-black"
+        ? "bg-emerald-100 text-emerald-950"
         : score < 0
         ? "bg-amber-100 text-amber-900"
         : "bg-neutral-100 text-neutral-800";
@@ -447,8 +447,8 @@ function CurrentRoundEditor({
                 onClick={() => onChangeMatchmakingVariety?.(opt.value)}
                 className={`min-h-11 px-3 rounded-md text-sm font-bold transition-all cursor-pointer ${
                   (matchmakingVariety ?? 0) === opt.value
-                    ? "bg-[#ccff00] text-black border border-black shadow-[1px_1px_0px_0px_#000]"
-                    : "text-neutral-600 hover:text-black border border-transparent"
+                    ? "bg-black text-[#ccff00] border border-black"
+                    : "text-neutral-700 hover:text-black border border-transparent"
                 }`}
               >
                 {opt.label}
@@ -561,10 +561,10 @@ function CurrentRoundEditor({
                     isUnbalanced
                       ? "bg-[#ff6b6b]"
                     : isSingles || isTeamVsOne
-                      ? "bg-[#ccff00]"
+                      ? "bg-white"
                       : isEmpty
                       ? "bg-neutral-200"
-                      : "bg-[#ccff00]"
+                      : "bg-white"
                   }`}
                 >
                   {isUnbalanced

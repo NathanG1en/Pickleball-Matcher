@@ -207,7 +207,7 @@ export function PermissionsTab({
             type="submit"
             disabled={!hasChanges || saving}
             data-testid="save-permissions-button"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? "Saving Permissions…" : "Save Permissions"}
           </button>

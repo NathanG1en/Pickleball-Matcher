@@ -1770,7 +1770,7 @@ export function OpenPlayManagerClient({
                   <button
                     type="submit"
                     disabled={!guestName.trim() || isAddingGuest}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
                   >
                     {isAddingGuest ? "Adding..." : "Add"}
                   </button>
@@ -1933,7 +1933,7 @@ export function OpenPlayManagerClient({
                   onClick={handleJoin}
                   disabled={isJoining}
                   data-testid="join-open-play-submit-button"
-                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
                 >
                   {isJoining ? "Joining..." : "Join Open Play to Record Games"}
                 </button>

@@ -144,7 +144,7 @@ export function NewSessionClient({
           >
             ← Back to Group
           </Link>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 1 · Format
           </span>
         </div>
@@ -214,7 +214,7 @@ export function NewSessionClient({
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                 Flexible Games
               </span>
               <span className="text-xs font-bold text-neutral-600">
@@ -270,7 +270,7 @@ export function NewSessionClient({
             >
               ← Back to Players
             </button>
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
               Step 3 of 3
             </span>
           </div>
@@ -343,7 +343,7 @@ export function NewSessionClient({
           >
             ← Change Format
           </button>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 2 of 3
           </span>
         </div>
@@ -398,7 +398,7 @@ export function NewSessionClient({
         >
           ← Change Format
         </button>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
           Step 2 of 2
         </span>
       </div>
@@ -460,7 +460,7 @@ export function NewSessionClient({
             disabled={isPending}
             data-testid="start-open-play-button"
             onClick={handleStartOpenPlay}
-            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
           >
             {isPending ? "Starting Open Play..." : "Start Open Play"}
           </button>

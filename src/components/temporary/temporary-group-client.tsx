@@ -551,7 +551,7 @@ export function TemporaryGroupClient({
                   type="button"
                   onClick={saveToAccount}
                   disabled={saving || !selectedGroupId}
-                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                 >
                   {saving ? "Attaching Session…" : "Attach Session to Group →"}
                 </button>
@@ -572,7 +572,7 @@ export function TemporaryGroupClient({
                   type="button"
                   onClick={saveToAccount}
                   disabled={saving}
-                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3 text-sm font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                 >
                   {saving ? "Creating Group & Saving Session…" : "Create Group & Save Session →"}
                 </button>
@@ -836,7 +836,7 @@ export function TemporaryGroupClient({
           <button
             type="submit"
             disabled={parsedNames.length < 2 || parsedNames.length > 128 || courtCapacity > parsedNames.length}
-            className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 text-lg font-bold shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all disabled:opacity-40 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] cursor-pointer disabled:cursor-not-allowed"
+            className="w-full rounded-2xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] px-4 py-3.5 text-lg font-bold shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] transition-all disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] cursor-pointer disabled:cursor-not-allowed"
           >
             Start Quick Session
           </button>

@@ -406,7 +406,7 @@ export function PersonalTrainingPlanCard({
                       onClick={() => handleAddDrill(challenge)}
                       className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] transition-colors shrink-0 ${
                         inPlan
-                          ? "bg-lime-100 text-black cursor-default"
+                          ? "bg-neutral-100 text-black cursor-default"
                           : items.length >= 6
                           ? "bg-neutral-100 text-neutral-400 border-neutral-300 cursor-not-allowed shadow-none"
                           : "bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"

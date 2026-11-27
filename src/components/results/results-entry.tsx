@@ -303,7 +303,7 @@ export function ResultsEntryView({
                 type="button"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-[#ccff00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-[#ccff00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <span>+ Add Game</span>
               </button>
@@ -454,12 +454,12 @@ export function ResultsEntryView({
                 {/* Team 1 */}
                 <div
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-white ring-2 ring-black ring-offset-2 ring-offset-[#FFFDF7]" : "bg-[#FFFDF7]"}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team1Names.join(" & ")}</span>
                     {isViewerTeam1 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-black px-1.5 py-0.5 text-xs font-bold text-[#ccff00] shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -513,12 +513,12 @@ export function ResultsEntryView({
                 {/* Team 2 */}
                 <div
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-white ring-2 ring-black ring-offset-2 ring-offset-[#FFFDF7]" : "bg-[#FFFDF7]"}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team2Names.join(" & ")}</span>
                     {isViewerTeam2 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-black px-1.5 py-0.5 text-xs font-bold text-[#ccff00] shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">

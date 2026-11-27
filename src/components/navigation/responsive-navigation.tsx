@@ -157,7 +157,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 aria-current={isHomeActive ? "page" : undefined}
                 className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isHomeActive
-                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    ? "bg-black text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
                 }`}
               >
@@ -168,7 +168,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 aria-current={isGroupsActive ? "page" : undefined}
                 className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isGroupsActive
-                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    ? "bg-black text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
                 }`}
               >
@@ -179,7 +179,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 aria-current={isPlayersActive ? "page" : undefined}
                 className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isPlayersActive
-                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    ? "bg-black text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
                 }`}
               >
@@ -190,7 +190,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                 aria-current={isTrainingActive ? "page" : undefined}
                 className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isTrainingActive
-                    ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                    ? "bg-black text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                     : "text-neutral-700 hover:text-black hover:bg-white/80 border-2 border-transparent"
                 }`}
               >
@@ -209,7 +209,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                   aria-label={`Profile for @${playerAccount.username}`}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
                     isProfileActive
-                      ? "bg-[#ccff00] text-black border-black shadow-[2px_2px_0px_0px_#000]"
+                      ? "bg-black text-[#ccff00] border-black shadow-[2px_2px_0px_0px_#000]"
                       : "bg-white hover:bg-neutral-50 text-black border-black shadow-[2px_2px_0px_0px_#000]"
                   }`}
                 >
@@ -306,7 +306,7 @@ export function ResponsiveNavigation({ playerAccount }: ResponsiveNavigationProp
                   aria-current={item.active ? "page" : undefined}
                   className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-h-[48px] select-none ${
                     item.active
-                      ? "bg-[#ccff00] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]"
+                      ? "bg-black text-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]"
                       : "text-neutral-600 hover:text-black border-2 border-transparent"
                   }`}
                 >

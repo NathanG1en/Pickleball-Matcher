@@ -17,7 +17,7 @@ The application features an Instagram-inspired responsive navigation system shar
     4. **Training** (`/training`)
     5. **Profile** (`/players`)
   - Features recognizable icons with short normal-case text labels underneath.
-  - Active destinations are highlighted with the neon lime accent (`#ccff00`), black border, and subtle neo-brutalist offset drop shadow.
+  - The active destination is black with lime text, a black border, and a subtle neo-brutalist offset drop shadow (selection is shown in black across the app; solid lime is reserved for the main action on each screen).
   - Subdued inactive states.
   - Supports mobile safe-area insets (`env(safe-area-inset-bottom)`).
   - Page layouts reserve bottom padding (`pb-20 md:pb-0`) when signed in to prevent content from being obscured.

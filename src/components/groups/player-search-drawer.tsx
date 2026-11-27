@@ -172,7 +172,7 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                   type="button"
                   disabled={player.alreadyInGroup || addingAccountId === player.accountId}
                   onClick={() => handleAddPlayer(player.accountId)}
-                  className={`whitespace-nowrap rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
+                  className={`whitespace-nowrap rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:shadow-none ${
                     player.alreadyInGroup
                       ? "bg-neutral-200 text-neutral-600"
                       : "bg-[#ccff00] hover:bg-[#b8e600]"

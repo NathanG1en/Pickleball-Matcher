@@ -2503,7 +2503,7 @@ export function SessionManagerClient({
                 onClick={() => void handleSetMyAttendance(viewerAttendance.leftRound !== null)}
                 disabled={isMyAttendancePending}
                 data-testid={viewerAttendance.leftRound === null ? "leave-after-game-button" : "stay-in-session-button"}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
               >
                 {isMyAttendancePending
                   ? "Saving…"
@@ -2811,7 +2811,7 @@ export function SessionManagerClient({
                             <button
                               type="submit"
                               disabled={!guestName.trim() || isAddingGuest}
-                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
                             >
                               {isAddingGuest ? "Adding..." : "Add"}
                             </button>
@@ -2996,7 +2996,7 @@ export function SessionManagerClient({
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
-                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                        } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
                                       </button>
@@ -3106,7 +3106,7 @@ export function SessionManagerClient({
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
                                             : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
-                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                        } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
                                       </button>

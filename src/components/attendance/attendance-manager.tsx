@@ -339,7 +339,7 @@ export function AttendanceManager({
                       data-testid={`setup-preset-${choice.id}`}
                       className={`px-3 py-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
                         isChoiceCurrent(choice)
-                          ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
+                          ? "bg-white text-black shadow-[2px_2px_0px_0px_#000] ring-2 ring-black"
                           : "bg-white text-neutral-800 hover:bg-neutral-50 shadow-[1px_1px_0px_0px_#000]"
                       }`}
                     >
@@ -364,7 +364,7 @@ export function AttendanceManager({
               <div>
                 <h2 className="font-display text-xl sm:text-2xl font-black text-black">Who is Playing Today?</h2>
             <p className="text-sm font-black text-black mt-1">
-              <span className="bg-[#ccff00] px-2.5 py-0.5 border border-black rounded-md shadow-[1px_1px_0px_0px_#000]">
+              <span className="bg-white px-2.5 py-0.5 border border-black rounded-md shadow-[1px_1px_0px_0px_#000]">
                 {count} players selected
               </span>
             </p>
@@ -451,7 +451,7 @@ export function AttendanceManager({
                   data-testid={`player-card-${player.name}`}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
                     isSelected
-                      ? "bg-[#ccff00] border-black text-black shadow-[3px_3px_0px_0px_#000]"
+                      ? "bg-white border-black text-black shadow-[3px_3px_0px_0px_#000]"
                       : "bg-[#FFFDF7] border-neutral-300 text-neutral-700 hover:border-black"
                   }`}
                 >
@@ -541,7 +541,7 @@ export function AttendanceManager({
                   <button
                     type="submit"
                     disabled={!guestName.trim()}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
                   >
                     Add
                   </button>

@@ -405,7 +405,7 @@ export function InlineResultLogger({
           <button
             type="submit"
             disabled={isPending || isUndoing}
-            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-sm sm:text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-sm sm:text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 touch-manipulation select-none"
           >
             {isPending ? "Saving..." : "Save Attempt"}
           </button>

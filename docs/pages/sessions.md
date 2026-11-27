@@ -10,7 +10,7 @@ A short wizard for organizers with calm, readable typography. Headings and cards
    - **Normal Session** (`select-normal-session-button`): algorithmic pairings, balanced court assignments with sit-out rotation, and synchronized rounds.
    - **Open Play** (`select-open-play-button`): flexible games that players can join, leave, and log at any time.
    - **Back to Group** returns to the dashboard.
-2. **Normal: Start Matchmaking.** Badge: “Step 2 of 3”. Set the court count (with +/− controls) and choose who is attending; the player count is shown as “N players selected”. **Change Format** goes back to step 1, and **Continue to Pairings** moves on.
+2. **Normal: Start Matchmaking.** Badge: “Step 2 of 3”. Set the court count (with +/− controls) and choose who is attending; the player count is shown as “N players selected”. Selected players are white cards with a black border, shadow and checked box (unselected ones have a light grey border), the chosen court preset gets a black ring, and the lime **Continue to Pairings** button is the only lime element in the step. **Change Format** goes back to step 1, and **Continue to Pairings** moves on.
 3. **Normal: Stay Together Pairings.** Badge: “Step 3 of 3”. Optionally keep pairs of friends together as partners, then **Start Session** (`start-session-button`). **Back to Players** returns to step 2.
 
 Open Play has one more step after the format:
@@ -39,7 +39,7 @@ Players (members who are not organizers) get a read-only view of the session.
   - **Playing:** "You're on Court N", with their partner (or "Singles") and their opponents. When the game ends it shows the result from their side, for example "Final · You won 11–8". If the organizer cancels the game, it says so.
   - **Sitting out:** "You're sitting out", with a note that they'll have priority when the next round is made.
   - **Not in this round:** for example, a player who arrived late and isn't checked in. No card is shown.
-- **Team highlight:** the viewer's team on its court card is highlighted lime and tagged **You**. Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
+- **Team highlight:** the viewer's team on its court card is outlined with a double black ring on a white panel and tagged with a black **You** label (lime text). Organizers who are playing also get this highlight; they don't get the "You" card, which keeps their scoring screen compact.
 
 ### Games played · rounds sat out
 
@@ -85,6 +85,7 @@ Each court is a card (`court-match-N`) with both teams and a score input for eac
 
 ### Ending a session
 
+- **Colour roles on the live screen:** solid lime marks only the main action (for example **Start Round**, **+ Add Game**, **Save & Start R2**). The selected **Balanced / Varied / Wild** option is black with lime text, court format badges (**Doubles Match**, **Singles • Unrated**) are white, **Final** is a green badge, and disabled buttons are flat grey with grey text and no shadow.
 - **Live screen controls:** the top of the session page has only **Back** and **Settings**, both 44px tall. Round controls on the live screen (**+ Add Game**, **Manual Edit**, **Reshuffle**, the **Balanced / Varied / Wild** variety buttons, **Select Winner**, the rename pencil and the **···** menu) are at least 44px tall for one-handed use courtside.
 - **From the session page:** organizers end the session with the red **End session** button in a dashed box at the bottom of the page ("Finished playing? Ending finalizes ratings, and a session can't be reopened."), away from Settings and the round controls. It works even when games or score edits are in progress. Tapping it opens the same **End this session?** dialog as the group dashboard: it says how many games are still in progress and won't be recorded, lists them by court and teams, and warns that a session can't be reopened. **Keep playing** closes it; **End session** discards in-progress score drafts and finalizes the session. The confirmation always appears; there is no option to skip it. The button reads "Ending…" only while the session is actually ending. Upon confirmation, the session state immediately transitions to completed, disallowing duplicate submissions while navigating.
 - **Other confirmations:** reshuffling a round that has already started opens **Reshuffle Round N?** ("Everyone gets new matchups, and any scores entered for this round are cleared." — **Keep matchups** / **Reshuffle**), and **Undo Round N** in the **···** menu opens **Undo Round N?** ("This removes Round N and its results, and recalculates everyone's ratings." — **Keep round** / **Undo round**). These use the app's styled dialog, not the browser's built-in confirm box.

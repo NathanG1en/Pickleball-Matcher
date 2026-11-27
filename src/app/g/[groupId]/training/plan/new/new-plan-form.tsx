@@ -361,7 +361,7 @@ export function NewPlanForm({
         <button
           type="submit"
           disabled={isPending || selectedIds.length === 0}
-          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 touch-manipulation select-none"
         >
           {isPending ? "Publishing Plan..." : "Publish Weekly Plan →"}
         </button>

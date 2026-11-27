@@ -331,7 +331,7 @@ export function SessionOptionsMenu({
               type="submit"
               disabled={isPending || !renameInput.trim()}
               data-testid="confirm-rename-session-button"
-              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
             >
               {isPending ? "Saving..." : "Save"}
             </button>

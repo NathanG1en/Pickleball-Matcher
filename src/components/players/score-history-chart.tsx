@@ -475,7 +475,7 @@ export function ScoreHistoryChart({
                 isActive
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                   : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
             >
               <span className="sm:hidden">{item.shortLabel}</span>
               <span className="hidden sm:inline">{item.label}</span>

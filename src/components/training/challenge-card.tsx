@@ -163,7 +163,7 @@ export function ChallengeCard({
                 }}
                 className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] select-none touch-manipulation transition-colors ${
                   inPersonalPlan
-                    ? "bg-lime-100 text-black cursor-default"
+                    ? "bg-neutral-100 text-black cursor-default"
                     : "bg-[#ccff00] hover:bg-[#b8e600] text-black cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
                 }`}
                 title={

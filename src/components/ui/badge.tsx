@@ -10,7 +10,7 @@ export function Badge({
 }) {
   const variants = {
     default: "bg-white text-black border-2 border-black",
-    success: "bg-[#ccff00] text-black border-2 border-black",
+    success: "bg-emerald-100 text-emerald-950 border-2 border-black",
     warning: "bg-[#fde047] text-black border-2 border-black",
     danger: "bg-[#ff6b6b] text-black border-2 border-black",
     muted: "bg-neutral-200 text-neutral-900 border-2 border-black",

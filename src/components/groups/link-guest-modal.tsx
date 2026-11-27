@@ -270,7 +270,7 @@ export function LinkGuestModal({
                           disabled={isLinking}
                           onClick={() => void handleLink(result)}
                           data-testid={`link-target-${result.username}`}
-                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                         >
                           {linkingAccountId === result.accountId ? "Merging…" : "Merge"}
                         </button>
@@ -281,7 +281,7 @@ export function LinkGuestModal({
                         disabled={isLinking}
                         onClick={() => void handleLink(result)}
                         data-testid={`link-target-${result.username}`}
-                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                       >
                         {linkingAccountId === result.accountId ? "Linking…" : "Link Player"}
                       </button>
