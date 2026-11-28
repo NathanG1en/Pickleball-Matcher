@@ -32,7 +32,7 @@ Signed-in players always have a default weekly training plan ready on `/training
 - **Target Week Selector:** Formatted human-readably as "Week of [Sunday Date]" (e.g. "Week of Nov 22, 2026 (Current Week)") rather than raw week numbers.
 - **Drill Search & Category Filtering:** Both the `/training/plan/new` form and the inline plan picker include a search input with clear button and category filter pills to quickly find drills by title, description, or skill category.
 - **Drill Selection:** Select 1 to 6 focus drills from the challenge library.
-- **Goal Setting:** Add custom benchmarks or target notes for individual drills (e.g. "Hit 18/20 drops" or "Under 28s") via **Edit Plan**.
+- **Goal & Benchmark Setting:** Add custom numeric target benchmarks (e.g. 18 shots in, 30 seconds) and custom goal notes for individual drills via **Edit Plan**. Custom target benchmarks override default template goals and are evaluated when logging results to determine target benchmark bonuses.
 - **Training Weeks:** A training week runs Sunday through Saturday. An attempt counts toward a weekly plan when it is recorded between that Sunday at 00:00 and the next Sunday at 00:00 (server time).
 - **Weekly Progress Tracking:** Once the plan has drills, a progress bar with the label "X of Y drills practiced" (a drill counts once any attempt is logged that week, whether or not its goal was met), drill checkmarks, and visual strike-throughs update as attempts are recorded.
 - **Direct In-Plan Result Recording:** Players can record attempts directly on each drill item in their plan card via **+ Record** without searching for the drill in the library. An inline logger expands right in the plan card, and saving instantly marks the drill done, awards points, and updates the progress bar live.
@@ -53,7 +53,7 @@ When navigating to a group's plan (via "Practice Weekly Drills →" on the group
 - **Participant Format Restrictions:** Individual drills (`participantFormat === "individual"`) cannot be added to a group plan. Group plans support group and partner drills.
 - **Header:** **Weekly Training** with the group name beneath it.
 - **Group Training Banner:** Displays "Week of [Sunday Date]", the plan's custom title (or **This Week's Drills** when the title is auto-generated), coach focus notes/tips, and a "X of Y drills practiced" progress bar for the viewer. Organizers see **Edit Plan**.
-- **Custom Drill Goals:** Each challenge card displays any custom target goals set for that drill in the weekly plan.
+- **Custom Drill Goals & Benchmarks:** Each challenge card displays custom target benchmarks and notes configured for that drill in the weekly plan. Custom benchmarks are used when assessing target achievements for group members.
 - **Focused Filtering:** Category filter pills dynamically adapt to only display categories present in the current weekly plan (plus "All Plan Drills").
 - **Clean Context:** Suppresses the personal training plan card, other group banners, and the all-time practice totals while practicing the group's weekly drills.
 - **Navigation:** Header includes quick links to return to the group dashboard (`← Back to [Group]`) or explore the general drill library (`Browse All Drills`). Organizers have a direct `Edit Plan` shortcut.

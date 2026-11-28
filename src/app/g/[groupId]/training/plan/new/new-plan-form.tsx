@@ -3,7 +3,11 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { publishWeeklyPlanAction } from "@/app/actions/training";
-import type { ChallengeTemplateRecord } from "@/lib/domain/types";
+import type {
+  ChallengeTemplateRecord,
+  GroupTrainingPlanRecord,
+  GroupTrainingPlanItemRecord,
+} from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { CheckIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 
@@ -13,6 +17,10 @@ export interface NewPlanFormProps {
   readonly defaultWeekNumber: number;
   readonly defaultYear: number;
   readonly returnTo?: string;
+  readonly existingPlan?: {
+    plan: GroupTrainingPlanRecord;
+    items: readonly GroupTrainingPlanItemRecord[];
+  } | null;
 }
 
 export function NewPlanForm({
@@ -21,13 +29,18 @@ export function NewPlanForm({
   defaultWeekNumber,
   defaultYear,
   returnTo,
+  existingPlan,
 }: NewPlanFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [weekNumber, setWeekNumber] = useState(defaultWeekNumber);
-  const [year, setYear] = useState(defaultYear);
+  const [weekNumber, setWeekNumber] = useState(existingPlan?.plan.weekNumber ?? defaultWeekNumber);
+  const [year, setYear] = useState(existingPlan?.plan.year ?? defaultYear);
   const [title, setTitle] = useState(
-    `Week of ${formatWeekOf(defaultYear, defaultWeekNumber)} Challenge Plan`,
+    existingPlan?.plan.title ??
+      `Week of ${formatWeekOf(
+        existingPlan?.plan.year ?? defaultYear,
+        existingPlan?.plan.weekNumber ?? defaultWeekNumber,
+      )} Challenge Plan`,
   );
 
   const weekOptions = React.useMemo(() => {
@@ -46,14 +59,41 @@ export function NewPlanForm({
     }
     return options;
   }, []);
-  const [focusNotes, setFocusNotes] = useState("");
+  const [focusNotes, setFocusNotes] = useState(existingPlan?.plan.focusNotes ?? "");
   const eligibleChallenges = React.useMemo(
     () => challenges.filter((c) => c.participantFormat !== "individual"),
     [challenges],
   );
 
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+    if (existingPlan && existingPlan.items.length > 0) {
+      return existingPlan.items
+        .filter((i) => i.challenge?.participantFormat !== "individual")
+        .map((i) => i.challengeId);
+    }
     return eligibleChallenges.slice(0, 3).map((c) => c.id);
+  });
+  const [customGoals, setCustomGoals] = useState<Record<string, string>>(() => {
+    const goals: Record<string, string> = {};
+    if (existingPlan) {
+      for (const item of existingPlan.items) {
+        if (item.customGoalDescription) {
+          goals[item.challengeId] = item.customGoalDescription;
+        }
+      }
+    }
+    return goals;
+  });
+  const [targetBenchmarks, setTargetBenchmarks] = useState<Record<string, string>>(() => {
+    const benchmarks: Record<string, string> = {};
+    if (existingPlan) {
+      for (const item of existingPlan.items) {
+        if (item.targetBenchmark != null) {
+          benchmarks[item.challengeId] = String(item.targetBenchmark);
+        }
+      }
+    }
+    return benchmarks;
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -101,6 +141,20 @@ export function NewPlanForm({
     );
   };
 
+  const setGoalForChallenge = (id: string, goal: string) => {
+    setCustomGoals((prev) => ({
+      ...prev,
+      [id]: goal,
+    }));
+  };
+
+  const setBenchmarkForChallenge = (id: string, val: string) => {
+    setTargetBenchmarks((prev) => ({
+      ...prev,
+      [id]: val,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -118,6 +172,8 @@ export function NewPlanForm({
         title,
         focusNotes: focusNotes.trim() ? focusNotes.trim() : null,
         challengeIds: selectedIds,
+        customGoals,
+        targetBenchmarks,
       });
 
       if (res.ok) {
@@ -288,69 +344,116 @@ export function NewPlanForm({
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
           {visibleChallenges.map((challenge) => {
             const isSelected = selectedIds.includes(challenge.id);
             return (
               <div
                 key={challenge.id}
-                role="checkbox"
-                aria-checked={isSelected}
-                tabIndex={0}
-                onClick={() => toggleChallenge(challenge.id)}
-                onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggleChallenge(challenge.id);
-                  }
-                }}
-                className={`w-full p-3 sm:p-3.5 rounded-2xl border-2 text-left flex items-start gap-2.5 sm:gap-3 transition-all cursor-pointer touch-manipulation select-none ${
+                className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all ${
                   isSelected
-                    ? "bg-[#ccff00]/20 border-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-white border-black/30 hover:border-black active:bg-neutral-50"
+                    ? "bg-[#ccff00]/15 border-black shadow-[2px_2px_0px_0px_#000]"
+                    : "bg-white border-black/30 hover:border-black"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                    isSelected
-                      ? "bg-[#ccff00] border-black text-black"
-                      : "border-black/30 bg-white"
-                  }`}
+                <div
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  tabIndex={0}
+                  onClick={() => toggleChallenge(challenge.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault();
+                      toggleChallenge(challenge.id);
+                    }
+                  }}
+                  className="flex items-start gap-2.5 sm:gap-3 cursor-pointer select-none"
                 >
-                  {isSelected && <CheckIcon className="w-4 h-4 stroke-3" />}
-                </span>
+                  <span
+                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                      isSelected
+                        ? "bg-[#ccff00] border-black text-black"
+                        : "border-black/30 bg-white"
+                    }`}
+                  >
+                    {isSelected && <CheckIcon className="w-4 h-4 stroke-3" />}
+                  </span>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="text-sm font-bold text-black">
-                      {challenge.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCategory((prev) =>
-                          prev === challenge.skillCategory ? "all" : challenge.skillCategory,
-                        );
-                      }}
-                      className={`px-2 py-0.5 rounded-lg text-xs sm:text-xs font-bold transition-colors border select-none cursor-pointer ${
-                        selectedCategory === challenge.skillCategory
-                          ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
-                          : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
-                      }`}
-                      title={
-                        selectedCategory === challenge.skillCategory
-                          ? "Clear filter (showing all)"
-                          : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
-                      }
-                    >
-                      {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
-                    </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <span className="text-sm font-bold text-black">
+                        {challenge.title}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory((prev) =>
+                            prev === challenge.skillCategory ? "all" : challenge.skillCategory,
+                          );
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-xs sm:text-xs font-bold transition-colors border select-none cursor-pointer ${
+                          selectedCategory === challenge.skillCategory
+                            ? "bg-black text-[#ccff00] border-black shadow-[1px_1px_0px_0px_#000]"
+                            : "bg-black hover:bg-neutral-800 text-[#ccff00] border-black"
+                        }`}
+                        title={
+                          selectedCategory === challenge.skillCategory
+                            ? "Clear filter (showing all)"
+                            : `Filter by ${categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}`
+                        }
+                      >
+                        {categoryLabels[challenge.skillCategory] ?? challenge.skillCategory}
+                      </button>
+                    </div>
+                    <p className="text-xs text-neutral-600 line-clamp-2">
+                      {challenge.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-neutral-600 line-clamp-2">
-                    {challenge.description}
-                  </p>
                 </div>
+
+                {isSelected && (
+                  <div className="mt-2.5 pt-2.5 border-t border-black/15 grid sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label
+                        htmlFor={`benchmark-${challenge.id}`}
+                        className="block text-xs font-bold text-neutral-700 mb-1"
+                      >
+                        Target Benchmark ({challenge.scoreUnit})
+                      </label>
+                      <input
+                        id={`benchmark-${challenge.id}`}
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder={
+                          challenge.defaultTargetGoal != null
+                            ? `Default: ${challenge.defaultTargetGoal}`
+                            : `e.g. 30`
+                        }
+                        value={targetBenchmarks[challenge.id] ?? ""}
+                        onChange={(e) => setBenchmarkForChallenge(challenge.id, e.target.value)}
+                        className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`goal-${challenge.id}`}
+                        className="block text-xs font-bold text-neutral-700 mb-1"
+                      >
+                        Coach Notes / Custom Goal (Optional)
+                      </label>
+                      <input
+                        id={`goal-${challenge.id}`}
+                        type="text"
+                        placeholder="e.g. Focus on soft hands"
+                        value={customGoals[challenge.id] ?? ""}
+                        onChange={(e) => setGoalForChallenge(challenge.id, e.target.value)}
+                        className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

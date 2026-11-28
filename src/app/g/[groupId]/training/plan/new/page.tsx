@@ -23,11 +23,14 @@ export default async function NewWeeklyPlanPage({
     params,
     searchParams ? searchParams : Promise.resolve(undefined),
   ]);
+  // Calculate current week
+  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
   const repo = getActionRepository();
 
-  const [group, challenges] = await Promise.all([
+  const [group, challenges, existingPlan] = await Promise.all([
     repo.getGroup(groupId),
     repo.listChallengeTemplates(groupId),
+    repo.getWeeklyTrainingPlan(groupId, currentYear, currentWeekNumber),
   ]);
 
   if (!group) {
@@ -43,9 +46,6 @@ export default async function NewWeeklyPlanPage({
     redirect(cancelHref);
   }
 
-  // Calculate current week
-  const { year: currentYear, weekNumber: currentWeekNumber } = getWeekNumberFromDate();
-
   return (
     <main className="min-h-screen p-4 sm:p-6 max-w-3xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
       <div className="flex items-start sm:items-center justify-between gap-3">
@@ -54,7 +54,7 @@ export default async function NewWeeklyPlanPage({
             {group.name}
           </span>
           <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black leading-tight">
-            Create Weekly Training Plan
+            {existingPlan ? "Edit Weekly Training Plan" : "Create Weekly Training Plan"}
           </h1>
         </div>
         <Link
@@ -71,6 +71,7 @@ export default async function NewWeeklyPlanPage({
         defaultWeekNumber={currentWeekNumber}
         defaultYear={currentYear}
         returnTo={returnTo}
+        existingPlan={existingPlan}
       />
     </main>
   );

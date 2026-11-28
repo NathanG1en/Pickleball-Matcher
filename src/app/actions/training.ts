@@ -39,6 +39,7 @@ export async function recordTrainingResultAction(
     metricValue: number;
     isPersonalBest: boolean;
     pointsEarned: number;
+    metTargetBenchmark: boolean;
   }>
 > {
   const parsed = recordTrainingResultSchema.safeParse(input);
@@ -103,11 +104,28 @@ export async function recordTrainingResultAction(
     currentBest === undefined ||
     isBetterMetric(metricValue, currentBest, challenge.higherIsBetter);
 
+  const { year, weekNumber } = getWeekNumberFromDate();
+  let targetBenchmark = challenge.defaultTargetGoal ?? null;
+
+  if (groupId) {
+    const groupPlan = await repo.getWeeklyTrainingPlan(groupId, year, weekNumber);
+    const item = groupPlan?.items.find((i) => i.challengeId === challenge.id);
+    if (item?.targetBenchmark != null) {
+      targetBenchmark = item.targetBenchmark;
+    }
+  } else if (accountId) {
+    const personalPlan = await repo.getPersonalWeeklyTrainingPlan(accountId, year, weekNumber);
+    const item = personalPlan?.items.find((i) => i.challengeId === challenge.id);
+    if (item?.targetBenchmark != null) {
+      targetBenchmark = item.targetBenchmark;
+    }
+  }
+
   const metTargetBenchmark = Boolean(
-    challenge.defaultTargetGoal &&
+    targetBenchmark != null &&
       (challenge.higherIsBetter
-        ? metricValue >= challenge.defaultTargetGoal
-        : metricValue <= challenge.defaultTargetGoal),
+        ? metricValue >= targetBenchmark
+        : metricValue <= targetBenchmark),
   );
 
   const pointsEarned = calculateAttemptPoints({
@@ -175,6 +193,7 @@ export async function recordTrainingResultAction(
       metricValue,
       isPersonalBest,
       pointsEarned,
+      metTargetBenchmark,
     },
   };
 }
@@ -191,7 +210,7 @@ export async function publishWeeklyPlanAction(
     };
   }
 
-  const { groupId, year, weekNumber, title, focusNotes, challengeIds, customGoals } = parsed.data;
+  const { groupId, year, weekNumber, title, focusNotes, challengeIds, customGoals, targetBenchmarks } = parsed.data;
 
   try {
     await requireOrganizer(groupId);
@@ -231,7 +250,7 @@ export async function publishWeeklyPlanAction(
     planId,
     challengeId: cId,
     customGoalDescription: customGoals?.[cId] ?? null,
-    targetBenchmark: null,
+    targetBenchmark: targetBenchmarks?.[cId] ?? null,
     sortOrder: idx,
   }));
 
@@ -261,7 +280,7 @@ export async function savePersonalWeeklyPlanAction(
     return { ok: false, error: "You must be signed in to create a personal training plan." };
   }
 
-  const { year, weekNumber, title, focusNotes, challengeIds, customGoals } = parsed.data;
+  const { year, weekNumber, title, focusNotes, challengeIds, customGoals, targetBenchmarks } = parsed.data;
   const repo = getActionRepository();
 
   const challenges = await Promise.all(
@@ -291,7 +310,7 @@ export async function savePersonalWeeklyPlanAction(
     planId,
     challengeId: cId,
     customGoalDescription: customGoals?.[cId] ?? null,
-    targetBenchmark: null,
+    targetBenchmark: targetBenchmarks?.[cId] ?? null,
     sortOrder: idx,
   }));
 
@@ -375,7 +394,7 @@ export async function addDrillToPersonalPlanAction(
       planId: existingPlan.plan.id,
       challengeId,
       customGoalDescription: null,
-      targetBenchmark: null,
+      targetBenchmark: challenge.defaultTargetGoal ?? null,
       sortOrder: existingPlan.items.length,
     };
 
@@ -407,7 +426,7 @@ export async function addDrillToPersonalPlanAction(
     planId,
     challengeId,
     customGoalDescription: null,
-    targetBenchmark: null,
+    targetBenchmark: challenge.defaultTargetGoal ?? null,
     sortOrder: 0,
   };
 
@@ -453,7 +472,7 @@ export async function addDrillToGroupPlanAction(
       planId: existingPlan.plan.id,
       challengeId,
       customGoalDescription: null,
-      targetBenchmark: null,
+      targetBenchmark: challenge.defaultTargetGoal ?? null,
       sortOrder: existingPlan.items.length,
     };
 
@@ -489,7 +508,7 @@ export async function addDrillToGroupPlanAction(
     planId,
     challengeId,
     customGoalDescription: null,
-    targetBenchmark: null,
+    targetBenchmark: challenge.defaultTargetGoal ?? null,
     sortOrder: 0,
   };
 

@@ -118,7 +118,9 @@ export function GroupWeeklyPlanCard({
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
                     {item.customGoalDescription ??
-                      (item.challenge?.defaultTargetGoal
+                      (item.targetBenchmark != null
+                        ? `Target: ${item.targetBenchmark} ${item.challenge?.scoreUnit ?? ""}`
+                        : item.challenge?.defaultTargetGoal != null
                         ? `Target: ${item.challenge.defaultTargetGoal} ${item.challenge.scoreUnit}`
                         : item.challenge?.scoreUnit ?? "")}
                   </span>

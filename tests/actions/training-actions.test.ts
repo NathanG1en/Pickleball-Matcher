@@ -209,6 +209,7 @@ describe("Training Server Actions", () => {
       title: "Week 47 Focus",
       focusNotes: "Keep paddle high",
       challengeIds: ["ch_seven_shot", "ch_drop_accuracy"],
+      targetBenchmarks: { ch_drop_accuracy: 85 },
     });
 
     expect(res.ok).toBe(true);
@@ -216,6 +217,7 @@ describe("Training Server Actions", () => {
     expect(planData).not.toBeNull();
     expect(planData?.plan.title).toBe("Week 47 Focus");
     expect(planData?.items).toHaveLength(2);
+    expect(planData?.items.find((i) => i.challengeId === "ch_drop_accuracy")?.targetBenchmark).toBe(85);
   });
 
   it("rejects group weekly plan if an individual drill is included", async () => {
@@ -256,6 +258,7 @@ describe("Training Server Actions", () => {
       focusNotes: "Stay relaxed on resets",
       challengeIds: ["ch_wall_streak", "ch_drop_accuracy"],
       customGoals: { ch_drop_accuracy: "Hit 15/20 drops" },
+      targetBenchmarks: { ch_drop_accuracy: 85 },
     });
 
     expect(res.ok).toBe(true);
@@ -264,6 +267,7 @@ describe("Training Server Actions", () => {
     expect(planData?.plan.title).toBe("My Personal Drop & Dink Goals");
     expect(planData?.items).toHaveLength(2);
     expect(planData?.items[1].customGoalDescription).toBe("Hit 15/20 drops");
+    expect(planData?.items[1].targetBenchmark).toBe(85);
 
     // Record an attempt for one of the challenges in the plan (even if personal planItemId is passed)
     const recordRes = await recordTrainingResultAction({
@@ -273,8 +277,30 @@ describe("Training Server Actions", () => {
     });
     expect(recordRes.ok).toBe(true);
 
+    // Record an attempt for ch_drop_accuracy where accuracy is 80% (16/20). Default goal is 70%, but custom targetBenchmark is 85%.
+    const accuracyRes = await recordTrainingResultAction({
+      challengeId: "ch_drop_accuracy",
+      scorePrimary: 16,
+      scoreSecondary: 20,
+    });
+    expect(accuracyRes.ok).toBe(true);
+    if (accuracyRes.ok) {
+      expect(accuracyRes.data.metTargetBenchmark).toBe(false);
+    }
+
+    // Record with 90% (18/20), which meets custom 85% targetBenchmark
+    const accuracyRes2 = await recordTrainingResultAction({
+      challengeId: "ch_drop_accuracy",
+      scorePrimary: 18,
+      scoreSecondary: 20,
+    });
+    expect(accuracyRes2.ok).toBe(true);
+    if (accuracyRes2.ok) {
+      expect(accuracyRes2.data.metTargetBenchmark).toBe(true);
+    }
+
     const completedResults = await repository.listTrainingResultsForPersonalPlan(planData!.plan.id);
-    expect(completedResults).toHaveLength(1);
+    expect(completedResults).toHaveLength(3);
     expect(completedResults[0].challengeId).toBe("ch_wall_streak");
     expect(completedResults[0].planItemId).toBeNull();
   });

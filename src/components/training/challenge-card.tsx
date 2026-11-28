@@ -15,6 +15,7 @@ export interface ChallengeCardProps {
   readonly personalBest?: number | null;
   readonly groupId?: string | null;
   readonly planItemId?: string | null;
+  readonly targetBenchmark?: number | null;
   readonly customGoalDescription?: string | null;
   readonly rosterPlayers?: readonly RosterPlayerOption[];
   readonly currentUserId?: string | null;
@@ -31,6 +32,7 @@ export function ChallengeCard({
   personalBest,
   groupId,
   planItemId,
+  targetBenchmark,
   customGoalDescription,
   rosterPlayers = [],
   currentUserId,
@@ -194,12 +196,18 @@ export function ChallengeCard({
           {challenge.description}
         </p>
 
-        {customGoalDescription && (
+        {(customGoalDescription || targetBenchmark != null) && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-lime-100 border border-lime-600/40 text-xs text-lime-950 mb-2.5 font-bold">
             <span className="text-xs font-bold bg-lime-300 px-1.5 py-0.5 rounded border border-lime-700 shrink-0">
-              Goal
+              {targetBenchmark != null ? "Target" : "Goal"}
             </span>
-            <span className="truncate">{customGoalDescription}</span>
+            <span className="truncate">
+              {targetBenchmark != null && customGoalDescription
+                ? `${targetBenchmark} ${challenge.scoreUnit} · ${customGoalDescription}`
+                : targetBenchmark != null
+                ? `${targetBenchmark} ${challenge.scoreUnit}`
+                : customGoalDescription}
+            </span>
           </div>
         )}
 
@@ -251,11 +259,11 @@ export function ChallengeCard({
                 <span className="font-bold text-xs text-neutral-500 block mb-0.5">Instructions</span>
                 <p className="leading-relaxed">{challenge.instructions}</p>
               </div>
-              {challenge.defaultTargetGoal && (
+              {(targetBenchmark != null || challenge.defaultTargetGoal != null) && (
                 <div>
                   <span className="font-bold text-xs text-neutral-500 block mb-0.5">Target Benchmark</span>
                   <p className="font-bold text-black">
-                    {challenge.defaultTargetGoal} {challenge.scoreUnit}
+                    {targetBenchmark ?? challenge.defaultTargetGoal} {challenge.scoreUnit}
                   </p>
                 </div>
               )}

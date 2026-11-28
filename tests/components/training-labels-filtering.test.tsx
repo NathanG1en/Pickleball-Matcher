@@ -165,6 +165,44 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Week of");
       expect(html).not.toContain("Week Number (1–53)");
     });
+
+    it("renders Target Benchmark and Custom Goal inputs for selected drills", () => {
+      const html = renderToStaticMarkup(
+        <PersonalPlanForm
+          challenges={mockChallenges}
+          defaultWeekNumber={47}
+          defaultYear={2026}
+          existingPlan={{
+            plan: {
+              id: "ptp_1",
+              accountId: "acc_1",
+              year: 2026,
+              weekNumber: 47,
+              title: "My Drills",
+              focusNotes: null,
+              status: "active",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [
+              {
+                id: "item_1",
+                planId: "ptp_1",
+                challengeId: "ch_dink_1",
+                customGoalDescription: "Keep it low",
+                targetBenchmark: 60,
+                sortOrder: 0,
+              },
+            ],
+          }}
+        />
+      );
+
+      expect(html).toContain("Target Benchmark (dinks)");
+      expect(html).toContain('value="60"');
+      expect(html).toContain("Custom Goal / Notes (Optional)");
+      expect(html).toContain("Keep it low");
+    });
   });
 
   describe("NewPlanForm (group plan)", () => {
@@ -204,6 +242,47 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("Target Week");
       expect(html).toContain("Week of");
       expect(html).not.toContain("Week Number (1–53)");
+    });
+
+    it("renders Target Benchmark and Coach Notes inputs for selected group drills", () => {
+      const html = renderToStaticMarkup(
+        <NewPlanForm
+          groupId="grp_test_123"
+          challenges={mockChallenges}
+          defaultWeekNumber={47}
+          defaultYear={2026}
+          existingPlan={{
+            plan: {
+              id: "gtp_1",
+              groupId: "grp_test_123",
+              year: 2026,
+              weekNumber: 47,
+              title: "Group Drills",
+              focusNotes: null,
+              status: "published",
+              publishedAt: new Date(),
+              createdByAccountId: "acc_1",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            items: [
+              {
+                id: "item_g1",
+                planId: "gtp_1",
+                challengeId: "ch_dink_1",
+                customGoalDescription: "Maintain soft touch",
+                targetBenchmark: 75,
+                sortOrder: 0,
+              },
+            ],
+          }}
+        />
+      );
+
+      expect(html).toContain("Target Benchmark (dinks)");
+      expect(html).toContain('value="75"');
+      expect(html).toContain("Coach Notes / Custom Goal (Optional)");
+      expect(html).toContain("Maintain soft touch");
     });
   });
 
@@ -567,6 +646,17 @@ describe("Training Labels and Filtering", () => {
       expect(html).toContain("42 dinks");
       expect(html).toMatch(/<svg[^>]*class="shrink-0 "[^>]*aria-hidden="true"/);
       expect(html).not.toContain("grayscale");
+    });
+
+    it("displays custom targetBenchmark in challenge instructions when specified", () => {
+      const html = renderToStaticMarkup(
+        <ChallengeCard
+          challenge={mockChallenges[0]}
+          targetBenchmark={65}
+        />
+      );
+      // Mock challenge default is 50 dinks; custom targetBenchmark should display 65 dinks
+      expect(html).toContain("65 dinks");
     });
   });
 });

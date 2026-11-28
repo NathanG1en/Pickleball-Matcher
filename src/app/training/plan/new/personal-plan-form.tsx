@@ -94,6 +94,17 @@ export function PersonalPlanForm({
     }
     return goals;
   });
+  const [targetBenchmarks, setTargetBenchmarks] = useState<Record<string, string>>(() => {
+    const benchmarks: Record<string, string> = {};
+    if (existingPlan) {
+      for (const item of existingPlan.items) {
+        if (item.targetBenchmark != null) {
+          benchmarks[item.challengeId] = String(item.targetBenchmark);
+        }
+      }
+    }
+    return benchmarks;
+  });
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -147,6 +158,13 @@ export function PersonalPlanForm({
     }));
   };
 
+  const setBenchmarkForChallenge = (id: string, val: string) => {
+    setTargetBenchmarks((prev) => ({
+      ...prev,
+      [id]: val,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -169,6 +187,7 @@ export function PersonalPlanForm({
         focusNotes: focusNotes.trim() ? focusNotes.trim() : null,
         challengeIds: selectedIds,
         customGoals,
+        targetBenchmarks,
       });
 
       if (res.ok) {
@@ -408,18 +427,45 @@ export function PersonalPlanForm({
                   </div>
 
                   {isSelected && (
-                    <div className="mt-2.5 pt-2.5 border-t border-black/15">
-                      <label htmlFor={`goal-${challenge.id}`} className="block text-xs font-bold text-neutral-700 mb-1">
-                        Custom Goal / Benchmark (Optional)
-                      </label>
-                      <input
-                        id={`goal-${challenge.id}`}
-                        type="text"
-                        placeholder={challenge.defaultTargetGoal ? `Target: ${challenge.defaultTargetGoal} ${challenge.scoreUnit}` : `e.g. 30 ${challenge.scoreUnit}`}
-                        value={customGoals[challenge.id] ?? ""}
-                        onChange={(e) => setGoalForChallenge(challenge.id, e.target.value)}
-                        className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
-                      />
+                    <div className="mt-2.5 pt-2.5 border-t border-black/15 grid sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label
+                          htmlFor={`benchmark-${challenge.id}`}
+                          className="block text-xs font-bold text-neutral-700 mb-1"
+                        >
+                          Target Benchmark ({challenge.scoreUnit})
+                        </label>
+                        <input
+                          id={`benchmark-${challenge.id}`}
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder={
+                            challenge.defaultTargetGoal != null
+                              ? `Default: ${challenge.defaultTargetGoal}`
+                              : `e.g. 30`
+                          }
+                          value={targetBenchmarks[challenge.id] ?? ""}
+                          onChange={(e) => setBenchmarkForChallenge(challenge.id, e.target.value)}
+                          className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`goal-${challenge.id}`}
+                          className="block text-xs font-bold text-neutral-700 mb-1"
+                        >
+                          Custom Goal / Notes (Optional)
+                        </label>
+                        <input
+                          id={`goal-${challenge.id}`}
+                          type="text"
+                          placeholder="e.g. Focus on deep returns"
+                          value={customGoals[challenge.id] ?? ""}
+                          onChange={(e) => setGoalForChallenge(challenge.id, e.target.value)}
+                          className="w-full h-10 px-3 text-base sm:text-xs font-bold rounded-xl border border-black/30 focus:border-black bg-white focus:outline-none"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

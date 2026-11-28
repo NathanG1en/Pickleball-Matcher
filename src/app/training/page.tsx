@@ -15,6 +15,7 @@ import type {
   GroupRecord,
   GroupTrainingPlanRecord,
   GroupTrainingPlanItemRecord,
+  PersonalTrainingPlanItemRecord,
 } from "@/lib/domain/types";
 import { formatWeekOf, getWeekNumberFromDate } from "@/lib/domain/training-calculator";
 import { toLastResultRecord } from "@/lib/domain/training-history";
@@ -136,6 +137,9 @@ export default async function TrainingHubPage({
   const planItemMap = new Map<string, GroupTrainingPlanItemRecord>(
     selectedGroupPlan?.items.map((i) => [i.challengeId, i]) ?? []
   );
+  const personalPlanItemMap = new Map<string, PersonalTrainingPlanItemRecord>(
+    currentPersonalPlan?.items.map((i) => [i.challengeId, i]) ?? []
+  );
 
   const targetChallenges = selectedGroupId
     ? selectedGroupPlan
@@ -144,13 +148,16 @@ export default async function TrainingHubPage({
     : challenges;
 
   const libraryItems: DrillLibraryItem[] = targetChallenges.map((challenge) => {
-    const planItem = selectedGroupPlan ? planItemMap.get(challenge.id) : undefined;
+    const planItem = selectedGroupPlan
+      ? planItemMap.get(challenge.id)
+      : personalPlanItemMap.get(challenge.id);
     return {
       challenge,
       personalBest: personalBests.get(challenge.id),
       lastResult: lastResults[challenge.id] ?? null,
       groupId: selectedGroupId,
       planItemId: planItem?.id,
+      targetBenchmark: planItem?.targetBenchmark,
       customGoalDescription: planItem?.customGoalDescription,
       rosterPlayers,
       currentUserId: accountId,
