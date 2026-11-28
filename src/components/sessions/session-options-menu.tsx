@@ -12,6 +12,7 @@ import {
 import { formatSessionDate } from "@/lib/utils/date";
 import type { SessionRecord } from "@/lib/domain/types";
 import {
+  ArrowLeftRightIcon,
   PencilIcon,
   CopyIcon,
   RotateCcwIcon,
@@ -28,6 +29,8 @@ export interface SessionOptionsMenuProps {
   readonly onDuplicated?: (newSession: SessionRecord) => void;
   readonly onRenamed?: (newName: string) => void;
   readonly onUndoLatestRound?: () => void;
+  /** Sends the round in progress back to setup with its lineup unchanged. */
+  readonly onEditLineup?: () => void;
   readonly latestRoundNumber?: number;
   readonly dataTestId?: string;
   readonly initialDeleteModalOpen?: boolean;
@@ -44,6 +47,7 @@ export function SessionOptionsMenu({
   onDuplicated,
   onRenamed,
   onUndoLatestRound,
+  onEditLineup,
   latestRoundNumber,
   dataTestId = "session-options-menu-button",
   initialDeleteModalOpen = false,
@@ -253,6 +257,21 @@ export function SessionOptionsMenu({
             <CopyIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
             <span>Duplicate Session</span>
           </button>
+          {onEditLineup && latestRoundNumber ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="edit-lineup-menu-item"
+              onClick={() => {
+                setMenuOpen(false);
+                onEditLineup();
+              }}
+              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+            >
+              <ArrowLeftRightIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+              <span>Edit Round {latestRoundNumber} Lineup</span>
+            </button>
+          ) : null}
           {onUndoLatestRound && latestRoundNumber ? (
             <button
               type="button"

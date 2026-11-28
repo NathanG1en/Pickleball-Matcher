@@ -126,6 +126,32 @@ describe("SessionOptionsMenu Component", () => {
     expect(html).toContain('data-testid="undo-round-menu-item"');
   });
 
+  it("offers Edit Round N Lineup only while a round is in progress", () => {
+    const inProgress = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        initialMenuOpen={true}
+        onEditLineup={() => {}}
+        onUndoLatestRound={() => {}}
+        latestRoundNumber={3}
+      />
+    );
+    expect(inProgress).toContain("Edit Round 3 Lineup");
+    expect(inProgress).toContain('data-testid="edit-lineup-menu-item"');
+
+    const betweenRounds = renderToStaticMarkup(
+      <SessionOptionsMenu
+        groupId={groupId}
+        sessionId={sessionId}
+        initialMenuOpen={true}
+        onUndoLatestRound={() => {}}
+        latestRoundNumber={3}
+      />
+    );
+    expect(betweenRounds).not.toContain('data-testid="edit-lineup-menu-item"');
+  });
+
   it("does not render refresh chemistry or refresh synergy menu item", () => {
     const html = renderToStaticMarkup(
       <SessionOptionsMenu

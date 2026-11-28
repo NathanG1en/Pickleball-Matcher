@@ -376,6 +376,55 @@ test("host synergy follows current partners after manual swaps and new proposals
 });
 
 
+test("Edit Lineup sends a started round back to setup with the same matchups", async ({ page }) => {
+  test.setTimeout(60000);
+  await createTestGroup(page, `Edit lineup ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Edit Blake", "Edit Casey", "Edit Drew"]) {
+    await page.locator("#guest-player-name").fill(name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  const card = page.locator(".court-card");
+  const team = (number: number) => card.getByText(`Team ${number}`, { exact: true }).locator("../..");
+  // Teams compared as sets: a saved round can list partners in either order.
+  const names = async (number: number) => (await team(number).locator("[draggable] > span").allTextContents()).filter((value) => value !== "⋮⋮").sort();
+  const original = [await names(1), await names(2)];
+
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  const team1Score = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true });
+  await expect(team1Score).toBeVisible({ timeout: 15000 });
+
+  // No scores yet, so nothing is lost: the round goes straight back to setup.
+  await page.getByTestId("session-options-menu-button").click();
+  await page.getByTestId("edit-lineup-menu-item").click();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  expect([await names(1), await names(2)]).toEqual(original);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible();
+  expect([await names(1), await names(2)]).toEqual(original);
+
+  // With a saved score, Edit Lineup asks first and names what it clears.
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await expect(team1Score).toBeVisible({ timeout: 15000 });
+  await team1Score.fill("11");
+  await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("7");
+  await page.getByTestId("court-match-1").getByRole("button", { name: "Save Result", exact: true }).click();
+  await expect(page.getByTestId("court-match-1").getByText("Final", { exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByTestId("session-options-menu-button").click();
+  await page.getByTestId("edit-lineup-menu-item").click();
+  await expect(page.getByText("This round's 1 saved score will be cleared.")).toBeVisible();
+  await page.getByTestId("confirm-edit-lineup-button").click();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible({ timeout: 15000 });
+  expect([await names(1), await names(2)]).toEqual(original);
+});
+
 test("custom lineup survives refresh and starts with the saved assignments", async ({ page }) => {
   test.setTimeout(45000);
   await createTestGroup(page, `Lineup draft ${Date.now()}`);

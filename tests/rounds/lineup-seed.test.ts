@@ -37,6 +37,13 @@ describe("parseLineupChoice", () => {
     expect(parseLineupChoice(raw, 2, 6)).toBeNull();
   });
 
+  it("keeps an Edit Lineup choice's exact lineup", () => {
+    const lineup = { courts: [{ courtNumber: 1, team1: ["a", "b"], team2: ["c", "d"] }], sitting: ["e"] };
+    const kept = JSON.stringify({ roundNumber: 2, sessionVersion: 5, seed: 42, temperature: 0, lineup });
+    expect(parseLineupChoice(kept, 2, 5)?.lineup).toEqual(lineup);
+    expect(parseLineupChoice(kept, 2, 6)).toBeNull();
+  });
+
   it("ignores empty or corrupt storage", () => {
     expect(parseLineupChoice("", 2, 5)).toBeNull();
     expect(parseLineupChoice("{nope", 2, 5)).toBeNull();

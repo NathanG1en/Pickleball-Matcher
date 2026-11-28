@@ -65,6 +65,7 @@ import {
   saveLineupChoice,
   subscribeLineupChoice,
 } from "@/lib/rounds/lineup-seed";
+import { editLineupWarning, keptLineupFromRound, proposalFromKeptLineup } from "@/lib/rounds/kept-lineup";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
@@ -271,7 +272,7 @@ export function SessionManagerClient({
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   // One styled confirmation for the live screen's irreversible actions (no native confirm()).
-  const [pendingConfirm, setPendingConfirm] = useState<"end" | "reshuffle" | "undo" | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<"end" | "reshuffle" | "undo" | "editLineup" | null>(null);
   const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(initialOpenSettingsModal);
 
   // Attendance rows stay in the section they were in when Settings opened, so a row
@@ -627,6 +628,7 @@ export function SessionManagerClient({
   const storedLineupChoice = parseLineupChoice(storedLineupChoiceRaw, proposalRoundNumber, currentSession.version);
   const storedChoiceProposal = useMemo(() => {
     if (!storedLineupChoice || isRoundInProgress || !canManage) return null;
+    if (storedLineupChoice.lineup) return proposalFromKeptLineup(storedLineupChoice.lineup, storedLineupChoice.seed);
     try {
       return proposeRoundFromSnapshot(
         { session: currentSession, players: sessionPlayers, attendance: currentAttendance, rounds: localStartedRounds },
@@ -1339,6 +1341,60 @@ export function SessionManagerClient({
     });
   };
 
+  // Saved scores and pickup games in the latest round; Edit Lineup clears them, so it asks first.
+  const latestRoundSavedScores = latestStarted?.matches.filter((m) => m.status === "completed").length ?? 0;
+  const latestRoundPickupGames = latestStarted?.matches.filter((m) => m.courtNumber > currentSession.courtCount).length ?? 0;
+
+  const handleEditLineup = () => {
+    if (!latestStarted || !isRoundInProgress || isPending) return;
+    if (latestRoundSavedScores > 0 || latestRoundPickupGames > 0) setPendingConfirm("editLineup");
+    else performEditLineup();
+  };
+
+  // Sends the round in progress back to setup with its lineup unchanged, so the
+  // organizer can move a player with Manual Edit and start it again.
+  const performEditLineup = () => {
+    if (!latestStarted || isPending) return;
+    setError(null);
+    const lineup = keptLineupFromRound(latestStarted, currentSession.courtCount);
+    startGeneratingRound(async () => {
+      try {
+        const res = await undoLatestRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          idempotencyKey: createIdempotencyKey("edit_lineup"),
+        });
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: latestStarted.round.roundNumber,
+            sessionVersion: currentSession.version + 1,
+            seed: latestStarted.round.seed,
+            temperature: matchmakingVariety,
+            lineup,
+          });
+          startGeneratingRound(() => {
+            setRegeneratedProposal(proposalFromKeptLineup(lineup, latestStarted.round.seed));
+            setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+            setCurrentSession((prev) => ({
+              ...prev,
+              currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+              version: prev.version + 1,
+            }));
+            setScoreDrafts({});
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to edit the lineup.");
+      }
+    });
+  };
+
   const handleUndo = () => {
     if (!latestStarted || isPending) return;
     setPendingConfirm("undo");
@@ -1818,6 +1874,7 @@ export function SessionManagerClient({
           if (action === "end") void executeEndSession();
           else if (action === "reshuffle") performReshuffleInProgressRound();
           else if (action === "undo") performUndo();
+          else if (action === "editLineup") performEditLineup();
         }}
         disabled={isPending}
         dataTestId={pendingConfirm === "end" ? "end-session-dialog" : undefined}
@@ -1826,6 +1883,8 @@ export function SessionManagerClient({
             ? "End this session?"
             : pendingConfirm === "reshuffle"
             ? `Reshuffle Round ${latestStarted?.round.roundNumber ?? ""}?`
+            : pendingConfirm === "editLineup"
+            ? `Edit Round ${latestStarted?.round.roundNumber ?? ""} lineup?`
             : `Undo Round ${latestStarted?.round.roundNumber ?? ""}?`
         }
         description={
@@ -1848,17 +1907,29 @@ export function SessionManagerClient({
             </div>
           ) : pendingConfirm === "reshuffle" ? (
             "Everyone gets new matchups, and any scores entered for this round are cleared."
+          ) : pendingConfirm === "editLineup" ? (
+            editLineupWarning(latestRoundSavedScores, latestRoundPickupGames)
           ) : (
             `This removes Round ${latestStarted?.round.roundNumber ?? ""} and its results, and recalculates everyone's ratings.`
           )
         }
-        confirmText={pendingConfirm === "end" ? "End session" : pendingConfirm === "reshuffle" ? "Reshuffle" : "Undo round"}
-        cancelText={pendingConfirm === "end" ? "Keep playing" : pendingConfirm === "reshuffle" ? "Keep matchups" : "Keep round"}
+        confirmText={
+          pendingConfirm === "end"
+            ? "End session"
+            : pendingConfirm === "reshuffle"
+            ? "Reshuffle"
+            : pendingConfirm === "editLineup"
+            ? "Edit lineup"
+            : "Undo round"
+        }
+        cancelText={pendingConfirm === "end" ? "Keep playing" : pendingConfirm === "reshuffle" || pendingConfirm === "editLineup" ? "Keep matchups" : "Keep round"}
         confirmDataTestId={
           pendingConfirm === "end"
             ? "confirm-end-session-button"
             : pendingConfirm === "reshuffle"
             ? "confirm-reshuffle-round-button"
+            : pendingConfirm === "editLineup"
+            ? "confirm-edit-lineup-button"
             : "confirm-undo-round-button"
         }
         cancelDataTestId={pendingConfirm === "end" ? "cancel-end-session-button" : undefined}
@@ -1952,6 +2023,7 @@ export function SessionManagerClient({
                   redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                   onRenamed={(newName) => setSessionName(newName)}
                   onUndoLatestRound={latestStarted ? handleUndo : undefined}
+                  onEditLineup={isRoundInProgress ? handleEditLineup : undefined}
                   latestRoundNumber={latestStarted?.round.roundNumber}
                 />
               </div>
