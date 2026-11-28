@@ -120,9 +120,9 @@ export function SessionNameEditor({
           onClick={handleStartEditName}
           aria-label="Edit session name"
           title="Edit session name"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white p-1.5 text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#fde047] active:translate-x-0.5 active:translate-y-0.5"
         >
-          <PencilIcon className="h-2 w-2" />
+          <PencilIcon className="h-4 w-4" />
         </button>
       )}
     </div>

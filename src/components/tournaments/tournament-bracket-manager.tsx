@@ -547,7 +547,7 @@ export function TournamentBracketManager({
                 <span className="bg-black text-[#ccff00] px-3 py-1 rounded-xl text-xs font-bold border border-black shadow-[2px_2px_0px_0px_#000]">
                   {roundName}
                 </span>
-                <span className="text-xs font-bold text-neutral-500">
+                <span className="text-xs font-bold text-neutral-600">
                   {roundMatches.length} {roundMatches.length === 1 ? "Match" : "Matches"}
                 </span>
               </div>
@@ -593,7 +593,7 @@ export function TournamentBracketManager({
                             <button
                               type="button"
                               onClick={() => openEditModal(m)}
-                              className="text-sm font-bold text-neutral-500 hover:text-black underline p-1 cursor-pointer"
+                              className="text-sm font-bold text-neutral-600 hover:text-black underline p-1 cursor-pointer"
                               title="Edit matchup or scores"
                             >
                               Edit
@@ -710,7 +710,7 @@ export function TournamentBracketManager({
                                 type="button"
                                 onClick={() => handleResetWinner(m.id)}
                                 disabled={isPending}
-                                className="text-xs font-bold text-neutral-500 hover:text-black underline cursor-pointer"
+                                className="text-xs font-bold text-neutral-600 hover:text-black underline cursor-pointer"
                               >
                                 Reset Winner
                               </button>

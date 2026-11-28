@@ -49,7 +49,8 @@ export function DrillLibrary({ categories, items, scopeLabel }: DrillLibraryProp
   return (
     <>
       {/* Category Filter Pills - all visible without horizontal scrolling */}
-      {categories.length > 1 && (
+      {/* No filters over an empty list (e.g. a group with no weekly plan yet). */}
+      {categories.length > 1 && items.length > 0 && (
         <div data-testid="drill-filters" role="group" aria-label="Filter drills by category" className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {categories.map((cat) => {
             const isActive = activeCategory === cat.key;

@@ -13,7 +13,6 @@ import {
 import type { DomainRepository } from "@/lib/domain/repositories";
 import type { GroupRecord, PlayerAccountRecord } from "@/lib/domain/types";
 import { UsersIcon, SearchIcon, ZapIcon } from "@/components/ui/icons";
-import { RecoveryEmailBanner } from "@/components/players/recovery-email-banner";
 
 
 async function getGuestGroups(): Promise<Record<string, string>> {
@@ -116,7 +115,7 @@ export default async function HomePage() {
               </span>
             </h1>
             <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
-              An elevated pickleball experience.
+              Fair sit-outs, varied partners, balanced games.
             </p>
           </div>
 
@@ -172,7 +171,7 @@ export default async function HomePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border border-black">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-ping" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 motion-safe:animate-ping" />
                 Organizer Session
               </span>
             </div>
@@ -195,7 +194,6 @@ export default async function HomePage() {
       )}
 
       {/* Recovery Email Prompt for Users without a connected or verified email */}
-      <RecoveryEmailBanner currentEmail={playerAccount.email} isVerified={playerAccount.emailVerified} />
 
       {/* 3. Hero Section: Refined brand introduction with compact profile footer */}
       <section
@@ -215,7 +213,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-base sm:text-base text-neutral-800 font-medium leading-relaxed max-w-sm mx-auto pt-1">
-            An elevated pickleball experience.
+            Fair sit-outs, varied partners, balanced games.
           </p>
         </div>
 
@@ -236,7 +234,7 @@ export default async function HomePage() {
               {playerAccount.username.charAt(0).toUpperCase()}
             </span>
             <div className="min-w-0">
-              <p className="text-xs sm:text-xs font-bold text-neutral-500 leading-none">
+              <p className="text-xs sm:text-xs font-bold text-neutral-600 leading-none">
                 Playing as
               </p>
               <p className="text-sm sm:text-base font-bold text-black leading-tight mt-0.5 truncate">
@@ -269,7 +267,7 @@ export default async function HomePage() {
                 <span className="w-10 h-10 rounded-xl bg-[#fde047] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_0px_#000]">
                   <UsersIcon className="w-5 h-5 stroke-[2.5]" />
                 </span>
-                <span className="text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
+                <span className="text-neutral-600 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
                   →
                 </span>
               </div>
@@ -295,7 +293,7 @@ export default async function HomePage() {
                 <span className="w-10 h-10 rounded-xl bg-[#ccff00] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_0px_#000]">
                   <SearchIcon className="w-5 h-5 stroke-[2.5]" />
                 </span>
-                <span className="text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
+                <span className="text-neutral-600 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
                   →
                 </span>
               </div>
@@ -321,7 +319,7 @@ export default async function HomePage() {
                 <span className="w-10 h-10 rounded-xl bg-[#7dd3fc] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_0px_#000]">
                   <ZapIcon className="w-5 h-5" />
                 </span>
-                <span className="text-neutral-400 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
+                <span className="text-neutral-600 group-hover:text-black group-hover:translate-x-0.5 transition-all font-black text-lg">
                   →
                 </span>
               </div>

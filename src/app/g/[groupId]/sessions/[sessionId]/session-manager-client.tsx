@@ -30,7 +30,8 @@ import { RoundGenerationIndicator } from "@/components/rounds/round-generation-i
 import { CurrentRoundView } from "@/components/rounds/current-round";
 import { ResultsEntryView, cancelMatchWarning, type MatchScoreEntry, type ScoreDrafts } from "@/components/results/results-entry";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Button, Badge, Modal, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
+import { endSessionWarning } from "@/components/groups/end-session-now-button";
+import { Button, Badge, CustomDropdown, RatingSlider, Toast } from "@/components/ui";
 import { ClientDate, ClientTime } from "@/components/ui/client-date-time";
 import { BackButton } from "@/components/groups/back-button";
 import { formatDupr, formatDuprDelta } from "@/lib/domain/rating-display";
@@ -64,6 +65,7 @@ import {
   saveLineupChoice,
   subscribeLineupChoice,
 } from "@/lib/rounds/lineup-seed";
+import { editLineupWarning, keptLineupFromRound, proposalFromKeptLineup } from "@/lib/rounds/kept-lineup";
 import { createIdempotencyKey } from "@/lib/utils/idempotency";
 import type { PairSynergiesMap } from "@/lib/synergy/lineup";
 import { formatSessionDate } from "@/lib/utils/date";
@@ -269,8 +271,8 @@ export function SessionManagerClient({
   const [error, setError] = useState<string | null>(null);
   const [scoreDrafts, setScoreDrafts] = useState<ScoreDrafts>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [showInProgressModal, setShowInProgressModal] = useState(false);
-  const [doNotAskAgain, setDoNotAskAgain] = useState(false);
+  // One styled confirmation for the live screen's irreversible actions (no native confirm()).
+  const [pendingConfirm, setPendingConfirm] = useState<"end" | "reshuffle" | "undo" | "editLineup" | null>(null);
   const [showSessionSettingsModal, setShowSessionSettingsModal] = useState(initialOpenSettingsModal);
 
   // Attendance rows stay in the section they were in when Settings opened, so a row
@@ -310,6 +312,11 @@ export function SessionManagerClient({
   // Only an actual end-session request says "Ending…"; other actions just disable the button.
   const [isEnding, setIsEnding] = useState(false);
   const [justEndedSession, setJustEndedSession] = useState(false);
+  // End sits at the bottom of the page; once the session ends, bring the organizer back up
+  // to the completed summary so the sign-off plays in view. Instant, so the animation isn't missed.
+  useEffect(() => {
+    if (justEndedSession) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [justEndedSession]);
   const [myAttendanceError, setMyAttendanceError] = useState<string | null>(null);
   const [historicalScores, setHistoricalScores] = useState<{ team1: string; team2: string }>({ team1: "", team2: "" });
   const confirmMatchups = useSyncExternalStore(
@@ -621,6 +628,7 @@ export function SessionManagerClient({
   const storedLineupChoice = parseLineupChoice(storedLineupChoiceRaw, proposalRoundNumber, currentSession.version);
   const storedChoiceProposal = useMemo(() => {
     if (!storedLineupChoice || isRoundInProgress || !canManage) return null;
+    if (storedLineupChoice.lineup) return proposalFromKeptLineup(storedLineupChoice.lineup, storedLineupChoice.seed);
     try {
       return proposeRoundFromSnapshot(
         { session: currentSession, players: sessionPlayers, attendance: currentAttendance, rounds: localStartedRounds },
@@ -755,13 +763,11 @@ export function SessionManagerClient({
 
   const handleReshuffleInProgressRound = () => {
     if (!latestStarted || isPending) return;
-    if (
-      !confirm(
-        `Are you sure you want to reshuffle Round ${latestStarted.round.roundNumber} matchups? Any entered match scores for this round will be reset.`
-      )
-    ) {
-      return;
-    }
+    setPendingConfirm("reshuffle");
+  };
+
+  const performReshuffleInProgressRound = () => {
+    if (!latestStarted || isPending) return;
     setError(null);
     startGeneratingRound(async () => {
       try {
@@ -1335,11 +1341,67 @@ export function SessionManagerClient({
     });
   };
 
+  // Saved scores and pickup games in the latest round; Edit Lineup clears them, so it asks first.
+  const latestRoundSavedScores = latestStarted?.matches.filter((m) => m.status === "completed").length ?? 0;
+  const latestRoundPickupGames = latestStarted?.matches.filter((m) => m.courtNumber > currentSession.courtCount).length ?? 0;
+
+  const handleEditLineup = () => {
+    if (!latestStarted || !isRoundInProgress || isPending) return;
+    if (latestRoundSavedScores > 0 || latestRoundPickupGames > 0) setPendingConfirm("editLineup");
+    else performEditLineup();
+  };
+
+  // Sends the round in progress back to setup with its lineup unchanged, so the
+  // organizer can move a player with Manual Edit and start it again.
+  const performEditLineup = () => {
+    if (!latestStarted || isPending) return;
+    setError(null);
+    const lineup = keptLineupFromRound(latestStarted, currentSession.courtCount);
+    startGeneratingRound(async () => {
+      try {
+        const res = await undoLatestRoundAction({
+          groupId,
+          sessionId: currentSession.id,
+          sessionVersion: currentSession.version,
+          roundId: latestStarted.round.id,
+          roundVersion: latestStarted.round.version,
+          idempotencyKey: createIdempotencyKey("edit_lineup"),
+        });
+        if (res.ok) {
+          clearLineupDraft(lineupDraftKey(currentSession.id));
+          saveLineupChoice(currentSession.id, {
+            roundNumber: latestStarted.round.roundNumber,
+            sessionVersion: currentSession.version + 1,
+            seed: latestStarted.round.seed,
+            temperature: matchmakingVariety,
+            lineup,
+          });
+          startGeneratingRound(() => {
+            setRegeneratedProposal(proposalFromKeptLineup(lineup, latestStarted.round.seed));
+            setLocalStartedRounds((prev) => prev.filter((r) => r.round.id !== latestStarted.round.id));
+            setCurrentSession((prev) => ({
+              ...prev,
+              currentRoundNumber: Math.max(0, prev.currentRoundNumber - 1),
+              version: prev.version + 1,
+            }));
+            setScoreDrafts({});
+          });
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Failed to edit the lineup.");
+      }
+    });
+  };
+
   const handleUndo = () => {
     if (!latestStarted || isPending) return;
-    if (!confirm("Are you sure you want to undo the latest round? This will revert results and ratings.")) {
-      return;
-    }
+    setPendingConfirm("undo");
+  };
+
+  const performUndo = () => {
+    if (!latestStarted || isPending) return;
     setError(null);
     startGeneratingRound(async () => {
       try {
@@ -1422,35 +1484,9 @@ export function SessionManagerClient({
     }
   };
 
-  const handleEndSession = async () => {
-    if (inProgressMatches.length > 0) {
-      const skipWarning =
-        typeof window !== "undefined" &&
-        window.localStorage.getItem("pickleball_skip_end_session_in_progress_warning") === "true";
-
-      if (!skipWarning) {
-        setShowInProgressModal(true);
-        return;
-      }
-    }
-
-    if (!confirm("End this session? Match history and ratings will be finalized.")) {
-      return;
-    }
-    await executeEndSession();
-  };
-
-  const handleConfirmEndSessionWithProgress = async () => {
-    if (doNotAskAgain && typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem("pickleball_skip_end_session_in_progress_warning", "true");
-      } catch {
-        // ignore storage errors
-      }
-    }
-    setShowInProgressModal(false);
-    setScoreDrafts({});
-    await executeEndSession();
+  const handleEndSession = () => {
+    if (isPending) return;
+    setPendingConfirm("end");
   };
 
   const viewerAttendance = currentViewerPlayerId
@@ -1674,13 +1710,16 @@ export function SessionManagerClient({
       })
     : [];
 
-  const hasUnsavedScores = Boolean(isRoundInProgress) && scoreEntries.some((match) => {
-    const draft = scoreDrafts[match.id];
-    if (!draft || match.status === "cancelled") return false;
-    const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
-    const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
-    return team1 !== match.team1Score || team2 !== match.team2Score;
-  });
+  const unsavedScoreCount = isRoundInProgress
+    ? scoreEntries.filter((match) => {
+        const draft = scoreDrafts[match.id];
+        if (!draft || match.status === "cancelled") return false;
+        const team1 = draft.team1.trim() === "" ? null : Number(draft.team1);
+        const team2 = draft.team2.trim() === "" ? null : Number(draft.team2);
+        return team1 !== match.team1Score || team2 !== match.team2Score;
+      }).length
+    : 0;
+  const hasUnsavedScores = unsavedScoreCount > 0;
 
   const handleScoreChange = (matchId: string, team: "team1" | "team2", value: string) => {
     const match = scoreEntries.find((entry) => entry.id === matchId);
@@ -1826,6 +1865,76 @@ export function SessionManagerClient({
         confirmDataTestId="confirm-cancel-match"
       />
 
+      <ConfirmDialog
+        isOpen={pendingConfirm !== null}
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          const action = pendingConfirm;
+          setPendingConfirm(null);
+          if (action === "end") void executeEndSession();
+          else if (action === "reshuffle") performReshuffleInProgressRound();
+          else if (action === "undo") performUndo();
+          else if (action === "editLineup") performEditLineup();
+        }}
+        disabled={isPending}
+        dataTestId={pendingConfirm === "end" ? "end-session-dialog" : undefined}
+        title={
+          pendingConfirm === "end"
+            ? "End this session?"
+            : pendingConfirm === "reshuffle"
+            ? `Reshuffle Round ${latestStarted?.round.roundNumber ?? ""}?`
+            : pendingConfirm === "editLineup"
+            ? `Edit Round ${latestStarted?.round.roundNumber ?? ""} lineup?`
+            : `Undo Round ${latestStarted?.round.roundNumber ?? ""}?`
+        }
+        description={
+          pendingConfirm === "end" ? (
+            <div className="space-y-3">
+              <p>{endSessionWarning(currentSession.type ?? null, inProgressMatches.length)}</p>
+              {inProgressMatches.length > 0 && (
+                <ul className="space-y-2 max-h-48 overflow-y-auto pr-1" data-testid="in-progress-match-list">
+                  {inProgressMatches.map((match) => {
+                    const { team1, team2 } = getMatchTeams(match);
+                    return (
+                      <li key={match.id} className="rounded-xl border-2 border-black bg-neutral-50 p-3 text-sm">
+                        <span className="block font-bold text-black">Court {match.courtNumber}</span>
+                        <span className="font-normal text-neutral-800">{team1} vs {team2}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          ) : pendingConfirm === "reshuffle" ? (
+            "Everyone gets new matchups, and any scores entered for this round are cleared."
+          ) : pendingConfirm === "editLineup" ? (
+            editLineupWarning(latestRoundSavedScores, latestRoundPickupGames)
+          ) : (
+            `This removes Round ${latestStarted?.round.roundNumber ?? ""} and its results, and recalculates everyone's ratings.`
+          )
+        }
+        confirmText={
+          pendingConfirm === "end"
+            ? "End session"
+            : pendingConfirm === "reshuffle"
+            ? "Reshuffle"
+            : pendingConfirm === "editLineup"
+            ? "Edit lineup"
+            : "Undo round"
+        }
+        cancelText={pendingConfirm === "end" ? "Keep playing" : pendingConfirm === "reshuffle" || pendingConfirm === "editLineup" ? "Keep matchups" : "Keep round"}
+        confirmDataTestId={
+          pendingConfirm === "end"
+            ? "confirm-end-session-button"
+            : pendingConfirm === "reshuffle"
+            ? "confirm-reshuffle-round-button"
+            : pendingConfirm === "editLineup"
+            ? "confirm-edit-lineup-button"
+            : "confirm-undo-round-button"
+        }
+        cancelDataTestId={pendingConfirm === "end" ? "cancel-end-session-button" : undefined}
+      />
+
       {/* Top Header Controls */}
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap">
         <BackButton
@@ -1837,14 +1946,14 @@ export function SessionManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
         {isCompletedSession ? (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
+              className="shrink-0 h-11 px-3 text-sm font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -1853,9 +1962,9 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <GearIcon className="h-4 w-4 shrink-0" />
               <span>
                 <span className="sm:hidden">Settings</span>
                 <span className="hidden sm:inline">Session Settings</span>
@@ -1868,31 +1977,14 @@ export function SessionManagerClient({
               type="button"
               onClick={() => openSessionSettingsModal("attendance")}
               aria-label="Session Settings"
-              className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center gap-1 sm:gap-1.5 shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
-              <GearIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <GearIcon className="h-4 w-4 shrink-0" />
               <span>
                 <span className="sm:hidden">Settings</span>
                 <span className="hidden sm:inline">Session Settings</span>
               </span>
             </button>
-            {canManage && (
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isPending}
-                aria-label="End Session"
-                data-testid="end-session-button"
-                className="relative before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
-              >
-                {isEnding ? "Ending..." : (
-                  <>
-                    <span className="sm:hidden">End</span>
-                    <span className="hidden sm:inline">End Session</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -1931,6 +2023,7 @@ export function SessionManagerClient({
                   redirectTo={isFromProfile ? "/players" : `/g/${groupId}`}
                   onRenamed={(newName) => setSessionName(newName)}
                   onUndoLatestRound={latestStarted ? handleUndo : undefined}
+                  onEditLineup={isRoundInProgress ? handleEditLineup : undefined}
                   latestRoundNumber={latestStarted?.round.roundNumber}
                 />
               </div>
@@ -2027,7 +2120,7 @@ export function SessionManagerClient({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {groupName && (
-                  <span className="text-xs font-bold text-neutral-500 block mb-1">
+                  <span className="text-xs font-bold text-neutral-600 block mb-1">
                     {groupName}
                   </span>
                 )}
@@ -2071,19 +2164,19 @@ export function SessionManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Courts</span>
+                <span className="text-xs font-bold text-neutral-600 block">Courts</span>
                 <span className="font-display text-xl font-black text-black">{session.courtCount}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Rounds</span>
+                <span className="text-xs font-bold text-neutral-600 block">Rounds</span>
                 <span className="font-display text-xl font-black text-black">{allSessionRounds.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-600 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{totalSessionMatches}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-600 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{sessionPlayerStats.length}</span>
               </div>
             </div>
@@ -2099,15 +2192,15 @@ export function SessionManagerClient({
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-white border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -2158,7 +2251,7 @@ export function SessionManagerClient({
                       <div key={stat.id} className="py-2.5 flex items-center justify-between">
                         <div>
                           <span className="font-black text-black text-sm block">{stat.name}</span>
-                          <span className="text-xs font-bold text-neutral-500">
+                          <span className="text-xs font-bold text-neutral-600">
                             {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
                           </span>
                         </div>
@@ -2235,7 +2328,7 @@ export function SessionManagerClient({
                               <div className="flex items-center gap-1.5">
                                 <span className="font-black text-black">Court {m.courtNumber}</span>
                                 {m.courtNumber > session.courtCount && (
-                                  <Badge variant="muted" className="text-[10px] py-0 px-1.5">
+                                  <Badge variant="muted" className="text-xs py-0 px-1.5">
                                     Pickup
                                   </Badge>
                                 )}
@@ -2277,7 +2370,7 @@ export function SessionManagerClient({
                             </div>
 
                             {m.status === "completed" && (sr.round.startedAt || m.completedAt || sr.round.completedAt) && (
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                                 {sr.round.startedAt && (
                                   <ClientTime
                                     date={sr.round.startedAt}
@@ -2341,7 +2434,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-600 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2405,6 +2498,7 @@ export function SessionManagerClient({
                 scoreDrafts={scoreDrafts}
                 onScoreChange={handleScoreChange}
                 hasUnsavedScores={hasUnsavedScores}
+                unsavedScoreCount={unsavedScoreCount}
                 onAddGame={canManage ? () => setShowAddPickupModal(true) : undefined}
                 onSaveAllScores={canManage ? handleSaveAllScores : undefined}
                 onSaveAndStartNextRound={canManage ? handleSaveAndStartNextRound : undefined}
@@ -2485,7 +2579,7 @@ export function SessionManagerClient({
                 onClick={() => void handleSetMyAttendance(viewerAttendance.leftRound !== null)}
                 disabled={isMyAttendancePending}
                 data-testid={viewerAttendance.leftRound === null ? "leave-after-game-button" : "stay-in-session-button"}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-xl border-2 border-black bg-[#FFFDF7] px-3 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
               >
                 {isMyAttendancePending
                   ? "Saving…"
@@ -2535,7 +2629,7 @@ export function SessionManagerClient({
                             </div>
 
                             {m.status === "completed" && (past.round.startedAt || m.completedAt || past.round.completedAt) && (
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                                 {past.round.startedAt && (
                                   <ClientTime
                                     date={past.round.startedAt}
@@ -2599,7 +2693,7 @@ export function SessionManagerClient({
                                 <button
                                   type="button"
                                   onClick={() => setEditingHistoricalMatchId(null)}
-                                  className="text-sm font-bold text-neutral-500 hover:text-black underline ml-auto cursor-pointer"
+                                  className="text-sm font-bold text-neutral-600 hover:text-black underline ml-auto cursor-pointer"
                                 >
                                   Close
                                 </button>
@@ -2631,6 +2725,27 @@ export function SessionManagerClient({
             </section>
           )}
         </>
+      )}
+
+      {/* End lives at the bottom, away from Settings and the round controls, so it can't be hit by mistake. */}
+      {canManage && !isCompletedSession && (
+        <section
+          aria-label="End session"
+          className="flex flex-col gap-3 rounded-2xl border-2 border-dashed border-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-sm font-bold text-neutral-800">
+            Finished playing? Ending finalizes ratings, and a session can&apos;t be reopened.
+          </p>
+          <button
+            type="button"
+            onClick={handleEndSession}
+            disabled={isPending}
+            data-testid="end-session-button"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-[#ff6b6b] px-4 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+          >
+            {isEnding ? "Ending..." : "End session"}
+          </button>
+        </section>
       )}
 
       {/* Session Settings Modal */}
@@ -2772,7 +2887,7 @@ export function SessionManagerClient({
                             <button
                               type="submit"
                               disabled={!guestName.trim() || isAddingGuest}
-                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                              className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
                             >
                               {isAddingGuest ? "Adding..." : "Add"}
                             </button>
@@ -2795,7 +2910,7 @@ export function SessionManagerClient({
 
                 {sortedPlayers.length > 5 && (
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
                       <SearchIcon className="w-4 h-4" />
                     </span>
                     <input
@@ -2812,7 +2927,7 @@ export function SessionManagerClient({
                         type="button"
                         onClick={() => setAttendanceSearchQuery("")}
                         aria-label="Clear attendance search"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-500 hover:text-black cursor-pointer"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-black text-neutral-600 hover:text-black cursor-pointer"
                       >
                         ✕
                       </button>
@@ -2822,7 +2937,7 @@ export function SessionManagerClient({
 
                 {displayedAttendancePlayers.length === 0 ? (
                   <div className="p-6 text-center rounded-xl border-2 border-dashed border-neutral-300">
-                    <p className="text-sm font-bold text-neutral-500">
+                    <p className="text-sm font-bold text-neutral-600">
                       No players match &ldquo;{attendanceSearchQuery}&rdquo;
                     </p>
                     <button
@@ -2848,7 +2963,7 @@ export function SessionManagerClient({
                             <button
                               type="button"
                               onClick={() => setShowAttendanceRebalancePrompt(false)}
-                              className="text-neutral-400 hover:text-black font-black text-xs p-1 cursor-pointer"
+                              className="text-neutral-600 hover:text-black font-black text-xs p-1 cursor-pointer"
                               aria-label="Dismiss court recommendation"
                             >
                               ✕
@@ -2873,9 +2988,9 @@ export function SessionManagerClient({
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-bold">{choice.title}</span>
-                                  <span className="text-[10px] font-black">{choice.badge}</span>
+                                  <span className="text-xs font-black">{choice.badge}</span>
                                 </div>
-                                <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                                <span className="text-xs font-bold text-neutral-600 block">{choice.summary}</span>
                               </button>
                             );
                           })}
@@ -2891,13 +3006,13 @@ export function SessionManagerClient({
                             Present ({displayedAttendancePlayers.filter((p) => isPresentNow(p.id)).length})
                           </h4>
                         </div>
-                        <span className="text-[11px] font-bold text-neutral-500">
+                        <span className="text-xs font-bold text-neutral-600">
                           Active in matchmaking
                         </span>
                       </div>
 
                       {presentAttendancePlayers.length === 0 ? (
-                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                        <p className="text-xs font-bold text-neutral-600 italic py-2">
                           No players currently marked present.
                         </p>
                       ) : (
@@ -2923,7 +3038,7 @@ export function SessionManagerClient({
                                       className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
                                         isPinned
                                           ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                          : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100"
                                       }`}
                                     >
                                       <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -2933,7 +3048,7 @@ export function SessionManagerClient({
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-black text-black text-sm block truncate">{p.name}</span>
                                     </div>
-                                    <span className="text-xs font-bold text-neutral-500">Rating: {formatDupr(p.rating)}</span>
+                                    <span className="text-xs font-bold text-neutral-600">Rating: {formatDupr(p.rating)}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -2956,8 +3071,8 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
-                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
+                                        } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
                                       </button>
@@ -2973,7 +3088,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
                                         {rec ? "Left" : "Not here"}
@@ -3001,13 +3116,13 @@ export function SessionManagerClient({
                             Not here / Left ({displayedAttendancePlayers.filter((p) => !isPresentNow(p.id)).length})
                           </h4>
                         </div>
-                        <span className="text-[11px] font-bold text-neutral-500">
+                        <span className="text-xs font-bold text-neutral-600">
                           Sitting out
                         </span>
                       </div>
 
                       {notPresentAttendancePlayers.length === 0 ? (
-                        <p className="text-xs font-bold text-neutral-400 italic py-2">
+                        <p className="text-xs font-bold text-neutral-600 italic py-2">
                           All players are currently present.
                         </p>
                       ) : (
@@ -3033,7 +3148,7 @@ export function SessionManagerClient({
                                       className={`p-1.5 rounded-lg border-2 border-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 shrink-0 ${
                                         isPinned
                                           ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                                          : "bg-white text-neutral-400 hover:text-black hover:bg-neutral-100"
+                                          : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100"
                                       }`}
                                     >
                                       <PinIcon className="w-3.5 h-3.5" filled={isPinned} />
@@ -3043,7 +3158,7 @@ export function SessionManagerClient({
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-black text-neutral-700 text-sm block truncate">{p.name}</span>
                                     </div>
-                                    <span className="text-xs font-bold text-neutral-400">Rating: {formatDupr(p.rating)}</span>
+                                    <span className="text-xs font-bold text-neutral-600">Rating: {formatDupr(p.rating)}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -3066,8 +3181,8 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           isPresent
                                             ? "bg-[#ccff00] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
-                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
+                                        } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
                                       >
                                         Present
                                       </button>
@@ -3083,7 +3198,7 @@ export function SessionManagerClient({
                                         className={`rounded-lg px-2.5 py-1 text-sm font-bold transition-all cursor-pointer ${
                                           !isPresent
                                             ? "bg-neutral-300 text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]"
-                                            : "border-2 border-transparent text-neutral-500 hover:text-black hover:bg-black/5"
+                                            : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                       >
                                         {rec ? "Left" : "Not here"}
@@ -3134,7 +3249,7 @@ export function SessionManagerClient({
                     >
                       {courtConfigCourts}
                     </span>
-                    <span className="block text-xs font-bold text-neutral-500 mt-0.5">
+                    <span className="block text-xs font-bold text-neutral-600 mt-0.5">
                       {courtConfigCourts === 1 ? "Court" : "Courts"}
                     </span>
                   </div>
@@ -3195,9 +3310,9 @@ export function SessionManagerClient({
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold">{choice.title}</span>
-                            <span className="text-[10px] font-black">{choice.badge}</span>
+                            <span className="text-xs font-black">{choice.badge}</span>
                           </div>
-                          <span className="text-[11px] font-bold text-neutral-600 block">{choice.summary}</span>
+                          <span className="text-xs font-bold text-neutral-600 block">{choice.summary}</span>
                         </button>
                       ))}
                     </div>
@@ -3244,7 +3359,7 @@ export function SessionManagerClient({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <p className="text-[11px] font-bold text-neutral-500 text-center">
+                  <p className="text-xs font-bold text-neutral-600 text-center">
                     Changes save automatically.
                   </p>
                   <Button
@@ -3329,81 +3444,6 @@ export function SessionManagerClient({
             </div>
           </div>
         </div>
-      )}
-
-      {showInProgressModal && (
-        <Modal
-          isOpen={showInProgressModal}
-          onClose={() => !isPending && setShowInProgressModal(false)}
-          size="md"
-          role="alertdialog"
-          showCloseButton={false}
-          closeOnBackdropClick={!isPending}
-          closeOnEscape={!isPending}
-        >
-          <div className="space-y-4 text-black" data-testid="in-progress-warning-modal">
-            <h3 className="font-display text-xl font-black uppercase tracking-tight text-black">
-              End Session?
-            </h3>
-            <p className="text-sm font-bold text-neutral-800">
-              You have these games in progress:
-            </p>
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1" data-testid="in-progress-match-list">
-              {inProgressMatches.map((match) => {
-                const { team1, team2 } = getMatchTeams(match);
-                return (
-                  <div
-                    key={match.id}
-                    className="p-3 bg-neutral-50 border-2 border-black rounded-xl text-xs flex items-center justify-between shadow-[2px_2px_0px_0px_#000]"
-                  >
-                    <div>
-                      <span className="font-black text-black block">Court {match.courtNumber}</span>
-                      <span className="font-bold text-neutral-700">{team1} vs {team2}</span>
-                    </div>
-                    <Badge variant="warning">In Play</Badge>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-sm font-bold text-neutral-800">
-              Are you sure you want to end it?
-            </p>
-            <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={doNotAskAgain}
-                onChange={(e) => setDoNotAskAgain(e.target.checked)}
-                data-testid="do-not-ask-again-checkbox"
-                className="w-4 h-4 rounded border-2 border-black accent-black cursor-pointer"
-              />
-              <span className="text-xs font-bold text-neutral-700">
-                Do not ask me again
-              </span>
-            </label>
-            <div className="flex gap-3 justify-end pt-3 border-t-2 border-neutral-100">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowInProgressModal(false)}
-                disabled={isPending}
-                data-testid="cancel-end-session-button"
-                className="text-sm"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleConfirmEndSessionWithProgress}
-                disabled={isPending}
-                data-testid="confirm-end-session-button"
-                className="text-sm bg-[#ff6b6b] hover:bg-[#ff5252] text-black"
-              >
-                {isEnding ? "Ending..." : "End Session"}
-              </Button>
-            </div>
-          </div>
-        </Modal>
       )}
 
       {canManage && (

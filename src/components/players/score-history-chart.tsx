@@ -475,7 +475,7 @@ export function ScoreHistoryChart({
                 isActive
                   ? "bg-[#ccff00] text-black border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000]"
                   : "border-2 border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              } disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed`}
             >
               <span className="sm:hidden">{item.shortLabel}</span>
               <span className="hidden sm:inline">{item.label}</span>
@@ -488,9 +488,17 @@ export function ScoreHistoryChart({
         <p className="text-xs font-semibold text-neutral-600">
           Your rating history will appear after your first session.
         </p>
+      ) : history.length === 1 && filtered.length === 1 ? (
+        // One session is a starting point, not a trend: say it in words instead of a one-dot chart.
+        <div className="py-4" data-testid="rating-chart-first-session">
+          <p className="text-sm font-bold text-black">
+            {formatDupr(startingRating ?? history[0].rating)} → {formatDupr(history[0].rating)} rating after your first session.
+          </p>
+          <p className="mt-1 text-xs font-semibold text-neutral-600">Play another session to see your rating trend over time.</p>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center" data-testid="rating-chart-empty-range">
-          <p className="text-xs font-bold text-neutral-500">
+          <p className="text-xs font-bold text-neutral-600">
             No rating history in the selected time period.
           </p>
         </div>
@@ -659,7 +667,7 @@ export function ScoreHistoryChart({
               >
                 <div data-testid="tooltip-rating" className="font-display text-base font-black text-black leading-tight">
                   {formatDupr(activeRecord.rating)}{" "}
-                  <span className="text-xs font-bold text-neutral-500">Rating</span>
+                  <span className="text-xs font-bold text-neutral-600">Rating</span>
                 </div>
                 <div data-testid="tooltip-date" className="text-xs font-bold text-neutral-600 leading-tight mt-0.5">
                   {formatDate(activeRecord.startedAt, isHydrated)}
@@ -681,12 +689,12 @@ export function ScoreHistoryChart({
             {activeRecord ? (
               <p data-testid="active-rating-details" className="text-black font-black">
                 <span>{formatDupr(activeRecord.rating)} rating</span>
-                <span className="text-neutral-500 font-bold ml-1.5">
+                <span className="text-neutral-600 font-bold ml-1.5">
                   ({formatDate(activeRecord.startedAt, isHydrated)})
                 </span>
               </p>
             ) : filtered.length > 1 ? (
-              <p className="text-[11px] font-semibold text-neutral-400">
+              <p className="text-xs font-semibold text-neutral-600">
                 Swipe or hover to explore
               </p>
             ) : null}

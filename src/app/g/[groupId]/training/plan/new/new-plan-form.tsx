@@ -259,12 +259,12 @@ export function NewPlanForm({
           <h2 className="font-display text-base sm:text-lg font-black uppercase text-black">
             Select Challenges ({selectedIds.length} Selected)
           </h2>
-          <span className="text-xs font-bold text-neutral-500">Pick 1 to 6 drills</span>
+          <span className="text-xs font-bold text-neutral-600">Pick 1 to 6 drills</span>
         </div>
 
         {/* Search Drills Input */}
         <div className="relative">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600">
             <SearchIcon className="w-4 h-4" />
           </span>
           <input
@@ -281,7 +281,7 @@ export function NewPlanForm({
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="Clear drill search"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-black cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-600 hover:text-black cursor-pointer"
             >
               <XIcon className="w-4 h-4" />
             </button>
@@ -314,7 +314,7 @@ export function NewPlanForm({
                 <span>{cat.label}</span>
                 {count > 0 && (
                   <span
-                    className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                    className={`ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-black leading-none ${
                       isActive ? "bg-[#ccff00] text-black" : "bg-black text-[#ccff00]"
                     }`}
                   >
@@ -466,7 +466,7 @@ export function NewPlanForm({
         <button
           type="submit"
           disabled={isPending || selectedIds.length === 0}
-          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:opacity-50 touch-manipulation select-none"
+          className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-sm sm:text-base font-bold shadow-[4px_4px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 touch-manipulation select-none"
         >
           {isPending ? "Publishing Plan..." : "Publish Weekly Plan →"}
         </button>

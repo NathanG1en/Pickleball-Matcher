@@ -99,7 +99,7 @@ export function PartnerRequests({ groupId, session, players, presentPlayerIds, c
     {!canManage && active && !currentPresentIds.includes(currentViewerPlayerId ?? "") && <p className="text-sm">Join this session before requesting a partner.</p>}
     {error && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
     {busy && <p role="status" className="text-sm font-bold">Updating requests…</p>}
-    {!displayed.length ? <p className="text-sm text-neutral-500">No partner requests yet.</p> : <ul className="space-y-2">{displayed.map(request => {
+    {!displayed.length ? <p className="text-sm text-neutral-600">No partner requests yet.</p> : <ul className="space-y-2">{displayed.map(request => {
       const requester = names.get(request.requesterPlayerId) ?? "Former player";
       const partner = names.get(request.partnerPlayerId) ?? "Former player";
       return <li key={request.id} className="rounded-xl border-2 border-black bg-neutral-50 p-3 space-y-2">

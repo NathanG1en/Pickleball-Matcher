@@ -105,8 +105,9 @@ describe("OpenPlayManagerClient Component", () => {
     expect(html).toContain("Singles (1v1)");
 
     // Verify smaller text and shrink-0 classes are applied for mobile fit
-    expect(html).toContain("text-[10px]");
-    expect(html).toContain("sm:text-xs");
+    // 12px minimum text; verified in a browser that "Singles (1v1)" fits at 320px wide
+    expect(html).toContain("text-xs sm:text-sm");
+    expect(html).not.toContain("text-[10px]");
     expect(html).toContain("shrink-0");
     expect(html).toContain("whitespace-nowrap");
     expect(html).not.toContain("Record a match played between session players.");
@@ -141,14 +142,14 @@ describe("OpenPlayManagerClient Component", () => {
     expect(sessionNameIndex).toBeGreaterThan(-1);
     expect(endSessionIndex).toBeGreaterThan(-1);
 
-    // End session is in the top header controls before the session card
-    expect(endSessionIndex).toBeLessThan(sessionNameIndex);
+    // End session sits at the bottom of the page, after the session card, away from the header controls
+    expect(endSessionIndex).toBeGreaterThan(sessionNameIndex);
     // Three dots menu is in the session card alongside/after the session title
     expect(sessionNameIndex).toBeLessThan(optionsIndex);
 
     // End session button matches normal session styling
     expect(html).toContain("bg-[#ff6b6b]");
-    expect(html).toContain("border-2 border-black font-bold text-xs sm:text-sm text-black");
+    expect(html).toContain("h-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-[#ff6b6b] px-4 text-sm font-bold text-black");
     expect(html).not.toContain("bg-red-500 hover:bg-red-600 text-white");
 
     // "In Progress" badge is removed

@@ -215,7 +215,7 @@ export default async function PlayerPublicProfilePage({
                     {getSkillTier(eloToDupr(currentRating)).name} · current rating {formatDupr(currentRating)}
                   </p>
                 ) : (
-                  <p className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500">
+                  <p className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600">
                     <LockIcon className="h-3 w-3" />
                     <span>Rating &amp; stats are private</span>
                   </p>
@@ -234,8 +234,8 @@ export default async function PlayerPublicProfilePage({
               <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
-                    <LockIcon className="h-3 w-3 text-neutral-500" />
+                    <p className="text-xs font-bold text-neutral-600">Chemistry Spotlight</p>
+                    <LockIcon className="h-3 w-3 text-neutral-600" />
                   </div>
                   <h2 className="font-display text-xl font-black uppercase text-neutral-800">Chemistry Private</h2>
                   <p className="mt-1 text-xs font-bold text-neutral-600">
@@ -278,7 +278,7 @@ export default async function PlayerPublicProfilePage({
                         </span>
                       );
                     })()}
-                    <p className="mt-1 text-[11px] font-bold text-neutral-800">
+                    <p className="mt-1 text-xs font-bold text-neutral-800">
                       {bestPartner.matchesPlayed} {bestPartner.matchesPlayed === 1 ? "match" : "matches"} together
                     </p>
                   </div>
@@ -288,7 +288,7 @@ export default async function PlayerPublicProfilePage({
               <section className="h-full rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 flex flex-col justify-center">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-neutral-500">Chemistry Spotlight</p>
+                    <p className="text-xs font-bold text-neutral-600">Chemistry Spotlight</p>
                     <SynergyExplainerButton />
                   </div>
                   <h2 className="font-display text-xl font-black uppercase text-neutral-800">No Partner Yet</h2>
@@ -312,7 +312,7 @@ export default async function PlayerPublicProfilePage({
               </section>
             ) : (
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5 text-center flex flex-col justify-center h-full items-center">
-                <LockIcon className="h-5 w-5 text-neutral-500 mb-1" />
+                <LockIcon className="h-5 w-5 text-neutral-600 mb-1" />
                 <h2 className="font-display text-lg font-black uppercase text-neutral-800">Stats Private</h2>
                 <p className="text-xs font-bold text-neutral-600">Performance stats are hidden by player.</p>
               </section>
@@ -327,7 +327,7 @@ export default async function PlayerPublicProfilePage({
             {!canViewGroupMemberships ? (
               <section className="rounded-3xl border-[3px] border-black bg-neutral-100 p-5">
                 <div className="mb-2 flex items-center gap-2">
-                  <LockIcon className="h-4 w-4 text-neutral-500" />
+                  <LockIcon className="h-4 w-4 text-neutral-600" />
                   <h2 className="font-display text-2xl font-black uppercase text-neutral-800">Groups</h2>
                 </div>
                 <p className="text-sm font-bold text-neutral-600">
@@ -385,7 +385,7 @@ export default async function PlayerPublicProfilePage({
               <section className="rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold text-neutral-500">Mutual Chemistry</p>
+                    <p className="text-xs font-bold text-neutral-600">Mutual Chemistry</p>
                     <h2 className="font-display text-xl font-black uppercase text-neutral-800">Partner Chemistry With You</h2>
                     <p className="mt-1 text-xs font-bold text-neutral-600">
                       {viewerSynergy.wins} wins in {viewerSynergy.matchesPlayed} matches together
@@ -413,7 +413,7 @@ export default async function PlayerPublicProfilePage({
             {!canViewActivities ? (
               <section className="space-y-3 rounded-3xl border-[3px] border-black bg-[#FFFDF7] p-5">
                 <div className="flex items-center gap-2">
-                  <LockIcon className="h-4 w-4 text-neutral-500" />
+                  <LockIcon className="h-4 w-4 text-neutral-600" />
                   <h2 className="font-display text-2xl font-black uppercase text-neutral-800">Past Sessions</h2>
                 </div>
                 <p className="text-sm font-bold text-neutral-600">

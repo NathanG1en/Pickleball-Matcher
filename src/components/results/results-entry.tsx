@@ -47,6 +47,8 @@ export interface ResultsEntryViewProps {
   readonly canManage?: boolean;
   readonly scoreDrafts?: ScoreDrafts;
   readonly hasUnsavedScores?: boolean;
+  /** Courts with unsaved score edits; Save All shows only when two or more are waiting. */
+  readonly unsavedScoreCount?: number;
   readonly onScoreChange?: (matchId: string, team: "team1" | "team2", value: string) => void;
   readonly courtCount?: number;
   readonly sittingNames?: readonly string[];
@@ -71,6 +73,11 @@ export function cancelMatchWarning(match: Pick<MatchScoreEntry, "status" | "team
 }
 
 /** Why Save & Start is unavailable, in words an organizer can act on; null when it isn't blocked. */
+export function isTiedScore(scores: { team1: string; team2: string }): boolean {
+  if (scores.team1.trim() === "" || scores.team2.trim() === "") return false;
+  return Number(scores.team1) === Number(scores.team2);
+}
+
 export function saveAndStartBlocker(
   matches: readonly MatchScoreEntry[],
   getScores: (match: MatchScoreEntry) => { team1: string; team2: string },
@@ -216,6 +223,7 @@ export function ResultsEntryView({
   canManage = true,
   scoreDrafts = {},
   hasUnsavedScores = false,
+  unsavedScoreCount,
   onScoreChange,
   courtCount,
   sittingNames = [],
@@ -275,7 +283,7 @@ export function ResultsEntryView({
 
   const hasNewScores = Boolean(hasUnsavedScores || hasValidSaveableScores || hasDraftDiffs);
   const isSaving = Boolean(savingMatchIds && savingMatchIds.size > 0);
-  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]));
+  const hasScoreErrors = matches.some((m) => Boolean(fieldErrors[m.id]) || (m.status !== "cancelled" && isTiedScore(getScores(m))));
 
   const isSaveDisabled = !hasNewScores || isPending || isSaving;
   const isSaveAndStartDisabled = !allMatchesHaveScores || hasScoreErrors || isPending || isGeneratingRound || isSaving;
@@ -303,7 +311,7 @@ export function ResultsEntryView({
                 type="button"
                 onClick={onAddGame}
                 disabled={isPending || isGeneratingRound}
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-[#ccff00] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-[#ccff00] border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <span>+ Add Game</span>
               </button>
@@ -314,7 +322,7 @@ export function ResultsEntryView({
                 onClick={onReshuffleRound}
                 disabled={isPending || isGeneratingRound}
                 data-testid="reshuffle-matchups-button"
-                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer whitespace-nowrap shrink-0 touch-manipulation select-none"
               >
                 <ShuffleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 <span>Reshuffle</span>
@@ -331,7 +339,7 @@ export function ResultsEntryView({
       {((sittingNames && sittingNames.length > 0) || (playCountRows && playCountRows.length > 0)) && (
         <div data-testid="sitting-out-panel" className="space-y-3 p-3.5 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-neutral-500">Sitting Out:</span>
+            <span className="text-xs font-bold text-neutral-600">Sitting Out:</span>
             <span className="text-xs font-black text-black">
               {sittingNames && sittingNames.length > 0 ? sittingNames.join(", ") : "None"}
             </span>
@@ -352,10 +360,10 @@ export function ResultsEntryView({
           <details data-testid="upcoming-lineup-preview" className="group cursor-pointer">
             <summary className="flex items-center justify-between font-bold text-sm text-neutral-800 select-none">
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border-2 border-black inline-block motion-safe:animate-pulse" />
                 <span>Up Next: Round {roundNumber + 1} Lineup Preview</span>
               </span>
-              <span className="text-neutral-500 group-open:rotate-180 transition-transform">▼</span>
+              <span className="text-neutral-600 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="pt-3 space-y-2.5 border-t-2 border-neutral-200 mt-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -371,7 +379,7 @@ export function ResultsEntryView({
               </div>
               {upcomingProposal.sitting.length > 0 && (
                 <p className="text-xs font-bold text-neutral-600">
-                  <span className="font-bold text-neutral-500">Sitting Next: </span>
+                  <span className="font-bold text-neutral-600">Sitting Next: </span>
                   {upcomingProposal.sitting.map((id) => playerNames[id] ?? id).join(", ")}
                 </p>
               )}
@@ -393,6 +401,7 @@ export function ResultsEntryView({
         {matches.map((match) => {
           const matchScores = getScores(match);
           const err = fieldErrors[match.id];
+          const isTie = isTiedScore(matchScores);
           const isCancelled = match.status === "cancelled";
           const isCompleted = match.status === "completed";
           const isMatchSaving = isPending || Boolean(savingMatchIds?.has(match.id));
@@ -454,12 +463,12 @@ export function ResultsEntryView({
                 {/* Team 1 */}
                 <div
                   data-viewer-team={isViewerTeam1 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam1 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl bg-white ${isViewerTeam1 ? "ring-2 ring-black" : ""}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team1Names.join(" & ")}</span>
                     {isViewerTeam1 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-black px-1.5 py-0.5 text-xs font-bold text-[#ccff00] shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -485,7 +494,7 @@ export function ResultsEntryView({
                           {matchScores.team1}
                         </span>
                       ) : (
-                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                        <span className="text-xs font-bold text-neutral-600 italic py-2">
                           In Play
                         </span>
                       )
@@ -497,7 +506,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-1-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 1 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT1Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -513,12 +522,12 @@ export function ResultsEntryView({
                 {/* Team 2 */}
                 <div
                   data-viewer-team={isViewerTeam2 ? "true" : undefined}
-                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] ${isViewerTeam2 ? "bg-[#ccff00]" : "bg-[#FFFDF7]"}`}
+                  className={`flex flex-col justify-between space-y-2 p-3 rounded-xl bg-white ${isViewerTeam2 ? "ring-2 ring-black" : ""}`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-sm font-black text-black">
                     <span>{match.team2Names.join(" & ")}</span>
                     {isViewerTeam2 && (
-                      <span className="rounded-md border-2 border-black bg-white px-1.5 py-0.5 text-xs font-bold shrink-0">You</span>
+                      <span className="rounded-md border-2 border-black bg-black px-1.5 py-0.5 text-xs font-bold text-[#ccff00] shrink-0">You</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -544,7 +553,7 @@ export function ResultsEntryView({
                           {matchScores.team2}
                         </span>
                       ) : (
-                        <span className="text-xs font-bold text-neutral-500 italic py-2">
+                        <span className="text-xs font-bold text-neutral-600 italic py-2">
                           In Play
                         </span>
                       )
@@ -556,7 +565,7 @@ export function ResultsEntryView({
                         disabled={isMatchSaving}
                         data-testid={`court-${match.courtNumber}-team-2-winner-button`}
                         aria-label={`Select Court ${match.courtNumber} Team 2 as Winner`}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold transition-all cursor-pointer shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap shrink-0 disabled:opacity-40 ${
                           isT2Winner
                             ? "bg-black text-[#ccff00]"
                             : "bg-[#fde047] hover:bg-[#facc15] text-black"
@@ -571,6 +580,11 @@ export function ResultsEntryView({
               </div>
 
               {/* Error message */}
+              {isTie && !isCancelled && canManage && !err && (
+                <div role="alert" data-testid={`tie-warning-${match.courtNumber}`} className="p-2.5 rounded-lg bg-[#fde047] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
+                  Pickleball matches cannot end in a tie. Change one of the scores.
+                </div>
+              )}
               {err && (
                 <div role="alert" className="p-2.5 rounded-lg bg-[#ff6b6b] border-2 border-black shadow-[2px_2px_0px_0px_#000] text-black font-black text-xs">
                   {err}
@@ -579,7 +593,7 @@ export function ResultsEntryView({
 
               {/* Match Timestamps */}
               {isCompleted && (match.startedAt || match.completedAt) && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                   {match.startedAt && (
                     <ClientTime
                       date={match.startedAt}
@@ -618,6 +632,7 @@ export function ResultsEntryView({
                         isMatchSaving ||
                         matchScores.team1 === "" ||
                         matchScores.team2 === "" ||
+                        isTie ||
                         (isCompleted &&
                           Number(matchScores.team1) === match.team1Score &&
                           Number(matchScores.team2) === match.team2Score)
@@ -657,13 +672,13 @@ export function ResultsEntryView({
           )}
           <div className="max-w-xl mx-auto flex items-center justify-between gap-2.5">
             <div className="text-left shrink-0">
-              <p className="text-xs sm:text-xs font-bold text-neutral-500 leading-none mb-0.5">Round Progress</p>
+              <p className="text-xs sm:text-xs font-bold text-neutral-600 leading-none mb-0.5">Round Progress</p>
               <p className="text-sm sm:text-base font-bold text-black tracking-tight leading-tight">
                 {matches.filter((m) => m.status !== "pending").length} of {matches.length} done
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-1 justify-end min-w-0">
-              {onSaveAllScores && (
+              {onSaveAllScores && (unsavedScoreCount === undefined || unsavedScoreCount >= 2) && (
                 <Button
                   type="button"
                   variant="outline"

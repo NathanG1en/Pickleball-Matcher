@@ -198,7 +198,7 @@ export function LinkGuestModal({
                 autoFocus
               />
               {isSearching && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-500 animate-pulse">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-600 motion-safe:animate-pulse">
                   Searching…
                 </span>
               )}
@@ -223,13 +223,13 @@ export function LinkGuestModal({
         {query.replace(/^@/, "").trim().length >= 2 && searchHasRun && (
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-neutral-500">
+              <span className="text-xs font-bold text-neutral-600">
                 Matching Accounts ({searchResults.length})
               </span>
             </div>
 
             {searchResults.length === 0 ? (
-              <p className="rounded-xl border-2 border-dashed border-neutral-300 p-4 text-center text-xs font-bold text-neutral-500">
+              <p className="rounded-xl border-2 border-dashed border-neutral-300 p-4 text-center text-xs font-bold text-neutral-600">
                 No registered players found matching &ldquo;{query}&rdquo;.
               </p>
             ) : (
@@ -242,18 +242,18 @@ export function LinkGuestModal({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-sm font-black truncate">{result.name}</span>
-                        <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                        <span className="text-xs font-semibold text-neutral-600 shrink-0">
                           (@{result.username})
                         </span>
                         {result.isRestricted && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600">
                             <LockIcon className="h-3 w-3 shrink-0" />
                             <span>Private</span>
                           </span>
                         )}
                       </div>
                       {!result.isRestricted && result.rating !== undefined && (
-                        <div className="text-[11px] font-bold text-neutral-600 mt-0.5">
+                        <div className="text-xs font-bold text-neutral-600 mt-0.5">
                           Rating: {formatDupr(result.rating)}
                         </div>
                       )}
@@ -270,7 +270,7 @@ export function LinkGuestModal({
                           disabled={isLinking}
                           onClick={() => void handleLink(result)}
                           data-testid={`link-target-${result.username}`}
-                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                          className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                         >
                           {linkingAccountId === result.accountId ? "Merging…" : "Merge"}
                         </button>
@@ -281,7 +281,7 @@ export function LinkGuestModal({
                         disabled={isLinking}
                         onClick={() => void handleLink(result)}
                         data-testid={`link-target-${result.username}`}
-                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60"
+                        className="shrink-0 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold bg-[#ccff00] text-black hover:bg-[#b8e600] cursor-pointer shadow-[1px_1px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
                       >
                         {linkingAccountId === result.accountId ? "Linking…" : "Link Player"}
                       </button>

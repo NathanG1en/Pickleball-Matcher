@@ -35,6 +35,26 @@ textarea {
   font-size: 16px;
 }
 
+/* Placeholder text stays legible in sun: neutral-500 is 4.7:1 on the app's white inputs.
+ * opacity: 1 stops Firefox from fading it further. Tailwind placeholder: classes still win. */
+::placeholder {
+  color: #737373;
+  opacity: 1;
+}
+
+/* Avoid one-word last lines in body copy and keep short headings evenly broken.
+ * Both are progressive: browsers without support keep their default wrapping. */
+p {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
 body {
   margin: 0;
   color: #000000;
@@ -116,6 +136,13 @@ body {
   right: 0;
   z-index: 40;
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* On large screens the round actions sit after the courts instead of floating over them. */
+@media (min-width: 1024px) {
+  .mobile-action-bar {
+    position: static;
+  }
 }
 
 :focus-visible {

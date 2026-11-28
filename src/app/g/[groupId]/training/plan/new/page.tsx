@@ -50,7 +50,7 @@ export default async function NewWeeklyPlanPage({
     <main className="min-h-screen p-4 sm:p-6 max-w-3xl mx-auto space-y-6 text-black pb-28 sm:pb-24 md:pb-12">
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold text-neutral-500 block mb-0.5">
+          <span className="text-xs font-bold text-neutral-600 block mb-0.5">
             {group.name}
           </span>
           <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-tight text-black leading-tight">
@@ -59,7 +59,7 @@ export default async function NewWeeklyPlanPage({
         </div>
         <Link
           href={cancelHref}
-          className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all shrink-0"
+          className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all shrink-0"
         >
           Cancel
         </Link>

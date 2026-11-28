@@ -16,8 +16,9 @@ describe("PublicGroupList empty states", () => {
     const html = renderToStaticMarkup(<PublicGroupList groups={[]} isSignedIn query="" />);
     expect(html).toContain("No public groups yet");
     expect(html).toContain("Ask your organizer for an invite link");
-    expect(html).toContain('href="/setup"');
-    expect(html).toContain("Create a group");
+    // Signed-in players create groups from the page header, so the empty state has no second button
+    expect(html).not.toContain('href="/setup"');
+    expect(html).not.toContain("Create a group");
     expect(html).not.toContain("match");
   });
 

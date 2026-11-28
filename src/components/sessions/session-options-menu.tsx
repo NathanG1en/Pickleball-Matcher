@@ -12,6 +12,7 @@ import {
 import { formatSessionDate } from "@/lib/utils/date";
 import type { SessionRecord } from "@/lib/domain/types";
 import {
+  ArrowLeftRightIcon,
   PencilIcon,
   CopyIcon,
   RotateCcwIcon,
@@ -28,6 +29,8 @@ export interface SessionOptionsMenuProps {
   readonly onDuplicated?: (newSession: SessionRecord) => void;
   readonly onRenamed?: (newName: string) => void;
   readonly onUndoLatestRound?: () => void;
+  /** Sends the round in progress back to setup with its lineup unchanged. */
+  readonly onEditLineup?: () => void;
   readonly latestRoundNumber?: number;
   readonly dataTestId?: string;
   readonly initialDeleteModalOpen?: boolean;
@@ -44,6 +47,7 @@ export function SessionOptionsMenu({
   onDuplicated,
   onRenamed,
   onUndoLatestRound,
+  onEditLineup,
   latestRoundNumber,
   dataTestId = "session-options-menu-button",
   initialDeleteModalOpen = false,
@@ -220,7 +224,7 @@ export function SessionOptionsMenu({
         aria-label="Session options"
         aria-expanded={menuOpen}
         data-testid={dataTestId}
-        className="flex h-7 w-7 sm:h-9 sm:w-9 cursor-pointer items-center justify-center rounded-lg sm:rounded-xl border-2 border-black bg-white text-sm sm:text-xl font-black leading-none shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 select-none transition-colors"
+        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border-2 border-black bg-white text-xl font-black leading-none shadow-[2px_2px_0px_0px_#000] hover:bg-[#ccff00] active:translate-x-0.5 active:translate-y-0.5 select-none transition-colors"
       >
         ···
       </button>
@@ -253,6 +257,21 @@ export function SessionOptionsMenu({
             <CopyIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
             <span>Duplicate Session</span>
           </button>
+          {onEditLineup && latestRoundNumber ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="edit-lineup-menu-item"
+              onClick={() => {
+                setMenuOpen(false);
+                onEditLineup();
+              }}
+              className="flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-black hover:bg-[#F0EEE7] active:bg-[#EAE5D9] transition-colors duration-150 cursor-pointer select-none"
+            >
+              <ArrowLeftRightIcon className="w-[18px] h-[18px] shrink-0 text-black stroke-2" />
+              <span>Edit Round {latestRoundNumber} Lineup</span>
+            </button>
+          ) : null}
           {onUndoLatestRound && latestRoundNumber ? (
             <button
               type="button"
@@ -331,7 +350,7 @@ export function SessionOptionsMenu({
               type="submit"
               disabled={isPending || !renameInput.trim()}
               data-testid="confirm-rename-session-button"
-              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
             >
               {isPending ? "Saving..." : "Save"}
             </button>

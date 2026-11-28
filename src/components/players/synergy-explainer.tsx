@@ -44,12 +44,12 @@ export function SynergyExplainerButton({
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close"
-                className="text-neutral-500 hover:text-black cursor-pointer p-0.5"
+                className="text-neutral-600 hover:text-black cursor-pointer p-0.5"
               >
                 <XIcon className="h-3.5 w-3.5" />
               </button>
             </div>
-            <p className="text-[11px] font-medium leading-relaxed text-neutral-700">
+            <p className="text-xs font-medium leading-relaxed text-neutral-700">
               {description}
             </p>
           </div>

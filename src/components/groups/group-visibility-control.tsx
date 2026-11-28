@@ -45,7 +45,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
               isPublic
                 ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
-            } disabled:opacity-60`}
+            } disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200`}
           >
             Public
           </button>
@@ -59,7 +59,7 @@ export function GroupVisibilityControl({ groupId, initialIsPublic }: { groupId: 
               !isPublic
                 ? "bg-[#ccff00] text-black border border-black shadow-[0.5px_0.5px_0px_0px_#000]"
                 : "border border-transparent text-neutral-600 hover:text-black hover:bg-black/5"
-            } disabled:opacity-60`}
+            } disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200`}
           >
             Private
           </button>

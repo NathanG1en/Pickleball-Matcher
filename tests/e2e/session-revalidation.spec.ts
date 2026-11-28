@@ -56,8 +56,10 @@ test("session mutations render fresh state in the action response without an ext
       () => expect(court(1).getByText("Final", { exact: true })).toBeVisible(), 0);
     await measure("advance", () => page.getByTestId("save-and-start-next-round-button").click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
-    page.once("dialog", dialog => dialog.accept());
-    await measure("prepare-second", () => page.getByTestId("reshuffle-matchups-button").click(),
+    await measure("prepare-second", async () => {
+      await page.getByTestId("reshuffle-matchups-button").click();
+      await page.getByTestId("confirm-reshuffle-round-button").click();
+    },
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
 
     const history = page.getByRole("heading", { name: "Past Rounds", exact: true }).locator("..");
@@ -83,16 +85,20 @@ test("session mutations render fresh state in the action response without an ext
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await measure("start-second", () => page.getByRole("button", { name: "Start Round", exact: true }).click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
-    page.once("dialog", dialog => dialog.accept());
-    await measure("reshuffle-active", () => page.getByTestId("reshuffle-matchups-button").click(),
+    await measure("reshuffle-active", async () => {
+      await page.getByTestId("reshuffle-matchups-button").click();
+      await page.getByTestId("confirm-reshuffle-round-button").click();
+    },
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
     await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeEnabled();
     await measure("start-third", () => page.getByRole("button", { name: "Start Round", exact: true }).click(),
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
     await page.getByTestId("session-options-menu-button").click();
     await expect(page.getByRole("menuitem", { name: "Undo Round 2", exact: true })).toBeEnabled();
-    page.once("dialog", dialog => dialog.accept());
-    await measure("undo", () => page.getByRole("menuitem", { name: "Undo Round 2", exact: true }).click(),
+    await measure("undo", async () => {
+      await page.getByRole("menuitem", { name: "Undo Round 2", exact: true }).click();
+      await page.getByTestId("confirm-undo-round-button").click();
+    },
       () => expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible());
     await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeEnabled();
     // This non-mutation freshness path must still fetch authoritative state.

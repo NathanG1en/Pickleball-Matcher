@@ -299,7 +299,7 @@ export function PlayerRoster({
                   type="button"
                   onClick={() => setSearchQuery("")}
                   aria-label="Clear search"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black font-black text-sm cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black font-black text-sm cursor-pointer"
                 >
                   ×
                 </button>
@@ -370,7 +370,7 @@ export function PlayerRoster({
             </div>
 
             {(searchQuery || filterType !== "all" || filterGender !== "all") && (
-              <div className="flex items-center justify-between text-[11px] font-bold text-neutral-700 px-1 pt-0.5">
+              <div className="flex items-center justify-between text-xs font-bold text-neutral-700 px-1 pt-0.5">
                 <span>
                   Showing {filteredAndSortedPlayers.length} of {players.length} players
                 </span>
@@ -422,7 +422,7 @@ export function PlayerRoster({
                       {player.username && (
                         <Link
                           href={`/players/${encodeURIComponent(player.username)}`}
-                          className="truncate text-xs font-bold text-neutral-500 hover:text-black hover:underline cursor-pointer shrink"
+                          className="truncate text-xs font-bold text-neutral-600 hover:text-black hover:underline cursor-pointer shrink"
                         >
                           @{player.username}
                         </Link>
@@ -438,14 +438,14 @@ export function PlayerRoster({
                         </span>
                         {player.gender && (
                           <>
-                            <span aria-hidden="true" className="text-neutral-400">·</span>
+                            <span aria-hidden="true" className="text-neutral-600">·</span>
                             <span className="text-xs font-bold text-neutral-600">
                               <span className="sm:hidden">{player.gender === "male" ? "M" : player.gender === "female" ? "F" : player.gender}</span>
                               <span className="hidden sm:inline">{player.gender === "male" ? "Male" : player.gender === "female" ? "Female" : player.gender}</span>
                             </span>
                           </>
                         )}
-                        <span aria-hidden="true" className="text-neutral-400">·</span>
+                        <span aria-hidden="true" className="text-neutral-600">·</span>
                         <span>
                           {player.ratedGamesPlayed} {player.ratedGamesPlayed === 1 ? "game" : "games"}
                         </span>
@@ -469,7 +469,7 @@ export function PlayerRoster({
                         className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center transition-all cursor-pointer shadow-[1.5px_1.5px_0px_0px_#171717] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none shrink-0 ${
                           isPinned
                             ? "bg-black text-[#ccff00] hover:bg-neutral-800"
-                            : "bg-[#FFFDF7] text-neutral-400 hover:text-black hover:bg-[#ccff00]"
+                            : "bg-[#FFFDF7] text-neutral-600 hover:text-black hover:bg-[#ccff00]"
                         }`}
                       >
                         <PinIcon className="w-3.5 h-3.5" filled={isPinned} />

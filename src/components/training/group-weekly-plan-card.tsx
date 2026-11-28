@@ -116,7 +116,7 @@ export function GroupWeeklyPlanCard({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                  <span className="text-xs font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
                     {item.customGoalDescription ??
                       (item.targetBenchmark != null
                         ? `Target: ${item.targetBenchmark} ${item.challenge?.scoreUnit ?? ""}`
@@ -144,7 +144,7 @@ export function GroupWeeklyPlanCard({
               </div>
 
               {item.customGoalDescription && (
-                <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                <div className="sm:hidden mt-1.5 text-xs font-bold text-neutral-600">
                   Goal: {item.customGoalDescription}
                 </div>
               )}
@@ -183,7 +183,7 @@ export function GroupWeeklyPlanCard({
         {isOrganizer && (
           <Link
             href={`/g/${group.id}/training/plan/new?returnTo=/training`}
-            className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none"
+            className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors select-none"
           >
             Edit Group Plan
           </Link>

@@ -100,7 +100,7 @@ export function PastSessionsList({
                 <span suppressHydrationWarning className="font-bold text-black text-sm block">
                   {currentName ? `${currentName} · ${formattedDate}` : formattedDate}
                 </span>
-                <span className="text-xs font-bold text-neutral-500">
+                <span className="text-xs font-bold text-neutral-600">
                   {session.type === "open_play"
                     ? `${session.totalGames} game${session.totalGames !== 1 ? "s" : ""}`
                     : `${session.courtCount} court${session.courtCount > 1 ? "s" : ""} · ${session.rounds.length} round${session.rounds.length !== 1 ? "s" : ""} · ${session.totalGames} game${session.totalGames !== 1 ? "s" : ""}`}
@@ -155,7 +155,7 @@ export function PastSessionsList({
                 data-testid={`expanded-session-content-${session.id}`}
               >
                 {session.rounds.length === 0 ? (
-                  <p className="text-xs font-bold text-neutral-500 py-1">No games played in this session.</p>
+                  <p className="text-xs font-bold text-neutral-600 py-1">No games played in this session.</p>
                 ) : (
                   /* Container sized to fit approximately 5 games and scrollable */
                   <div
@@ -184,7 +184,7 @@ export function PastSessionsList({
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span>Game {idx + 1}</span>
                                   {m.status === "completed" && m.completedAt && (
-                                    <span className="text-[10px] font-bold text-neutral-500 normal-case flex items-center gap-1">
+                                    <span className="text-xs font-bold text-neutral-600 normal-case flex items-center gap-1">
                                       <span>•</span>
                                       <ClientTime date={m.completedAt} />
                                     </span>
@@ -199,7 +199,7 @@ export function PastSessionsList({
                                 ) : (
                                   <Badge
                                     variant={m.status === "cancelled" ? "muted" : "warning"}
-                                    className="text-[10px] py-0 px-1.5"
+                                    className="text-xs py-0 px-1.5"
                                   >
                                     {m.status === "cancelled" ? "Cancelled" : "In Play"}
                                   </Badge>
@@ -254,13 +254,13 @@ export function PastSessionsList({
                         <div key={round.id} className="space-y-2" data-testid={`round-section-${round.roundNumber}`}>
                           <div className="flex items-center justify-between text-xs font-bold text-neutral-600 bg-[#FFFDF7] px-3.5 py-1.5 rounded-xl border-2 border-black/20">
                             <span>Round {round.roundNumber}</span>
-                            <span className="text-[10px] font-bold text-neutral-500">
+                            <span className="text-xs font-bold text-neutral-600">
                               {round.matches.length} game{round.matches.length !== 1 ? "s" : ""}
                             </span>
                           </div>
 
                           {round.sittingNames.length > 0 && (
-                            <p className="text-[11px] font-bold text-neutral-500 pl-1">
+                            <p className="text-xs font-bold text-neutral-600 pl-1">
                               Sitting out: {round.sittingNames.join(", ")}
                             </p>
                           )}
@@ -293,7 +293,7 @@ export function PastSessionsList({
                                     ) : (
                                       <Badge
                                         variant={m.status === "cancelled" ? "muted" : "warning"}
-                                        className="text-[10px] py-0 px-1.5"
+                                        className="text-xs py-0 px-1.5"
                                       >
                                         {m.status === "cancelled" ? "Cancelled" : "In Play"}
                                       </Badge>
@@ -341,7 +341,7 @@ export function PastSessionsList({
                                   </div>
 
                                   {m.status === "completed" && (round.startedAt || m.completedAt || round.completedAt) && (
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-neutral-500 pt-1 border-t border-neutral-100">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-neutral-600 pt-1 border-t border-neutral-100">
                                       {round.startedAt && (
                                         <ClientTime
                                           date={round.startedAt}
@@ -368,7 +368,7 @@ export function PastSessionsList({
 
                 {/* Fully expandable: Link to full session page */}
                 <div className="pt-2 border-t-2 border-black/10 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-neutral-500">
+                  <span className="text-xs font-bold text-neutral-600">
                     Started {formattedDate} · {session.rounds.length} round{session.rounds.length !== 1 ? "s" : ""} · {session.totalGames} game{session.totalGames !== 1 ? "s" : ""}
                   </span>
                   <Link

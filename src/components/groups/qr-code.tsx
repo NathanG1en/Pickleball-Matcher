@@ -58,10 +58,10 @@ export function QRCodeDisplay({
     return (
       <div
         style={{ width: size, height: size }}
-        className={`flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 animate-pulse ${className}`}
+        className={`flex items-center justify-center rounded-2xl border-2 border-black bg-neutral-100 motion-safe:animate-pulse ${className}`}
         aria-label="Loading QR code"
       >
-        <span className="text-xs font-bold text-neutral-400">Loading…</span>
+        <span className="text-xs font-bold text-neutral-600">Loading…</span>
       </div>
     );
   }

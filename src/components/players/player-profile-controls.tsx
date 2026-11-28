@@ -307,7 +307,7 @@ export function PlayerProfileHeader({
         /* Edit Mode View */
         <form onSubmit={handleSave} className="space-y-4 pt-1">
           <div className="flex items-center justify-between border-b-2 border-neutral-200 pb-2">
-            <span className="text-xs font-bold text-neutral-500">
+            <span className="text-xs font-bold text-neutral-600">
               General Information
             </span>
           </div>
@@ -342,7 +342,7 @@ export function PlayerProfileHeader({
                 Username
               </label>
               <div className="relative w-full">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-600">
                   @
                 </span>
                 <input
@@ -614,7 +614,7 @@ export function PlayerVisibilityControl({
           disabled={pending}
           aria-label={`Account visibility: currently ${isPublic ? "Everyone" : "Only You"}. Click to switch.`}
           title={isPublic ? "Click to switch to Only You" : "Click to switch to Everyone"}
-          className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-xs font-bold text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#ccff00] px-2.5 py-0.5 text-xs font-bold text-black shadow-[1.5px_1.5px_0px_0px_#000] transition-all cursor-pointer hover:bg-[#bbf000] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
         >
           {pending ? (
             <span>Saving…</span>

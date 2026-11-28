@@ -53,12 +53,15 @@ export function PublicGroupList({
                 <Link href="/players/groups" className={`${emptyActionClass} bg-white hover:bg-neutral-100`}>
                   Clear search
                 </Link>
-                <Link
-                  href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
-                  className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
-                >
-                  {isSignedIn ? "Create a group" : "Create an account"}
-                </Link>
+                {/* Signed-in players already have + Create Group in the page header. */}
+                {!isSignedIn && (
+                  <Link
+                    href={`/player-signup?next=${encodeURIComponent("/setup")}`}
+                    className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+                  >
+                    Create an account
+                  </Link>
+                )}
               </div>
             }
           />
@@ -68,12 +71,15 @@ export function PublicGroupList({
             title="No public groups yet"
             description="Most groups are private. Ask your organizer for an invite link, or start a group of your own."
             action={
-              <Link
-                href={isSignedIn ? "/setup" : `/player-signup?next=${encodeURIComponent("/setup")}`}
-                className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
-              >
-                {isSignedIn ? "Create a group" : "Create an account"}
-              </Link>
+              // Signed-in players already have + Create Group in the page header.
+              isSignedIn ? undefined : (
+                <Link
+                  href={`/player-signup?next=${encodeURIComponent("/setup")}`}
+                  className={`${emptyActionClass} bg-[#ccff00] hover:bg-[#b8eb00]`}
+                >
+                  Create an account
+                </Link>
+              )
             }
           />
         )
@@ -125,7 +131,7 @@ export function PublicGroupList({
                     type="button"
                     onClick={() => join(group.id, group.name)}
                     disabled={pendingGroup !== null}
-                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                    className="shrink-0 rounded-xl border-2 border-black bg-[#ccff00] px-2.5 py-1 text-sm font-bold shadow-[2px_2px_0px_0px_#000] hover:bg-[#b8eb00] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer whitespace-nowrap"
                   >
                     {pendingGroup === group.id ? "Joining…" : "Join"}
                   </button>

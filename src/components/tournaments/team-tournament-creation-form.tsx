@@ -383,11 +383,11 @@ export function TeamTournamentCreationForm({
             >
               Select All
             </button>
-            <span className="text-xs text-neutral-400">·</span>
+            <span className="text-xs text-neutral-600">·</span>
             <button
               type="button"
               onClick={clearAllPlayers}
-              className="text-sm font-bold text-neutral-500 hover:underline"
+              className="text-sm font-bold text-neutral-600 hover:underline"
             >
               Clear
             </button>
@@ -406,13 +406,13 @@ export function TeamTournamentCreationForm({
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black text-xs font-black tracking-wide transition-transform cursor-pointer ${
                   isSelected
                     ? "bg-[#ccff00] text-black shadow-[2px_2px_0px_0px_#000]"
-                    : "bg-neutral-100 text-neutral-400 opacity-60 hover:opacity-90"
+                    : "bg-neutral-100 text-neutral-600 opacity-60 hover:opacity-90"
                 }`}
               >
                 <span>{player.name} ({formatDupr(player.rating)})</span>
                 {isSelected && (
                   <span
-                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-black/15 hover:bg-black/30 text-black text-[10px] font-black leading-none ml-0.5"
+                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-black/15 hover:bg-black/30 text-black text-xs font-black leading-none ml-0.5"
                     aria-hidden="true"
                   >
                     ✕
@@ -454,7 +454,7 @@ export function TeamTournamentCreationForm({
                 type="button"
                 onClick={(e) => void handleAddGuest(e)}
                 disabled={!guestName.trim()}
-                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
               >
                 Add
               </button>
@@ -503,7 +503,7 @@ export function TeamTournamentCreationForm({
                     <span className="font-black text-black">
                       {p1?.name ?? "Unknown"} &amp; {p2?.name ?? "Unknown"}
                     </span>
-                    <span className="text-neutral-500 font-bold">
+                    <span className="text-neutral-600 font-bold">
                       · Avg: {formatDupr(combinedDupr)}
                     </span>
                   </div>
@@ -667,7 +667,7 @@ export function TeamTournamentCreationForm({
                           <button
                             type="button"
                             onClick={() => movePairToTeam(pIdx, otherTeamIdx)}
-                            className="text-xs font-bold text-neutral-500 hover:text-black cursor-pointer"
+                            className="text-xs font-bold text-neutral-600 hover:text-black cursor-pointer"
                           >
                             ⇄ Move
                           </button>
@@ -676,7 +676,7 @@ export function TeamTournamentCreationForm({
                             onClick={() => handleRemovePair(pIdx)}
                             title="Unlink pair"
                             aria-label={`Unlink ${p1?.name} & ${p2?.name}`}
-                            className="text-xs font-black text-neutral-400 hover:text-rose-600 px-1 cursor-pointer"
+                            className="text-xs font-black text-neutral-600 hover:text-rose-600 px-1 cursor-pointer"
                           >
                             ✕
                           </button>
@@ -698,7 +698,7 @@ export function TeamTournamentCreationForm({
                           <button
                             type="button"
                             onClick={() => moveSoloToTeam(soloId, otherTeamIdx)}
-                            className="text-xs font-bold text-neutral-500 hover:text-black cursor-pointer"
+                            className="text-xs font-bold text-neutral-600 hover:text-black cursor-pointer"
                           >
                             ⇄ Move
                           </button>
@@ -707,7 +707,7 @@ export function TeamTournamentCreationForm({
                             onClick={() => togglePlayer(soloId)}
                             title="Remove from selection"
                             aria-label={`Remove ${p?.name} from selection`}
-                            className="text-xs font-black text-neutral-400 hover:text-rose-600 px-1 cursor-pointer"
+                            className="text-xs font-black text-neutral-600 hover:text-rose-600 px-1 cursor-pointer"
                           >
                             ✕
                           </button>
@@ -717,7 +717,7 @@ export function TeamTournamentCreationForm({
                   })}
 
                   {team.pairIndices.length === 0 && team.soloPlayerIds.length === 0 && (
-                    <p className="text-xs font-bold text-neutral-400 italic text-center py-4">
+                    <p className="text-xs font-bold text-neutral-600 italic text-center py-4">
                       Click &ldquo;Auto-Balance Teams&rdquo; to populate
                     </p>
                   )}

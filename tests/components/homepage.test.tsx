@@ -96,8 +96,8 @@ describe("HomePage authentication states", () => {
     expect(html).toContain("Start a Quick Session");
     expect(html).not.toContain("Legacy organizer PIN sign in");
 
-    // Elevated pickleball experience present, but feature slogans/boxes removed
-    expect(html).toContain("An elevated pickleball experience.");
+    // Plain-language tagline present, but feature slogans/boxes removed
+    expect(html).toContain("Fair sit-outs, varied partners, balanced games.");
     expect(html).not.toContain("Equal Sits");
     expect(html).not.toContain("New Pairs");
     expect(html).not.toContain("Fair Games");

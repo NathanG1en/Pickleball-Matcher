@@ -216,7 +216,7 @@ export default async function GroupDashboardPage({
             <Badge variant={group.isPublic ? "success" : "default"} data-testid="group-privacy-badge">
               {group.isPublic ? "Public Group" : "Private Group"}
             </Badge>
-            <span aria-hidden="true" className="text-xs font-bold text-neutral-400">·</span>
+            <span aria-hidden="true" className="text-xs font-bold text-neutral-600">·</span>
             <span className="text-xs font-bold text-neutral-600">
               {players.length} {players.length === 1 ? "player" : "players"} on roster
             </span>
@@ -289,7 +289,7 @@ export default async function GroupDashboardPage({
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-black">
                       <span className="h-2 w-2 rounded-full bg-[#65a30d]" />
-                      Round {activeSession.currentRoundNumber}
+                      {activeSession.currentRoundNumber > 0 ? `Round ${activeSession.currentRoundNumber}` : "Lineup being set"}
                     </span>
                   </div>
                   <div>
@@ -333,11 +333,11 @@ export default async function GroupDashboardPage({
                             .filter((mp) => mp.matchId === m.id && mp.team === 2)
                             .map((mp) => playerNameMap[mp.playerId] ?? mp.playerId);
                           return (
-                            <div key={m.id} className="p-3 bg-white border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 shadow-[1px_1px_0px_0px_#000]">
+                            <div key={m.id} className="p-3 bg-white rounded-xl text-xs flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1 font-bold text-neutral-800 text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
                                 <span className="break-words">{t1.join(" & ")}</span>
                                 <span className="inline-flex items-center gap-1.5 break-words">
-                                  <span className="text-xs font-bold text-neutral-400 shrink-0">vs</span>
+                                  <span className="text-xs font-bold text-neutral-600 shrink-0">vs</span>
                                   <span>{t2.join(" & ")}</span>
                                 </span>
                               </div>
@@ -377,7 +377,7 @@ export default async function GroupDashboardPage({
                           <div
                             key={m.id}
                             data-viewer-match={isViewerMatch ? "true" : undefined}
-                            className={`p-3 border-2 border-black rounded-xl text-xs flex items-center justify-between gap-2 ${isViewerMatch ? "bg-[#FFFDF7] shadow-[2px_2px_0px_0px_#000] ring-2 ring-black" : "bg-white shadow-[1px_1px_0px_0px_#000]"}`}
+                            className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 bg-white ${isViewerMatch ? "ring-2 ring-black" : ""}`}
                           >
                             <div>
                               <span className="font-black text-black flex items-center gap-2">
@@ -476,8 +476,10 @@ export default async function GroupDashboardPage({
             currentAccountId={accountId}
             isGroupMember={isPartOfGroup}
           />
-          {/* Mobile Add to Home Screen Tip */}
-          <HomeScreenTip />
+          {/* Add to Home Screen tip: in the sidebar on desktop; last on the page on phones (below). */}
+          <div className="hidden lg:block">
+            <HomeScreenTip />
+          </div>
         </div>
 
         {isPartOfGroup && (
@@ -522,6 +524,10 @@ export default async function GroupDashboardPage({
           </section>
           </div>
         )}
+
+        <div className="lg:hidden min-w-0 w-full">
+          <HomeScreenTip />
+        </div>
       </div>
     </main>
   );

@@ -16,8 +16,8 @@ for (const surface of ["session", "dashboard"] as const) {
       await page.getByTestId("end-session-now-button").click();
       await page.getByTestId("confirm-end-session-now").click();
     } else {
-      page.once("dialog", dialog => dialog.accept());
       await page.getByTestId("end-session-button").click();
+      await page.getByTestId("confirm-end-session-button").click();
     }
     const replayError = page.getByRole("alert").filter({ hasText: "Chemistry replay requires a transaction" });
     // Capture the actual pre-fix symptom if it appears; the success assertion must still fail.

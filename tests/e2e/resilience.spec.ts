@@ -60,10 +60,10 @@ test.describe("Resilience and Safe Drafts", () => {
 
     await t1Input.fill("11");
     await t2Input.fill("11");
-    await page.locator("button:has-text('Save Result')").click();
 
-    // Assert validation error is shown
-    await expect(page.locator("text=cannot end in a tie")).toBeVisible();
+    // The tie is flagged on the card before saving, and Save Result stays disabled
+    await expect(page.getByTestId("tie-warning-1")).toContainText("cannot end in a tie");
+    await expect(page.locator("button:has-text('Save Result')")).toBeDisabled();
 
     // Assert inputs were NOT wiped out
     await expect(t1Input).toHaveValue("11");
@@ -72,7 +72,8 @@ test.describe("Resilience and Safe Drafts", () => {
     // Fix the score to valid (11 - 9)
     await t2Input.fill("9");
     await page.locator("button:has-text('Save Result')").click();
-    await expect(page.locator("text=Final")).toBeVisible();
+    // Wait for this court's Final badge; a bare "Final" text match also hits the End session note.
+    await expect(page.getByTestId("court-match-1").getByText("Final", { exact: true })).toBeVisible();
 
     // 6. Stale second tab handling
     const page2 = await context.newPage();

@@ -221,7 +221,7 @@ function SkillRow({ skill, index }: { readonly skill: PracticeSkillScore; readon
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-sm font-black text-black">{skill.label}</span>
-            <span className={`text-sm font-bold tabular-nums ${percent === null ? "text-neutral-400" : "text-black"}`}>
+            <span className={`text-sm font-bold tabular-nums ${percent === null ? "text-neutral-600" : "text-black"}`}>
               {percent === null ? "—" : `${percent}%`}
             </span>
           </div>
@@ -233,9 +233,9 @@ function SkillRow({ skill, index }: { readonly skill: PracticeSkillScore; readon
               />
             )}
           </div>
-          <span className="mt-0.5 block text-[11px] font-bold text-neutral-500">{detail}</span>
+          <span className="mt-0.5 block text-xs font-bold text-neutral-600">{detail}</span>
         </div>
-        <ArrowRightIcon className="h-4 w-4 shrink-0 text-neutral-400 group-hover:text-black" />
+        <ArrowRightIcon className="h-4 w-4 shrink-0 text-neutral-600 group-hover:text-black" />
       </Link>
     </li>
   );
@@ -288,7 +288,7 @@ export function PracticeProfileCard({ profile }: { readonly profile: PracticePro
           ))}
         </ul>
 
-        <p className="text-xs font-bold text-neutral-500">
+        <p className="text-xs font-bold text-neutral-600">
           {profile.daysSinceLastPractice === null
             ? "No drills logged yet."
             : `Last practiced ${formatDaysAgo(profile.daysSinceLastPractice)}.`}{" "}

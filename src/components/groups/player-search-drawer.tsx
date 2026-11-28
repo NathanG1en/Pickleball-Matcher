@@ -104,7 +104,7 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
       )}
 
       {hasSearched && results.length === 0 && !isSearching && !error && (
-        <p className="mt-4 text-center text-xs font-bold text-neutral-500">
+        <p className="mt-4 text-center text-xs font-bold text-neutral-600">
           No players found matching &ldquo;{query}&rdquo;.
         </p>
       )}
@@ -120,16 +120,16 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-black text-sm">{player.name}</span>
-                    <span className="text-xs font-semibold text-neutral-500 shrink-0">
+                    <span className="text-xs font-semibold text-neutral-600 shrink-0">
                       (@{player.username})
                     </span>
                     {player.visibilitySettings?.profile === "group_members" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-[#e0e7ff] px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black/30 bg-[#e0e7ff] px-2 py-0.5 text-xs font-bold text-neutral-700">
                         <UsersIcon className="h-3 w-3 shrink-0" />
                         <span>Group Members Only</span>
                       </span>
                     ) : player.isRestricted ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-xs font-bold text-neutral-600">
                         <LockIcon className="h-3 w-3 shrink-0" />
                         <span>Private</span>
                       </span>
@@ -162,7 +162,7 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                   )}
 
                   {player.isRestricted && (
-                    <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                    <p className="mt-1 text-xs font-bold text-neutral-600">
                       This player&apos;s ratings and chemistry stats are private.
                     </p>
                   )}
@@ -172,7 +172,7 @@ export function PlayerSearchDrawer({ groupId, onPlayerAdded }: PlayerSearchDrawe
                   type="button"
                   disabled={player.alreadyInGroup || addingAccountId === player.accountId}
                   onClick={() => handleAddPlayer(player.accountId)}
-                  className={`whitespace-nowrap rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 disabled:shadow-none ${
+                  className={`whitespace-nowrap rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:shadow-none ${
                     player.alreadyInGroup
                       ? "bg-neutral-200 text-neutral-600"
                       : "bg-[#ccff00] hover:bg-[#b8e600]"

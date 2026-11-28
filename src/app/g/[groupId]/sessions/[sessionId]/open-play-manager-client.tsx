@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import { BackButton } from "@/components/groups/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Toast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { endSessionWarning } from "@/components/groups/end-session-now-button";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { PickleCelebration, isPickleScore } from "@/components/results/pickle-celebration";
 import { SessionSignOff } from "@/components/sessions/session-signoff";
@@ -499,7 +501,14 @@ export function OpenPlayManagerClient({
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  // Styled confirmation for ending the session or deleting a game (no native confirm()).
+  const [pendingConfirm, setPendingConfirm] = useState<{ kind: "end" } | { kind: "delete"; matchId: string } | null>(null);
   const [justEndedSession, setJustEndedSession] = useState(false);
+  // End sits at the bottom of the page; once the session ends, bring the organizer back up
+  // to the completed summary so the sign-off plays in view. Instant, so the animation isn't missed.
+  useEffect(() => {
+    if (justEndedSession) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [justEndedSession]);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1325,8 +1334,11 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleDeleteMatch = async (matchId: string) => {
-    if (!confirm("Are you sure you want to delete this game result?")) return;
+  const handleDeleteMatch = (matchId: string) => {
+    setPendingConfirm({ kind: "delete", matchId });
+  };
+
+  const performDeleteMatch = async (matchId: string) => {
     setDeletedMatchIds((prev) => new Set([...prev, matchId]));
     try {
       const res = await deleteOpenPlayGameAction({
@@ -1355,8 +1367,12 @@ export function OpenPlayManagerClient({
     }
   };
 
-  const handleEndSession = async () => {
-    if (!confirm("End this session? Match history and ratings will be finalized.")) return;
+  const handleEndSession = () => {
+    if (isEnding) return;
+    setPendingConfirm({ kind: "end" });
+  };
+
+  const performEndSession = async () => {
     setIsEnding(true);
     setError(null);
     try {
@@ -1416,34 +1432,14 @@ export function OpenPlayManagerClient({
             </>
           }
           ariaLabel={isFromProfile ? "Go back to profile" : "Go back"}
-          className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-white border-2 border-black font-bold text-xs sm:text-xs text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
+          className="inline-flex items-center shrink-0 h-11 px-3 rounded-xl bg-white border-2 border-black font-bold text-sm text-black shadow-[2px_2px_0px_0px_#000] hover:bg-neutral-50 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer"
         />
-        {isSessionActive ? (
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {canManage && (
-              <button
-                type="button"
-                onClick={handleEndSession}
-                disabled={isEnding}
-                aria-label="End Session"
-                data-testid="end-session-button"
-                className="inline-flex items-center shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#ff6b6b] border-2 border-black font-bold text-xs sm:text-sm text-black shadow-[1px_1px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
-              >
-                {isEnding ? "Ending..." : (
-                  <>
-                    <span className="sm:hidden">End</span>
-                    <span className="hidden sm:inline">End Session</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        ) : (
+        {isSessionActive ? null : (
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Badge
               variant="muted"
               data-testid="completed-session-badge"
-              className="shrink-0 h-7 sm:h-9 px-2 sm:px-2.5 text-xs sm:text-xs font-bold flex items-center"
+              className="shrink-0 h-11 px-3 text-sm font-bold flex items-center"
             >
               <span className="sm:hidden">Completed</span>
               <span className="hidden sm:inline">Completed Session</span>
@@ -1495,11 +1491,11 @@ export function OpenPlayManagerClient({
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Total Games</span>
+                <span className="text-xs font-bold text-neutral-600 block">Total Games</span>
                 <span className="font-display text-xl font-black text-black">{completedMatches.length}</span>
               </div>
               <div className="p-3 bg-neutral-50 border-2 border-black rounded-2xl shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-xs font-bold text-neutral-500 block">Players</span>
+                <span className="text-xs font-bold text-neutral-600 block">Players</span>
                 <span className="font-display text-xl font-black text-black">{openPlayPlayerStats.length}</span>
               </div>
             </div>
@@ -1515,15 +1511,15 @@ export function OpenPlayManagerClient({
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Won</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Won</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.wins}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000]">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Lost</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Lost</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.losses}</span>
                   </div>
                   <div className="p-2.5 bg-[#FFFDF7] border-2 border-black rounded-xl shadow-[1px_1px_0px_0px_#000] col-span-2 sm:col-span-1">
-                    <span className="text-xs font-bold text-neutral-500 block">Games Played</span>
+                    <span className="text-xs font-bold text-neutral-600 block">Games Played</span>
                     <span className="font-display text-lg font-black text-black">{viewerSessionStats.gamesPlayed}</span>
                   </div>
                 </div>
@@ -1582,7 +1578,7 @@ export function OpenPlayManagerClient({
               <div key={stat.id} className="py-2.5 flex items-center justify-between">
                 <div>
                   <span className="font-black text-black text-sm block">{stat.name}</span>
-                  <span className="text-xs font-bold text-neutral-500">
+                  <span className="text-xs font-bold text-neutral-600">
                     {stat.gamesPlayed} game{stat.gamesPlayed !== 1 ? "s" : ""} played
                   </span>
                 </div>
@@ -1712,7 +1708,7 @@ export function OpenPlayManagerClient({
                   disabled={isAddingPlayer}
                 />
               ) : (
-                <p className="text-xs font-bold text-neutral-500 italic py-1">
+                <p className="text-xs font-bold text-neutral-600 italic py-1">
                   All group members are currently checked in.
                 </p>
               )}
@@ -1733,7 +1729,7 @@ export function OpenPlayManagerClient({
                   data-testid="guest-description-banner"
                   className="flex items-center justify-between gap-2 p-2 bg-neutral-100/90 rounded-lg border border-neutral-300 text-neutral-700"
                 >
-                  <p className="text-[11px] font-bold text-neutral-600 leading-tight">
+                  <p className="text-xs font-bold text-neutral-600 leading-tight">
                     Adding a guest here will add them to your roster.
                   </p>
                   <button
@@ -1742,7 +1738,7 @@ export function OpenPlayManagerClient({
                     aria-label="Dismiss guest description"
                     title="Dismiss"
                     data-testid="dismiss-guest-desc-button"
-                    className="p-1 text-neutral-400 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
+                    className="p-1 text-neutral-600 hover:text-black rounded hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
                   >
                     <XIcon className="h-3.5 w-3.5" />
                   </button>
@@ -1774,7 +1770,7 @@ export function OpenPlayManagerClient({
                   <button
                     type="submit"
                     disabled={!guestName.trim() || isAddingGuest}
-                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-60 cursor-pointer shrink-0 transition-colors"
+                    className="px-5 py-2 rounded-xl border-2 border-black bg-[#ccff00] text-black hover:bg-[#b8e600] text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer shrink-0 transition-colors"
                   >
                     {isAddingGuest ? "Adding..." : "Add"}
                   </button>
@@ -1838,7 +1834,7 @@ export function OpenPlayManagerClient({
             className="space-y-2 pt-2 border-t-2 border-neutral-200"
           >
             {checkedInPlayers.length === 0 ? (
-              <p className="text-xs font-bold text-neutral-500 italic py-1">
+              <p className="text-xs font-bold text-neutral-600 italic py-1">
                 No players checked in yet. Join or add players above!
               </p>
             ) : (
@@ -1853,7 +1849,7 @@ export function OpenPlayManagerClient({
                       }`}
                     >
                       <span className="font-black text-black">{p.name}</span>
-                      <span className="text-[10px] text-neutral-600 font-mono">
+                      <span className="text-xs text-neutral-600 font-mono">
                         {formatDupr(p.rating)}
                       </span>
                       {isViewer && (
@@ -1869,7 +1865,7 @@ export function OpenPlayManagerClient({
                             handleRemovePlayer(p.id);
                           }}
                           title="Leave / Remove from session"
-                          className="ml-1 text-neutral-500 hover:text-black font-black text-sm cursor-pointer"
+                          className="ml-1 text-neutral-600 hover:text-black font-black text-sm cursor-pointer"
                         >
                           ×
                         </button>
@@ -1937,14 +1933,14 @@ export function OpenPlayManagerClient({
                   onClick={handleJoin}
                   disabled={isJoining}
                   data-testid="join-open-play-submit-button"
-                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-60 cursor-pointer"
+                  className="py-2.5 px-5 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
                 >
                   {isJoining ? "Joining..." : "Join Open Play to Record Games"}
                 </button>
               )}
             </div>
           ) : selectableGamePlayers.length < (matchType === "doubles" ? 4 : 2) ? (
-            <p className="text-xs font-bold text-neutral-500 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
+            <p className="text-xs font-bold text-neutral-600 bg-neutral-100 p-3 rounded-xl border border-neutral-300">
               Need at least {matchType === "doubles" ? "4 players" : "2 players"} to record a {matchType} game. Add or join players above!
             </p>
           ) : (
@@ -1958,7 +1954,7 @@ export function OpenPlayManagerClient({
                     disabled={!canRotate}
                     data-testid="rotate-partners-button"
                     title="Split and switch partners between the 4 players"
-                    className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
                   >
                     <RotateCwIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Rotate Partners</span>
@@ -1974,7 +1970,7 @@ export function OpenPlayManagerClient({
                       ? "Swap sides between Team 1 and Team 2"
                       : "Swap sides between Player 1 and Player 2"
                   }
-                  className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-[11px] sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-3 rounded-xl border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs sm:text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all whitespace-nowrap"
                 >
                   <ArrowLeftRightIcon className="h-3.5 w-3.5 shrink-0" />
                   <span>Swap Sides</span>
@@ -1984,7 +1980,7 @@ export function OpenPlayManagerClient({
                   onClick={handleClearSlots}
                   data-testid="clear-slots-button"
                   title="Clear all player selections and scores"
-                  className="inline-flex items-center gap-1 py-1.5 px-2 sm:px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-[11px] sm:text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto whitespace-nowrap"
+                  className="inline-flex items-center gap-1 py-1.5 px-2 sm:px-2.5 rounded-xl border-2 border-black bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-black text-xs sm:text-xs font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all ml-auto whitespace-nowrap"
                 >
                   <span>Clear</span>
                 </button>
@@ -2139,7 +2135,7 @@ export function OpenPlayManagerClient({
         </h2>
 
         {allMatches.length === 0 ? (
-          <p className="text-xs font-bold text-neutral-500 italic py-2">
+          <p className="text-xs font-bold text-neutral-600 italic py-2">
             No games submitted yet for this session. Record your first game above!
           </p>
         ) : (
@@ -2164,7 +2160,7 @@ export function OpenPlayManagerClient({
                           Edit Game {idx + 1}
                         </span>
                         {m.completedAt && (
-                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                          <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
                             <span>•</span>
                             <ClientTime date={m.completedAt} />
                           </span>
@@ -2345,11 +2341,11 @@ export function OpenPlayManagerClient({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-neutral-500 block">
+                        <span className="text-xs font-bold text-neutral-600 block">
                           Game {idx + 1}
                         </span>
                         {isCompleted && m.completedAt && (
-                          <span className="text-[10px] font-bold text-neutral-500 flex items-center gap-1">
+                          <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
                             <span>•</span>
                             <ClientTime date={m.completedAt} />
                           </span>
@@ -2359,7 +2355,7 @@ export function OpenPlayManagerClient({
                         <span className={isCompleted && isT1Winner ? "font-black underline" : ""}>
                           {m.team1Names.join(" & ")}
                         </span>
-                        <span className="text-xs font-normal text-neutral-500">vs</span>
+                        <span className="text-xs font-normal text-neutral-600">vs</span>
                         <span className={isCompleted && !isT1Winner ? "font-black underline" : ""}>
                           {m.team2Names.join(" & ")}
                         </span>
@@ -2392,7 +2388,7 @@ export function OpenPlayManagerClient({
                             type="button"
                             onClick={() => handleDeleteMatch(m.id)}
                             data-testid={`delete-game-button-${m.id}`}
-                            className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
+                            className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-red-700 hover:underline cursor-pointer"
                           >
                             Delete
                           </button>
@@ -2407,6 +2403,50 @@ export function OpenPlayManagerClient({
         )}
       </section>
       </div>
+
+      {/* End lives at the bottom, away from the game controls, so it can't be hit by mistake. */}
+      {isSessionActive && canManage && (
+        <section
+          aria-label="End session"
+          className="flex flex-col gap-3 rounded-2xl border-2 border-dashed border-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-sm font-bold text-neutral-800">
+            Finished playing? Ending stops new games from being logged, and a session can&apos;t be reopened.
+          </p>
+          <button
+            type="button"
+            onClick={handleEndSession}
+            disabled={isEnding}
+            data-testid="end-session-button"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-[#ff6b6b] px-4 text-sm font-bold text-black shadow-[2px_2px_0px_0px_#000] hover:bg-[#ff5252] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+          >
+            {isEnding ? "Ending..." : "End session"}
+          </button>
+        </section>
+      )}
+
+      <ConfirmDialog
+        isOpen={pendingConfirm !== null}
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          const action = pendingConfirm;
+          setPendingConfirm(null);
+          if (action?.kind === "end") void performEndSession();
+          else if (action?.kind === "delete") void performDeleteMatch(action.matchId);
+        }}
+        disabled={isEnding}
+        dataTestId={pendingConfirm?.kind === "end" ? "end-session-dialog" : "delete-game-dialog"}
+        title={pendingConfirm?.kind === "end" ? "End this session?" : "Delete this game?"}
+        description={
+          pendingConfirm?.kind === "end"
+            ? endSessionWarning("open_play", 0)
+            : "The result is removed from this session and from everyone's stats."
+        }
+        confirmText={pendingConfirm?.kind === "end" ? "End session" : "Delete game"}
+        cancelText={pendingConfirm?.kind === "end" ? "Keep playing" : "Keep game"}
+        confirmDataTestId={pendingConfirm?.kind === "end" ? "confirm-end-session-button" : "confirm-delete-game-button"}
+        cancelDataTestId={pendingConfirm?.kind === "end" ? "cancel-end-session-button" : undefined}
+      />
 
       {pendingDuplicateSubmission && (
         <DuplicateWarningModal

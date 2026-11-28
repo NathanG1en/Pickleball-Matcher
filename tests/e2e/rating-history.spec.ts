@@ -26,8 +26,8 @@ test("joining a new session without playing does not reset the rating graph", as
   await card.getByRole("spinbutton", { name: "Team 2 Score", exact: true }).fill("7");
   await card.getByTestId("submit-game-button").click();
   await expect(page.getByTestId("open-play-matches-list")).toContainText("11 – 7");
-  page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("end-session-button").click();
+  await page.getByTestId("confirm-end-session-button").click();
   await expect(page.getByTestId("completed-session-badge")).toBeVisible();
   await page.goto(`/g/${groupId}`);
   await page.getByTestId("start-new-session-button").click();
@@ -41,8 +41,18 @@ test("joining a new session without playing does not reset the rating graph", as
     await expect(page.locator("header").first()).toContainText("3.536");
     const lastPoint = page.getByTestId("rating-point-1");
     await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.536 on /);
+    // Hovering shows the tooltip; moving away hides it
+    const tooltip = page.getByTestId("rating-tooltip");
+    await lastPoint.hover();
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip.getByTestId("tooltip-date")).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(tooltip).toBeHidden();
+    // Clicking pins it; Escape dismisses it
     await lastPoint.click();
     await expect(page.getByTestId("tooltip-rating")).toContainText("3.536");
+    await page.keyboard.press("Escape");
+    await expect(tooltip).toBeHidden();
     await page.reload();
     await expect(lastPoint).toHaveAttribute("aria-label", /^Rating 3\.536 on /);
   }

@@ -153,7 +153,7 @@ test.describe("PRD Acceptance Workflow: 14 players, 3 courts", () => {
     // 8. End the session and verify completed session summary remains visible without returning to group
     const sessionUrl = page.url();
     await page.getByTestId("end-session-button").click();
-    await expect(page.getByTestId("in-progress-warning-modal")).toBeVisible();
+    await expect(page.getByTestId("end-session-dialog")).toBeVisible();
     await page.getByTestId("confirm-end-session-button").click();
 
     // After ending session, user remains on the session page and sees the completed session summary

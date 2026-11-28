@@ -313,7 +313,7 @@ export function RatingSlider({
                   }`}
                 />
                 {isMajor && (
-                  <span className="absolute top-[33px] text-[10px] font-black font-mono text-black select-none leading-none group-hover:underline">
+                  <span className="absolute top-[33px] text-xs font-black font-mono text-black select-none leading-none group-hover:underline">
                     {tick.value}
                   </span>
                 )}
@@ -366,7 +366,7 @@ export function RatingSlider({
               {tier.name}
             </span>
           </div>
-          <p className="font-bold text-neutral-600 text-[11px] leading-relaxed">
+          <p className="font-bold text-neutral-600 text-xs leading-relaxed">
             {tier.description}
           </p>
         </div>

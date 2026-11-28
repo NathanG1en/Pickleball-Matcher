@@ -68,7 +68,7 @@ export function WeeklyTrainingCard({
         <div>
           <Link
             href={isOrganizer ? `/g/${groupId}/training/plan/new?returnTo=/g/${groupId}` : "/training"}
-            className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black font-display text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            className="inline-flex items-center justify-center text-center w-full min-h-[44px] py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
           >
             {isOrganizer ? "Create Weekly Plan →" : "Browse Training Hub →"}
           </Link>
@@ -92,7 +92,7 @@ export function WeeklyTrainingCard({
             <TargetIcon className="w-4 h-4 text-black" />
           </span>
           <div>
-            <span className="text-xs font-bold text-neutral-500 block">
+            <span className="text-xs font-bold text-neutral-600 block">
               Week of {formatWeekOf(plan.year, plan.weekNumber)} · Training
             </span>
             <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -155,7 +155,7 @@ export function WeeklyTrainingCard({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
+                  <span className="text-xs font-bold text-neutral-600 hidden sm:inline-block max-w-[140px] text-right truncate">
                     {item.customGoalDescription ??
                       (item.targetBenchmark != null
                         ? `Target: ${item.targetBenchmark} ${item.challenge?.scoreUnit ?? ""}`
@@ -183,7 +183,7 @@ export function WeeklyTrainingCard({
               </div>
 
               {item.customGoalDescription && (
-                <div className="sm:hidden mt-1.5 text-[11px] font-bold text-neutral-600">
+                <div className="sm:hidden mt-1.5 text-xs font-bold text-neutral-600">
                   Goal: {item.customGoalDescription}
                 </div>
               )}
@@ -219,7 +219,7 @@ export function WeeklyTrainingCard({
         {isOrganizer && (
           <Link
             href={`/g/${groupId}/training/plan/new?returnTo=/g/${groupId}`}
-            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center flex items-center justify-center select-none"
+            className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center flex items-center justify-center select-none"
           >
             Edit
           </Link>

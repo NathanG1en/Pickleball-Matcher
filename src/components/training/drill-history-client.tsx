@@ -69,7 +69,7 @@ export function DeleteAttemptButton({
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       {error && (
-        <span role="alert" className="text-[11px] font-bold text-rose-700">
+        <span role="alert" className="text-xs font-bold text-rose-700">
           {error}
         </span>
       )}

@@ -303,8 +303,8 @@ test.describe("Open Play Workflow", () => {
     // Delete the second game
     const deleteBtn = matchesList.locator("button:has-text('Delete')").last();
     await expect(deleteBtn).toBeVisible();
-    page.once("dialog", (dialog) => dialog.accept());
     await deleteBtn.click();
+    await page.getByTestId("confirm-delete-game-button").click();
 
     await expect(page.locator("text=Game deleted.")).toBeVisible();
 
@@ -350,8 +350,8 @@ test.describe("Open Play Workflow", () => {
 
     // 11. Host ends open play session
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
-    page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
+    await page.getByTestId("confirm-end-session-button").click();
 
     await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
@@ -407,29 +407,9 @@ test.describe("Open Play Workflow", () => {
     await expect(page.locator("[data-testid='rating-range-week']")).toBeVisible();
     await expect(page.locator("[data-testid='rating-range-month']")).toBeVisible();
     await expect(page.locator("[data-testid='rating-range-year']")).toBeVisible();
-    const ratingPoint = page.locator("[data-testid='rating-point-0']");
-    await expect(ratingPoint).toBeVisible();
-
-    // Hovering displays tooltip with rating and date below it
-    await ratingPoint.hover();
-    const tooltip = page.locator("[data-testid='rating-tooltip']");
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
-
-    // Moving mouse away hides tooltip
-    await page.mouse.move(0, 0);
-    await expect(tooltip).toBeHidden();
-
-    // Clicking rating point pins tooltip
-    await ratingPoint.click();
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-rating']")).toBeVisible();
-    await expect(tooltip.locator("[data-testid='tooltip-date']")).toBeVisible();
-
-    // Escape dismisses pinned tooltip
-    await page.keyboard.press("Escape");
-    await expect(tooltip).toBeHidden();
+    // One session is shown as a starting point rather than a one-dot chart
+    // (hover, pin and Escape on chart points are covered in rating-history.spec.ts).
+    await expect(page.getByTestId("rating-chart-first-session")).toContainText("rating after your first session.");
 
     // Session must be listed with (Open Play) next to group name
     const sessionId = sessionUrl.split("/sessions/")[1];
@@ -548,8 +528,8 @@ test.describe("Open Play Workflow", () => {
 
     // Host ends the session
     const endSessionBtn = page.locator("button[data-testid='end-session-button']");
-    page.once("dialog", (dialog) => dialog.accept());
     await endSessionBtn.click();
+    await page.getByTestId("confirm-end-session-button").click();
     await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
     const highlights = page.getByTestId("session-highlights");
@@ -599,8 +579,8 @@ test.describe("Open Play Workflow", () => {
 
     // 4. Host deletes game 2
     const deleteBtn = matchesList.locator("[data-testid^='delete-game-button-']").last();
-    page.once("dialog", (dialog) => dialog.accept());
     await deleteBtn.click();
+    await page.getByTestId("confirm-delete-game-button").click();
 
     await expect(page.locator("text=Game deleted.")).toBeVisible();
     await expect(matchesList.locator("article")).toHaveCount(1);
@@ -612,8 +592,8 @@ test.describe("Open Play Workflow", () => {
     await highlights.screenshot({ path: testInfo.outputPath("open-play-highlights.png") });
 
     // Removing the last game also removes the highlights, including after refresh.
-    page.once("dialog", dialog => dialog.accept());
     await matchesList.locator("[data-testid^='delete-game-button-']").first().click();
+    await page.getByTestId("confirm-delete-game-button").click();
     await expect(highlights).toHaveCount(0);
     await expect(page.getByRole("status")).toContainText("Game deleted.");
     await page.reload();
@@ -689,8 +669,8 @@ test.describe("Open Play Workflow", () => {
 
     // End session
     await page.goto(sessionUrl);
-    page.once("dialog", (dialog) => dialog.accept());
     await page.locator("button[data-testid='end-session-button']").click();
+    await page.getByTestId("confirm-end-session-button").click();
     await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
 
     // Check completed session view displays the renamed session name
@@ -735,19 +715,19 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByTestId("start-open-play-button").click();
     await page.waitForURL(/\/sessions\/session_/);
     await expect(page.getByTestId("end-session-button")).toBeVisible();
-    page.once("dialog", dialog => dialog.dismiss());
     await page.getByTestId("end-session-button").click();
+    await page.getByTestId("cancel-end-session-button").click();
     await expect(page.getByTestId("session-signoff")).toHaveCount(0);
     if (reducedMotion === "no-preference") {
       await page.route(page.url(), route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
-      page.once("dialog", dialog => dialog.accept());
       await page.getByTestId("end-session-button").click();
+      await page.getByTestId("confirm-end-session-button").click();
       await expect(page.getByRole("alert").filter({ hasText: "An unexpected error occurred while ending session." })).toBeVisible();
       await expect(page.getByTestId("session-signoff")).toHaveCount(0);
       await page.unrouteAll({ behavior: "wait" });
     }
-    page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("end-session-button").click();
+    await page.getByTestId("confirm-end-session-button").click();
     await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
     const art = page.getByTestId("session-signoff");
     await expect(art).toBeInViewport();
@@ -872,8 +852,8 @@ test("Open Play chemistry corrections replace the game's contribution", async ({
   await profile.reload();
   await expect(profile.getByText("-5% Synergy", { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(profile.getByText("1 match together", { exact: true })).toBeVisible();
-  page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByTestId("confirm-delete-game-button").click();
   // The list hides the game optimistically; wait for the committed save before reloading.
   await expect(page.getByRole("status")).toContainText("Game deleted.", { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Games Played (0)", exact: true })).toBeVisible();

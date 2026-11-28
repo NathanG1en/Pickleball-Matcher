@@ -178,9 +178,10 @@ export default async function TrainingHubPage({
     { key: "strategy", label: "Strategy" },
   ];
 
-  const availableCategories = selectedGroupId && selectedGroupPlan
-    ? allCategories.filter((cat) => targetChallenges.some((c) => c.skillCategory === cat.key))
-    : allCategories;
+  // Only offer categories that have drills to show (e.g. no "Conditioning" pill while it has none).
+  const availableCategories = allCategories.filter((cat) =>
+    targetChallenges.some((c) => c.skillCategory === cat.key),
+  );
 
   const categories = [
     { key: "all" as const, label: selectedGroupId && selectedGroupPlan ? "All Plan Drills" : "All Drills" },
@@ -214,16 +215,19 @@ export default async function TrainingHubPage({
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <Link
               href={`/g/${selectedGroupId}`}
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
+              className="inline-flex items-center min-h-11 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
             >
               ← Back to Group
             </Link>
-            <Link
-              href="/training"
-              className="inline-flex items-center min-h-[40px] px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
-            >
-              Browse All Drills
-            </Link>
+            {/* With no plan, the empty state below already offers Browse All Drills. */}
+            {selectedGroupPlan && (
+              <Link
+                href="/training"
+                className="inline-flex items-center min-h-11 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors"
+              >
+                Browse All Drills
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -240,7 +244,7 @@ export default async function TrainingHubPage({
                 <TargetIcon className="w-4 h-4 text-black" />
               </span>
               <div>
-                <span className="text-xs font-bold text-neutral-500 block">
+                <span className="text-xs font-bold text-neutral-600 block">
                   Week of {formatWeekOf(selectedGroupPlan.plan.year, selectedGroupPlan.plan.weekNumber)}
                 </span>
                 <h2 className="font-display text-lg sm:text-xl font-black uppercase text-black leading-tight">
@@ -253,7 +257,7 @@ export default async function TrainingHubPage({
               {isGroupOrganizer && (
                 <Link
                   href={`/g/${selectedGroupId}/training/plan/new?returnTo=${encodeURIComponent(`/training?group=${selectedGroupId}`)}`}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center"
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors inline-flex items-center"
                 >
                   Edit Plan
                 </Link>
@@ -278,7 +282,7 @@ export default async function TrainingHubPage({
           className="bg-[#FFFDF7] border-[3px] border-black rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-[4px_4px_0px_0px_#000]"
         >
           <div className="w-12 h-12 rounded-2xl bg-neutral-100 border-2 border-black flex items-center justify-center mx-auto">
-            <TargetIcon className="w-6 h-6 text-neutral-500" />
+            <TargetIcon className="w-6 h-6 text-neutral-600" />
           </div>
           <div>
             <h2 className="font-display text-xl font-black uppercase text-black">
@@ -292,7 +296,7 @@ export default async function TrainingHubPage({
             {isGroupOrganizer && (
               <Link
                 href={`/g/${selectedGroupId}/training/plan/new?returnTo=${encodeURIComponent(`/training?group=${selectedGroupId}`)}`}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-colors text-center"
               >
                 Create Weekly Plan →
               </Link>

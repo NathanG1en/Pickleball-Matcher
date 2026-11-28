@@ -168,7 +168,7 @@ export function JoinGroupClient({
         </div>
 
         <div className="rounded-2xl border-2 border-black bg-neutral-50 p-4 text-left shadow-[2px_2px_0px_0px_#000]">
-          <span className="text-xs font-bold text-neutral-500 block mb-1">
+          <span className="text-xs font-bold text-neutral-600 block mb-1">
             Signing in as
           </span>
           <div className="font-display text-lg font-black uppercase text-black">
@@ -190,7 +190,7 @@ export function JoinGroupClient({
             type="button"
             onClick={handleAccountJoin}
             disabled={accountJoining}
-            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-60 cursor-pointer"
+            className="block text-center w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 cursor-pointer"
           >
             {accountJoining ? "Joining Group…" : "Join Group Now"}
           </button>
@@ -311,7 +311,7 @@ export function JoinGroupClient({
       {/* Divider */}
       <div className="relative flex py-1 items-center">
         <div className="flex-grow border-t-2 border-neutral-200"></div>
-        <span className="flex-shrink mx-3 text-xs font-bold text-neutral-500">
+        <span className="flex-shrink mx-3 text-xs font-bold text-neutral-600">
           Or with a Player Account
         </span>
         <div className="flex-grow border-t-2 border-neutral-200"></div>
@@ -333,7 +333,7 @@ export function JoinGroupClient({
         </Link>
       </div>
 
-      <p className="text-[11px] font-semibold text-neutral-500">
+      <p className="text-xs font-semibold text-neutral-600">
         Player accounts keep track of ratings, matches, and synergies across all your devices.
       </p>
     </section>

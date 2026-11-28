@@ -89,8 +89,9 @@ test.describe("Corrections and Replay Workflow", () => {
     // The disabled button says why, naming the court that still needs a score.
     await expect(page.getByTestId("save-start-blocked-reason")).toContainText("Court 1 needs a score");
     await court1Team2.fill("11");
-    await page.getByRole("button", { name: "Update Score", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "cannot end in a tie" })).toBeVisible();
+    // A tie is flagged on the card as soon as it is typed, and that court cannot be saved.
+    await expect(page.getByTestId("tie-warning-1")).toContainText("cannot end in a tie");
+    await expect(page.locator("[data-testid='court-match-1'] button:has-text('Update Score')")).toBeDisabled();
     await expect(court1Team2).toHaveValue("11");
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeDisabled();
     await expect(page.getByTestId("end-session-button")).toBeEnabled();
@@ -106,8 +107,8 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
     await page.getByTestId("save-and-start-next-round-button").click();
     await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
-    page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("reshuffle-matchups-button").click();
+    await page.getByTestId("confirm-reshuffle-round-button").click();
     await expect(page.locator("h1")).toContainText("Round 2");
 
     // 8. Test reshuffling in-progress round matchups and round undo
@@ -119,11 +120,12 @@ test.describe("Corrections and Replay Workflow", () => {
     await expect(page.locator("h1")).toContainText("Round 2", { timeout: 15000 });
 
     // Click Reshuffle Matchups during in-progress round
-    page.once("dialog", (dialog) => dialog.accept());
     const reshufflePromise = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.status() === 200
     );
     await page.click("[data-testid='reshuffle-matchups-button']");
+    await expect(page.getByRole("alertdialog")).toContainText("Reshuffle Round 2?");
+    await page.getByTestId("confirm-reshuffle-round-button").click();
     await reshufflePromise;
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
     const startRoundBtn = page.locator("button:has-text('Start Round')");
@@ -146,11 +148,12 @@ test.describe("Corrections and Replay Workflow", () => {
     await page.getByTestId("session-options-menu-button").click();
     const undoBtn = page.locator("button:has-text('Undo Round 2')");
     await expect(undoBtn).toBeVisible({ timeout: 10000 });
-    page.once("dialog", (dialog) => dialog.accept());
     const undoPromise = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.status() === 200
     );
     await undoBtn.click();
+    await expect(page.getByRole("alertdialog")).toContainText("recalculates everyone's ratings");
+    await page.getByTestId("confirm-undo-round-button").click();
     await undoPromise;
     // After undo, should be back to proposal or previous state
     await expect(page.locator("h1")).toHaveText("Round 2", { timeout: 15000 });
@@ -255,25 +258,24 @@ test.describe("Corrections and Replay Workflow", () => {
     // 5. Try ending session while Court 1 is in progress (Court 2 is cancelled)
     await page.click("button[data-testid='end-session-button']");
 
-    // Verify in-progress warning modal appears
-    const warningModal = page.locator("[data-testid='in-progress-warning-modal']");
+    // Verify the end-session dialog names the game still in progress
+    const warningModal = page.locator("[data-testid='end-session-dialog']");
     await expect(warningModal).toBeVisible();
-    await expect(warningModal).toContainText("You have these games in progress:");
+    await expect(warningModal).toContainText("1 game is still in progress and won't be recorded.");
     await expect(warningModal).toContainText("Court 1");
     // Crucially: Court 2 should NOT appear because it was cancelled!
     await expect(warningModal.locator("[data-testid='in-progress-match-list']")).not.toContainText("Court 2");
-    await expect(warningModal).toContainText("Are you sure you want to end it?");
+    // The confirmation can't be switched off
+    await expect(page.getByText("Do not ask me again")).toHaveCount(0);
 
-    // 6. Test Cancel button in modal
+    // 6. Keep playing closes the dialog and leaves the session running
     await page.click("[data-testid='cancel-end-session-button']");
     await expect(warningModal).not.toBeVisible();
-    // Session is still active on the session page
     await expect(page.locator("button[data-testid='end-session-button']")).toBeVisible();
 
-    // 7. Click End Session again, check "Do not ask me again", and confirm
+    // 7. End the session for real
     await page.click("button[data-testid='end-session-button']");
     await expect(warningModal).toBeVisible();
-    await page.check("[data-testid='do-not-ask-again-checkbox']");
     await page.click("[data-testid='confirm-end-session-button']");
 
     // 8. User remains on session summary page
@@ -340,8 +342,8 @@ test("host synergy follows current partners after manual swaps and new proposals
   await expect(page.getByTestId("save-and-start-next-round-button")).toBeEnabled();
   await page.getByTestId("save-and-start-next-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
-  page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("reshuffle-matchups-button").click();
+  await page.getByTestId("confirm-reshuffle-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Manual Edit", exact: true }).click();
   await page.getByRole("button", { name: "Unlock Manual Swaps", exact: true }).click();
@@ -373,6 +375,55 @@ test("host synergy follows current partners after manual swaps and new proposals
   await expect(ownBadge()).toHaveText(winners.includes(hostName) ? "+4% Synergy" : "-4% Synergy");
 });
 
+
+test("Edit Lineup sends a started round back to setup with the same matchups", async ({ page }) => {
+  test.setTimeout(60000);
+  await createTestGroup(page, `Edit lineup ${Date.now()}`);
+  await page.getByRole("button", { name: "Add Guest", exact: true }).click();
+  for (const name of ["Edit Blake", "Edit Casey", "Edit Drew"]) {
+    await page.locator("#guest-player-name").fill(name);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.locator("#guest-player-name")).toHaveValue("");
+  }
+  await page.getByRole("link", { name: "Start New Session", exact: true }).click();
+  await page.getByTestId("select-normal-session-button").click();
+  await page.getByTestId("continue-to-pairings-button").click();
+  await page.getByRole("button", { name: "Start Session", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  const card = page.locator(".court-card");
+  const team = (number: number) => card.getByText(`Team ${number}`, { exact: true }).locator("../..");
+  // Teams compared as sets: a saved round can list partners in either order.
+  const names = async (number: number) => (await team(number).locator("[draggable] > span").allTextContents()).filter((value) => value !== "⋮⋮").sort();
+  const original = [await names(1), await names(2)];
+
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  const team1Score = page.getByRole("spinbutton", { name: "Court 1 Team 1 score", exact: true });
+  await expect(team1Score).toBeVisible({ timeout: 15000 });
+
+  // No scores yet, so nothing is lost: the round goes straight back to setup.
+  await page.getByTestId("session-options-menu-button").click();
+  await page.getByTestId("edit-lineup-menu-item").click();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
+  expect([await names(1), await names(2)]).toEqual(original);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible();
+  expect([await names(1), await names(2)]).toEqual(original);
+
+  // With a saved score, Edit Lineup asks first and names what it clears.
+  await page.getByRole("button", { name: "Start Round", exact: true }).click();
+  await expect(team1Score).toBeVisible({ timeout: 15000 });
+  await team1Score.fill("11");
+  await page.getByRole("spinbutton", { name: "Court 1 Team 2 score", exact: true }).fill("7");
+  await page.getByTestId("court-match-1").getByRole("button", { name: "Save Result", exact: true }).click();
+  await expect(page.getByTestId("court-match-1").getByText("Final", { exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByTestId("session-options-menu-button").click();
+  await page.getByTestId("edit-lineup-menu-item").click();
+  await expect(page.getByText("This round's 1 saved score will be cleared.")).toBeVisible();
+  await page.getByTestId("confirm-edit-lineup-button").click();
+  await expect(page.getByRole("button", { name: "Start Round", exact: true })).toBeVisible({ timeout: 15000 });
+  expect([await names(1), await names(2)]).toEqual(original);
+});
 
 test("custom lineup survives refresh and starts with the saved assignments", async ({ page }) => {
   test.setTimeout(45000);
@@ -447,20 +498,20 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: "Start Session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Round 1", exact: true })).toBeVisible();
     const sessionUrl = page.url();
-    page.once("dialog", dialog => dialog.dismiss());
     await page.getByTestId("end-session-button").click();
+    await page.getByTestId("cancel-end-session-button").click();
     await expect(page.getByTestId("end-session-button")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
     if (reducedMotion === "no-preference") {
       await page.route(sessionUrl, route => route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort() : route.continue());
-      page.once("dialog", dialog => dialog.accept());
       await page.getByTestId("end-session-button").click();
+      await page.getByTestId("confirm-end-session-button").click();
       await expect(page.getByRole("alert").filter({ hasText: "Failed to end session." })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.dataset.sessionRolls)).toBeUndefined();
       await page.unrouteAll({ behavior: "wait" });
     }
-    page.once("dialog", dialog => dialog.accept());
     await page.getByTestId("end-session-button").click();
+    await page.getByTestId("confirm-end-session-button").click();
     await expect(page.getByTestId("completed-session-badge")).toBeVisible({ timeout: 15000 });
     const art = page.getByTestId("session-signoff");
     await expect(art).toBeInViewport();
@@ -686,8 +737,8 @@ test("normal score corrections refresh chemistry without adding shared games", a
   await page.getByRole("button", { name: "Save Result", exact: true }).click();
   await page.getByTestId("save-and-start-next-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
-  page.once("dialog", dialog => dialog.accept());
   await page.getByTestId("reshuffle-matchups-button").click();
+  await page.getByTestId("confirm-reshuffle-round-button").click();
   await expect(page.getByRole("heading", { name: "Round 2", exact: true })).toBeVisible();
   const profile = await page.context().newPage();
   await profile.goto("/players");

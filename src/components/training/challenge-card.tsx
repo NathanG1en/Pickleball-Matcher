@@ -43,6 +43,7 @@ export function ChallengeCard({
   onCategorySelect,
 }: ChallengeCardProps) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
+  const [loggerOpen, setLoggerOpen] = useState(false);
   const [currentPB, setCurrentPB] = useState<number | null | undefined>(personalBest);
   // Attempts saved from this card that haven't been undone; the drill stays
   // "Done" if it was already done this week or any of these remain.
@@ -134,14 +135,14 @@ export function ChallengeCard({
           {/* Add to Plan action */}
           <div className="flex items-center gap-1.5">
             {planFeedback && (
-              <span className="text-xs font-bold text-neutral-600 animate-pulse">
+              <span className="text-xs font-bold text-neutral-600 motion-safe:animate-pulse">
                 {planFeedback}
               </span>
             )}
             {challenge.participantFormat === "group" ? (
               <span
                 data-testid={`badge-group-drill-${challenge.id}`}
-                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-neutral-100 text-neutral-500 border-2 border-neutral-300 select-none cursor-default"
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-neutral-100 text-neutral-600 border-2 border-neutral-300 select-none cursor-default"
                 title="Group drills can only be added to group training plans"
               >
                 Group Drill
@@ -165,7 +166,7 @@ export function ChallengeCard({
                 }}
                 className={`px-3 py-1.5 rounded-xl border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] select-none touch-manipulation transition-colors ${
                   inPersonalPlan
-                    ? "bg-lime-100 text-black cursor-default"
+                    ? "bg-neutral-100 text-black cursor-default"
                     : "bg-[#ccff00] hover:bg-[#b8e600] text-black cursor-pointer active:translate-x-[1px] active:translate-y-[1px]"
                 }`}
                 title={
@@ -189,12 +190,9 @@ export function ChallengeCard({
         </div>
 
         {/* Challenge title & summary */}
-        <h3 className="font-display text-lg sm:text-xl font-black uppercase tracking-tight text-black mb-1.5 leading-snug">
+        <h3 className="font-display text-lg sm:text-xl font-black uppercase tracking-tight text-black mb-2.5 leading-snug">
           {challenge.title}
         </h3>
-        <p className="text-xs font-medium text-neutral-700 leading-relaxed mb-3">
-          {challenge.description}
-        </p>
 
         {(customGoalDescription || targetBenchmark != null) && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-lime-100 border border-lime-600/40 text-xs text-lime-950 mb-2.5 font-bold">
@@ -211,8 +209,8 @@ export function ChallengeCard({
           </div>
         )}
 
-        {/* Personal Best banner */}
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-100 border border-black/10 text-xs">
+        {/* Personal best: one compact line */}
+        <div className="flex items-center gap-2 text-sm">
           <PickleballMedal
             rank={1}
             size={22}
@@ -221,7 +219,7 @@ export function ChallengeCard({
             className={`shrink-0 ${currentPB !== null && currentPB !== undefined ? "" : "grayscale opacity-40"}`}
           />
           <span className="font-bold text-neutral-700">Personal Best:</span>
-          <span className="font-display font-black text-black ml-auto">
+          <span className="font-display font-black text-black">
             {currentPB !== null && currentPB !== undefined
               ? formatMetricDisplay({
                   trackingFormat: challenge.trackingFormat,
@@ -234,34 +232,47 @@ export function ChallengeCard({
             <Link
               href={`/training/drills/${challenge.id}${groupId ? `?group=${groupId}` : ""}`}
               aria-label={`${challenge.title} history`}
-              className="shrink-0 pl-2 ml-1 border-l border-black/15 font-bold text-neutral-700 underline underline-offset-2 hover:text-black"
+              className="ml-auto shrink-0 inline-flex min-h-11 items-center font-bold text-neutral-700 underline underline-offset-2 hover:text-black"
             >
               History
             </Link>
           )}
         </div>
 
-        {/* Collapsible Instructions */}
-        <div className="mt-2.5">
-          <button
-            type="button"
-            onClick={() => setInstructionsOpen((prev) => !prev)}
-            className="w-full sm:w-auto py-1.5 flex items-center justify-between sm:justify-start gap-1.5 text-xs font-bold text-neutral-600 hover:text-black cursor-pointer touch-manipulation select-none"
-          >
-            <span>{instructionsOpen ? "Hide Instructions" : "How to Practice & Setup"}</span>
-            <ChevronDownIcon
-              className={`w-3.5 h-3.5 transition-transform ${instructionsOpen ? "rotate-180" : ""}`}
-            />
-          </button>
+        {/* Description, setup and target stay folded so the library is a scannable list. */}
+        <div className="mt-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              aria-expanded={instructionsOpen}
+              onClick={() => setInstructionsOpen((prev) => !prev)}
+              className="min-h-11 flex items-center gap-1.5 text-sm font-bold text-neutral-700 hover:text-black cursor-pointer touch-manipulation select-none"
+            >
+              <span>{instructionsOpen ? "Hide details" : "About this drill"}</span>
+              <ChevronDownIcon
+                className={`w-3.5 h-3.5 transition-transform ${instructionsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {!loggerOpen && (
+              <button
+                type="button"
+                onClick={() => setLoggerOpen(true)}
+                className="min-h-11 shrink-0 px-3.5 rounded-xl bg-white hover:bg-[#ccff00] text-black border-2 border-black text-sm font-bold shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer touch-manipulation select-none"
+              >
+                + Record Attempt
+              </button>
+            )}
+          </div>
           {instructionsOpen && (
-            <div className="mt-2 p-3 bg-neutral-50 rounded-xl border border-black/10 text-xs text-neutral-700 space-y-2">
+            <div className="mt-1 p-3 bg-neutral-50 rounded-xl border border-black/10 text-xs text-neutral-700 space-y-2">
+              <p className="leading-relaxed text-neutral-800">{challenge.description}</p>
               <div>
-                <span className="font-bold text-xs text-neutral-500 block mb-0.5">Instructions</span>
+                <span className="font-bold text-xs text-neutral-600 block mb-0.5">How to practice</span>
                 <p className="leading-relaxed">{challenge.instructions}</p>
               </div>
               {(targetBenchmark != null || challenge.defaultTargetGoal != null) && (
                 <div>
-                  <span className="font-bold text-xs text-neutral-500 block mb-0.5">Target Benchmark</span>
+                  <span className="font-bold text-xs text-neutral-600 block mb-0.5">Target Benchmark</span>
                   <p className="font-bold text-black">
                     {targetBenchmark ?? challenge.defaultTargetGoal} {challenge.scoreUnit}
                   </p>
@@ -272,17 +283,24 @@ export function ChallengeCard({
         </div>
       </div>
 
-      {/* Embedded inline logger for rapid entry */}
-      <InlineResultLogger
-        challenge={challenge}
-        groupId={groupId}
-        planItemId={planItemId}
-        rosterPlayers={rosterPlayers}
-        currentUserId={currentUserId}
-        onResultSaved={handleSaved}
-        onResultUndone={handleUndone}
-        lastResult={lastResult}
-      />
+      {/* Embedded inline logger for rapid entry, opened from + Record Attempt */}
+      {loggerOpen && (
+        <div className="mt-3">
+          <InlineResultLogger
+            initialOpen
+            hideToggleButton
+            onClose={() => setLoggerOpen(false)}
+            challenge={challenge}
+            groupId={groupId}
+            planItemId={planItemId}
+            rosterPlayers={rosterPlayers}
+            currentUserId={currentUserId}
+            onResultSaved={handleSaved}
+            onResultUndone={handleUndone}
+            lastResult={lastResult}
+          />
+        </div>
+      )}
     </div>
   );
 }

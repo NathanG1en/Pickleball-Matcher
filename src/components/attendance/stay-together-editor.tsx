@@ -24,7 +24,7 @@ export function StayTogetherEditor({ players, pairs, onChange, disabled = false,
     {pairs.length ? <ul className="space-y-2">{pairs.map(([a, b]) => <li key={JSON.stringify([a, b])} className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-[#ccff00]/20 px-3 py-2">
       <span className="font-bold text-sm">{names.get(a) ?? "Unavailable player"} &amp; {names.get(b) ?? "Unavailable player"}</span>
       {onChange && <button type="button" disabled={disabled} aria-label={`Remove pairing ${names.get(a) ?? a} and ${names.get(b) ?? b}`} onClick={() => onChange(pairs.filter(([first, second]) => first !== a || second !== b))} className="rounded-lg border-2 border-black px-2 py-1 text-xs font-black disabled:opacity-50">Remove</button>}
-    </li>)}</ul> : <p className="text-sm font-bold text-neutral-500">No pairs selected. Players rotate normally.</p>}
+    </li>)}</ul> : <p className="text-sm font-bold text-neutral-600">No pairs selected. Players rotate normally.</p>}
     {onChange && <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
         <CustomDropdown

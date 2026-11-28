@@ -91,7 +91,7 @@ export function PermissionsTab({
             className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border-2 border-black text-amber-900 text-xs font-bold shadow-[2px_2px_0px_0px_#000]"
           >
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-pulse" />
               <span>You have unsaved changes in Permissions.</span>
             </span>
           </div>
@@ -121,13 +121,13 @@ export function PermissionsTab({
                   <p className="font-bold text-black">
                     Configure what organizers are allowed to do.
                   </p>
-                  <p className="text-[11px] text-neutral-600">
+                  <p className="text-xs text-neutral-600">
                     As the group host, you always retain full administrative control regardless of these toggle states.
                   </p>
                 </>
               ) : (
                 <div className="flex items-center gap-1.5 font-bold text-neutral-700">
-                  <LockIcon className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <LockIcon className="h-3.5 w-3.5 text-neutral-600 shrink-0" />
                   <span>
                     Read-only view. These permissions are configured and managed by the group host.
                   </span>
@@ -155,7 +155,7 @@ export function PermissionsTab({
                   >
                     {def.label}
                   </label>
-                  <p className="text-[11px] sm:text-xs font-medium text-neutral-600 leading-snug">
+                  <p className="text-xs sm:text-xs font-medium text-neutral-600 leading-snug">
                     {def.description}
                   </p>
                 </div>
@@ -207,7 +207,7 @@ export function PermissionsTab({
             type="submit"
             disabled={!hasChanges || saving}
             data-testid="save-permissions-button"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-black bg-[#ccff00] hover:bg-[#b8eb00] text-black text-sm font-bold shadow-[3px_3px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#000] disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? "Saving Permissions…" : "Save Permissions"}
           </button>

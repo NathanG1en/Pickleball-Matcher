@@ -15,12 +15,20 @@ export function defaultLineupSeed(sessionId: string, roundNumber: number): numbe
   return hash >>> 0;
 }
 
-/** A Reshuffle or variety change the organizer made for the next round on this device. */
+/** A started round's lineup, kept when the organizer sends that round back to setup with Edit Lineup. */
+export interface KeptLineup {
+  readonly courts: readonly { readonly courtNumber: number; readonly team1: readonly string[]; readonly team2: readonly string[] }[];
+  readonly sitting: readonly string[];
+}
+
+/** A Reshuffle, variety change or Edit Lineup the organizer made for the next round on this device. */
 export interface LineupChoice {
   readonly roundNumber: number;
   readonly sessionVersion: number;
   readonly seed: number;
   readonly temperature: number;
+  /** Set by Edit Lineup: show this exact lineup instead of generating one from the seed. */
+  readonly lineup?: KeptLineup;
 }
 
 const choiceSchema = z.object({
@@ -28,6 +36,18 @@ const choiceSchema = z.object({
   sessionVersion: z.number().int(),
   seed: z.number().int().min(0).max(0xffff_ffff),
   temperature: z.number().min(0).max(2),
+  lineup: z
+    .object({
+      courts: z.array(
+        z.object({
+          courtNumber: z.number().int(),
+          team1: z.array(z.string()).max(2),
+          team2: z.array(z.string()).max(2),
+        }),
+      ),
+      sitting: z.array(z.string()),
+    })
+    .optional(),
 });
 
 const CHANGE_EVENT = "lineup-choice-change";

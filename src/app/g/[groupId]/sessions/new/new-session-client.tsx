@@ -144,7 +144,7 @@ export function NewSessionClient({
           >
             ← Back to Group
           </Link>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 1 · Format
           </span>
         </div>
@@ -169,15 +169,6 @@ export function NewSessionClient({
           <div
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-neutral-100 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                Predetermined Matchups
-              </span>
-              <span className="text-xs font-bold text-neutral-600">
-                Structured
-              </span>
-            </div>
-
             <div>
               <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Normal Session
@@ -213,15 +204,6 @@ export function NewSessionClient({
           <div
             className="bg-white border-[3px] border-black rounded-3xl p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 transition-all flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                Flexible Games
-              </span>
-              <span className="text-xs font-bold text-neutral-600">
-                Casual &amp; Drop-in
-              </span>
-            </div>
-
             <div>
               <h2 className="font-display text-xl sm:text-2xl font-black text-black">
                 Open Play
@@ -247,7 +229,7 @@ export function NewSessionClient({
               type="button"
               data-testid="select-open-play-button"
               onClick={() => handleSelectFormat("open_play")}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-base font-bold shadow-[4px_4px_0px_0px_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-neutral-800 text-white text-base font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
             >
               Select Open Play →
             </button>
@@ -270,7 +252,7 @@ export function NewSessionClient({
             >
               ← Back to Players
             </button>
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
               Step 3 of 3
             </span>
           </div>
@@ -304,7 +286,7 @@ export function NewSessionClient({
           <div className="mobile-action-bar sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t-[3px] border-black z-40 shadow-[0px_-4px_0px_0px_rgba(0,0,0,0.06)]">
             <div className="max-w-xl lg:max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between gap-4">
               <div className="text-left">
-                <p className="text-xs font-bold text-neutral-500">Ready</p>
+                <p className="text-xs font-bold text-neutral-600">Ready</p>
                 <p className="text-base font-bold text-black tracking-tight">
                   {normalConfig.selectedPlayerIds.length} players · {stayTogetherPairs.length} {stayTogetherPairs.length === 1 ? "pair" : "pairs"}
                 </p>
@@ -343,7 +325,7 @@ export function NewSessionClient({
           >
             ← Change Format
           </button>
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
             Step 2 of 3
           </span>
         </div>
@@ -398,7 +380,7 @@ export function NewSessionClient({
         >
           ← Change Format
         </button>
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-[#ccff00] border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold text-black bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000]">
           Step 2 of 2
         </span>
       </div>
@@ -431,7 +413,7 @@ export function NewSessionClient({
               onChange={(e) => setOpenPlayName(e.target.value)}
               placeholder="e.g. Wednesday Night Open Play"
               maxLength={100}
-              className="w-full px-4 py-3 rounded-xl border-2 border-black font-bold text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-black font-bold text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#ccff00]"
             />
           </div>
 
@@ -460,7 +442,7 @@ export function NewSessionClient({
             disabled={isPending}
             data-testid="start-open-play-button"
             onClick={handleStartOpenPlay}
-            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-60"
+            className="w-full py-4 px-6 rounded-xl bg-[#ccff00] hover:bg-[#b8eb00] text-black border-2 border-black text-lg font-bold shadow-[4px_4px_0px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:cursor-not-allowed disabled:shadow-none disabled:bg-neutral-200 disabled:text-neutral-600 disabled:border-neutral-400 disabled:hover:bg-neutral-200"
           >
             {isPending ? "Starting Open Play..." : "Start Open Play"}
           </button>

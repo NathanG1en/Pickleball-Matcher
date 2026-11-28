@@ -275,7 +275,7 @@ export function TeamTournamentManager({
                 )}
               </div>
             )}
-            <p className="text-xs font-bold text-neutral-500 mt-0.5">
+            <p className="text-xs font-bold text-neutral-600 mt-0.5">
               Team Clash · {scoreSummary.completedLinesCount} of {scoreSummary.totalLinesCount} lines completed
             </p>
           </div>
@@ -319,7 +319,7 @@ export function TeamTournamentManager({
               <div className="font-display text-4xl sm:text-5xl font-black text-rose-600">
                 {scoreSummary.teamScores[team1.id]?.wins ?? 0}
               </div>
-              <p className="text-[11px] font-bold text-neutral-500">
+              <p className="text-xs font-bold text-neutral-600">
                 {scoreSummary.teamScores[team1.id]?.points ?? 0} total points
               </p>
             </div>
@@ -340,7 +340,7 @@ export function TeamTournamentManager({
               <div className="font-display text-4xl sm:text-5xl font-black text-sky-600">
                 {scoreSummary.teamScores[team2.id]?.wins ?? 0}
               </div>
-              <p className="text-[11px] font-bold text-neutral-500">
+              <p className="text-xs font-bold text-neutral-600">
                 {scoreSummary.teamScores[team2.id]?.points ?? 0} total points
               </p>
             </div>
@@ -401,7 +401,7 @@ export function TeamTournamentManager({
                         ? "bg-[#ccff00] text-black shadow-[1px_1px_0px_0px_#000]"
                         : line.status === "in_progress"
                         ? "bg-amber-100 text-amber-900"
-                        : "bg-neutral-100 text-neutral-500"
+                        : "bg-neutral-100 text-neutral-600"
                     }`}
                   >
                     {isCompleted ? "Final" : line.status === "in_progress" ? "Live" : "Pending"}

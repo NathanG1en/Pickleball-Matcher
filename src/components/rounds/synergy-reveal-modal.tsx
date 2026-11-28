@@ -28,7 +28,7 @@ function resolveTeamSynergy(
       status: "solo" as const,
       badgeText: "Singles / Solo",
       badgeIcon: undefined,
-      badgeStyle: "border-neutral-300 bg-white text-neutral-500",
+      badgeStyle: "border-neutral-300 bg-white text-neutral-600",
       message: "Doubles synergy requires a 2-player team.",
       iconType: "info" as const,
     };
@@ -214,7 +214,7 @@ export function SynergyPanel({
                     </span>
                   </div>
                   {t1Res.message && (
-                    <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
+                    <p className="text-xs font-bold text-neutral-700 flex items-center gap-1">
                       {t1Res.iconType === "warning" ? (
                         <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
                       ) : (
@@ -236,7 +236,7 @@ export function SynergyPanel({
                     </span>
                   </div>
                   {t2Res.message && (
-                    <p className="text-[10px] font-bold text-neutral-700 flex items-center gap-1">
+                    <p className="text-xs font-bold text-neutral-700 flex items-center gap-1">
                       {t2Res.iconType === "warning" ? (
                         <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-800" />
                       ) : (

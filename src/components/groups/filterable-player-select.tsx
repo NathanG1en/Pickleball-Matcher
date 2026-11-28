@@ -151,7 +151,7 @@ export function FilterablePlayerSelect({
       >
         <span
           className={`truncate flex items-center gap-1.5 ${
-            selectedOption ? "text-black font-black" : "text-neutral-500 font-semibold"
+            selectedOption ? "text-black font-black" : "text-neutral-600 font-semibold"
           }`}
         >
           <span>{selectedOption ? selectedOption.name : placeholder}</span>
@@ -183,7 +183,7 @@ export function FilterablePlayerSelect({
         >
           {/* Search Filter Input inside Dropdown */}
           <div className="relative">
-            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-600 pointer-events-none" />
             <input
               ref={searchInputRef}
               type="text"
@@ -212,7 +212,7 @@ export function FilterablePlayerSelect({
                 type="button"
                 aria-label="Clear filter"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black font-black text-xs p-0.5 cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black font-black text-xs p-0.5 cursor-pointer"
               >
                 ✕
               </button>
@@ -225,14 +225,14 @@ export function FilterablePlayerSelect({
               <button
                 type="button"
                 onClick={() => handleSelectOption("")}
-                className="w-full text-left px-2 py-1 text-[11px] font-semibold text-neutral-500 hover:bg-[#F0EEE7] rounded-lg cursor-pointer transition-colors"
+                className="w-full text-left px-2 py-1 text-xs font-semibold text-neutral-600 hover:bg-[#F0EEE7] rounded-lg cursor-pointer transition-colors"
               >
                 Clear selection
               </button>
             )}
 
             {filteredOptions.length === 0 ? (
-              <div className="py-3 text-center text-xs text-neutral-500 font-semibold italic">
+              <div className="py-3 text-center text-xs text-neutral-600 font-semibold italic">
                 No players found matching &quot;{searchQuery}&quot;
               </div>
             ) : (
@@ -253,7 +253,7 @@ export function FilterablePlayerSelect({
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
                       opt.disabled
-                        ? "opacity-40 cursor-not-allowed bg-neutral-50 text-neutral-400"
+                        ? "opacity-40 cursor-not-allowed bg-neutral-50 text-neutral-600"
                         : isSelected
                         ? "bg-[#ccff00] text-black border border-black cursor-pointer font-black"
                         : "hover:bg-[#F0EEE7] active:bg-[#EAE5D9] cursor-pointer text-black"
@@ -272,7 +272,7 @@ export function FilterablePlayerSelect({
                         </span>
                       )}
                     </span>
-                    <span className="text-[10px] font-semibold shrink-0 ml-2">
+                    <span className="text-xs font-semibold shrink-0 ml-2">
                       {opt.selectedElsewhere || opt.disabled ? "(Selected)" : isSelected ? "✓" : ""}
                     </span>
                   </button>
